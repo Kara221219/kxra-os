@@ -1,0 +1,98 @@
+[
+  {
+    "id": "DEC-001",
+    "classification": "DECISION",
+    "title": "Five-project scope",
+    "authority": "owner_directive",
+    "state": "accepted",
+    "decision": "Seed all five workspaces",
+    "rationale": "Current Genesis request",
+    "decider": "Owner",
+    "decided_at": "2026-09-11",
+    "supersedes": null
+  },
+  {
+    "id": "DEC-002",
+    "classification": "DECISION",
+    "title": "Project 004 paper only",
+    "authority": "owner_directive",
+    "state": "accepted",
+    "decision": "No live trading tools or production broker credentials",
+    "rationale": "Current request and SRC-004",
+    "decider": "Owner",
+    "decided_at": "2026-09-11",
+    "supersedes": null
+  },
+  {
+    "id": "DEC-003",
+    "classification": "DECISION",
+    "title": "Project 005 demand before production",
+    "authority": "owner_directive",
+    "state": "accepted",
+    "decision": "Gate product creation on demand evidence",
+    "rationale": "Current request and SRC-005",
+    "decider": "Owner",
+    "decided_at": "2026-09-11",
+    "supersedes": null
+  },
+  {
+    "id": "DEC-004",
+    "classification": "DECISION",
+    "title": "Retain requested stack",
+    "authority": "owner_directive",
+    "state": "accepted",
+    "decision": "Vercel/Supabase/Trigger/Resend/PostHog/Sentry/Cloudflare/GitHub",
+    "rationale": "Current request; no serious replacement reason identified",
+    "decider": "Owner",
+    "decided_at": "2026-09-11",
+    "supersedes": null
+  },
+  {
+    "id": "DEC-005",
+    "classification": "DECISION",
+    "title": "Authorisation before retrieval",
+    "authority": "owner_directive",
+    "state": "accepted",
+    "decision": "Deterministic policy and RLS precede AI context loading",
+    "rationale": "Current request",
+    "decider": "Owner",
+    "decided_at": "2026-09-11",
+    "supersedes": null
+  },
+  {
+    "id": "DEC-006",
+    "classification": "DECISION",
+    "title": "Scoring and gate thresholds",
+    "authority": "proposed_design",
+    "state": "proposed",
+    "decision": "Use separate opportunity and evidence scores; unknown is null",
+    "rationale": "Genesis operating specification",
+    "decider": "Genesis design proposal",
+    "decided_at": null,
+    "supersedes": null
+  },
+  {
+    "id": "DEC-007",
+    "classification": "DECISION",
+    "title": "Monorepo and scoped retrieval",
+    "authority": "proposed_design",
+    "state": "proposed",
+    "decision": "Use a modular TypeScript monorepo and SQL-first retrieval",
+    "rationale": "Genesis technical design",
+    "decider": "Genesis design proposal",
+    "decided_at": null,
+    "supersedes": null
+  },
+  {
+    "id": "DEC-008",
+    "classification": "DECISION",
+    "title": "WhatsApp eligibility gate",
+    "authority": "proposed_design",
+    "state": "proposed",
+    "decision": "Keep gateway disabled until bounded use case passes current terms review",
+    "rationale": "RES-011 and RES-014",
+    "decider": "Genesis design proposal",
+    "decided_at": null,
+    "supersedes": null
+  }
+]

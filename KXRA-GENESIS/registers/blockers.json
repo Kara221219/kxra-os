@@ -1,0 +1,101 @@
+[
+  {
+    "id": "BLK-001",
+    "project_scope": "OS",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Account provisioning and budget",
+    "why": "Live integrations and deployment cannot be verified",
+    "resolution": "Owner supplies vendor project identifiers/access through secret store; approve capped budget",
+    "owner_role": "CTO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-002",
+    "project_scope": "OS",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Legal entity and processor decisions",
+    "why": "Privacy notices, contracts and region selection need real entity details",
+    "resolution": "Owner confirms legal entity, operating countries and professional reviewer",
+    "owner_role": "Owner",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-003",
+    "project_scope": "OS",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Partner identities and assignments",
+    "why": "Cannot invite or pair unknown users safely",
+    "resolution": "Owner provides verified accounts and project-role matrix",
+    "owner_role": "Owner",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-004",
+    "project_scope": "PROJECT-002",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Supplier dossier and chosen SKU",
+    "why": "Screenshots do not prove rights, fitment, material or safety",
+    "resolution": "Provide original catalogue, written supplier quote/rights, exact variants and test documentation",
+    "owner_role": "COO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-005",
+    "project_scope": "PROJECT-003",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Property source assets and rights",
+    "why": "Cannot create or validate a truthful real-property demo",
+    "resolution": "Provide photographs, floorplan, dimensions, capture access and permission",
+    "owner_role": "CMO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-006",
+    "project_scope": "PROJECT-004",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Paper data and protocol",
+    "why": "Paper/read-only connection and risk limits not tested",
+    "resolution": "Provide paper-only credentials securely and approve paper budget/instruments/limits",
+    "owner_role": "CFO Analyst",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-007",
+    "project_scope": "PROJECT-005",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Demand evidence and buyer access",
+    "why": "Listings establish supply, not purchase intent for a differentiated KXRA product",
+    "resolution": "Approve customer research scope; collect listing/review/interview evidence",
+    "owner_role": "CMO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-008",
+    "project_scope": "OS",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "WhatsApp policy and technical verification",
+    "why": "AI use-case eligibility and API account configuration unverified",
+    "resolution": "Review current/September 23 terms; verify WABA, number, consent, templates and webhook version",
+    "owner_role": "CTO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-009",
+    "project_scope": "PROJECT-001",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Production route and regulatory perimeter",
+    "why": "No verified route, liquidity or compliant business case",
+    "resolution": "Obtain protocol version/demo, execution counterparty and qualified legal assessment before build",
+    "owner_role": "CTO",
+    "status": "open",
+    "blocks": "external activation or project gate; does not block local specification"
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ASM-001",
+    "title": "GBP reporting",
+    "project_scope": "OS",
+    "classification": "ASSUMPTION",
+    "statement": "GBP reporting with native transaction currency preserved",
+    "validation": "Owner confirms accounting currency",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-002",
+    "title": "US seat-cover customer",
+    "project_scope": "PROJECT-002",
+    "classification": "ASSUMPTION",
+    "statement": "US truck owners are the initial buyer segment",
+    "validation": "Interview and demand evidence by model configuration",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-003",
+    "title": "Property buyers pay for fidelity",
+    "project_scope": "PROJECT-003",
+    "classification": "ASSUMPTION",
+    "statement": "Accurate cinematic output and saved production time create willingness to pay",
+    "validation": "EXP-003",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-004",
+    "title": "Digital niche advantage",
+    "project_scope": "PROJECT-005",
+    "classification": "ASSUMPTION",
+    "statement": "Narrow business workflows may differentiate better than generic planner bundles",
+    "validation": "EXP-005",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-005",
+    "title": "Regional hosting",
+    "project_scope": "OS",
+    "classification": "ASSUMPTION",
+    "statement": "UK/EU storage region preferred pending transfer and vendor review",
+    "validation": "Owner confirms geography; processor review",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-006",
+    "title": "KXRA business gateway eligibility",
+    "project_scope": "OS",
+    "classification": "ASSUMPTION",
+    "statement": "A bounded project service may be an eligible incidental-AI WhatsApp use",
+    "validation": "Meta use-case/terms review before enabling",
+    "status": "unverified",
+    "owner_role": "Chief of Staff",
+    "review_date": "2026-09-18"
+  }
+]

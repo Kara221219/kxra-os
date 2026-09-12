@@ -1,0 +1,44 @@
+{
+  "name": "kxra-genesis-os",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/local.mjs",
+    "dev:os": "npm run dev -w @kxra/os",
+    "build": "npm run build -w @kxra/os",
+    "start": "npm run start -w @kxra/os",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:start": "node scripts/database.mjs start",
+    "db:stop": "node scripts/database.mjs stop",
+    "db:reset": "node scripts/database.mjs reset",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm test && npm run build",
+    "format:check": "prettier --check \"apps/os/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.mjs\" \"tests/**/*.ts\""
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.0",
+    "pg": "^8.16.3",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "postcss": "8.5.28"
+  }
+}

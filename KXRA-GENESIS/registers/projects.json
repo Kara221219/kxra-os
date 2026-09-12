@@ -1,0 +1,107 @@
+[
+  {
+    "id": "PROJECT-001",
+    "name": "CLPR / Blockchain Interoperability",
+    "status": "MONITOR",
+    "stage": "DISCOVERY",
+    "classification": "USER-SUPPLIED INFORMATION",
+    "source_ids": [
+      "SRC-001",
+      "SRC-003"
+    ],
+    "venture_score": null,
+    "confidence_score": null,
+    "score_state": "NOT_ASSESSED",
+    "investment_actual": null,
+    "budget_approved": null,
+    "owner_user_id": null,
+    "partner_ids": [],
+    "next_action": "Resolve route, liquidity, failure recovery and merchant differentiation before considering build",
+    "live_execution_enabled": false,
+    "public_visibility": false
+  },
+  {
+    "id": "PROJECT-002",
+    "name": "US Vehicle Seat Covers",
+    "status": "VALIDATION / LAUNCH PREPARATION",
+    "stage": "VALIDATION",
+    "classification": "USER-SUPPLIED INFORMATION",
+    "source_ids": [
+      "SRC-002",
+      "SRC-003"
+    ],
+    "venture_score": null,
+    "confidence_score": null,
+    "score_state": "NOT_ASSESSED",
+    "investment_actual": null,
+    "budget_approved": null,
+    "owner_user_id": null,
+    "partner_ids": [],
+    "next_action": "Obtain exact supplier SKUs, fitment and safety evidence; model landed contribution",
+    "live_execution_enabled": false,
+    "public_visibility": false
+  },
+  {
+    "id": "PROJECT-003",
+    "name": "AI Property Fly-Through",
+    "status": "VALIDATION / PROOF OF CONCEPT",
+    "stage": "VALIDATION",
+    "classification": "USER-SUPPLIED INFORMATION",
+    "source_ids": [
+      "SRC-002",
+      "SRC-003"
+    ],
+    "venture_score": null,
+    "confidence_score": null,
+    "score_state": "NOT_ASSESSED",
+    "investment_actual": null,
+    "budget_approved": null,
+    "owner_user_id": null,
+    "partner_ids": [],
+    "next_action": "Obtain one rights-cleared property pack and test accurate versus generative production",
+    "live_execution_enabled": false,
+    "public_visibility": false
+  },
+  {
+    "id": "PROJECT-004",
+    "name": "AI Trading Research & Monitoring Laboratory",
+    "status": "INTERNAL R&D / PAPER ONLY",
+    "stage": "FEASIBILITY",
+    "classification": "USER-SUPPLIED INFORMATION",
+    "source_ids": [
+      "SRC-004",
+      "SRC-003"
+    ],
+    "venture_score": null,
+    "confidence_score": null,
+    "score_state": "NOT_ASSESSED",
+    "investment_actual": null,
+    "budget_approved": null,
+    "owner_user_id": null,
+    "partner_ids": [],
+    "next_action": "Define paper protocol and pass readiness checks; no live execution",
+    "live_execution_enabled": false,
+    "public_visibility": false
+  },
+  {
+    "id": "PROJECT-005",
+    "name": "KXRA Digital Products & Content Engine",
+    "status": "VALIDATION",
+    "stage": "VALIDATION",
+    "classification": "USER-SUPPLIED INFORMATION",
+    "source_ids": [
+      "SRC-005",
+      "SRC-003"
+    ],
+    "venture_score": null,
+    "confidence_score": null,
+    "score_state": "NOT_ASSESSED",
+    "investment_actual": null,
+    "budget_approved": null,
+    "owner_user_id": null,
+    "partner_ids": [],
+    "next_action": "Validate a specific buyer problem before product creation",
+    "live_execution_enabled": false,
+    "public_visibility": false
+  }
+]

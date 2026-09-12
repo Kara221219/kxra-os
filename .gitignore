@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+.runtime/
+.sites-runtime/
+test-results/
+playwright-report/
+*.tsbuildinfo
+__pycache__/
+.DS_Store
+
+.next-dev/

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "WORK-001",
+    "date": "2026-09-11",
+    "actor": "Codex Genesis session",
+    "action": "Read six complete source texts and inspect eight embedded source images",
+    "output": "sources/manifest.json",
+    "status": "completed"
+  },
+  {
+    "id": "WORK-002",
+    "date": "2026-09-11",
+    "actor": "Codex Genesis session",
+    "action": "Research current official technology, policy and competitor references",
+    "output": "registers/research-sources.json",
+    "status": "completed",
+    "limitations": "No private account verification; supplied videos had no usable transcript"
+  },
+  {
+    "id": "WORK-003",
+    "date": "2026-09-11",
+    "actor": "Codex Genesis session",
+    "action": "Create canonical definition, operating specifications, structured registers and five workspaces",
+    "output": "README.md",
+    "status": "completed"
+  },
+  {
+    "id": "WORK-004",
+    "date": "2026-09-11",
+    "actor": "Codex Genesis session",
+    "action": "Run 24 reference-rule tests and package consistency checks; assemble standalone build brief",
+    "output": "qa/QA-REPORT.md",
+    "status": "completed",
+    "limitations": "Production app, RLS integration, browser, load and restore tests not run"
+  }
+]
