@@ -56,3 +56,7 @@ Missing component/function braces; inaccessible partner write controls; loss of 
 ## Active blockers
 
 No approved hosted account/test credentials have been used. Hosted Auth/MFA/invitation and Storage/scanning validation remain necessary. Production rate limits, CSP, recovery, telemetry redaction and queue capability checks are not finished. External integration activation, model contracts/budgets and product publication require their own implementation and review. The user's explicit no-production/no-real-credentials constraints remain in force.
+
+## GitHub publication scope
+
+Owner authorized publication of application code, engineering docs and required seed registers only to the public Kara221219/kxra-os repository. A dedicated local Git repository isolates this workspace from parent projects. Original documents, full Genesis research, archives, runtime data, credentials and test artifacts are excluded. Production deployment remains prohibited.

@@ -6,7 +6,7 @@ Updated: 2026-09-12.
 
 Work only in `/Users/kara/Desktop/P1/The KXRA Group`. A dedicated Git repository now exists in this workspace, isolated from the parent repository and its unrelated user applications. Do not reset, stage or overwrite parent work. GitHub destination: Kara221219/kxra-os (public). Production deployment remains prohibited. Preserve the local source documents and KXRA-GENESIS.
 
-Read AGENTS.md, README.md, docs/architecture/system.md and progress.md. Current direct user instructions override source content. The full local source brief is present; the pasted approved-brief block was empty. This assumption is explicitly recorded in ADR 0001.
+Read AGENTS.md, README.md, docs/architecture/system.md and progress.md. Current direct user instructions override source content. The full source brief is retained only in the owner’s private local workspace; the pasted approved-brief block was empty. This assumption is recorded in ADR 0001. The public clone is self-contained for running and building: use its engineering docs and required seed registers.
 
 ## Reproduce
 

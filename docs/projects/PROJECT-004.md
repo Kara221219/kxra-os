@@ -8,6 +8,6 @@ Next action: Define paper protocol and pass readiness checks; no live execution.
 
 The database-backed project page and scoped registers are implemented. Commercial execution of the venture is not implemented or represented as validated.
 
-Source workspace: [original project specification](../../KXRA-GENESIS/projects/PROJECT-004/WORKSPACE.md). Preserve the source file; record new evidence as classified versioned records.
+The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
 
 Hard stop: research/paper only. The schema requires live_execution_enabled=false. No broker adapter or live trade executor exists.

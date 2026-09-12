@@ -12,3 +12,22 @@ __pycache__/
 .DS_Store
 
 .next-dev/
+
+# Private source material stays local; publish only required seed registers.
+/*.docx
+/Pasted text.txt
+/KXRA-GENESIS-PACK.zip
+/KXRA-GENESIS/*
+!/KXRA-GENESIS/registers/
+/KXRA-GENESIS/registers/*
+!/KXRA-GENESIS/registers/ai-agents.json
+!/KXRA-GENESIS/registers/assumptions.json
+!/KXRA-GENESIS/registers/blockers.json
+!/KXRA-GENESIS/registers/decisions.json
+!/KXRA-GENESIS/registers/experiments.json
+!/KXRA-GENESIS/registers/projects.json
+!/KXRA-GENESIS/registers/research-sources.json
+!/KXRA-GENESIS/registers/risks.json
+!/KXRA-GENESIS/registers/routines.json
+!/KXRA-GENESIS/registers/skills.json
+!/KXRA-GENESIS/registers/work-log.json

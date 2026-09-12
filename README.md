@@ -51,6 +51,6 @@ Supabase authentication and cookie refresh adapters exist but have **not been ex
 | `supabase/migrations` | Core schema and hardening migrations |
 | `tests` | Database, HTTP, calculation and browser tests |
 | `docs` | Architecture, security, decisions, operations, projects, playbooks |
-| `KXRA-GENESIS` | Preserved foundational source/specification package |
+| `KXRA-GENESIS/registers` | Required classified seed data; full research/source package is private and excluded |
 
-Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md). The source brief is [CODEX-GENESIS-BUILD-BRIEF.md](KXRA-GENESIS/CODEX-GENESIS-BUILD-BRIEF.md).
+Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md). This public repository includes the application, engineering documentation and required seed registers only. Original documents and the full Genesis research/brief remain private on the owner’s machine; they are not required to install, build or run the platform.
