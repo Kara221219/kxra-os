@@ -1,0 +1,48 @@
+# Phase acceptance evidence
+
+Review date: 14 September 2026. Reviewed implementation commit: `0c20de47fe1f6cb38646db51c4a90650679aacd7` on `codex/genesis-foundation`.
+
+This ledger records executable local evidence against the acceptance tests in the 13 September 2026 phase-completion brief. It does not convert a local fixture result into hosted or production evidence. The environment used synthetic identities, a Unix-socket-only PostgreSQL 14 cluster and a local Next.js preview. No real credentials, external sends, paid model calls, product publication, live trading or production deployment occurred.
+
+Status meanings: **PASS** means the complete currently agreed local scenario ran successfully. **BLOCKED** means the full acceptance cannot run because its required capability or separately authorized hosted/provider environment is absent. A passing subset is stated explicitly and does not change the overall blocked status.
+
+## Recorded command results
+
+| Command | Result |
+|---|---|
+| `npm run typecheck` | PASS |
+| `npm test` | PASS — 45 tests, 0 failures |
+| `npm run test:restart` | PASS — 10 completed AT-08 task fixtures and six accepted supersession fixtures matched before/after restart |
+| `npm run test:e2e` | PASS — six desktop/mobile cases, 0 failures |
+| `npm run build` | PASS — optimized Next.js build; private routes remained dynamic |
+| `npm run format:check` | PASS |
+| `git diff --check` | PASS |
+
+## Acceptance ledger
+
+| Test | Status | Exact scenario and evidence | Remaining boundary |
+|---|---|---|---|
+| AT-01 full access matrix | **PASS** | `npm test`; [access-matrix.test.ts](../../tests/access-matrix.test.ts) populates all 20 current tables with shared, private, group and other-organisation fixtures and checks owner, P002 contributor, P003 viewer, revoked and separate-organisation visibility. [security.test.ts](../../tests/security.test.ts) checks schema-wide RLS, anonymous zero rows, INSERT/UPDATE/DELETE denial and all 18 exposed RPCs. [http.test.ts](../../tests/http.test.ts) checks all current private route families, crafted IDs, files and cross-project retrieval. | Applies to the current local schema/API. Every future table/RPC/route must extend the matrix before merge. Hosted pooler/grant behavior remains part of AT-03/production review. |
+| AT-02 current approval authority | **PASS** | `npm test`; SQL and HTTP reproduce old grant → later revocation → old grant execution, envelope mutation, key-order normalization, expiry, rejection, replay and concurrent execution. The old grant fails and access stays revoked. | No executor exists for publish, spend or deploy; each future executor needs its own exact-state test. |
+| AT-03 identity contract | **BLOCKED** | Local subset PASS in `npm test`: one-use email-bound invitation, mismatch/replay/expiry, exact project role, recent AAL2, AAL1/stale denial and fixture fail-closed combinations. Invitation/redeem UI is covered by build and browser inspection. | Hosted Supabase MFA enrollment/challenge/recovery, confirmed-email behavior and a real provider session need separately approved staging credentials. Email delivery is disconnected. |
+| AT-04 private uploads | **PASS** | `npm test` and `npm run test:e2e`; owner upload defaults private, explicit sharing is scoped, partner cannot discover private filename/record/hash/search/file route, unassigned upload and storage-authority fields fail, and the project/audience are visibly selected before submission. | Bytes remain quarantined and undeliverable until AT-10. |
+| AT-05 safe seed/provenance | **PASS** | `npm test`; fresh disposable databases yield exactly PROJECT-001–005, null scores, no canonical partner grants, 13 agents, 12 skills and nine disabled routines. Repeat/reorder are stable, source envelopes are hashed, unknown references and altered source fail, and injected mid-import failure leaves no schema/partial seed. | Private foundational source documents remain intentionally absent from public Git. Their declared source IDs are retained without copying source content. |
+| AT-06 classification/history | **PASS** | `npm test` and `npm run test:e2e`; direct SQL promotion to FACT fails without exact accepted evidence/reviewer/method. Historical versions retain classification, status, editor, time, content and provenance. Accepted records reject overwrite; decisions use linked supersession. | No rich text diff view yet; immutable versions are individually viewable. |
+| AT-07 full financial totals | **PASS** | `npm test`; 201 GBP income rows total GBP 201.0000, GBP 2 expense yields GBP 199.0000, USD stays separate and paper/estimate/commitment data is excluded. Missing/null/wrong types fail at SQL and HTTP. Empty is Unknown, 0.1 + 0.2 is 0.3000 and dashboard counts use uncapped RLS aggregates with defined open-risk states. | This is a foundation, not ledger reconciliation, bank balance, FX conversion or model-calculated finance. |
+| AT-08 complete operating loop | **PASS** | `npm test`; P002 contributor idea → owner experiment with evidence/cap/criteria → exact task assignment → attributable result → linked decision → exact acceptance → linked supersession. P003 viewer, revoked and other-organisation actors cannot read or alter it. `npm run test:restart` compares the task and decision graph before/after database restart. | The UI exposes typed controls, but broader portfolio stage/committee/score workflows remain future work. |
+| AT-09 project gates | **PASS** | `npm test` and `npm run test:e2e`; P002 requires exact SKU, fitment and safety; P003 requires rights and geometry QA; P005 rejects false, stale and draft demand packets and can authorize only a reviewed local prototype record. P004 live=true and P005 product=true fail; P004 has no gate, broker or route. Gate policy remains visibly `proposed_unset`; all authorizations remain `local_only`. | No numeric threshold has owner authority. No listing, rendering delivery, product creation, publication or live execution adapter exists. |
+| AT-10 document lifecycle | **BLOCKED** | Current upload/quarantine isolation passes under AT-04. No clean-scan promotion, isolated extraction, chunks, permission-safe download, object reconciliation or restore path exists, so the full scenario was not run. | Requires trusted scanner/extractor design and local fake object adapter before hosted Storage validation. |
+| AT-11 evidence envelope | **BLOCKED** | Current RLS-scoped record search and cross-project bait denial pass in `npm test`. | Chunks, citation validation, retrieval-to-delivery revocation recheck and durable redacted Ask run logging are absent. No LLM receives context. |
+| AT-12 run/skill lifecycle | **BLOCKED** | Seed integrity proves 13 role and 12 skill definitions; generic completed-run forgery is blocked. | Typed versioned manifests, capability broker, fake provider, append-only run steps, retries and handoff are absent. |
+| AT-13 budgets/model boundary | **BLOCKED** | Exact non-model finance arithmetic passes. | No budget reservation ledger or provider dispatch exists. Sol/Astra routing and fake success/failure/timeout tests are absent. |
+| AT-14 routines/recovery | **BLOCKED** | Seed test proves all nine routines remain disabled. | Scheduler, idempotent slots, DST/exchange calendars, checkpoints, retry authorization and notification intents are absent. |
+| AT-15 paired identity/ingress | **BLOCKED** | Raw-byte HMAC helper unit test passes. | Pairing challenge lifecycle, durable signed ingress, attempt controls, project selection and immediate revoke/unpair behavior are absent. |
+| AT-16 scoped delivery/idempotency | **BLOCKED** | No external send is possible. | Fake transport, inbound deduplication, outbound intents, delivery reconciliation, revocation/human-takeover cancellation and policy checks are absent. |
+| AT-17 public build | **BLOCKED** | `npm run build` proves the existing static homepage compiles without database access. Publication remains disabled. | Public/private builds are not separated; required public routes, reviewed content snapshot and private-marker artifact scan are incomplete. |
+| AT-18 usability/recovery | **BLOCKED** | Six Playwright cases pass at desktop and mobile, including scoped navigation, gate controls, real history, upload defaults and invitation foundation. | Full keyboard/WCAG matrix at 1440/768/390/320 and 200% zoom, all failure states, CI orchestration, database/object restore manifest and recovery drill are incomplete. |
+
+## Defect closure from the review
+
+The five reproduced defects are closed by executable regression tests: uncapped finance/dashboard totals; accepted canonical owner directives; strict SQL finance null/type checks; stale membership authority; owner-private upload defaults; and verified FACT transitions with complete history. The approval envelope now binds every consequential field before any additional executor is added.
+
+The next implementation slice begins with AT-10 and AT-11. Production readiness remains withheld while AT-03 and AT-10 through AT-18 are blocked.

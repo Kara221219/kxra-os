@@ -16,19 +16,23 @@ Open http://127.0.0.1:3210. Sign in using a clearly labelled synthetic Owner, Pa
 ```sh
 npm run typecheck
 npm test
+npm run test:restart
 npx playwright install chromium --only-shell
 npm run test:e2e
 npm run build
 ```
 
-Keep the local preview running for HTTP/browser tests. Database tests roll back; HTTP/browser tests intentionally leave labelled synthetic records for inspection. Never point tests at a hosted database. `npm run db:stop` stops only this workspace's database. Reset is intentionally disabled. See [local operations](docs/operations/local-development.md).
+Keep the local preview running for HTTP/browser tests. Database tests roll back; HTTP/browser tests intentionally leave labelled synthetic records for inspection. Run the restart check after `npm test`; it stops and restarts only the isolated local cluster and verifies the retained operating-loop records. Never point tests at a hosted database. `npm run db:stop` stops only this workspace's database. Reset is intentionally disabled. See [local operations](docs/operations/local-development.md).
 
 ## What works
 
 - Database-backed owner/partner workspaces, portfolio and five project pages.
-- Classified idea, assumption, experiment, decision, risk, source, task, knowledge and finance registers; draft creation, versioned editing and durable audit history.
-- Current membership checks plus PostgreSQL RLS on every request; owner-only group records and private shared-project boundaries.
-- Exact owner approval, acceptance and membership revocation/restoration functions with MFA level checks, expiry, version and single-use protection.
+- Classified idea, assumption, experiment, decision, risk, source, task, knowledge and finance registers; draft creation, immutable historical snapshots and durable audit history.
+- A typed idea → experiment → assigned task → result → exact-version decision → approval loop, including linked decision supersession.
+- Current membership checks plus PostgreSQL RLS on every request; owner-only group records, explicit project sharing and tested isolation across all 20 private tables.
+- Canonical owner approvals bind action, organisation, project, payload, environment, requester and expiry. Membership changes reject stale authority and preserve approved expiry.
+- One-use, email-bound local invitation and redemption flows. Consequential actions require recent AAL2; hosted MFA remains unverified.
+- Evidence-linked local project gates for Projects 002, 003 and 005. Project 004 live execution and Project 005 product creation remain disabled.
 - Evidence-only Ask KXRA and scoped full-text search. No model receives context.
 - Local quarantined file upload and metadata isolation. File delivery intentionally disabled until scanning and hosted storage are implemented.
 - Seeded AI role, skill and routine definitions; no autonomous agents or schedules.
@@ -36,7 +40,7 @@ Keep the local preview running for HTTP/browser tests. Database tests roll back;
 
 ## Boundaries
 
-Supabase authentication and cookie refresh adapters exist but have **not been exercised against hosted Supabase**. Hosted owner bootstrap is a reviewed manual script; no real owner account has been created. Invitations, MFA enrolment UI, cloud storage, scanning, live AI, WhatsApp delivery, Trigger.dev jobs, Resend, PostHog and Sentry remain unconnected. Unknown financial results and venture scores remain unknown. Trading is research/paper only. Digital product creation remains gated on demand research.
+Supabase authentication and cookie refresh adapters exist but have **not been exercised against hosted Supabase**. Hosted owner bootstrap is a reviewed manual script; no real owner account has been created. Hosted MFA enrolment/recovery, email delivery, cloud storage, scanning, live AI, WhatsApp delivery, Trigger.dev jobs, Resend, PostHog and Sentry remain unconnected. Unknown financial results and venture scores remain unknown. Trading is research/paper only. Digital product creation remains gated on reviewed demand evidence.
 
 ## Repository
 
@@ -48,7 +52,7 @@ Supabase authentication and cookie refresh adapters exist but have **not been ex
 | `packages/authz` | Strictly local signed fixture sessions |
 | `packages/ai` | Authorised evidence envelope; synthesis disabled |
 | `packages/integrations` | WhatsApp cryptographic foundations |
-| `supabase/migrations` | Core schema and hardening migrations |
+| `supabase/migrations` | Additive schema, integrity, workflow, identity and project-gate migrations |
 | `tests` | Database, HTTP, calculation and browser tests |
 | `docs` | Architecture, security, decisions, operations, projects, playbooks |
 | `KXRA-GENESIS/registers` | Required classified seed data; full research/source package is private and excluded |

@@ -4,7 +4,9 @@ Run `npm ci`, then `npm run dev` from the workspace. Open `http://127.0.0.1:3210
 
 Database binaries default to Homebrew PostgreSQL 14. Set `KXRA_PG_BIN` to the directory containing initdb/pg_ctl on other machines. Local PostgreSQL is on port 55439 via this workspace's Unix socket only, with TCP disabled. Filesystem access to the cluster is equivalent to local administration; it must contain no real credentials or production data.
 
-Use `npm run typecheck`, `npm test`, `npm run test:e2e`, and `npm run build`. HTTP/browser suites require the running preview. Install the Playwright Chromium headless shell with `npx playwright install chromium --only-shell`. Test failures are not silently skipped. HTTP/browser tests create clearly labelled synthetic records; PostgreSQL adversarial tests roll back.
+Use `npm run typecheck`, `npm test`, `npm run test:restart`, `npm run test:e2e`, `npm run build`, and `npm run format:check`. HTTP/browser suites require the running preview. Install the Playwright Chromium headless shell with `npx playwright install chromium --only-shell`. Test failures are not silently skipped. HTTP/browser tests create clearly labelled synthetic records; PostgreSQL adversarial tests roll back.
+
+Run `npm run test:restart` after `npm test`. It requires the retained synthetic AT-08 workflow, snapshots its completed task and accepted decision-supersession graph under the application RLS role, restarts only this workspace's local PostgreSQL cluster, and compares the same rows after startup migrations and seed verification. It never resets the database.
 
 The app role must never own tables or have bypass privileges. Do not use a Supabase admin/service connection as DATABASE_URL. Hosted variables are examples only in `.env.example`; do not copy hosted placeholders into the fixture run. Fixture mode refuses mixed hosted configuration.
 

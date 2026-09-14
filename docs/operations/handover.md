@@ -1,43 +1,70 @@
 # Engineering handover
 
-Updated: 2026-09-12.
+Updated: 14 September 2026.
 
-## Resume safely
+## Current checkpoint
 
-Work only in `/Users/kara/Desktop/P1/The KXRA Group`. A dedicated Git repository now exists in this workspace, isolated from the parent repository and its unrelated user applications. Do not reset, stage or overwrite parent work. GitHub destination: Kara221219/kxra-os (public). Production deployment remains prohibited. Preserve the local source documents and KXRA-GENESIS.
+Work from this repository root on branch `codex/genesis-foundation`. The reviewed implementation checkpoint is `0c20de47fe1f6cb38646db51c4a90650679aacd7`. GitHub destination is the public `Kara221219/kxra-os` repository. Preserve the private KXRA-GENESIS package, original source documents and unrelated parent-repository applications.
 
-Read AGENTS.md, README.md, docs/architecture/system.md and progress.md. Current direct user instructions override source content. The full source brief is retained only in the owner’s private local workspace; the pasted approved-brief block was empty. This assumption is recorded in ADR 0001. The public clone is self-contained for running and building: use its engineering docs and required seed registers.
+Read [phase acceptance evidence](acceptance-evidence.md), [architecture](../architecture/system.md), [security](../security/access-control.md), [progress](progress.md) and the historical [phase completion brief](CODEX-PHASE-COMPLETION-BRIEF.md). Current direct user instructions take precedence.
+
+The first review-remediation milestone is implemented: AT-01, AT-02 and AT-04 through AT-09 pass locally. AT-03's local subset passes, while hosted identity remains blocked. AT-10 through AT-18 are not complete and must not be presented as working capabilities.
 
 ## Reproduce
 
-`npm ci` → `npm run dev` → open `http://127.0.0.1:3210/login`. Select the clearly labelled synthetic owner/partner/viewer/revoked account. Do not enter real credentials. Startup creates a Unix-socket-only PostgreSQL cluster under `.runtime`; defaults to Homebrew PostgreSQL 14. `KXRA_PG_BIN` may override the binary directory.
+Run:
 
-`npm run typecheck`, `npm test`, `npm run test:e2e`, `npm run build`, `npm run format:check`. HTTP and browser tests require the preview running. Browser dependency: `npx playwright install chromium --only-shell`. Current recorded results are 23 suite tests and 4 browser tests passing, plus successful type/build/format checks and zero audit findings. Test records are clearly synthetic and intentionally retained; database adversarial tests roll back. The local session signing key is generated, ignored and never printed.
+```sh
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:3210/login`. Use only the labelled synthetic identities. In another terminal run:
+
+```sh
+npm run typecheck
+npm test
+npm run test:restart
+npm run test:e2e
+npm run build
+npm run format:check
+```
+
+The latest results were 45/45 database/domain/HTTP tests, a successful restart comparison, 6/6 desktop/mobile browser cases, and passing type/build/format/diff checks. `npm run test:restart` expects `npm test` to have retained its labelled synthetic AT-08 workflow, stops only this workspace's Unix-socket PostgreSQL cluster, restarts it, and compares exact task/supersession data. It does not reset data.
+
+HTTP and browser tests require the local preview. PostgreSQL adversarial/access tests roll back. HTTP/browser tests retain labelled synthetic records for inspection. Never point fixture tests at a hosted database.
 
 ## Implementation map
 
-- `apps/os/app/os/[[...segments]]/page.tsx`: owner/partner workspace screens.
-- `apps/os/app/api/[...path]/route.ts`: scoped JSON APIs, quarantine and approval actions.
-- `apps/os/lib/auth.ts`, `middleware.ts`: server-verified identity, current member lookup and hosted cookie refresh.
-- `packages/db/index.ts`: RLS transaction boundary; never replace with an admin connection.
-- `supabase/migrations/0001_core.sql` through `0003_finance_validation.sql`: actual schema, constraints, policy and approval functions.
-- `packages/domain`: validated register inputs, exact money and evidence-aware scoring formulas. Scores are not persisted from unreviewed input.
-- `packages/ai`: evidence-only response envelope. No paid model calls.
-- `packages/integrations/whatsapp.ts`: cryptographic helpers only.
-- `scripts/database.mjs`: synthetic local cluster/start/seed/migrations. Reset deliberately disabled.
-- `supabase/manual/bootstrap-owner.sql`: optional reviewed hosted bootstrap; not run and no credentials embedded.
+- `apps/os/app/api/[...path]/route.ts`: authenticated APIs, typed workflows, invitations, project gates, approvals and quarantine.
+- `apps/os/app/os/[[...segments]]/page.tsx`: owner/partner workspaces, registers, operating loop, project gates, history and approvals.
+- `apps/os/components/Forms.tsx`: typed client forms with pending/error states.
+- `apps/os/lib/auth.ts`, `packages/authz/session.ts`: verified hosted identity adapter and strict local signed sessions.
+- `packages/db/index.ts`: one transaction per request under `authenticated`/`anon` RLS role and server-set claims.
+- `scripts/seed.mjs`, `scripts/database.mjs`: atomic migrations, source-envelope verification and separate synthetic fixtures.
+- `scripts/verify-persistence.mjs`: AT-08 controlled restart comparison.
+- `supabase/migrations/0004_review_integrity.sql` through `0013_project_gates.sql`: additive review remediation, workflows, identity and gates.
+- `tests/access-matrix.test.ts`: all-table, all-principal visibility matrix.
+- `tests/security.test.ts`, `tests/http.test.ts`, `tests/seed.test.ts`, `tests/workflow.test.ts`: authoritative local acceptance evidence.
+- `tests/e2e/workspace.spec.ts`: desktop/mobile owner and partner workflows.
+
+## Security invariants
+
+PostgreSQL remains authoritative. Never accept caller identity, role, organisation, project authority or approval state from bodies or model output. Every AI retrieval must first use the verified principal and RLS transaction. Future workers must receive narrow scope/capabilities and recheck authorization before delivery.
+
+Do not weaken current fixture guards, approval digests, access-version checks, immutable history, source hashes, project composite foreign keys, private upload default, quarantine, or P004/P005 hard stops. Add new migrations; do not rewrite applied migrations.
+
+Production, real credentials, external sends, paid model calls, spending, publication and trading remain unauthorized.
 
 ## Next ten engineering actions
 
-1. Add typed domain forms/validation for all role, skill and routine fields, and normalize register-specific lifecycle data where needed.
-2. Build project creation and stage-gate transitions with evidence, hard stops and exact owner approvals.
-3. Add task assignment/completion and experiment result/review workflows, preserving immutable accepted evidence.
-4. Implement hosted MFA enrollment/challenge/recovery and confirmed-email invitation flows; test only with separately authorized staging accounts.
-5. Verify real Supabase RLS, Auth and application pooler role isolation, including immediate account/assignment revocation.
-6. Add private Supabase Storage policies, trusted scan results, current-authorization download proxy, retention and orphan reconciliation.
-7. Implement finance ledger reconciliation and approved score snapshots; retain currency distinctions, unknowns and evidence provenance.
-8. Add durable rate limits, CSP, consent-aware telemetry, security events and a backup/restore drill before production review.
-9. Implement scoped worker capabilities, real run logging, retries/idempotency and budget-limited model calls with leakage/injection evaluations.
-10. Complete identity-paired WhatsApp ingestion/media/transcription and outbound authorization rechecks; validate with provider fixtures before any external activation.
-
-Project 004 remains paper/research only. Project 005 requires real demand evidence before product creation. No routine, public release, spend, message or live trade is authorized by the mere existence of its registry entry.
+1. Implement AT-10 with a fake local object adapter, trusted scan state machine, MIME/magic/macro/bomb fixtures, isolated extraction, versioned chunks and authorization-checked download.
+2. Implement AT-11 citation validation, current-version evidence envelopes, retrieval-to-delivery revocation checks and redacted Ask run records without enabling a paid model.
+3. Add typed, versioned agent and skill manifests plus append-only run/run-step tables for AT-12; prevent generic run forgery.
+4. Add locked budget reservations and deterministic usage reconciliation with a fake Sol/Astra provider for AT-13.
+5. Add a fake-clock routine scheduler, idempotent slots, Europe/London DST cases, checkpoints and retry-time authorization for AT-14.
+6. Build one-use WhatsApp pairing challenges and signed, deduplicated fake ingress for AT-15.
+7. Build scoped outbound intents, takeover/revocation cancellation and ambiguous-delivery reconciliation for AT-16 without external sends.
+8. Split the approved public content/build boundary, add required public routes and private-marker artifact scanning for AT-17.
+9. Add CI orchestration, keyboard/reflow/failure-state coverage and local database/object restore manifests for AT-18.
+10. With separate staging authorization, validate Supabase Auth/MFA, application-role pooler RLS and Storage policies; keep production deployment blocked.

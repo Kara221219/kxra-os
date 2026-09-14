@@ -10,4 +10,4 @@ The database-backed project page and scoped registers are implemented. Commercia
 
 The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
 
-Hard stop: research/paper only. The schema requires live_execution_enabled=false. No broker adapter or live trade executor exists.
+Hard stop: research/paper only. The schema rejects `live_execution_enabled=true`, including an administrator-level direct update in the local acceptance test. There is no project-gate policy, API/UI/job enablement path, broker adapter or live-trade executor.
