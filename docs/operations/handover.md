@@ -8,7 +8,9 @@ Work from this repository root on branch `codex/genesis-foundation`. The reviewe
 
 Read [phase acceptance evidence](acceptance-evidence.md), [architecture](../architecture/system.md), [security](../security/access-control.md), [progress](progress.md) and the historical [phase completion brief](CODEX-PHASE-COMPLETION-BRIEF.md). Current direct user instructions take precedence.
 
-The first review-remediation milestone is implemented: AT-01, AT-02 and AT-04 through AT-09 pass locally. AT-03's local subset passes, while hosted identity remains blocked. AT-10 through AT-18 are not complete and must not be presented as working capabilities.
+Read the root [KXRA FINAL COMPLETION BRIEF](../../KXRA-FINAL-COMPLETION-BRIEF.md) before new implementation. It is the current requirements freeze and exact execution order. It preserves all Phase AT-01 through AT-18 scenarios, adds AT-19 through AT-30 and supersedes the older “next slice starts at AT-10” sequencing without changing the recorded implementation evidence.
+
+The first review-remediation milestone is implemented: AT-01, AT-02 and AT-04 through AT-09 pass locally. AT-03's local subset passes, while hosted identity remains blocked. AT-10 through AT-18 are not complete. Added AT-19 through AT-29 have not run, and AT-30 is blocked. None may be presented as working capabilities.
 
 ## Reproduce
 
@@ -56,15 +58,8 @@ Do not weaken current fixture guards, approval digests, access-version checks, i
 
 Production, real credentials, external sends, paid model calls, spending, publication and trading remain unauthorized.
 
-## Next ten engineering actions
+## Next engineering action
 
-1. Implement AT-10 with a fake local object adapter, trusted scan state machine, MIME/magic/macro/bomb fixtures, isolated extraction, versioned chunks and authorization-checked download.
-2. Implement AT-11 citation validation, current-version evidence envelopes, retrieval-to-delivery revocation checks and redacted Ask run records without enabling a paid model.
-3. Add typed, versioned agent and skill manifests plus append-only run/run-step tables for AT-12; prevent generic run forgery.
-4. Add locked budget reservations and deterministic usage reconciliation with a fake Sol/Astra provider for AT-13.
-5. Add a fake-clock routine scheduler, idempotent slots, Europe/London DST cases, checkpoints and retry-time authorization for AT-14.
-6. Build one-use WhatsApp pairing challenges and signed, deduplicated fake ingress for AT-15.
-7. Build scoped outbound intents, takeover/revocation cancellation and ambiguous-delivery reconciliation for AT-16 without external sends.
-8. Split the approved public content/build boundary, add required public routes and private-marker artifact scanning for AT-17.
-9. Add CI orchestration, keyboard/reflow/failure-state coverage and local database/object restore manifests for AT-18.
-10. With separate staging authorization, validate Supabase Auth/MFA, application-role pooler RLS and Storage policies; keep production deployment blocked.
+Execute only Final Milestone 1 from the requirements freeze: production-shaped invitation-only identity, multi-project invitation grants, safe invitation return, partner-created password contracts, the nine-step onboarding wizard, account management, owner lifecycle controls and fake transactional email. Extend the full RLS/HTTP matrix and run AT-01, AT-02, the AT-03 local subset and AT-19 through AT-21. Preserve all existing passing tests and hard stops.
+
+Use deterministic local Auth/email doubles. Do not connect real credentials, send invitations, bootstrap a real owner or claim hosted MFA/email/session behavior. After the local milestone is reviewed, follow Milestones 2 through 11 in the exact order stated in the final brief.

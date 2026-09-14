@@ -1,8 +1,10 @@
 # KXRA OS implementation progress
 
-Updated: 14 September 2026. Status: **reviewed local milestone complete through AT-09; not production ready**.
+Updated: 14 September 2026. Status: **reviewed local milestone complete through AT-09; final requirements frozen; not production ready**.
 
 Reviewed implementation commit: `0c20de47fe1f6cb38646db51c4a90650679aacd7` on `codex/genesis-foundation`. The 13 September review baseline and acceptance contract are preserved in [CODEX PHASE COMPLETION BRIEF](CODEX-PHASE-COMPLETION-BRIEF.md). Current results are recorded in [phase acceptance evidence](acceptance-evidence.md).
+
+The owner completion addendum has been consolidated with the Genesis and Phase contracts in [KXRA FINAL COMPLETION BRIEF](../../KXRA-FINAL-COMPLETION-BRIEF.md). It preserves AT-01 through AT-18, adds AT-19 through AT-30, defines eleven ordered implementation milestones and makes production-shaped identity/invitation/onboarding/account management the next milestone. The freeze changes requirements and execution order only; it is not evidence that any added feature has been implemented.
 
 ## What was built
 
@@ -23,36 +25,36 @@ Project 004 remains paper/research only. The database rejects live execution and
 
 ## Verification
 
-| Check | Current result |
-|---|---|
-| `npm run typecheck` | PASS |
-| `npm test` | PASS — 45/45 |
-| `npm run test:restart` | PASS — retained task and supersession graph matched before/after restart |
-| `npm run test:e2e` | PASS — 6/6 desktop/mobile |
-| `npm run build` | PASS |
-| `npm run format:check` | PASS |
-| `git diff --check` | PASS |
+| Check                              | Current result                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `npm run typecheck`                | PASS                                                                                |
+| `npm test`                         | PASS — 45/45                                                                        |
+| `npm run test:restart`             | PASS — retained task and supersession graph matched before/after restart            |
+| `npm run test:e2e`                 | PASS — 6/6 desktop/mobile                                                           |
+| `npm run build`                    | PASS                                                                                |
+| `npm run format:check`             | PASS                                                                                |
+| `git diff --check`                 | PASS                                                                                |
 | Public-boundary secret/source scan | PASS — original documents, private brief, runtime and test artifacts remain ignored |
 
 The database tests cover all current tables and exposed RPCs. HTTP tests cover every current private route family, owner/partner/viewer/revoked behavior, crafted IDs, direct access, files and retrieval. Fresh-seed tests use disposable clusters and prove rollback after an injected mid-import failure.
 
 ## Priority delivery status
 
-| Area | Verified current state |
-|---|---|
-| Repository/database/auth boundary | Next.js/TypeScript, additive PostgreSQL migrations, nonprivileged RLS transactions and strict local fixture isolation |
-| Owner and partner access | Local owner plus contributor/viewer/revoked/invitee fixtures; server/database authorization on every context lookup |
-| Portfolio/projects/registers | Five canonical projects, scoped workspaces and classified versioned records |
-| Assumptions/experiments/decisions/risks/sources | Persistent registers; experiment and decision creation now use exact typed workflows |
-| Tasks | Exact context-version assignment/completion with immutable task history |
-| Approvals | Current-authority acceptance, membership and local project-gate executors |
-| Finance | Authoritative uncapped actual totals by currency; no ledger reconciliation or FX |
-| Knowledge/Ask | RLS-scoped evidence search with citations; no model synthesis or attachment chunks |
-| Partners | Local invitation/redemption and exact membership changes; no real email/provider activation |
-| Files | Private/shared metadata and bounded quarantine; scanning/extraction/download remain disabled |
-| AI/skills/routines/runs | 13 agents, 12 skills and nine disabled routines as definitions only; no execution |
-| WhatsApp | Cryptographic helper and private schema only; ingress/pairing/delivery remain disabled |
-| Public website | Existing static local homepage; separate public build/routes and publication gate remain incomplete |
+| Area                                            | Verified current state                                                                                                |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Repository/database/auth boundary               | Next.js/TypeScript, additive PostgreSQL migrations, nonprivileged RLS transactions and strict local fixture isolation |
+| Owner and partner access                        | Local owner plus contributor/viewer/revoked/invitee fixtures; server/database authorization on every context lookup   |
+| Portfolio/projects/registers                    | Five canonical projects, scoped workspaces and classified versioned records                                           |
+| Assumptions/experiments/decisions/risks/sources | Persistent registers; experiment and decision creation now use exact typed workflows                                  |
+| Tasks                                           | Exact context-version assignment/completion with immutable task history                                               |
+| Approvals                                       | Current-authority acceptance, membership and local project-gate executors                                             |
+| Finance                                         | Authoritative uncapped actual totals by currency; no ledger reconciliation or FX                                      |
+| Knowledge/Ask                                   | RLS-scoped evidence search with citations; no model synthesis or attachment chunks                                    |
+| Partners                                        | Local invitation/redemption and exact membership changes; no real email/provider activation                           |
+| Files                                           | Private/shared metadata and bounded quarantine; scanning/extraction/download remain disabled                          |
+| AI/skills/routines/runs                         | 13 agents, 12 skills and nine disabled routines as definitions only; no execution                                     |
+| WhatsApp                                        | Cryptographic helper and private schema only; ingress/pairing/delivery remain disabled                                |
+| Public website                                  | Existing static local homepage; separate public build/routes and publication gate remain incomplete                   |
 
 ## Security status
 
@@ -62,7 +64,7 @@ The implementation has not used real credentials, a hosted account, production d
 
 ## Active blockers and deferrals
 
-AT-10 through AT-18 remain separate implementation slices. The immediate missing capabilities are trusted file scanning/extraction/chunks, delivery-time authorization, durable Ask logs, typed AI runs/skills/budgets, scheduler recovery, WhatsApp identity/transport, an independent reviewed public build, CI, accessibility coverage and database/object restore evidence. Hosted Auth/MFA and Storage tests need separately authorized staging credentials.
+AT-10 through AT-18 remain blocked as recorded. AT-19 through AT-29 are newly frozen and have not run; AT-30 is blocked pending implementation, owner inputs and separately authorized staging. The immediate next slice is Final Milestone 1: production-shaped invitation-only identity, multi-project invitations, the nine-step onboarding wizard and partner/owner account management using deterministic local Auth/email doubles. Hosted Auth/MFA/email/session verification remains a later controlled staging gate and needs separately authorized credentials.
 
 ## Publication boundary
 
