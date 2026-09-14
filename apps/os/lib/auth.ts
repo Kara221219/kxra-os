@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
-import { verifySession } from "../../../packages/authz/session";
+import { verifySessionClaims } from "../../../packages/authz/session";
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -40,10 +40,18 @@ export async function supabase() {
 export async function principal(): Promise<Principal | null> {
   if (localMode()) {
     const token = (await cookies()).get("kxra_local_session")?.value;
-    const id = token
-      ? verifySession(token, process.env.KXRA_LOCAL_SECRET || "")
+    const session = token
+      ? verifySessionClaims(token, process.env.KXRA_LOCAL_SECRET || "")
       : null;
-    return id ? { id, aal: "aal2" } : null;
+    return session
+      ? {
+          id: session.id,
+          aal: "aal2",
+          auth_time: session.auth_time,
+          email: session.email,
+          email_verified: true,
+        }
+      : null;
   }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   const client = await supabase();
@@ -54,6 +62,12 @@ export async function principal(): Promise<Principal | null> {
   return {
     id: data.user.id,
     aal: claims.claims.aal === "aal2" ? "aal2" : "aal1",
+    auth_time:
+      typeof claims.claims.auth_time === "number"
+        ? claims.claims.auth_time
+        : undefined,
+    email: data.user.email,
+    email_verified: Boolean(data.user.email_confirmed_at),
   };
 }
 export async function actor(): Promise<Actor> {
@@ -65,10 +79,20 @@ export async function actor(): Promise<Actor> {
     [p.id],
   );
   if (!rows[0]) throw new HttpError(403, "Access unavailable");
-  return { ...rows[0], aal: p.aal };
+  return { ...rows[0], ...p };
 }
 export function owner(a: Actor) {
   if (a.role !== "owner") throw new HttpError(403, "Access unavailable");
+}
+export function recentOwnerMfa(a: Actor, now = Date.now()) {
+  owner(a);
+  const authenticatedAt = (a.auth_time || 0) * 1000;
+  if (
+    a.aal !== "aal2" ||
+    authenticatedAt < now - 15 * 60_000 ||
+    authenticatedAt > now + 60_000
+  )
+    throw new HttpError(403, "Recent owner MFA required");
 }
 export function sameOrigin(request: Request) {
   const expected = process.env.KXRA_ORIGIN;

@@ -30,6 +30,9 @@ export default async function Login({
                 <option value="partner">Partner — seat covers only</option>
                 <option value="viewer">Viewer — property only</option>
                 <option value="revoked">Revoked partner — no projects</option>
+                <option value="invitee">
+                  Unassigned invitation test account
+                </option>
               </select>
             </label>
             <p className="notice">
@@ -61,6 +64,9 @@ export default async function Login({
         )}
         <button>Sign in →</button>
       </form>
+      <p style={{ marginTop: 24 }}>
+        <Link href="/redeem">Redeem a project invitation</Link>
+      </p>
     </main>
   );
 }

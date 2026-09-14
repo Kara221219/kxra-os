@@ -95,6 +95,8 @@ export function sumFinance(rows: { data: Record<string, unknown> }[]) {
       !["GBP", "USD", "EUR"].includes(String(d.currency))
     )
       continue;
+    if (d.direction !== "income" && d.direction !== "expense")
+      throw Error("Invalid financial direction");
     const k = String(d.currency);
     const v = moneyUnits(d.amount);
     sums[k] = (sums[k] || 0n) + (d.direction === "expense" ? -v : v);

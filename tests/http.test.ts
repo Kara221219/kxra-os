@@ -1,11 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { moneyUnits } from "../packages/domain";
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
   nativeFetch(input, { ...init, signal: AbortSignal.timeout(20000) });
 const base = "http://127.0.0.1:3210";
 const p2 = "30000000-0000-4000-8000-000000000002",
-  p3 = "30000000-0000-4000-8000-000000000003";
+  p3 = "30000000-0000-4000-8000-000000000003",
+  p4 = "30000000-0000-4000-8000-000000000004",
+  p5 = "30000000-0000-4000-8000-000000000005";
 async function login(fixture: string) {
   const r = await fetch(base + "/api/auth", {
     method: "POST",
@@ -35,20 +38,61 @@ async function req(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+async function upload(
+  cookie: string,
+  projectId: string,
+  filename: string,
+  visibility?: "owner_only" | "project_shared",
+  extra?: [string, string],
+) {
+  const form = new FormData();
+  form.set("project_id", projectId);
+  if (visibility) form.set("visibility", visibility);
+  if (extra) form.set(extra[0], extra[1]);
+  form.set(
+    "file",
+    new File([`synthetic ${filename}`], filename, { type: "text/plain" }),
+  );
+  return fetch(base + "/api/files", {
+    method: "POST",
+    headers: { cookie, origin: base },
+    body: form,
+  });
+}
 test("HTTP unauthenticated direct API calls cannot read or write", async () => {
   for (const endpoint of [
+    "summary",
+    "finance-totals",
     "projects",
+    `projects/${p2}`,
+    "invitations",
+    `project-gates?project_id=${p2}`,
+    `workflow?project_id=${p2}`,
     "records",
     "files",
     "search?q=project",
     "partners",
     "approvals",
+    "whatsapp",
   ])
     assert.equal((await req(endpoint)).status, 401);
-  assert.equal(
-    (await req("records", undefined, { title: "test" })).status,
-    401,
-  );
+  for (const [endpoint, body] of [
+    ["records", { title: "test" }],
+    ["invitations", { project_id: p2 }],
+    ["invitations/redeem", { token: "invalid" }],
+    ["project-gates/evidence", { project_id: p2 }],
+    ["workflow/ideas/00000000-0000-4000-8000-000000000000/submit", {}],
+    ["workflow/experiments", { project_id: p2 }],
+    ["workflow/experiments/00000000-0000-4000-8000-000000000000/results", {}],
+    ["workflow/tasks", { project_id: p2 }],
+    ["workflow/tasks/00000000-0000-4000-8000-000000000000/complete", {}],
+    ["workflow/decisions", { project_id: p2 }],
+    ["ask", { question: "private" }],
+    ["approvals", { action: "record.accept" }],
+    ["approvals/00000000-0000-4000-8000-000000000000", {}],
+    ["approvals/00000000-0000-4000-8000-000000000000/execute", {}],
+  ] as const)
+    assert.equal((await req(endpoint, undefined, body)).status, 401, endpoint);
 });
 test("HTTP owner sees five, partner sees one, revoked sees zero projects", async () => {
   for (const [who, count] of [
@@ -61,6 +105,50 @@ test("HTTP owner sees five, partner sees one, revoked sees zero projects", async
     assert.equal(r.status, 200);
     assert.equal((await r.json()).length, count);
   }
+});
+test("AT-03 one-use invitation grants only the approved project role", async () => {
+  const owner = await login("owner");
+  const created = await req("invitations", owner, {
+    project_id: p3,
+    email: "invitee@fixture.invalid",
+    role: "viewer",
+    expires_hours: 1,
+  });
+  assert.equal(created.status, 201, await created.clone().text());
+  const invitation = await created.json();
+  assert.match(invitation.token, /^[A-Za-z0-9_-]{32,100}$/);
+  const listed = await (await req("invitations", owner)).json();
+  assert.ok(listed.some((row: { id: string }) => row.id === invitation.id));
+  assert.ok(listed.every((row: Record<string, unknown>) => !("token" in row)));
+
+  const wrongAccount = await login("partner");
+  assert.equal(
+    (
+      await req("invitations/redeem", wrongAccount, {
+        token: invitation.token,
+      })
+    ).status,
+    409,
+  );
+  const invitee = await login("invitee");
+  const redeemed = await req("invitations/redeem", invitee, {
+    token: invitation.token,
+  });
+  assert.equal(redeemed.status, 200, await redeemed.clone().text());
+  assert.equal((await redeemed.json()).project_id, p3);
+  assert.equal(
+    (
+      await req("invitations/redeem", invitee, {
+        token: invitation.token,
+      })
+    ).status,
+    409,
+  );
+  const projects = await (await req("projects", invitee)).json();
+  assert.deepEqual(
+    projects.map((project: { id: string }) => project.id),
+    [p3],
+  );
 });
 test("HTTP crafted project IDs, owner routes and forged identities rejected", async () => {
   const c = await login("partner");
@@ -156,6 +244,121 @@ test("HTTP cross-project files hidden; all bytes quarantined", async () => {
   assert.ok(!visible.some((x: { id: string }) => x.id === file.id));
   assert.equal((await req("files/" + file.id, owner)).status, 423);
 });
+test("AT-04 owner uploads default private and sharing remains explicit and scoped", async () => {
+  const owner = await login("owner");
+  const partner = await login("partner");
+  const privateUpload = await upload(
+    owner,
+    p2,
+    "privateuploadmarker evidence.txt",
+  );
+  assert.equal(privateUpload.status, 201, await privateUpload.clone().text());
+  const privateFile = await privateUpload.json();
+  const partnerFiles = await (await req("files", partner)).json();
+  assert.ok(
+    !partnerFiles.some((row: { id: string }) => row.id === privateFile.id),
+  );
+  assert.deepEqual(
+    await (await req("search?q=privateuploadmarker", partner)).json(),
+    [],
+  );
+  assert.equal((await req("files/" + privateFile.id, partner)).status, 404);
+  assert.equal((await req("files/" + privateFile.id, owner)).status, 423);
+
+  const sharedUpload = await upload(
+    owner,
+    p2,
+    "shareduploadmarker evidence.txt",
+    "project_shared",
+  );
+  assert.equal(sharedUpload.status, 201, await sharedUpload.clone().text());
+  const sharedFile = await sharedUpload.json();
+  const sharedList = await (await req("files", partner)).json();
+  assert.ok(sharedList.some((row: { id: string }) => row.id === sharedFile.id));
+  assert.ok(
+    (await (await req("search?q=shareduploadmarker", partner)).json()).some(
+      (row: { title: string }) =>
+        row.title === "shareduploadmarker evidence.txt",
+    ),
+  );
+  assert.equal((await req("files/" + sharedFile.id, partner)).status, 423);
+
+  assert.equal(
+    (await upload(partner, p2, "forged-private.txt", "owner_only")).status,
+    403,
+  );
+  assert.equal(
+    (await upload(partner, p3, "forged-project.txt", "project_shared")).status,
+    404,
+  );
+  assert.equal(
+    (
+      await upload(owner, p2, "forged-key.txt", "owner_only", [
+        "object_key",
+        "attacker-selected",
+      ])
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await req(
+        "files/" + sharedFile.id,
+        partner,
+        { scan_status: "clean" },
+        "PATCH",
+      )
+    ).status,
+    404,
+  );
+});
+test("AT-07 HTTP finance validation and uncapped aggregate endpoint use exact decimals", async () => {
+  const owner = await login("owner");
+  const partner = await login("partner");
+  const readTotals = async () => {
+    const response = await req("finance-totals", owner);
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  const before = await readTotals();
+  const beforeEur = before.find(
+    (row: { currency: string }) => row.currency === "EUR",
+  );
+  const beforeUnits = beforeEur ? moneyUnits(beforeEur.total) : 0n;
+  const entry = (amount: string, data: Record<string, unknown> = {}) => ({
+    kind: "finance",
+    title: "HTTP decimal finance fixture",
+    body: "Synthetic deterministic arithmetic test",
+    project_id: null,
+    classification: "ESTIMATE",
+    visibility: "owner_only",
+    data: {
+      amount,
+      currency: "EUR",
+      entry_type: "actual",
+      direction: "income",
+      ...data,
+    },
+  });
+  for (const amount of ["0.1", "0.2"])
+    assert.equal((await req("records", owner, entry(amount))).status, 201);
+  const after = await readTotals();
+  const afterEur = after.find(
+    (row: { currency: string }) => row.currency === "EUR",
+  );
+  assert.ok(afterEur);
+  assert.equal(moneyUnits(afterEur.total) - beforeUnits, 3000n);
+  assert.equal((await req("finance-totals", partner)).status, 403);
+
+  for (const invalid of [
+    entry("10", { direction: null }),
+    entry("10", { currency: {} }),
+    entry("10", { entry_type: "unknown" }),
+    entry("1e3"),
+    { ...entry("10"), data: { amount: "10", currency: "EUR" } },
+  ])
+    assert.equal((await req("records", owner, invalid)).status, 400);
+});
 test("HTTP CSRF and tampered sessions fail closed", async () => {
   const cookie = await login("owner");
   const r = await fetch(base + "/api/records", {
@@ -174,10 +377,10 @@ test("HTTP exact approval acceptance works once and accepted evidence cannot be 
   const c = await login("owner");
   const draft = await (
     await req("records", c, {
-      kind: "decision",
+      kind: "note",
       title: "HTTP acceptance fixture",
       body: "Synthetic approval exercise",
-      classification: "DECISION",
+      classification: "USER-SUPPLIED INFORMATION",
       visibility: "owner_only",
       data: {},
     })
@@ -218,4 +421,407 @@ test("HTTP exact approval acceptance works once and accepted evidence cannot be 
     ).status,
     409,
   );
+});
+test("AT-02 HTTP concurrent approval execution succeeds exactly once", async () => {
+  const cookie = await login("owner");
+  const created = await req("records", cookie, {
+    kind: "note",
+    title: "HTTP concurrent approval fixture",
+    body: "Synthetic exact-once exercise",
+    classification: "USER-SUPPLIED INFORMATION",
+    visibility: "owner_only",
+    data: {},
+  });
+  assert.equal(created.status, 201);
+  const draft = await created.json();
+  const requested = await req("approvals", cookie, {
+    action: "record.accept",
+    project_id: null,
+    payload: { record_id: draft.id, version: draft.version },
+  });
+  assert.equal(requested.status, 201);
+  const approval = await requested.json();
+  assert.equal(
+    (
+      await req("approvals/" + approval.id, cookie, {
+        hash: approval.payload_hash,
+        approve: true,
+      })
+    ).status,
+    200,
+  );
+  const attempts = await Promise.all([
+    req("approvals/" + approval.id + "/execute", cookie, {}),
+    req("approvals/" + approval.id + "/execute", cookie, {}),
+  ]);
+  assert.deepEqual(
+    attempts.map((response) => response.status).sort(),
+    [200, 409],
+  );
+});
+test("AT-08 HTTP completes the P002 idea-to-accepted-decision loop", async () => {
+  const ownerCookie = await login("owner");
+  const partnerCookie = await login("partner");
+  const partnerId = "20000000-0000-4000-8000-000000000002";
+  const ideaResponse = await req("records", partnerCookie, {
+    kind: "idea",
+    title: "HTTP bounded fitment idea",
+    body: "Validate one synthetic supplier packet",
+    project_id: p2,
+    classification: "USER-SUPPLIED INFORMATION",
+    visibility: "project_shared",
+    data: {},
+  });
+  assert.equal(ideaResponse.status, 201, await ideaResponse.clone().text());
+  const idea = await ideaResponse.json();
+  const submit = await req(`workflow/ideas/${idea.id}/submit`, partnerCookie, {
+    version: idea.version,
+  });
+  assert.equal(submit.status, 200, await submit.clone().text());
+  const submitted = await submit.json();
+  assert.equal(submitted.status, "submitted");
+
+  const initial = await req(`workflow?project_id=${p2}`, ownerCookie);
+  assert.equal(initial.status, 200);
+  const initialLoop = await initial.json();
+  const evidence = initialLoop.records.find(
+    (row: { source_code: string; status: string }) =>
+      row.source_code === "PROJECT-002-BRIEF" && row.status === "accepted",
+  );
+  assert.ok(evidence);
+  const refs = [{ record_id: evidence.id, version: evidence.version }];
+  const experimentResponse = await req("workflow/experiments", ownerCookie, {
+    project_id: p2,
+    idea_id: idea.id,
+    idea_version: submitted.version,
+    title: "HTTP exact-version fitment experiment",
+    hypothesis:
+      "One synthetic packet can satisfy the specified evidence fields",
+    cost_cap: "25.0000",
+    currency: "GBP",
+    success_criteria: "All synthetic fields are attributable",
+    stop_criteria: "Stop on any missing synthetic source",
+    evidence: refs,
+  });
+  assert.equal(
+    experimentResponse.status,
+    201,
+    await experimentResponse.clone().text(),
+  );
+  const experiment = await experimentResponse.json();
+
+  assert.equal(
+    (
+      await req("records", ownerCookie, {
+        kind: "experiment",
+        title: "Generic bypass",
+        body: "Must fail",
+        project_id: p2,
+        classification: "HYPOTHESIS",
+        visibility: "project_shared",
+        data: {},
+      })
+    ).status,
+    400,
+  );
+  const taskResponse = await req("workflow/tasks", ownerCookie, {
+    context_id: experiment.id,
+    context_version: 1,
+    assignee_id: partnerId,
+    title: "Record the HTTP experiment result",
+    acceptance_criteria: "Save an attributable result against experiment v1",
+  });
+  assert.equal(taskResponse.status, 201, await taskResponse.clone().text());
+  const task = await taskResponse.json();
+  const resultResponse = await req(
+    `workflow/experiments/${experiment.id}/results`,
+    partnerCookie,
+    {
+      version: 1,
+      outcome: "success",
+      observations: "All synthetic fields were present.",
+      metric_value: "1 of 1 complete",
+      evidence: refs,
+    },
+  );
+  assert.equal(resultResponse.status, 201, await resultResponse.clone().text());
+  const result = await resultResponse.json();
+  assert.equal(
+    (
+      await req(`workflow/tasks/${task.id}/complete`, partnerCookie, {
+        version: 1,
+        completion_note: "Saved the synthetic result.",
+      })
+    ).status,
+    200,
+  );
+  const decisionResponse = await req("workflow/decisions", ownerCookie, {
+    project_id: p2,
+    experiment_id: experiment.id,
+    experiment_version: 1,
+    result_id: result.id,
+    title: "HTTP bounded prototype decision",
+    decision: "Permit one local synthetic prototype within the tested scope.",
+    evidence: refs,
+    supersedes_id: null,
+  });
+  assert.equal(
+    decisionResponse.status,
+    201,
+    await decisionResponse.clone().text(),
+  );
+  const decision = await decisionResponse.json();
+  const approvalResponse = await req("approvals", ownerCookie, {
+    action: "record.accept",
+    project_id: p2,
+    payload: { record_id: decision.id, version: 1 },
+  });
+  assert.equal(approvalResponse.status, 201);
+  const approval = await approvalResponse.json();
+  assert.equal(
+    (
+      await req(`approvals/${approval.id}`, ownerCookie, {
+        hash: approval.payload_hash,
+        approve: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await req(`approvals/${approval.id}/execute`, ownerCookie, {})).status,
+    200,
+  );
+  const completed = await (
+    await req(`workflow?project_id=${p2}`, ownerCookie)
+  ).json();
+  const accepted = completed.records.find(
+    (row: { id: string }) => row.id === decision.id,
+  );
+  assert.equal(accepted.status, "accepted");
+  assert.equal(accepted.version, 2);
+  assert.ok(
+    completed.links.some(
+      (link: {
+        from_record_id: string;
+        from_version: number;
+        relation: string;
+      }) =>
+        link.from_record_id === decision.id &&
+        link.from_version === 2 &&
+        link.relation === "decides_experiment",
+    ),
+  );
+  assert.equal(
+    completed.tasks.find((row: { id: string }) => row.id === task.id).state,
+    "completed",
+  );
+
+  const supersedingResponse = await req("workflow/decisions", ownerCookie, {
+    project_id: p2,
+    experiment_id: experiment.id,
+    experiment_version: 1,
+    result_id: result.id,
+    title: "HTTP refined prototype decision",
+    decision:
+      "Keep the exact evidence boundary and require another synthetic review.",
+    evidence: refs,
+    supersedes_id: decision.id,
+  });
+  assert.equal(
+    supersedingResponse.status,
+    201,
+    await supersedingResponse.clone().text(),
+  );
+  const superseding = await supersedingResponse.json();
+  const supersedingApprovalResponse = await req("approvals", ownerCookie, {
+    action: "record.accept",
+    project_id: p2,
+    payload: { record_id: superseding.id, version: 1 },
+  });
+  assert.equal(supersedingApprovalResponse.status, 201);
+  const supersedingApproval = await supersedingApprovalResponse.json();
+  assert.equal(
+    (
+      await req(`approvals/${supersedingApproval.id}`, ownerCookie, {
+        hash: supersedingApproval.payload_hash,
+        approve: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await req(`approvals/${supersedingApproval.id}/execute`, ownerCookie, {}))
+      .status,
+    200,
+  );
+  const supersededLoop = await (
+    await req(`workflow?project_id=${p2}`, ownerCookie)
+  ).json();
+  assert.ok(
+    supersededLoop.links.some(
+      (link: {
+        from_record_id: string;
+        from_version: number;
+        relation: string;
+        to_record_id: string;
+        to_version: number;
+      }) =>
+        link.from_record_id === superseding.id &&
+        link.from_version === 2 &&
+        link.relation === "supersedes" &&
+        link.to_record_id === decision.id &&
+        link.to_version === 2,
+    ),
+  );
+
+  const viewer = await login("viewer");
+  const revoked = await login("revoked");
+  assert.equal((await req(`workflow?project_id=${p2}`, viewer)).status, 404);
+  assert.equal((await req(`workflow?project_id=${p2}`, revoked)).status, 404);
+  assert.equal(
+    (
+      await req("workflow/experiments", partnerCookie, {
+        project_id: p2,
+        idea_id: idea.id,
+        idea_version: submitted.version,
+        title: "Forged owner action",
+        hypothesis: "forged",
+        cost_cap: "0",
+        currency: "GBP",
+        success_criteria: "forged",
+        stop_criteria: "forged",
+        evidence: refs,
+      })
+    ).status,
+    403,
+  );
+});
+test("AT-09 HTTP P005 gate permits only an approved local prototype record", async () => {
+  const owner = await login("owner");
+  const partner = await login("partner");
+  const initial = await (await req(`workflow?project_id=${p5}`, owner)).json();
+  const source = initial.records.find(
+    (row: { source_code: string }) => row.source_code === "PROJECT-005-BRIEF",
+  );
+  assert.ok(source);
+  const evidence = [{ record_id: source.id, version: source.version }];
+  assert.equal(
+    (
+      await req("project-gates/evidence", owner, {
+        project_id: p5,
+        gate: "P005_LOCAL_PROTOTYPE",
+        title: "Invalid unreviewed demand packet",
+        summary: "Must remain blocked",
+        claims: { buyer_problem: "Synthetic problem", demand_reviewed: false },
+        evidence,
+      })
+    ).status,
+    400,
+  );
+  const packetResponse = await req("project-gates/evidence", owner, {
+    project_id: p5,
+    gate: "P005_LOCAL_PROTOTYPE",
+    title: "HTTP reviewed synthetic demand packet",
+    summary: "Local test evidence only; no market demand is claimed.",
+    claims: {
+      buyer_problem: "Synthetic buyer needs a bounded local workflow",
+      demand_reviewed: true,
+    },
+    evidence,
+  });
+  assert.equal(packetResponse.status, 201, await packetResponse.clone().text());
+  const packet = await packetResponse.json();
+  assert.equal(
+    (
+      await req("approvals", owner, {
+        action: "project.gate",
+        project_id: p5,
+        payload: {
+          gate: "P005_LOCAL_PROTOTYPE",
+          evidence_id: packet.id,
+          evidence_version: 1,
+        },
+      })
+    ).status,
+    409,
+  );
+
+  const acceptanceResponse = await req("approvals", owner, {
+    action: "record.accept",
+    project_id: p5,
+    payload: { record_id: packet.id, version: 1 },
+  });
+  assert.equal(acceptanceResponse.status, 201);
+  const acceptance = await acceptanceResponse.json();
+  assert.equal(
+    (
+      await req(`approvals/${acceptance.id}`, owner, {
+        hash: acceptance.payload_hash,
+        approve: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await req(`approvals/${acceptance.id}/execute`, owner, {})).status,
+    200,
+  );
+  const gateResponse = await req("approvals", owner, {
+    action: "project.gate",
+    project_id: p5,
+    payload: {
+      gate: "P005_LOCAL_PROTOTYPE",
+      evidence_id: packet.id,
+      evidence_version: 2,
+    },
+  });
+  assert.equal(gateResponse.status, 201, await gateResponse.clone().text());
+  const gateApproval = await gateResponse.json();
+  assert.equal(
+    (
+      await req(`approvals/${gateApproval.id}`, owner, {
+        hash: gateApproval.payload_hash,
+        approve: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await req(`approvals/${gateApproval.id}/execute`, owner, {})).status,
+    200,
+  );
+  const gateState = await (
+    await req(`project-gates?project_id=${p5}`, owner)
+  ).json();
+  assert.ok(
+    gateState.authorizations.some(
+      (row: { gate_code: string; evidence_id: string; scope: string }) =>
+        row.gate_code === "P005_LOCAL_PROTOTYPE" &&
+        row.evidence_id === packet.id &&
+        row.scope === "local_only",
+    ),
+  );
+  const project = await (await req(`projects/${p5}`, owner)).json();
+  assert.equal(project.product_creation_enabled, false);
+  assert.equal(project.live_execution_enabled, false);
+  assert.deepEqual(
+    (await (await req(`project-gates?project_id=${p4}`, owner)).json())
+      .policies,
+    [],
+  );
+  assert.equal(
+    (
+      await req("project-gates/evidence", partner, {
+        project_id: p5,
+        gate: "P005_LOCAL_PROTOTYPE",
+        title: "Forged packet",
+        summary: "Forged",
+        claims: { buyer_problem: "Forged", demand_reviewed: true },
+        evidence,
+      })
+    ).status,
+    403,
+  );
+  assert.equal((await req("product-creation", owner)).status, 404);
+  assert.equal((await req("publish", owner, {})).status, 404);
 });

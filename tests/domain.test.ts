@@ -12,6 +12,7 @@ import {
   fixtureUsers,
 } from "../packages/authz/session";
 import { verifyWebhook } from "../packages/integrations/whatsapp";
+import { localMode } from "../packages/db";
 import crypto from "node:crypto";
 test("money uses exact arithmetic and separates actual, paper and currencies", () => {
   assert.equal(formatMoney(moneyUnits("0.1") + moneyUnits("0.2")), "0.3000");
@@ -71,6 +72,28 @@ test("local sessions are signed, expiring and reject tampering", () => {
   assert.equal(verifySession(token, key), fixtureUsers.partner);
   assert.equal(verifySession(token + "x", key), null);
   assert.equal(verifySession(token, "y".repeat(64)), null);
+  assert.equal(verifySession(token, key, Date.now() + 8 * 3600_000 + 1), null);
+});
+test("AT-03 fixture mode rejects hosted, production, non-loopback and weak-secret mixes", () => {
+  const valid: NodeJS.ProcessEnv = {
+    KXRA_AUTH_MODE: "fixture",
+    KXRA_ORIGIN: "http://127.0.0.1:3210",
+    KXRA_RUNTIME: "/synthetic/runtime",
+    KXRA_LOCAL_SECRET: "x".repeat(64),
+    NODE_ENV: "development",
+  };
+  assert.equal(localMode(valid), true);
+  for (const changed of [
+    { NODE_ENV: "production" },
+    { VERCEL: "1" },
+    { KXRA_ORIGIN: "http://localhost:3210" },
+    { NEXT_PUBLIC_SUPABASE_URL: "https://fixture.supabase.invalid" },
+    { DATABASE_URL: "postgresql://fixture.invalid/db" },
+    { KXRA_RUNTIME: "" },
+    { KXRA_LOCAL_SECRET: "short" },
+    { KXRA_LOCAL_SECRET: "" },
+  ] as Partial<NodeJS.ProcessEnv>[])
+    assert.equal(localMode({ ...valid, ...changed }), false);
 });
 test("WhatsApp signature validates raw bytes and rejects altered payload", () => {
   const raw = Buffer.from('{"test":true}'),

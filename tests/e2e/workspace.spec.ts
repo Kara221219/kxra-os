@@ -55,3 +55,58 @@ test("partner navigation and crafted project URL protect private work", async ({
     page.getByRole("heading", { name: "Not available" }),
   ).toBeVisible();
 });
+
+test("owner can inspect gate controls, history and invitation foundations", async ({
+  page,
+}) => {
+  const project = "30000000-0000-4000-8000-000000000002";
+  await page.goto("/login");
+  await page.getByLabel("Local test identity").selectOption("owner");
+  await page.getByRole("button", { name: "Sign in →" }).click();
+
+  await page.goto(`/os/projects/${project}`);
+  await expect(
+    page.getByRole("heading", { name: "US Vehicle Seat Covers" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Project gate" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Thresholds proposed / unset", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Operating loop" }),
+  ).toBeVisible();
+  await expect(page.getByText("exact SKU", { exact: true })).toBeVisible();
+
+  await page
+    .getByRole("link", { name: "Project next action", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Version history" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Version 1", exact: true }).click();
+  await expect(
+    page.getByText("This is an immutable historical snapshot.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+
+  await page.goto(`/os/files?project=${project}`);
+  await expect(
+    page.getByRole("combobox", { name: "Project", exact: true }),
+  ).toHaveValue(project);
+  await expect(
+    page.getByRole("combobox", {
+      name: "Who can see this file?",
+      exact: true,
+    }),
+  ).toHaveValue("owner_only");
+
+  await page.goto("/os/partners");
+  await expect(page.getByRole("heading", { name: "Partners" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Create an invitation" }),
+  ).toBeVisible();
+});

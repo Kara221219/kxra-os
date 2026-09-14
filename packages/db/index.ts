@@ -1,17 +1,25 @@
 import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
-export type Principal = { id: string; aal: "aal1" | "aal2" };
+export type Principal = {
+  id: string;
+  aal: "aal1" | "aal2";
+  auth_time?: number;
+  email?: string;
+  email_verified?: boolean;
+};
 let pool: pg.Pool | undefined;
-export function localMode() {
+export function localMode(environment: NodeJS.ProcessEnv = process.env) {
   return (
-    process.env.KXRA_AUTH_MODE === "fixture" &&
-    process.env.NODE_ENV !== "production" &&
-    !process.env.VERCEL &&
-    process.env.KXRA_ORIGIN === "http://127.0.0.1:3210" &&
-    !process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !process.env.DATABASE_URL &&
-    !!process.env.KXRA_RUNTIME
+    environment.KXRA_AUTH_MODE === "fixture" &&
+    environment.NODE_ENV !== "production" &&
+    !environment.VERCEL &&
+    environment.KXRA_ORIGIN === "http://127.0.0.1:3210" &&
+    !environment.NEXT_PUBLIC_SUPABASE_URL &&
+    !environment.DATABASE_URL &&
+    !!environment.KXRA_RUNTIME &&
+    typeof environment.KXRA_LOCAL_SECRET === "string" &&
+    environment.KXRA_LOCAL_SECRET.length >= 64
   );
 }
 export function getPool() {
@@ -55,6 +63,9 @@ export async function scoped<T>(
         JSON.stringify({
           sub: actor?.id,
           aal: actor?.aal,
+          auth_time: actor?.auth_time,
+          email: actor?.email,
+          email_verified: actor?.email_verified,
           role: actor ? "authenticated" : "anon",
         }),
       ],

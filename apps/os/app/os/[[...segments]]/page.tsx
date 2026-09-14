@@ -7,18 +7,24 @@ import {
   UploadForm,
   AskForm,
   EditRecordForm,
+  OperatingLoopForms,
+  WorkflowTaskCards,
+  InvitationForm,
+  GateEvidenceForm,
 } from "../../../components/Forms";
 import { actor, HttpError, owner, type Actor } from "../../../lib/auth";
 import {
+  counts,
+  totals,
   listProjects,
   listRecords,
   project,
   getRecord,
+  operatingLoop,
   type Project,
   type RecordRow,
 } from "../../../lib/data";
 import { localMode, query } from "../../../../../packages/db";
-import { sumFinance } from "../../../../../packages/domain";
 export const dynamic = "force-dynamic";
 const modules: Record<string, [string, string]> = {
   ideas: ["Idea Inbox", "idea"],
@@ -137,7 +143,7 @@ export default async function Workspace({
   searchParams,
 }: {
   params: Promise<{ segments?: string[] }>;
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{ project?: string; version?: string }>;
 }) {
   let a: Actor;
   try {
@@ -154,7 +160,8 @@ export default async function Workspace({
   }
   const { segments = [] } = await params;
   const section = segments[0] || "";
-  const filter = (await searchParams).project;
+  const queryParameters = await searchParams;
+  const filter = queryParameters.project;
   let content: React.ReactNode;
   const projects = await listProjects(a);
   const writable = await query<{ id: string }>(
@@ -171,7 +178,7 @@ export default async function Workspace({
       (section === "projects" && !segments[1])
     ) {
       const rows = await listRecords(a);
-      const risks = rows.filter((r) => r.kind === "risk");
+      const summary = await counts(a);
       content = (
         <>
           <Heading
@@ -197,11 +204,11 @@ export default async function Workspace({
             </div>
             <div className="stat">
               <p>Evidence records</p>
-              <strong>{rows.length}</strong>
+              <strong>{summary.records}</strong>
             </div>
             <div className="stat">
               <p>Open risks</p>
-              <strong>{risks.length}</strong>
+              <strong>{summary.open_risks}</strong>
             </div>
             <div className="stat">
               <p>Investment recorded</p>
@@ -247,7 +254,33 @@ export default async function Workspace({
       );
     } else if (section === "projects" && segments[1]) {
       const p = await project(a, segments[1]);
-      const rows = await listRecords(a, undefined, p.id);
+      const [rows, loop, gatePolicies, gateAuthorizations] = await Promise.all([
+        listRecords(a, undefined, p.id),
+        operatingLoop(a, p.id),
+        query<{
+          gate_code:
+            "P002_LISTING" | "P003_FAITHFUL_DELIVERY" | "P005_LOCAL_PROTOTYPE";
+          policy_version: number;
+          requirements: string[];
+          threshold_state: string;
+        }>(
+          a,
+          "select gate_code,policy_version,requirements,threshold_state from kxra.project_gate_policies where project_id=$1",
+          [p.id],
+        ),
+        query<{
+          id: string;
+          gate_code: string;
+          evidence_id: string;
+          evidence_version: number;
+          scope: string;
+        }>(
+          a,
+          "select id,gate_code,evidence_id,evidence_version,scope from kxra.project_gate_authorizations where project_id=$1 order by created_at desc",
+          [p.id],
+        ),
+      ]);
+      const currentById = new Map(loop.records.map((row) => [row.id, row]));
       content = (
         <>
           <Heading title={p.name} sub={`${p.code} · ${p.status}`} />
@@ -258,7 +291,123 @@ export default async function Workspace({
               Venture score: {p.venture_score ?? "Not assessed"}
             </span>
           </div>
+          {gatePolicies.map((policy) => (
+            <section className="panel" key={policy.gate_code}>
+              <div className="record-top">
+                <div>
+                  <h2>Project gate</h2>
+                  <p>{policy.gate_code.replaceAll("_", " ")}</p>
+                </div>
+                <span className="badge amber">Thresholds proposed / unset</span>
+              </div>
+              <p>Required evidence:</p>
+              <ul>
+                {policy.requirements.map((requirement) => (
+                  <li key={requirement}>{requirement}</li>
+                ))}
+              </ul>
+              <p className="subtle">
+                Policy v{policy.policy_version}. Any authorization is
+                local-only; it does not enable creation, publishing, purchasing
+                or live execution.
+              </p>
+              {gateAuthorizations
+                .filter(
+                  (authorization) =>
+                    authorization.gate_code === policy.gate_code,
+                )
+                .map((authorization) => (
+                  <p className="success" key={authorization.id}>
+                    Local-only authorization recorded from evidence v
+                    {authorization.evidence_version}. External release remains
+                    disabled.
+                  </p>
+                ))}
+              {a.role === "owner" && (
+                <GateEvidenceForm
+                  projectId={p.id}
+                  gate={policy.gate_code}
+                  evidence={loop.records.filter(
+                    (record) => record.status === "accepted",
+                  )}
+                />
+              )}
+            </section>
+          ))}
+          <section className="panel" id="operating-loop">
+            <div className="record-top">
+              <div>
+                <h2>Operating loop</h2>
+                <p>
+                  Ideas, experiments, results and decisions retain exact
+                  evidence versions. Actions below are checked again by
+                  PostgreSQL.
+                </p>
+              </div>
+              <span className="badge">
+                {loop.results.length} result
+                {loop.results.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="workflow-flow" aria-label="Operating loop status">
+              <div>
+                <small>Ideas</small>
+                <strong>
+                  {loop.records.filter((row) => row.kind === "idea").length}
+                </strong>
+              </div>
+              <div>
+                <small>Experiments</small>
+                <strong>
+                  {
+                    loop.records.filter((row) => row.kind === "experiment")
+                      .length
+                  }
+                </strong>
+              </div>
+              <div>
+                <small>Results</small>
+                <strong>{loop.results.length}</strong>
+              </div>
+              <div>
+                <small>Decisions</small>
+                <strong>
+                  {loop.records.filter((row) => row.kind === "decision").length}
+                </strong>
+              </div>
+            </div>
+            {loop.links.length > 0 && (
+              <details>
+                <summary>
+                  Evidence and lifecycle links ({loop.links.length})
+                </summary>
+                {loop.links.map((link) => (
+                  <p className="workflow-link" key={link.id}>
+                    <Link href={`/os/record/${link.from_record_id}`}>
+                      {currentById.get(link.from_record_id)?.title || "Record"}{" "}
+                      v{link.from_version}
+                    </Link>{" "}
+                    <span>{link.relation.replaceAll("_", " ")}</span>{" "}
+                    <Link href={`/os/record/${link.to_record_id}`}>
+                      {currentById.get(link.to_record_id)?.title || "Evidence"}{" "}
+                      v{link.to_version}
+                    </Link>
+                  </p>
+                ))}
+              </details>
+            )}
+            <OperatingLoopForms
+              projectId={p.id}
+              actorId={a.id}
+              owner={a.role === "owner"}
+              records={loop.records}
+              results={loop.results}
+              tasks={loop.tasks}
+              members={loop.members}
+            />
+          </section>
           <div className="tabs">
+            <a href="#operating-loop">operating loop</a>
             {[
               "assumptions",
               "experiments",
@@ -286,11 +435,42 @@ export default async function Workspace({
           )}
         </>
       );
+    } else if (section === "tasks") {
+      const loops = await Promise.all(
+        projects.map((item) => operatingLoop(a, item.id)),
+      );
+      const taskRows = loops.flatMap((loop) => loop.tasks);
+      const taskRecords = loops.flatMap((loop) => loop.records);
+      content = (
+        <>
+          <Heading
+            title="Tasks"
+            sub={
+              a.role === "owner"
+                ? "Assigned work tied to exact project record versions."
+                : "Work assigned to you within your current project access."
+            }
+          />
+          {taskRows.length ? (
+            <WorkflowTaskCards
+              tasks={taskRows}
+              records={taskRecords}
+              actorId={a.id}
+              owner={a.role === "owner"}
+            />
+          ) : (
+            <div className="empty">
+              No workflow tasks are currently assigned.
+            </div>
+          )}
+        </>
+      );
     } else if (modules[section]) {
       const [title, kind] = modules[section];
       if (["finance", "agents", "skills", "routines", "runs"].includes(section))
         owner(a);
       const rows = await listRecords(a, kind, filter);
+      const cash = section === "finance" ? await totals(a) : [];
       content = (
         <>
           <Heading
@@ -306,8 +486,8 @@ export default async function Workspace({
           {section === "finance" && (
             <div className="panel">
               <h2>Recorded net cash movement</h2>
-              {Object.entries(sumFinance(rows)).length ? (
-                Object.entries(sumFinance(rows)).map(([c, v]) => (
+              {cash.length ? (
+                cash.map(({ currency: c, total: v }) => (
                   <p key={c}>
                     {c} {v}
                   </p>
@@ -325,9 +505,9 @@ export default async function Workspace({
             </div>
           )}
           <Records rows={rows} projects={projects} />
-          {kind !== "run" &&
+          {!["run", "experiment", "decision", "task"].includes(kind) &&
             (a.role === "owner" ||
-              (["idea", "note", "task", "experiment"].includes(kind) &&
+              (["idea", "note"].includes(kind) &&
                 writableProjects.length > 0)) && (
               <div style={{ marginTop: 24 }}>
                 <RecordForm
@@ -342,24 +522,62 @@ export default async function Workspace({
       );
     } else if (section === "record" && segments[1]) {
       const r = await getRecord(a, segments[1]);
-      const versions = await query<{ version: number; created_at: string }>(
+      const versions = await query<{
+        version: number;
+        title: string;
+        body: string;
+        data: Record<string, unknown>;
+        classification: string | null;
+        status: string | null;
+        editor_id: string | null;
+        editor_name: string | null;
+        created_at: string;
+      }>(
         a,
-        "select version,created_at from kxra.record_versions where record_id=$1 order by version desc",
+        `select v.version,v.title,v.body,v.data,v.classification::text,v.status,
+                v.editor_id,m.display_name as editor_name,v.created_at
+         from kxra.record_versions v left join kxra.members m on m.id=v.editor_id
+         where v.record_id=$1 order by v.version desc`,
         [r.id],
       );
+      const requestedVersion = queryParameters.version
+        ? Number(queryParameters.version)
+        : null;
+      const historical = requestedVersion
+        ? versions.find((version) => version.version === requestedVersion)
+        : null;
+      if (
+        requestedVersion &&
+        (!Number.isSafeInteger(requestedVersion) || !historical)
+      )
+        notFound();
+      const displayed = historical || r;
       content = (
         <>
-          <Heading title={r.title} sub={`${r.kind} · ${r.classification}`} />
+          <Heading
+            title={displayed.title}
+            sub={`${r.kind} · ${displayed.classification || "Legacy classification unavailable"}${historical ? ` · historical version ${historical.version}` : ""}`}
+          />
+          {historical && (
+            <p className="notice">
+              This is an immutable historical snapshot.{" "}
+              <Link href={`/os/record/${r.id}`}>
+                Return to current version.
+              </Link>
+            </p>
+          )}
           <article className="record">
-            <p>{r.body}</p>
+            <p>{displayed.body}</p>
             <span className="badge">
-              {r.status} · v{r.version} · {r.visibility}
+              {displayed.status || "Legacy status unavailable"} · v
+              {historical?.version || r.version} · {r.visibility}
             </span>
             <details>
               <summary>Structured evidence and provenance</summary>
-              <pre>{JSON.stringify(r.data, null, 2)}</pre>
+              <pre>{JSON.stringify(displayed.data, null, 2)}</pre>
             </details>
-            {a.role === "owner" &&
+            {!historical &&
+              a.role === "owner" &&
               ["draft", "submitted"].includes(r.status) && (
                 <div className="record-actions">
                   <ActionButton
@@ -373,8 +591,34 @@ export default async function Workspace({
                   />
                 </div>
               )}
+            {!historical &&
+              a.role === "owner" &&
+              r.status === "accepted" &&
+              typeof r.data.gate === "string" &&
+              [
+                "P002_LISTING",
+                "P003_FAITHFUL_DELIVERY",
+                "P005_LOCAL_PROTOTYPE",
+              ].includes(r.data.gate) && (
+                <div className="record-actions">
+                  <ActionButton
+                    url="/api/approvals"
+                    payload={{
+                      action: "project.gate",
+                      project_id: r.project_id,
+                      payload: {
+                        gate: r.data.gate,
+                        evidence_id: r.id,
+                        evidence_version: r.version,
+                      },
+                    }}
+                    label="Request local gate authorization"
+                  />
+                </div>
+              )}
           </article>
-          {["draft", "submitted"].includes(r.status) &&
+          {!historical &&
+            ["draft", "submitted"].includes(r.status) &&
             (a.role === "owner" ||
               (r.created_by === a.id &&
                 writableProjects.some((p) => p.id === r.project_id))) && (
@@ -383,7 +627,19 @@ export default async function Workspace({
           <div className="panel" style={{ marginTop: 24 }}>
             <h2>Version history</h2>
             {versions.map((v) => (
-              <p key={v.version}>Version {v.version}</p>
+              <div className="list-item" key={v.version}>
+                <Link href={`/os/record/${r.id}?version=${v.version}`}>
+                  Version {v.version}
+                </Link>
+                <p>
+                  {v.classification || "Legacy classification unavailable"} ·{" "}
+                  {v.status || "Legacy status unavailable"} ·{" "}
+                  {v.editor_name ||
+                    (v.editor_id ? "Attributed member" : "System migration")}
+                  {" · "}
+                  {new Date(v.created_at).toLocaleString("en-GB")}
+                </p>
+              </div>
             ))}
           </div>
         </>
@@ -434,7 +690,11 @@ export default async function Workspace({
             )}
           </div>
           {writableProjects.length > 0 && (
-            <UploadForm projects={writableProjects} />
+            <UploadForm
+              projects={writableProjects}
+              pid={filter}
+              owner={a.role === "owner"}
+            />
           )}
         </>
       );
@@ -444,10 +704,22 @@ export default async function Workspace({
         id: string;
         action: string;
         state: string;
+        project_id: string | null;
         payload: Record<string, unknown>;
         payload_hash: string;
         expires_at: string;
-      }>(a, "select * from kxra.approvals order by created_at desc");
+        project_code: string | null;
+        target_name: string | null;
+      }>(
+        a,
+        `select a.*,p.code as project_code,
+                coalesce(r.title,m.display_name) as target_name
+         from kxra.approvals a
+         left join kxra.projects p on p.id=a.project_id
+         left join kxra.records r on r.id=nullif(a.payload->>'record_id','')::uuid
+         left join kxra.members m on m.id=nullif(a.payload->>'user_id','')::uuid
+         order by a.created_at desc`,
+      );
       content = (
         <>
           <Heading
@@ -456,9 +728,61 @@ export default async function Workspace({
           />
           {rows.map((r) => (
             <article className="record" key={r.id}>
-              <h3>{r.action}</h3>
+              <h3>
+                {r.action === "record.accept"
+                  ? "Accept record"
+                  : r.action === "membership.change"
+                    ? "Change project access"
+                    : r.action === "project.gate"
+                      ? "Authorize local project gate"
+                      : r.action}
+              </h3>
               <span className="badge">{r.state}</span>
-              <pre>{JSON.stringify(r.payload, null, 2)}</pre>
+              <dl className="definition">
+                <dt>Target</dt>
+                <dd>{r.target_name || "Unavailable target"}</dd>
+                <dt>Project</dt>
+                <dd>{r.project_code || "KXRA Group"}</dd>
+                <dt>Expires</dt>
+                <dd>{new Date(r.expires_at).toLocaleString("en-GB")}</dd>
+                {r.action === "membership.change" && (
+                  <>
+                    <dt>Before</dt>
+                    <dd>{JSON.stringify(r.payload.before)}</dd>
+                    <dt>After</dt>
+                    <dd>
+                      {JSON.stringify({
+                        role: r.payload.role,
+                        active: r.payload.active,
+                        expires_at: r.payload.expires_at,
+                      })}
+                    </dd>
+                  </>
+                )}
+                {r.action === "record.accept" && (
+                  <>
+                    <dt>Version</dt>
+                    <dd>{String(r.payload.version)}</dd>
+                    <dt>Classification</dt>
+                    <dd>{String(r.payload.classification)}</dd>
+                  </>
+                )}
+                {r.action === "project.gate" && (
+                  <>
+                    <dt>Gate</dt>
+                    <dd>{String(r.payload.gate)}</dd>
+                    <dt>Evidence version</dt>
+                    <dd>{String(r.payload.evidence_version)}</dd>
+                    <dt>Scope</dt>
+                    <dd>{String(r.payload.scope)}</dd>
+                  </>
+                )}
+              </dl>
+              <details>
+                <summary>Exact signed envelope</summary>
+                <pre>{JSON.stringify(r.payload, null, 2)}</pre>
+                <p className="subtle">Digest: {r.payload_hash}</p>
+              </details>
               {r.state === "requested" && (
                 <div className="record-actions">
                   <ActionButton
@@ -474,7 +798,9 @@ export default async function Workspace({
                 </div>
               )}
               {r.state === "approved" &&
-                ["record.accept", "membership.change"].includes(r.action) && (
+                ["record.accept", "membership.change", "project.gate"].includes(
+                  r.action,
+                ) && (
                   <ActionButton
                     url={"/api/approvals/" + r.id + "/execute"}
                     payload={{}}
@@ -545,9 +871,11 @@ export default async function Workspace({
                 ))}
             </article>
           ))}
+          <InvitationForm projects={projects} />
           <p className="notice">
-            New partner invitations and email delivery are not enabled. Existing
-            membership changes use an exact approval.
+            Invitation tokens are generated locally and shown once. Email
+            delivery is not connected. Existing membership changes use an exact
+            approval.
           </p>
         </>
       );
@@ -622,6 +950,16 @@ export default async function Workspace({
               {localMode()
                 ? "Isolated local PostgreSQL with synthetic sign-in"
                 : "Supabase authentication with PostgreSQL RLS"}
+            </p>
+            <p>
+              Owner assurance: {a.aal.toUpperCase()} · authenticated{" "}
+              {a.auth_time
+                ? new Date(a.auth_time * 1000).toLocaleString("en-GB")
+                : "time unavailable"}
+            </p>
+            <p>
+              Approval and invitation actions require recent AAL2
+              authentication.
             </p>
             <p>
               External messaging, model calls, jobs, analytics and production
