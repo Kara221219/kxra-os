@@ -107,6 +107,18 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "otherApproval",
         "localInvitation",
         "otherInvitation",
+        "localAgreement",
+        "otherAgreement",
+        "partnerAcceptance",
+        "viewerAcceptance",
+        "revokedAcceptance",
+        "otherAcceptance",
+        "partnerRevocation",
+        "viewerRevocation",
+        "revokedRevocation",
+        "otherRevocation",
+        "localOutbox",
+        "otherOutbox",
         "partnerPairing",
         "viewerPairing",
         "revokedPairing",
@@ -130,6 +142,13 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
     await db.query(
       "insert into kxra.members(id,org_id,display_name,role) values($1,$2,$3,'owner')",
       [otherOwner, otherOrg, "AT-01 other owner"],
+    );
+    await db.query(
+      `insert into kxra.profiles(
+        user_id,org_id,first_name,last_name,account_state,email_verified_at,
+        onboarding_completed_at,mfa_state
+       ) values($1,$2,'AT-01','Other owner','ACTIVE',now(),now(),'ENROLLED')`,
+      [otherOwner, otherOrg],
     );
     await db.query(
       `insert into kxra.projects(
@@ -444,6 +463,100 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         ],
       );
 
+    await db.query(
+      `insert into kxra.invitation_project_grants(
+        invitation_id,org_id,project_id,role
+       ) values($1,$2,$3,'viewer'),($4,$5,$6,'viewer')`,
+      [
+        ids.localInvitation,
+        org,
+        p2,
+        ids.otherInvitation,
+        otherOrg,
+        otherProject,
+      ],
+    );
+    await db.query(
+      `insert into kxra.onboarding_progress(
+        user_id,org_id,current_step,completed_steps,whatsapp_choice,completed_at
+       ) values($1,$2,9,array[1,2,3,4,5,6,7,8,9],'SKIP',now())`,
+      [otherOwner, otherOrg],
+    );
+    await db.query(
+      "insert into kxra.user_preferences(user_id,org_id) values($1,$2)",
+      [otherOwner, otherOrg],
+    );
+    await db.query(
+      `insert into kxra.agreement_documents(
+        id,org_id,document_key,version,title,body,status,required
+       ) values
+        ($1,$2,'required_agreement',9001,'AT-01 local agreement','Synthetic local placeholder','UNAPPROVED_PLACEHOLDER',true),
+        ($3,$4,'required_agreement',9001,'AT-01 other agreement','Synthetic other placeholder','UNAPPROVED_PLACEHOLDER',true)`,
+      [ids.localAgreement, org, ids.otherAgreement, otherOrg],
+    );
+    for (const [userId, orgId, agreementId, requestId] of [
+      [actors.partner, org, ids.localAgreement, ids.partnerAcceptance],
+      [actors.viewer, org, ids.localAgreement, ids.viewerAcceptance],
+      [actors.revoked, org, ids.localAgreement, ids.revokedAcceptance],
+      [otherOwner, otherOrg, ids.otherAgreement, ids.otherAcceptance],
+    ])
+      await db.query(
+        `insert into kxra.agreement_acceptances(
+          user_id,org_id,agreement_id,agreement_version,request_id
+         ) values($1,$2,$3,9001,$4)`,
+        [userId, orgId, agreementId, requestId],
+      );
+    for (const [id, orgId, userId, requestedBy] of [
+      [ids.partnerRevocation, org, actors.partner, actors.owner],
+      [ids.viewerRevocation, org, actors.viewer, actors.owner],
+      [ids.revokedRevocation, org, actors.revoked, actors.owner],
+      [ids.otherRevocation, otherOrg, otherOwner, otherOwner],
+    ])
+      await db.query(
+        `insert into kxra.session_revocations(
+          id,org_id,user_id,requested_by,reason,provider_state
+         ) values($1,$2,$3,$4,'AT-01 synthetic revocation','LOCAL_APPLIED')`,
+        [id, orgId, userId, requestedBy],
+      );
+    for (const [id, orgId, invitationId, userId, label] of [
+      [ids.localOutbox, org, ids.localInvitation, actors.partner, "local"],
+      [ids.otherOutbox, otherOrg, ids.otherInvitation, otherOwner, "other"],
+    ])
+      await db.query(
+        `insert into kxra.transactional_email_outbox(
+          id,org_id,invitation_id,user_id,template_key,recipient_digest,
+          recipient_hint,payload,operation_key
+         ) values($1,$2,$3,$4,'PARTNER_INVITATION',$5,$6,$7,$8)`,
+        [
+          id,
+          orgId,
+          invitationId,
+          userId,
+          digest(`recipient-${id}`),
+          `${label[0]}***@fixture.invalid`,
+          { marker },
+          `at01-email-${id}`,
+        ],
+      );
+    for (const [orgId, userId] of [
+      [org, actors.partner],
+      [org, actors.viewer],
+      [org, actors.revoked],
+      [otherOrg, otherOwner],
+    ])
+      await db.query(
+        `insert into kxra.account_security_events(
+          org_id,user_id,actor_id,event_type,metadata
+         ) values($1,$2,$2,'PROFILE_UPDATED',$3)`,
+        [orgId, userId, { marker }],
+      );
+    await db.query(
+      `insert into kxra.request_rate_limits(
+        scope,subject_digest,bucket_started_at,request_count
+       ) values('at01-matrix',$1,date_trunc('hour',now()),1)`,
+      [digest(marker)],
+    );
+
     for (const [id, orgId, userId] of [
       [ids.partnerPairing, org, actors.partner],
       [ids.viewerPairing, org, actors.viewer],
@@ -479,7 +592,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           owner: [org],
           partner: [org],
           viewer: [org],
-          revoked: [org],
+          revoked: [],
           other: [otherOrg],
         },
       },
@@ -491,7 +604,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           owner: Object.values(actors),
           partner: [actors.partner],
           viewer: [actors.viewer],
-          revoked: [actors.revoked],
+          revoked: [],
           other: [otherOwner],
         },
       },
@@ -515,7 +628,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           owner: [actors.partner, actors.viewer, actors.revoked],
           partner: [actors.partner],
           viewer: [actors.viewer],
-          revoked: [actors.revoked],
+          revoked: [],
           other: [otherOwner],
         },
       },
@@ -662,7 +775,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           owner: [ids.partnerPairing, ids.viewerPairing, ids.revokedPairing],
           partner: [ids.partnerPairing],
           viewer: [ids.viewerPairing],
-          revoked: [ids.revokedPairing],
+          revoked: [],
           other: [ids.otherPairing],
         },
       },
@@ -765,6 +878,148 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         },
       },
       {
+        table: "profiles",
+        sql: "select user_id::text as key from kxra.profiles where user_id=any($1::uuid[])",
+        values: [[...Object.values(actors), otherOwner]],
+        expected: {
+          owner: Object.values(actors),
+          partner: [actors.partner],
+          viewer: [actors.viewer],
+          revoked: [],
+          other: [otherOwner],
+        },
+      },
+      {
+        table: "invitation_project_grants",
+        sql: "select project_id::text as key from kxra.invitation_project_grants where invitation_id=any($1::uuid[])",
+        values: [[ids.localInvitation, ids.otherInvitation]],
+        expected: {
+          owner: [p2],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [otherProject],
+        },
+      },
+      {
+        table: "onboarding_progress",
+        sql: "select user_id::text as key from kxra.onboarding_progress where user_id=any($1::uuid[])",
+        values: [[...Object.values(actors), otherOwner]],
+        expected: {
+          owner: Object.values(actors),
+          partner: [actors.partner],
+          viewer: [actors.viewer],
+          revoked: [],
+          other: [otherOwner],
+        },
+      },
+      {
+        table: "user_preferences",
+        sql: "select user_id::text as key from kxra.user_preferences where user_id=any($1::uuid[])",
+        values: [[...Object.values(actors), otherOwner]],
+        expected: {
+          owner: Object.values(actors),
+          partner: [actors.partner],
+          viewer: [actors.viewer],
+          revoked: [],
+          other: [otherOwner],
+        },
+      },
+      {
+        table: "agreement_documents",
+        sql: "select id::text as key from kxra.agreement_documents where id=any($1::uuid[])",
+        values: [[ids.localAgreement, ids.otherAgreement]],
+        expected: {
+          owner: [ids.localAgreement],
+          partner: [ids.localAgreement],
+          viewer: [ids.localAgreement],
+          revoked: [],
+          other: [ids.otherAgreement],
+        },
+      },
+      {
+        table: "agreement_acceptances",
+        sql: "select request_id::text as key from kxra.agreement_acceptances where request_id=any($1::uuid[])",
+        values: [
+          [
+            ids.partnerAcceptance,
+            ids.viewerAcceptance,
+            ids.revokedAcceptance,
+            ids.otherAcceptance,
+          ],
+        ],
+        expected: {
+          owner: [
+            ids.partnerAcceptance,
+            ids.viewerAcceptance,
+            ids.revokedAcceptance,
+          ],
+          partner: [ids.partnerAcceptance],
+          viewer: [ids.viewerAcceptance],
+          revoked: [],
+          other: [ids.otherAcceptance],
+        },
+      },
+      {
+        table: "session_revocations",
+        sql: "select id::text as key from kxra.session_revocations where id=any($1::uuid[])",
+        values: [
+          [
+            ids.partnerRevocation,
+            ids.viewerRevocation,
+            ids.revokedRevocation,
+            ids.otherRevocation,
+          ],
+        ],
+        expected: {
+          owner: [
+            ids.partnerRevocation,
+            ids.viewerRevocation,
+            ids.revokedRevocation,
+          ],
+          partner: [ids.partnerRevocation],
+          viewer: [ids.viewerRevocation],
+          revoked: [],
+          other: [ids.otherRevocation],
+        },
+      },
+      {
+        table: "transactional_email_outbox",
+        sql: "select id::text as key from kxra.transactional_email_outbox where id=any($1::uuid[])",
+        values: [[ids.localOutbox, ids.otherOutbox]],
+        expected: {
+          owner: [ids.localOutbox],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [ids.otherOutbox],
+        },
+      },
+      {
+        table: "account_security_events",
+        sql: "select user_id::text as key from kxra.account_security_events where metadata->>'marker'=$1",
+        values: [marker],
+        expected: {
+          owner: [actors.partner, actors.viewer, actors.revoked],
+          partner: [actors.partner],
+          viewer: [actors.viewer],
+          revoked: [],
+          other: [otherOwner],
+        },
+      },
+      {
+        table: "request_rate_limits",
+        sql: "select subject_digest as key from kxra.request_rate_limits where subject_digest=$1",
+        values: [digest(marker)],
+        expected: {
+          owner: [],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [],
+        },
+      },
+      {
         table: "project_gate_policies",
         sql: "select project_id::text as key from kxra.project_gate_policies where project_id=any($1::uuid[])",
         values: [[p2, p3, otherProject]],
@@ -789,7 +1044,15 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         },
       },
     ];
-    assert.equal(expectations.length, 20);
+    const tableNames = (
+      await db.query(
+        "select tablename from pg_tables where schemaname='kxra' order by tablename",
+      )
+    ).rows.map((row) => String(row.tablename));
+    assert.deepEqual(
+      expectations.map((entry) => entry.table).sort(),
+      tableNames,
+    );
 
     for (const actor of [
       "owner",

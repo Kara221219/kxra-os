@@ -2,6 +2,12 @@
   "name": "kxra-genesis-os",
   "version": "0.1.0",
   "private": true,
+  "imports": {
+    "#kxra/local-guard": {
+      "development": "./packages/authz/local-guard.ts",
+      "default": "./packages/authz/local-guard.production.ts"
+    }
+  },
   "workspaces": [
     "apps/*"
   ],
@@ -15,12 +21,13 @@
     "start": "npm run start -w @kxra/os",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
+    "test:artifact": "node scripts/verify-production-artifact.mjs",
     "test:restart": "node scripts/verify-persistence.mjs",
     "db:start": "node scripts/database.mjs start",
     "db:stop": "node scripts/database.mjs stop",
     "db:reset": "node scripts/database.mjs reset",
     "test:e2e": "playwright test",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run typecheck && npm test && npm run build && npm run test:artifact",
     "format:check": "prettier --check \"apps/os/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.mjs\" \"tests/**/*.ts\""
   },
   "dependencies": {

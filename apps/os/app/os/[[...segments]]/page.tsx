@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import Shell from "../../../components/Shell";
+import AccountControls from "../../../components/AccountControls";
+import {
+  InvitationList,
+  PartnerCards,
+} from "../../../components/PartnerAdministration";
 import {
   RecordForm,
   ActionButton,
@@ -150,6 +155,7 @@ export default async function Workspace({
     a = await actor();
   } catch (e) {
     if (e instanceof HttpError && e.status === 401) redirect("/login");
+    if (e instanceof HttpError && e.status === 428) redirect("/onboarding");
     return (
       <main className="login">
         <h1>Access unavailable</h1>
@@ -777,6 +783,24 @@ export default async function Workspace({
                     <dd>{String(r.payload.scope)}</dd>
                   </>
                 )}
+                {r.action === "account.lifecycle" && (
+                  <>
+                    <dt>Account</dt>
+                    <dd>{String(r.payload.user_id)}</dd>
+                    <dt>Desired state</dt>
+                    <dd>{String(r.payload.desired_state)}</dd>
+                    <dt>Reason</dt>
+                    <dd>{String(r.payload.reason)}</dd>
+                    <dt>Before</dt>
+                    <dd>
+                      <code>{JSON.stringify(r.payload.before)}</code>
+                    </dd>
+                    <dt>After</dt>
+                    <dd>
+                      <code>{JSON.stringify(r.payload.after)}</code>
+                    </dd>
+                  </>
+                )}
               </dl>
               <details>
                 <summary>Exact signed envelope</summary>
@@ -798,9 +822,12 @@ export default async function Workspace({
                 </div>
               )}
               {r.state === "approved" &&
-                ["record.accept", "membership.change", "project.gate"].includes(
-                  r.action,
-                ) && (
+                [
+                  "record.accept",
+                  "membership.change",
+                  "project.gate",
+                  "account.lifecycle",
+                ].includes(r.action) && (
                   <ActionButton
                     url={"/api/approvals/" + r.id + "/execute"}
                     payload={{}}
@@ -821,61 +848,86 @@ export default async function Workspace({
       const members = await query<{
         id: string;
         display_name: string;
-        role: string;
         active: boolean;
+        access_version: number;
+        account_state: string;
+        first_name: string | null;
+        last_name: string | null;
+        job_title: string | null;
+        company: string | null;
+        mfa_state: string;
+        onboarding_completed_at: string | null;
+        session_version: number;
       }>(
         a,
-        "select id,display_name,role,active from kxra.members where role='partner'",
+        `select member.id,member.display_name,member.active,member.access_version,
+          profile.account_state,profile.first_name,profile.last_name,profile.job_title,
+          profile.company,profile.mfa_state,profile.onboarding_completed_at,
+          profile.session_version
+         from kxra.members member join kxra.profiles profile on profile.user_id=member.id
+         where member.role='partner' order by member.display_name,member.id`,
       );
       const memberships = await query<{
         user_id: string;
         project_id: string;
         active: boolean;
-        role: string;
-      }>(a, "select * from kxra.project_memberships");
+        role: "viewer" | "contributor";
+        expires_at: string | null;
+      }>(
+        a,
+        "select user_id,project_id,active,role,expires_at from kxra.project_memberships",
+      );
+      await query(a, "select kxra.refresh_expired_invitations()", []);
+      const invitations = await query<{
+        id: string;
+        recipient_email: string;
+        note: string | null;
+        state: string;
+        version: number;
+        delivery_version: number;
+        expires_at: string;
+        sent_at: string | null;
+        redeemed_at: string | null;
+        revoked_at: string | null;
+        grants: {
+          project_id: string;
+          project_code: string;
+          project_name: string;
+          role: string;
+          expires_at: string | null;
+        }[];
+      }>(
+        a,
+        `select i.id,i.recipient_email,i.note,i.state,i.version,i.delivery_version,i.expires_at,
+          i.sent_at,i.redeemed_at,i.revoked_at,
+          coalesce(jsonb_agg(jsonb_build_object(
+           'project_id',grant_row.project_id,'project_code',project.code,
+           'project_name',project.name,'role',grant_row.role,
+           'expires_at',grant_row.membership_expires_at
+          ) order by project.code) filter(where grant_row.project_id is not null),'[]'::jsonb) as grants
+         from kxra.invitations i
+         left join kxra.invitation_project_grants grant_row on grant_row.invitation_id=i.id
+         left join kxra.projects project on project.id=grant_row.project_id
+         group by i.id order by i.created_at desc`,
+      );
       content = (
         <>
           <Heading
             title="Partners"
-            sub="Local fixtures are not real partner invitations."
+            sub="Invitation, onboarding, project access and account lifecycle controls."
           />
-          {members.map((m) => (
-            <article className="record" key={m.id}>
-              <h3>{m.display_name}</h3>
-              {memberships
-                .filter((x) => x.user_id === m.id)
-                .map((x) => (
-                  <div className="list-item" key={x.project_id}>
-                    <p>
-                      {projects.find((p) => p.id === x.project_id)?.code} ·{" "}
-                      {x.role} · {x.active ? "Active" : "Revoked"}
-                    </p>
-                    <ActionButton
-                      url="/api/approvals"
-                      payload={{
-                        action: "membership.change",
-                        project_id: x.project_id,
-                        payload: {
-                          user_id: m.id,
-                          role: x.role,
-                          active: !x.active,
-                        },
-                      }}
-                      label={
-                        x.active
-                          ? "Request revocation"
-                          : "Request access restoration"
-                      }
-                    />
-                  </div>
-                ))}
-            </article>
-          ))}
           <InvitationForm projects={projects} />
+          <InvitationList invitations={invitations} />
+          <PartnerCards
+            partners={members}
+            memberships={memberships}
+            projects={projects}
+          />
           <p className="notice">
-            Invitation tokens are generated locally and shown once. Email
-            delivery is not connected. Existing membership changes use an exact
-            approval.
+            Local email and authentication are deterministic provider doubles.
+            They do not prove Supabase or Resend behavior. Membership and
+            account lifecycle changes require exact owner approval and recent
+            AAL2.
           </p>
         </>
       );
@@ -929,14 +981,89 @@ export default async function Workspace({
         </>
       );
     } else if (section === "profile") {
+      const [
+        profileRows,
+        preferenceRows,
+        assignments,
+        pairings,
+        securityEvents,
+      ] = await Promise.all([
+        query<{
+          first_name: string | null;
+          last_name: string | null;
+          job_title: string | null;
+          company: string | null;
+          phone: string | null;
+          account_state: string;
+          mfa_state: string;
+          onboarding_completed_at: string | null;
+        }>(
+          a,
+          `select first_name,last_name,job_title,company,phone,account_state,
+              mfa_state,onboarding_completed_at from kxra.profiles where user_id=$1`,
+          [a.id],
+        ),
+        query<{
+          timezone: string;
+          email_notifications: boolean;
+          whatsapp_notifications: boolean;
+          security_alerts: boolean;
+          display_density: "comfortable" | "compact";
+        }>(
+          a,
+          `select timezone,email_notifications,whatsapp_notifications,
+              security_alerts,display_density from kxra.user_preferences where user_id=$1`,
+          [a.id],
+        ),
+        query<{
+          project_id: string;
+          code: string;
+          name: string;
+          role: "viewer" | "contributor";
+          active: boolean;
+          expires_at: string | null;
+        }>(
+          a,
+          `select membership.project_id,project.code,project.name,membership.role,
+              membership.active,membership.expires_at
+             from kxra.project_memberships membership
+             join kxra.projects project on project.id=membership.project_id
+             where membership.user_id=$1 order by project.code`,
+          [a.id],
+        ),
+        query<{ id: string }>(
+          a,
+          `select id from kxra.whatsapp_pairings where user_id=$1
+             and verified_at is not null and revoked_at is null`,
+          [a.id],
+        ),
+        query<{
+          event_type: string;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        }>(
+          a,
+          `select event_type,metadata,created_at from kxra.account_security_events
+             where user_id=$1 order by created_at desc limit 20`,
+          [a.id],
+        ),
+      ]);
       content = (
         <>
-          <Heading title="Profile" />
-          <div className="panel">
-            <p>{a.display_name}</p>
-            <p>Role: {a.role}</p>
-            <p>Permissions are managed by the owner.</p>
-          </div>
+          <Heading
+            title="Profile & account"
+            sub="Manage personal details, preferences and provider-backed security controls."
+          />
+          <AccountControls
+            profile={profileRows[0]}
+            preferences={preferenceRows[0]}
+            assignments={assignments}
+            securityEvents={securityEvents}
+            email={a.email}
+            role={a.role}
+            source={a.source}
+            hasActivePairing={pairings.length > 0}
+          />
         </>
       );
     } else if (section === "admin") {

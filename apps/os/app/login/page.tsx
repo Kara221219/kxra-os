@@ -1,12 +1,13 @@
 import { localMode } from "../../../../packages/db";
 import Link from "next/link";
+import LocalFixtureLogin from "#kxra/local-fixture-ui";
 export const dynamic = "force-dynamic";
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; verify?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, verify } = await searchParams;
   const local = localMode();
   return (
     <main className="login">
@@ -20,52 +21,35 @@ export default async function Login({
           Sign-in failed. Check your details or configuration.
         </p>
       )}
+      {verify && (
+        <p role="status" className="notice">
+          Verify your invited email before signing in. Reopen the verification
+          message or ask the KXRA owner for help.
+        </p>
+      )}
       <form action="/api/auth" method="post">
-        {local ? (
-          <>
-            <label>
-              Local test identity
-              <select name="fixture">
-                <option value="owner">Owner — all five projects</option>
-                <option value="partner">Partner — seat covers only</option>
-                <option value="viewer">Viewer — property only</option>
-                <option value="revoked">Revoked partner — no projects</option>
-                <option value="invitee">
-                  Unassigned invitation test account
-                </option>
-              </select>
-            </label>
-            <p className="notice">
-              Synthetic accounts in an isolated local database. No real
-              credentials or cloud services are used.
-            </p>
-          </>
-        ) : (
-          <>
-            <label>
-              Email
-              <input
-                name="email"
-                type="email"
-                autoComplete="username"
-                required
-              />
-            </label>
-            <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-          </>
-        )}
+        <label>
+          Email
+          <input name="email" type="email" autoComplete="username" required />
+        </label>
+        <label>
+          Password
+          <input
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </label>
         <button>Sign in →</button>
       </form>
+      <p className="subtle">
+        <Link href="/reset-password">Forgot your password?</Link>
+      </p>
+      <LocalFixtureLogin enabled={local} />
       <p style={{ marginTop: 24 }}>
-        <Link href="/redeem">Redeem a project invitation</Link>
+        KXRA has no public registration. New partners join through the secure
+        link in an owner-issued invitation.
       </p>
     </main>
   );

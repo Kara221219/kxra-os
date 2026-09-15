@@ -551,12 +551,35 @@ test("AT-03 invitation identity, expiry, reuse and recent-MFA boundaries fail cl
       p3,
     );
     await denied(db, "select kxra.redeem_invitation($1)", [tokenHash]);
+    await db.query("reset role");
     assert.deepEqual(
-      (await db.query("select project_id,role from kxra.project_memberships"))
-        .rows,
+      (
+        await db.query(
+          "select project_id,role from kxra.project_memberships where user_id=$1",
+          [invited],
+        )
+      ).rows,
       [{ project_id: p3, role: "viewer" }],
     );
-    assert.equal((await db.query("select id from kxra.projects")).rowCount, 1);
+    assert.deepEqual(
+      (
+        await db.query(
+          "select account_state,onboarding_completed_at from kxra.profiles where user_id=$1",
+          [invited],
+        )
+      ).rows,
+      [{ account_state: "ONBOARDING", onboarding_completed_at: null }],
+    );
+    await claims(invited, email);
+    assert.equal((await db.query("select id from kxra.projects")).rowCount, 0);
+    assert.deepEqual(
+      (
+        await db.query(
+          "select project_id,project_role from kxra.onboarding_project_access()",
+        )
+      ).rows,
+      [{ project_id: p3, project_role: "viewer" }],
+    );
 
     await as(db, "owner");
     await db.query("select set_config('request.jwt.claims',$1,true)", [
@@ -597,6 +620,381 @@ test("AT-03 invitation identity, expiry, reuse and recent-MFA boundaries fail cl
     );
     await claims(crypto.randomUUID(), email);
     await denied(db, "select kxra.redeem_invitation($1)", [expiredHash]);
+  }));
+test("AT-19/20 exact grants, agreement versions and required-policy resume are database enforced", () =>
+  tx(async (db) => {
+    const accountId = crypto.randomUUID();
+    const email = `db-onboarding-${crypto.randomUUID()}@fixture.invalid`;
+    const rawToken = crypto.randomBytes(32).toString("base64url");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+    const identity = async (verified: boolean) => {
+      await db.query("reset role");
+      await db.query("set local role authenticated");
+      await db.query(
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+        [
+          accountId,
+          JSON.stringify({
+            sub: accountId,
+            aal: "aal1",
+            auth_time: Math.floor(Date.now() / 1000),
+            email,
+            email_verified: verified,
+            session_version: 1,
+          }),
+        ],
+      );
+    };
+
+    await as(db, "owner");
+    const invitation = (
+      await db.query(
+        "select * from kxra.create_multi_project_invitation($1,$2,$3,$4,$5)",
+        [
+          email,
+          JSON.stringify([
+            { project_id: p2, role: "contributor" },
+            { project_id: p3, role: "viewer" },
+          ]),
+          "Synthetic exact-grant database fixture",
+          tokenHash,
+          new Date(Date.now() + 3_600_000),
+        ],
+      )
+    ).rows[0];
+    assert.ok(invitation.id);
+    await identity(false);
+    assert.equal(
+      (
+        await db.query(
+          "select kxra.register_invited_profile($1,1,$2) as state",
+          [invitation.id, tokenHash],
+        )
+      ).rows[0].state,
+      "REGISTERED",
+    );
+    await denied(db, "select kxra.redeem_invitation_version($1,1,$2)", [
+      invitation.id,
+      tokenHash,
+    ]);
+    await identity(true);
+    const redeemed = (
+      await db.query(
+        "select kxra.redeem_invitation_version($1,1,$2) as result",
+        [invitation.id, tokenHash],
+      )
+    ).rows[0].result;
+    assert.deepEqual(redeemed.project_ids.sort(), [p2, p3]);
+    assert.equal(redeemed.onboarding_required, true);
+    await denied(db, "select kxra.redeem_invitation_version($1,1,$2)", [
+      invitation.id,
+      tokenHash,
+    ]);
+
+    await db.query("reset role");
+    assert.deepEqual(
+      (
+        await db.query(
+          `select project_id,role from kxra.project_memberships
+           where user_id=$1 order by project_id`,
+          [accountId],
+        )
+      ).rows,
+      [
+        { project_id: p2, role: "contributor" },
+        { project_id: p3, role: "viewer" },
+      ],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int as n from kxra.invitations where id=$1 and token_digest=$2 and state='REDEEMED'",
+          [invitation.id, tokenHash],
+        )
+      ).rows[0].n,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from information_schema.columns
+           where table_schema='kxra' and table_name='invitations' and column_name in ('token','password')`,
+        )
+      ).rows[0].n,
+      0,
+    );
+
+    await identity(true);
+    await denied(db, "select kxra.complete_onboarding_step(2,$1)", [
+      {
+        first_name: "Out",
+        last_name: "Of order",
+        job_title: "",
+        company: "",
+        phone: "",
+      },
+    ]);
+    const onboardingSteps: [number, Record<string, unknown>][] = [
+      [1, { acknowledged: true }],
+      [
+        2,
+        {
+          first_name: "Database",
+          last_name: "Partner",
+          job_title: "Research partner",
+          company: "Synthetic fixture",
+          phone: "+44 7700 900789",
+        },
+      ],
+      [3, { security_acknowledged: true }],
+      [4, { access_acknowledged: true }],
+      [5, { working_acknowledged: true }],
+      [6, { whatsapp_choice: "SKIP" }],
+      [
+        7,
+        {
+          timezone: "Europe/London",
+          email_notifications: true,
+          whatsapp_notifications: false,
+          display_density: "comfortable",
+        },
+      ],
+    ];
+    for (const [step, data] of onboardingSteps)
+      await db.query("select kxra.complete_onboarding_step($1,$2)", [
+        step,
+        data,
+      ]);
+    const currentAgreements = (
+      await db.query(
+        `select id,version from kxra.agreement_documents
+         where required and status in ('APPROVED','UNAPPROVED_PLACEHOLDER')
+         order by document_key`,
+      )
+    ).rows;
+    assert.equal(currentAgreements.length, 2);
+    await denied(db, "select kxra.complete_onboarding_step(8,$1)", [
+      {
+        agreement_ids: [currentAgreements[0].id],
+        placeholder_acknowledged: true,
+      },
+    ]);
+    await db.query("select kxra.complete_onboarding_step(8,$1)", [
+      {
+        agreement_ids: currentAgreements.map((entry) => entry.id),
+        placeholder_acknowledged: true,
+      },
+    ]);
+    await db.query("select kxra.complete_onboarding_step(9,$1)", [
+      { complete: true },
+    ]);
+    assert.deepEqual(
+      (
+        await db.query(
+          `select account_state,onboarding_completed_at is not null as completed
+           from kxra.profiles where user_id=$1`,
+          [accountId],
+        )
+      ).rows,
+      [{ account_state: "ACTIVE", completed: true }],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select agreement_id,agreement_version,accepted_at is not null as timestamped
+           from kxra.agreement_acceptances where user_id=$1 order by agreement_id`,
+          [accountId],
+        )
+      ).rows,
+      currentAgreements
+        .map((entry) => ({
+          agreement_id: entry.id,
+          agreement_version: entry.version,
+          timestamped: true,
+        }))
+        .sort((a, b) => a.agreement_id.localeCompare(b.agreement_id)),
+    );
+
+    await db.query("reset role");
+    const newTerms = crypto.randomUUID();
+    await db.query(
+      "update kxra.agreement_documents set status='RETIRED',required=false where org_id=$1 and document_key='terms' and version=1",
+      [org],
+    );
+    await db.query(
+      `insert into kxra.agreement_documents(
+        id,org_id,document_key,version,title,body,status,required
+       ) values($1,$2,'terms',2,'Terms placeholder v2 — unapproved',
+        'Synthetic replacement placeholder requiring fresh acknowledgement.',
+        'UNAPPROVED_PLACEHOLDER',true)`,
+      [newTerms, org],
+    );
+    await identity(true);
+    assert.equal(
+      (await db.query("select kxra.resume_required_onboarding() as step"))
+        .rows[0].step,
+      8,
+    );
+    assert.equal((await db.query("select id from kxra.projects")).rowCount, 0);
+    await db.query("select kxra.complete_onboarding_step(8,$1)", [
+      { agreement_ids: [newTerms], placeholder_acknowledged: true },
+    ]);
+    await db.query("select kxra.complete_onboarding_step(9,$1)", [
+      { complete: true },
+    ]);
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from kxra.agreement_acceptances
+           where user_id=$1 and agreement_id=$2 and agreement_version=2`,
+          [accountId, newTerms],
+        )
+      ).rows[0].n,
+      1,
+    );
+  }));
+test("AT-21 protected account fields and suspended-account isolation fail closed in SQL", () =>
+  tx(async (db) => {
+    await as(db, "partner");
+    await denied(db, "update kxra.members set role='owner' where id=$1", [
+      users.partner,
+    ]);
+    await denied(
+      db,
+      "update kxra.profiles set account_state='ACTIVE' where user_id=$1",
+      [users.partner],
+    );
+    await denied(db, "update kxra.profiles set org_id=$1 where user_id=$2", [
+      crypto.randomUUID(),
+      users.partner,
+    ]);
+    await denied(
+      db,
+      "insert into kxra.project_memberships(org_id,project_id,user_id,role) values($1,$2,$3,'contributor')",
+      [org, p3, users.partner],
+    );
+    await denied(db, "select kxra.update_own_profile($1)", [
+      {
+        first_name: "Forged",
+        last_name: "Owner",
+        job_title: "",
+        company: "",
+        phone: "",
+        role: "owner",
+      },
+    ]);
+    await denied(db, "select kxra.update_own_preferences($1)", [
+      {
+        timezone: "Europe/London",
+        email_notifications: true,
+        whatsapp_notifications: false,
+        display_density: "comfortable",
+        security_alerts: false,
+      },
+    ]);
+
+    await db.query("reset role");
+    const pairingId = crypto.randomUUID();
+    await db.query(
+      `insert into kxra.whatsapp_pairings(
+        id,org_id,user_id,phone_digest,verified_at
+       ) values($1,$2,$3,$4,now())`,
+      [
+        pairingId,
+        org,
+        users.partner,
+        crypto.createHash("sha256").update(pairingId).digest("hex"),
+      ],
+    );
+    await as(db, "owner");
+    const requested = (
+      await db.query(
+        "select * from kxra.request_account_lifecycle_approval($1,'SUSPENDED',$2)",
+        [users.partner, "AT-21 database suspension fixture"],
+      )
+    ).rows[0];
+    await db.query("select kxra.decide_approval($1,$2,true)", [
+      requested.id,
+      requested.payload_hash,
+    ]);
+    await db.query("select kxra.change_account_lifecycle($1)", [requested.id]);
+
+    await as(db, "partner");
+    const isolatedQueries: Array<[string, string, unknown[]]> = [
+      ["profiles", "user_id=$1", [users.partner]],
+      ["members", "id=$1", [users.partner]],
+      ["project_memberships", "user_id=$1", [users.partner]],
+      ["onboarding_progress", "user_id=$1", [users.partner]],
+      ["user_preferences", "user_id=$1", [users.partner]],
+      ["agreement_acceptances", "user_id=$1", [users.partner]],
+      ["session_revocations", "user_id=$1", [users.partner]],
+      ["account_security_events", "user_id=$1", [users.partner]],
+      ["whatsapp_pairings", "user_id=$1", [users.partner]],
+    ];
+    for (const [table, predicate, values] of isolatedQueries)
+      assert.equal(
+        (
+          await db.query(
+            `select * from kxra.${table} where ${predicate}`,
+            values,
+          )
+        ).rowCount,
+        0,
+        table,
+      );
+    for (const table of ["projects", "records", "files", "agreement_documents"])
+      assert.equal(
+        (await db.query(`select * from kxra.${table}`)).rowCount,
+        0,
+        table,
+      );
+
+    await db.query("reset role");
+    const state = (
+      await db.query(
+        `select p.account_state,m.active,p.session_version,m.access_version
+         from kxra.profiles p join kxra.members m on m.id=p.user_id
+         where p.user_id=$1`,
+        [users.partner],
+      )
+    ).rows[0];
+    assert.equal(state.account_state, "SUSPENDED");
+    assert.equal(state.active, false);
+    assert.ok(state.session_version > 1);
+    assert.ok(state.access_version > 1);
+    assert.ok(
+      (
+        await db.query(
+          "select revoked_at from kxra.whatsapp_pairings where id=$1",
+          [pairingId],
+        )
+      ).rows[0].revoked_at,
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from kxra.account_security_events
+           where user_id=$1 and event_type='ACCOUNT_SUSPENDED'
+            and metadata->>'approval_id'=$2`,
+          [users.partner, requested.id],
+        )
+      ).rows[0].n,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from kxra.audit_events
+           where resource_id=$1 and action='account.lifecycle.changed'
+            and metadata->>'approval_id'=$2`,
+          [users.partner, requested.id],
+        )
+      ).rows[0].n,
+      1,
+    );
   }));
 test("AT-07 aggregate includes 201 entries and rejects SQL JSON null/type defects", () =>
   tx(async (db) => {
@@ -753,6 +1151,13 @@ test("AT-01 separate organisation and every private table enforce RLS", () =>
       [x, o],
     );
     await db.query(
+      `insert into kxra.profiles(
+        user_id,org_id,first_name,last_name,account_state,email_verified_at,
+        onboarding_completed_at,mfa_state
+       ) values($1,$2,'Other','Owner','ACTIVE',now(),now(),'ENROLLED')`,
+      [x, o],
+    );
+    await db.query(
       "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'X','Private marker','test','test','test')",
       [p, o],
     );
@@ -798,7 +1203,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 20);
+    assert.equal(tables.length, 30);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -830,39 +1235,65 @@ test("AT-01 every private table denies unauthorized DML", () =>
         );
     }
   }));
-test("AT-01 anonymous cannot execute any exposed application RPC", () =>
+test("AT-01 anonymous can execute only the two bounded public RPCs", () =>
   tx(async (db) => {
-    const calls = [
-      "select kxra.accept_record(null::uuid)",
-      "select kxra.assign_workflow_task(null::uuid,null::integer,null::uuid,null::text,null::text)",
-      "select kxra.authorize_project_gate(null::uuid)",
-      "select kxra.change_membership(null::uuid)",
-      "select kxra.complete_workflow_task(null::uuid,null::integer,null::text)",
-      "select kxra.create_experiment(null::uuid,null::uuid,null::integer,null::text,null::text,null::text,null::text,null::text,null::text,null::jsonb)",
-      "select kxra.create_gate_evidence_packet(null::uuid,null::text,null::text,null::text,null::jsonb,null::jsonb)",
-      "select kxra.create_invitation(null::uuid,null::text,null::text,null::text,null::timestamptz)",
-      "select kxra.create_linked_decision(null::uuid,null::uuid,null::integer,null::uuid,null::text,null::text,null::jsonb,null::uuid)",
-      "select * from kxra.dashboard_counts()",
-      "select kxra.decide_approval(null::uuid,null::text,null::boolean)",
-      "select * from kxra.finance_totals()",
-      "select kxra.record_experiment_result(null::uuid,null::integer,null::text,null::text,null::text,null::jsonb)",
-      "select kxra.redeem_invitation(null::text)",
-      "select * from kxra.request_approval(null::text,null::uuid,null::jsonb)",
-      "select * from kxra.request_project_gate_approval(null::uuid,null::jsonb)",
-      "select kxra.submit_idea(null::uuid,null::integer)",
-      "select kxra.verify_record(null::uuid,null::integer,null::uuid,null::integer,null::text)",
-    ];
     await db.query("reset role");
-    const exposed = Number(
+    const functions = (
+      await db.query(
+        `select p.oid::regprocedure::text as signature,
+          format('select * from %I.%I(%s)',n.nspname,p.proname,
+           coalesce((select string_agg('null::'||format_type(argument_type,null),',' order by position)
+            from unnest(p.proargtypes) with ordinality as argument(argument_type,position)),'')
+          ) as call,
+          has_function_privilege('anon',p.oid,'execute') as anonymous_execute
+         from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+         where n.nspname='kxra' order by signature`,
+      )
+    ).rows as {
+      signature: string;
+      call: string;
+      anonymous_execute: boolean;
+    }[];
+    assert.equal(functions.length, 42);
+    assert.deepEqual(
+      functions
+        .filter((entry) => entry.anonymous_execute)
+        .map((entry) => entry.signature),
+      [
+        "kxra.consume_rate_limit(text,text,integer,integer)",
+        "kxra.preview_invitation(text)",
+      ],
+    );
+    await as(db, null);
+    for (const entry of functions.filter((item) => !item.anonymous_execute))
+      await deniedWithCode(db, "42501", entry.call);
+    assert.equal(
+      (
+        await db.query("select * from kxra.preview_invitation($1)", [
+          "a".repeat(64),
+        ])
+      ).rowCount,
+      0,
+    );
+    const rateSubject = crypto.randomBytes(32).toString("hex");
+    assert.equal(
       (
         await db.query(
-          "select count(*)::int as n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='kxra'",
+          "select kxra.consume_rate_limit('at01-anon',$1,1,60) as allowed",
+          [rateSubject],
         )
-      ).rows[0].n,
+      ).rows[0].allowed,
+      true,
     );
-    assert.equal(calls.length, exposed);
-    await as(db, null);
-    for (const call of calls) await deniedWithCode(db, "42501", call);
+    assert.equal(
+      (
+        await db.query(
+          "select kxra.consume_rate_limit('at01-anon',$1,1,60) as allowed",
+          [rateSubject],
+        )
+      ).rows[0].allowed,
+      false,
+    );
   }));
 test("AT-09 project gates block unknown evidence and authorize local-only scope", () =>
   tx(async (db) => {

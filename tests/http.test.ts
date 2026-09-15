@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { moneyUnits } from "../packages/domain";
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
@@ -37,6 +38,20 @@ async function req(
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+function fakeEmailAction(operationKey: string) {
+  const state = JSON.parse(
+    fs.readFileSync(".runtime/fake-email.json", "utf8"),
+  ) as {
+    messages: { operationKey: string; text: string }[];
+  };
+  const message = state.messages.find(
+    (candidate) => candidate.operationKey === operationKey,
+  );
+  assert.ok(message);
+  const action = message.text.match(/Continue securely: (https?:\/\/\S+)/)?.[1];
+  assert.ok(action);
+  return action;
 }
 async function upload(
   cookie: string,
@@ -94,61 +109,66 @@ test("HTTP unauthenticated direct API calls cannot read or write", async () => {
   ] as const)
     assert.equal((await req(endpoint, undefined, body)).status, 401, endpoint);
 });
-test("HTTP owner sees five, partner sees one, revoked sees zero projects", async () => {
+test("HTTP owner and active partners see assigned projects; revoked access fails closed", async () => {
   for (const [who, count] of [
     ["owner", 5],
     ["partner", 1],
-    ["revoked", 0],
   ] as const) {
     const cookie = await login(who),
       r = await req("projects", cookie);
     assert.equal(r.status, 200);
     assert.equal((await r.json()).length, count);
   }
+  const revoked = await login("revoked");
+  assert.equal((await req("projects", revoked)).status, 403);
 });
-test("AT-03 one-use invitation grants only the approved project role", async () => {
+test("AT-03 invitation token stays in delivery and the legacy redeem API is retired", async () => {
   const owner = await login("owner");
   const created = await req("invitations", owner, {
-    project_id: p3,
     email: "invitee@fixture.invalid",
-    role: "viewer",
+    grants: [{ project_id: p3, role: "viewer" }],
+    note: "Synthetic HTTP invitation",
     expires_hours: 1,
   });
   assert.equal(created.status, 201, await created.clone().text());
   const invitation = await created.json();
-  assert.match(invitation.token, /^[A-Za-z0-9_-]{32,100}$/);
+  assert.equal("token" in invitation, false);
+  assert.equal(invitation.project_count, 1);
   const listed = await (await req("invitations", owner)).json();
-  assert.ok(listed.some((row: { id: string }) => row.id === invitation.id));
+  const listedInvitation = listed.find(
+    (row: { id: string }) => row.id === invitation.id,
+  );
+  assert.ok(listedInvitation);
+  assert.deepEqual(listedInvitation.grants, [
+    {
+      project_id: p3,
+      project_code: "PROJECT-003",
+      project_name: "AI Property Fly-Through",
+      role: "viewer",
+      expires_at: null,
+    },
+  ]);
   assert.ok(listed.every((row: Record<string, unknown>) => !("token" in row)));
 
-  const wrongAccount = await login("partner");
+  const action = fakeEmailAction(`invitation:${invitation.id}:v1`);
+  const actionUrl = new URL(action);
+  assert.equal(actionUrl.pathname, "/join");
+  assert.equal(actionUrl.search, "");
+  const rawToken = new URLSearchParams(actionUrl.hash.slice(1)).get("token");
+  assert.ok(rawToken);
+
   assert.equal(
     (
-      await req("invitations/redeem", wrongAccount, {
-        token: invitation.token,
+      await req("invitations/redeem", owner, {
+        token: rawToken,
       })
     ).status,
-    409,
+    404,
   );
-  const invitee = await login("invitee");
-  const redeemed = await req("invitations/redeem", invitee, {
-    token: invitation.token,
-  });
-  assert.equal(redeemed.status, 200, await redeemed.clone().text());
-  assert.equal((await redeemed.json()).project_id, p3);
-  assert.equal(
-    (
-      await req("invitations/redeem", invitee, {
-        token: invitation.token,
-      })
-    ).status,
-    409,
+  const unchanged = (await (await req("invitations", owner)).json()).find(
+    (row: { id: string }) => row.id === invitation.id,
   );
-  const projects = await (await req("projects", invitee)).json();
-  assert.deepEqual(
-    projects.map((project: { id: string }) => project.id),
-    [p3],
-  );
+  assert.equal(unchanged.state, "SENT");
 });
 test("HTTP crafted project IDs, owner routes and forged identities rejected", async () => {
   const c = await login("partner");
@@ -219,7 +239,7 @@ test("HTTP cross-project search and Ask reject inaccessible scope", async () => 
     (await r.json()).every((x: { project_id: string }) => x.project_id === p2),
   );
   const revoked = await login("revoked");
-  assert.deepEqual(await (await req("search?q=project", revoked)).json(), []);
+  assert.equal((await req("search?q=project", revoked)).status, 403);
 });
 test("HTTP cross-project files hidden; all bytes quarantined", async () => {
   const owner = await login("owner");
@@ -677,7 +697,7 @@ test("AT-08 HTTP completes the P002 idea-to-accepted-decision loop", async () =>
   const viewer = await login("viewer");
   const revoked = await login("revoked");
   assert.equal((await req(`workflow?project_id=${p2}`, viewer)).status, 404);
-  assert.equal((await req(`workflow?project_id=${p2}`, revoked)).status, 404);
+  assert.equal((await req(`workflow?project_id=${p2}`, revoked)).status, 403);
   assert.equal(
     (
       await req("workflow/experiments", partnerCookie, {

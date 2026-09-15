@@ -8,6 +8,12 @@ export const ids = {
   viewer: "20000000-0000-4000-8000-000000000003",
   revoked: "20000000-0000-4000-8000-000000000004",
 };
+const fixtureEmails = {
+  owner: "owner@fixture.invalid",
+  partner: "partner@fixture.invalid",
+  viewer: "viewer@fixture.invalid",
+  revoked: "revoked@fixture.invalid",
+};
 export const mapping = {
   assumptions: "assumption",
   experiments: "experiment",
@@ -292,11 +298,87 @@ export async function importSeeds(db, bundle, { failAfter = Infinity } = {}) {
       );
 }
 export async function seedFixtures(db) {
-  for (const [key, id] of Object.entries(ids))
+  for (const [key, id] of Object.entries(ids)) {
+    const active = key !== "revoked";
     await db.query(
-      "insert into kxra.members(id,org_id,display_name,role,active) values($1,$2,$3,$4,true) on conflict(id) do nothing",
-      [id, org, `Local ${key}`, key === "owner" ? "owner" : "partner"],
+      `insert into kxra.members(id,org_id,display_name,role,active)
+       values($1,$2,$3,$4,$5)
+       on conflict(id) do update set display_name=excluded.display_name,
+        role=excluded.role,active=excluded.active`,
+      [id, org, `Local ${key}`, key === "owner" ? "owner" : "partner", active],
     );
+    const emailDigest = crypto
+      .createHash("sha256")
+      .update(fixtureEmails[key])
+      .digest("hex");
+    await db.query(
+      `insert into kxra.profiles(
+        user_id,org_id,email_digest,first_name,last_name,job_title,company,
+        account_state,email_verified_at,onboarding_completed_at,mfa_state
+       ) values($1,$2,$3,$4,'Fixture','Local test account','KXRA fixture',$5,now(),now(),$6)
+       on conflict(user_id) do update set email_digest=excluded.email_digest,
+        first_name=excluded.first_name,last_name=excluded.last_name,
+        job_title=excluded.job_title,company=excluded.company,
+        account_state=excluded.account_state,email_verified_at=excluded.email_verified_at,
+        onboarding_completed_at=excluded.onboarding_completed_at,mfa_state=excluded.mfa_state,
+        updated_at=now()`,
+      [
+        id,
+        org,
+        emailDigest,
+        `Local ${key}`,
+        active ? "ACTIVE" : "REVOKED",
+        key === "owner" ? "ENROLLED" : "NOT_ENROLLED",
+      ],
+    );
+    await db.query(
+      `insert into kxra.user_preferences(user_id,org_id)
+       values($1,$2) on conflict(user_id) do nothing`,
+      [id, org],
+    );
+    await db.query(
+      `insert into kxra.onboarding_progress(
+        user_id,org_id,current_step,completed_steps,whatsapp_choice,completed_at
+       ) values($1,$2,9,array[1,2,3,4,5,6,7,8,9],'SKIP',now())
+       on conflict(user_id) do nothing`,
+      [id, org],
+    );
+  }
+
+  const agreementFixtures = [
+    [
+      "80000000-0000-4000-8000-000000000001",
+      "terms",
+      "Terms placeholder — unapproved",
+      "No KXRA legal terms have been approved. This local-only placeholder records that formal terms remain an owner and legal-review blocker.",
+    ],
+    [
+      "80000000-0000-4000-8000-000000000002",
+      "privacy",
+      "Privacy placeholder — unapproved",
+      "No KXRA privacy notice has been approved. This local-only placeholder records that a reviewed privacy notice is still required before production onboarding.",
+    ],
+  ];
+  for (const [id, key, title, body] of agreementFixtures)
+    await db.query(
+      `insert into kxra.agreement_documents(
+        id,org_id,document_key,version,title,body,status,required
+       ) values($1,$2,$3,1,$4,$5,'UNAPPROVED_PLACEHOLDER',true)
+       on conflict(org_id,document_key,version) do update set
+        title=excluded.title,body=excluded.body,status=excluded.status,
+        required=excluded.required`,
+      [id, org, key, title, body],
+    );
+
+  for (const user of [ids.partner, ids.viewer])
+    for (const [agreementId] of agreementFixtures)
+      await db.query(
+        `insert into kxra.agreement_acceptances(
+          user_id,org_id,agreement_id,agreement_version
+         ) values($1,$2,$3,1) on conflict do nothing`,
+        [user, org, agreementId],
+      );
+
   for (const [who, code, role, active] of [
     ["partner", "PROJECT-002", "contributor", true],
     ["viewer", "PROJECT-003", "viewer", true],

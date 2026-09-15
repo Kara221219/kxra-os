@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   actor,
   owner,
-  principal,
   recentOwnerMfa,
   sameOrigin,
   HttpError,
@@ -23,6 +22,13 @@ import {
 import { query, scoped, localMode } from "../../../../../packages/db";
 import { uuid, recordInput } from "../../../../../packages/domain";
 import { evidenceAnswer } from "../../../../../packages/ai";
+import { renderEmail } from "../../../../../packages/integrations/email";
+import {
+  fakeAuthProvider,
+  fakeEmailTransport,
+  issueLocalProviderSession,
+} from "#kxra/local-runtime";
+import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -119,25 +125,192 @@ async function handle(req: Request, ctx: Context) {
     const url = new URL(req.url);
     const method = req.method;
     if (method !== "GET") sameOrigin(req);
-    if (p[0] === "invitations" && p[1] === "redeem" && method === "POST") {
-      const identity = await principal();
-      if (!identity) throw new HttpError(401, "Sign in required");
-      const input = z
-        .object({ token: z.string().regex(/^[A-Za-z0-9_-]{32,100}$/) })
-        .strict()
-        .parse(await body(req));
-      const tokenHash = crypto
-        .createHash("sha256")
-        .update(input.token)
-        .digest("hex");
-      const rows = await query<{ project_id: string }>(
-        identity,
-        "select kxra.redeem_invitation($1) as project_id",
-        [tokenHash],
-      );
-      return json(rows[0]);
-    }
     const a = await actor();
+    if (p[0] === "account") {
+      if (method === "GET" && !p[1]) {
+        const [
+          profileRows,
+          preferenceRows,
+          assignments,
+          pairings,
+          securityEvents,
+        ] = await Promise.all([
+          query(
+            a,
+            `select first_name,last_name,job_title,company,phone,account_state,
+                onboarding_completed_at,mfa_state,updated_at
+               from kxra.profiles where user_id=$1`,
+            [a.id],
+          ),
+          query(
+            a,
+            `select timezone,email_notifications,whatsapp_notifications,
+                security_alerts,display_density,updated_at
+               from kxra.user_preferences where user_id=$1`,
+            [a.id],
+          ),
+          query(
+            a,
+            `select membership.project_id,project.code,project.name,
+                membership.role,membership.active,membership.expires_at
+               from kxra.project_memberships membership
+               join kxra.projects project on project.id=membership.project_id
+               where membership.user_id=$1 order by project.code`,
+            [a.id],
+          ),
+          query(
+            a,
+            `select id,verified_at,revoked_at from kxra.whatsapp_pairings
+               where user_id=$1 order by verified_at desc nulls last`,
+            [a.id],
+          ),
+          query(
+            a,
+            `select event_type,metadata,created_at from kxra.account_security_events
+               where user_id=$1 order by created_at desc limit 20`,
+            [a.id],
+          ),
+        ]);
+        return json({
+          profile: profileRows[0],
+          preferences: preferenceRows[0],
+          assignments,
+          pairings,
+          security_events: securityEvents,
+          identity: {
+            email: a.email,
+            role: a.role,
+            aal: a.aal,
+            source: a.source,
+          },
+        });
+      }
+      if (p[1] === "profile" && method === "PATCH") {
+        const input = z
+          .object({
+            first_name: z.string().trim().min(1).max(100),
+            last_name: z.string().trim().min(1).max(100),
+            job_title: z.string().trim().max(160),
+            company: z.string().trim().max(200),
+            phone: z.string().trim().max(40),
+          })
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.update_own_profile($1)", [
+          JSON.stringify(input),
+        ]);
+        return json({ ok: true });
+      }
+      if (p[1] === "preferences" && method === "PATCH") {
+        const input = z
+          .object({
+            timezone: z.string().trim().min(1).max(100),
+            email_notifications: z.boolean(),
+            whatsapp_notifications: z.boolean(),
+            display_density: z.enum(["comfortable", "compact"]),
+          })
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.update_own_preferences($1)", [
+          JSON.stringify(input),
+        ]);
+        return json({ ok: true });
+      }
+      if (p[1] === "password" && method === "POST") {
+        if (!localMode() || a.source !== "fake-provider")
+          throw new HttpError(
+            503,
+            "Password provider is unavailable in this environment",
+          );
+        const input = z
+          .object({
+            current_password: z.string().min(1).max(256),
+            new_password: z.string().min(12).max(256),
+            confirmation: z.string().min(12).max(256),
+          })
+          .strict()
+          .refine((value) => value.new_password === value.confirmation)
+          .parse(await body(req));
+        const identity = await fakeAuthProvider().changePassword(
+          a.id,
+          input.current_password,
+          input.new_password,
+        );
+        await query(
+          a,
+          "select kxra.record_password_event('PASSWORD_CHANGED')",
+          [],
+        );
+        await issueLocalProviderSession(identity, a.session_version);
+        return json({ ok: true });
+      }
+      if (p[1] === "mfa" && method === "POST") {
+        if (!localMode() || a.source !== "fake-provider")
+          throw new HttpError(
+            503,
+            "MFA provider is unavailable in this environment",
+          );
+        const input = z
+          .object({
+            action: z.enum([
+              "begin",
+              "complete",
+              "begin_recovery",
+              "recover",
+              "challenge",
+              "remove",
+            ]),
+            proof: z.string().max(200).optional(),
+          })
+          .strict()
+          .parse(await body(req));
+        const provider = fakeAuthProvider();
+        const identity =
+          input.action === "begin"
+            ? await provider.beginMfaEnrollment(a.id)
+            : input.action === "complete"
+              ? await provider.completeMfaEnrollment(a.id, input.proof || "")
+              : input.action === "begin_recovery"
+                ? await provider.beginMfaRecovery(a.id)
+                : input.action === "recover"
+                  ? await provider.recoverMfa(a.id, input.proof || "")
+                  : input.action === "challenge"
+                    ? await provider.challengeMfa(a.id, input.proof || "")
+                    : await provider.removeMfa(a.id, input.proof || "");
+        if (input.action !== "challenge")
+          await query(a, "select kxra.record_mfa_state($1,$2)", [
+            identity.mfaState,
+            identity.factorReference || null,
+          ]);
+        await issueLocalProviderSession(identity, a.session_version);
+        return json({ state: identity.mfaState, aal: identity.aal });
+      }
+      if (p[1] === "sessions" && method === "POST") {
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ session_version: number }>(
+          a,
+          "select kxra.revoke_own_sessions($1,$2) as session_version",
+          [
+            "User requested sign out on all devices",
+            localMode() ? "LOCAL_APPLIED" : "PROVIDER_PENDING",
+          ],
+        );
+        if (localMode() && a.source === "fake-provider")
+          await fakeAuthProvider().signOutAll(a.id);
+        (await cookies()).delete("kxra_local_session");
+        return json({ ok: true, session_version: rows[0].session_version });
+      }
+      if (p[1] === "whatsapp" && p[2] === "unpair" && method === "POST") {
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.unpair_own_whatsapp()", []);
+        return json({ ok: true });
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "summary" && method === "GET") return json(await counts(a));
     if (p[0] === "finance-totals" && method === "GET") {
       owner(a);
@@ -147,39 +320,203 @@ async function handle(req: Request, ctx: Context) {
       return json(p[1] ? await project(a, p[1]) : await listProjects(a));
     if (p[0] === "invitations") {
       owner(a);
-      if (method === "GET")
+      if (method === "GET") {
+        await query(a, "select kxra.refresh_expired_invitations()", []);
         return json(
           await query(
             a,
-            `select i.id,i.project_id,p.code as project_code,i.role,i.state,i.expires_at,i.created_at
-             from kxra.invitations i join kxra.projects p on p.id=i.project_id
-             order by i.created_at desc`,
+            `select i.id,i.recipient_email,i.note,i.state,i.version,i.delivery_version,i.expires_at,
+              i.sent_at,i.delivery_error,i.redeemed_at,i.revoked_at,i.created_at,
+              coalesce(jsonb_agg(jsonb_build_object(
+               'project_id',g.project_id,'project_code',p.code,'project_name',p.name,
+               'role',g.role,'expires_at',g.membership_expires_at
+              ) order by p.code) filter(where g.project_id is not null),'[]'::jsonb) as grants
+             from kxra.invitations i
+             left join kxra.invitation_project_grants g on g.invitation_id=i.id and g.org_id=i.org_id
+             left join kxra.projects p on p.id=g.project_id and p.org_id=g.org_id
+             group by i.id order by i.created_at desc`,
           ),
         );
+      }
       if (method === "POST" && !p[1]) {
         recentOwnerMfa(a);
         const input = z
           .object({
-            project_id: uuid,
             email: z.string().trim().email().max(320),
-            role: z.enum(["viewer", "contributor"]),
+            grants: z
+              .array(
+                z
+                  .object({
+                    project_id: uuid,
+                    role: z.enum(["viewer", "contributor"]),
+                    expires_at: z.string().datetime().nullable().optional(),
+                  })
+                  .strict(),
+              )
+              .min(1)
+              .max(10),
+            note: z.string().trim().max(2000).nullable().optional(),
             expires_hours: z.number().int().min(1).max(168).default(24),
           })
           .strict()
           .parse(await body(req));
-        await project(a, input.project_id);
+        if (
+          new Set(input.grants.map((grant) => grant.project_id)).size !==
+          input.grants.length
+        )
+          throw new HttpError(400, "Each project may be assigned once");
+        const assigned = await Promise.all(
+          input.grants.map((grant) => project(a, grant.project_id)),
+        );
         const token = crypto.randomBytes(32).toString("base64url");
         const tokenHash = crypto
           .createHash("sha256")
           .update(token)
           .digest("hex");
         const expiry = new Date(Date.now() + input.expires_hours * 3600_000);
-        const rows = await query<{ id: string; expires_at: string }>(
+        const rows = await query<{
+          id: string;
+          expires_at: string;
+          outbox_id: string;
+        }>(
           a,
-          "select * from kxra.create_invitation($1,$2,$3,$4,$5)",
-          [input.project_id, input.email, input.role, tokenHash, expiry],
+          "select * from kxra.create_multi_project_invitation($1,$2,$3,$4,$5)",
+          [
+            input.email,
+            JSON.stringify(input.grants),
+            input.note || null,
+            tokenHash,
+            expiry,
+          ],
         );
-        return json({ ...rows[0], token }, 201);
+        let deliveryState = "PENDING";
+        if (localMode()) {
+          try {
+            const delivered = await fakeEmailTransport().deliver({
+              operationKey: `invitation:${rows[0].id}:v1`,
+              recipient: input.email,
+              rendered: renderEmail({
+                template: "PARTNER_INVITATION",
+                recipientHint: input.email.replace(/^(.).*(@.*)$/, "$1***$2"),
+                expiresAt: rows[0].expires_at,
+                projectNames: assigned.map(
+                  (item) => `${item.code} · ${item.name}`,
+                ),
+                actionUrl: `${process.env.KXRA_ORIGIN}/join#token=${encodeURIComponent(token)}`,
+              }),
+            });
+            await query(
+              a,
+              "select kxra.mark_invitation_delivery($1,1,$2,true,$3,null)",
+              [rows[0].id, rows[0].outbox_id, delivered.providerMessageId],
+            );
+            deliveryState = "SENT";
+          } catch {
+            await query(
+              a,
+              "select kxra.mark_invitation_delivery($1,1,$2,false,null,$3)",
+              [rows[0].id, rows[0].outbox_id, "Local fake delivery failed"],
+            );
+            deliveryState = "DELIVERY_FAILED";
+          }
+        }
+        return json(
+          {
+            id: rows[0].id,
+            expires_at: rows[0].expires_at,
+            state: deliveryState,
+            project_count: input.grants.length,
+          },
+          201,
+        );
+      }
+      if (p[1] && p[2] === "resend" && method === "POST") {
+        recentOwnerMfa(a);
+        uuid.parse(p[1]);
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        const token = crypto.randomBytes(32).toString("base64url");
+        const tokenHash = crypto
+          .createHash("sha256")
+          .update(token)
+          .digest("hex");
+        const rows = await query<{
+          id: string;
+          version: number;
+          expires_at: string;
+          outbox_id: string;
+          recipient_email: string;
+        }>(a, "select * from kxra.resend_invitation($1,$2)", [p[1], tokenHash]);
+        let deliveryState = "PENDING";
+        if (localMode()) {
+          const grants = await query<{
+            project_name: string;
+            project_code: string;
+          }>(
+            a,
+            `select project.name as project_name,project.code as project_code
+             from kxra.invitation_project_grants grant_row
+             join kxra.projects project on project.id=grant_row.project_id
+             where grant_row.invitation_id=$1 order by project.code`,
+            [p[1]],
+          );
+          try {
+            const delivered = await fakeEmailTransport().deliver({
+              operationKey: `invitation:${rows[0].id}:delivery:${rows[0].version}`,
+              recipient: rows[0].recipient_email,
+              rendered: renderEmail({
+                template: "INVITATION_REMINDER",
+                recipientHint: rows[0].recipient_email.replace(
+                  /^(.).*(@.*)$/,
+                  "$1***$2",
+                ),
+                expiresAt: rows[0].expires_at,
+                projectNames: grants.map(
+                  (item) => `${item.project_code} · ${item.project_name}`,
+                ),
+                actionUrl: `${process.env.KXRA_ORIGIN}/join#token=${encodeURIComponent(token)}`,
+              }),
+            });
+            await query(
+              a,
+              "select kxra.mark_invitation_delivery($1,$2,$3,true,$4,null)",
+              [
+                rows[0].id,
+                rows[0].version,
+                rows[0].outbox_id,
+                delivered.providerMessageId,
+              ],
+            );
+            deliveryState = "SENT";
+          } catch {
+            await query(
+              a,
+              "select kxra.mark_invitation_delivery($1,$2,$3,false,null,$4)",
+              [
+                rows[0].id,
+                rows[0].version,
+                rows[0].outbox_id,
+                "Local fake delivery failed",
+              ],
+            );
+            deliveryState = "DELIVERY_FAILED";
+          }
+        }
+        return json({
+          id: rows[0].id,
+          version: rows[0].version,
+          state: deliveryState,
+        });
+      }
+      if (p[1] && p[2] === "revoke" && method === "POST") {
+        recentOwnerMfa(a);
+        uuid.parse(p[1]);
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.revoke_invitation($1)", [p[1]]);
+        return json({ ok: true });
       }
       throw new HttpError(404, "Not found");
     }
@@ -494,8 +831,33 @@ async function handle(req: Request, ctx: Context) {
                   .strict(),
               })
               .strict(),
+            z
+              .object({
+                action: z.literal("account.lifecycle"),
+                project_id: z.null(),
+                payload: z
+                  .object({
+                    user_id: uuid,
+                    desired_state: z.enum(["ACTIVE", "SUSPENDED", "REVOKED"]),
+                    reason: z.string().trim().min(1).max(1000),
+                  })
+                  .strict(),
+              })
+              .strict(),
           ])
           .parse(await body(req));
+        if (input.action === "account.lifecycle") {
+          const rows = await query(
+            a,
+            "select * from kxra.request_account_lifecycle_approval($1,$2,$3)",
+            [
+              input.payload.user_id,
+              input.payload.desired_state,
+              input.payload.reason,
+            ],
+          );
+          return json(rows[0], 201);
+        }
         return json(await approval(a, input), 201);
       }
       if (p[1] && method === "POST") {
@@ -518,7 +880,9 @@ async function handle(req: Request, ctx: Context) {
                 ? "change_membership"
                 : rows[0].action === "project.gate"
                   ? "authorize_project_gate"
-                  : null;
+                  : rows[0].action === "account.lifecycle"
+                    ? "change_account_lifecycle"
+                    : null;
           if (!fn)
             throw new HttpError(409, "Execution is disabled for this action");
           await query(a, `select kxra.${fn}($1)`, [p[1]]);
@@ -662,14 +1026,57 @@ async function handle(req: Request, ctx: Context) {
         }
       }
     }
-    if (p[0] === "partners" && method === "GET") {
+    if (p[0] === "partners") {
       owner(a);
-      return json(
-        await query(
+      if (method === "GET" && !p[1])
+        return json(
+          await query(
+            a,
+            `select member.id,member.display_name,member.active,member.access_version,
+              profile.account_state,profile.first_name,profile.last_name,profile.job_title,
+              profile.company,profile.mfa_state,profile.onboarding_completed_at,
+              profile.session_version
+             from kxra.members member join kxra.profiles profile on profile.user_id=member.id
+             where member.role='partner' order by member.display_name,member.id`,
+          ),
+        );
+      if (p[1] && p[2] === "sessions" && method === "POST") {
+        recentOwnerMfa(a);
+        const target = uuid.parse(p[1]);
+        const input = z
+          .object({ reason: z.string().trim().min(1).max(1000) })
+          .strict()
+          .parse(await body(req));
+        if (localMode()) {
+          const identity = await fakeAuthProvider().getIdentity(target);
+          if (identity) await fakeAuthProvider().signOutAll(target);
+        }
+        const rows = await query<{ session_version: number }>(
           a,
-          "select id,display_name,active from kxra.members where role='partner'",
-        ),
-      );
+          "select kxra.force_account_session_revoke($1,$2,$3) as session_version",
+          [
+            target,
+            input.reason,
+            localMode() ? "LOCAL_APPLIED" : "PROVIDER_PENDING",
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[1] &&
+        p[2] === "whatsapp" &&
+        p[3] === "unpair" &&
+        method === "POST"
+      ) {
+        recentOwnerMfa(a);
+        uuid.parse(p[1]);
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.owner_unpair_whatsapp($1)", [p[1]]);
+        return json({ ok: true });
+      }
+      throw new HttpError(404, "Not found");
     }
     if (p[0] === "whatsapp")
       throw new HttpError(503, "WhatsApp gateway is disabled");
@@ -678,6 +1085,16 @@ async function handle(req: Request, ctx: Context) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);
     if (e instanceof z.ZodError)
       return json({ error: "Invalid request fields" }, 400);
+    if (
+      e instanceof Error &&
+      [
+        "PASSWORD_POLICY",
+        "PASSWORD_CHANGE_UNAVAILABLE",
+        "MFA_PROOF_UNAVAILABLE",
+        "MFA_UPDATE_UNAVAILABLE",
+      ].includes(e.message)
+    )
+      return json({ error: "Security action unavailable" }, 400);
     const code = (e as { code?: string }).code;
     if (code === "42501") return json({ error: "Access unavailable" }, 403);
     if (["23503", "23505", "23514", "P0001", "22P02"].includes(code || ""))

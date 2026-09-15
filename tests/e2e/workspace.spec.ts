@@ -1,10 +1,31 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+async function fixtureLogin(page: Page, fixture: string) {
+  await page.goto("/login");
+  await page.getByText("Local fixture identities", { exact: true }).click();
+  await page.getByLabel("Synthetic identity").selectOption(fixture);
+  await page.getByRole("button", { name: "Use fixture" }).click();
+}
+
+async function navigate(page: Page, name: string) {
+  if (await page.locator(".mobile-menu").isVisible()) {
+    await page.getByText("Menu", { exact: true }).click();
+    await page
+      .getByRole("navigation", { name: "Mobile navigation" })
+      .getByRole("link", { name, exact: true })
+      .click();
+    return;
+  }
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name, exact: true })
+    .click();
+}
+
 test("owner sign-in, draft creation and persistence", async ({
   page,
 }, testInfo) => {
-  await page.goto("/login");
-  await page.getByLabel("Local test identity").selectOption("owner");
-  await page.getByRole("button", { name: "Sign in →" }).click();
+  await fixtureLogin(page, "owner");
   await expect(
     page.getByRole("heading", { name: "Your operating overview" }),
   ).toBeVisible();
@@ -17,7 +38,7 @@ test("owner sign-in, draft creation and persistence", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("link", { name: "Idea Inbox", exact: true }).click();
+  await navigate(page, "Idea Inbox");
   const title = "Browser fixture " + Date.now();
   await page.getByLabel("Title", { exact: true }).fill(title);
   await page
@@ -37,9 +58,7 @@ test("owner sign-in, draft creation and persistence", async ({
 test("partner navigation and crafted project URL protect private work", async ({
   page,
 }) => {
-  await page.goto("/login");
-  await page.getByLabel("Local test identity").selectOption("partner");
-  await page.getByRole("button", { name: "Sign in →" }).click();
+  await fixtureLogin(page, "partner");
   await expect(
     page.getByRole("heading", { name: "Your project workspace" }),
   ).toBeVisible();
@@ -60,9 +79,7 @@ test("owner can inspect gate controls, history and invitation foundations", asyn
   page,
 }) => {
   const project = "30000000-0000-4000-8000-000000000002";
-  await page.goto("/login");
-  await page.getByLabel("Local test identity").selectOption("owner");
-  await page.getByRole("button", { name: "Sign in →" }).click();
+  await fixtureLogin(page, "owner");
 
   await page.goto(`/os/projects/${project}`);
   await expect(

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
-import { verifySessionClaims } from "../../../packages/authz/session";
+import { localPrincipal } from "#kxra/local-runtime";
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -15,7 +15,27 @@ export type Actor = Principal & {
   role: "owner" | "partner";
   display_name: string;
   access_version: number;
+  account_state: "ACTIVE";
+  session_version: number;
 };
+type AccountRow = {
+  org_id: string;
+  account_state:
+    | "INVITED"
+    | "REGISTERED"
+    | "EMAIL_VERIFIED"
+    | "ONBOARDING"
+    | "ACTIVE"
+    | "SUSPENDED"
+    | "REVOKED";
+  session_version: number;
+  onboarding_completed_at: string | null;
+  current_step: number | null;
+  first_name: string | null;
+  last_name: string | null;
+  mfa_state: string;
+};
+export type AccountContext = Principal & AccountRow;
 export async function supabase() {
   const store = await cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -38,21 +58,7 @@ export async function supabase() {
   });
 }
 export async function principal(): Promise<Principal | null> {
-  if (localMode()) {
-    const token = (await cookies()).get("kxra_local_session")?.value;
-    const session = token
-      ? verifySessionClaims(token, process.env.KXRA_LOCAL_SECRET || "")
-      : null;
-    return session
-      ? {
-          id: session.id,
-          aal: "aal2",
-          auth_time: session.auth_time,
-          email: session.email,
-          email_verified: true,
-        }
-      : null;
-  }
+  if (localMode()) return localPrincipal();
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   const client = await supabase();
   const { data, error } = await client.auth.getUser();
@@ -68,18 +74,72 @@ export async function principal(): Promise<Principal | null> {
         : undefined,
     email: data.user.email,
     email_verified: Boolean(data.user.email_confirmed_at),
+    source: "supabase",
   };
 }
-export async function actor(): Promise<Actor> {
+export async function account(): Promise<AccountContext> {
   const p = await principal();
   if (!p) throw new HttpError(401, "Sign in required");
-  const rows = await query<Actor>(
+  let rows = await query<AccountRow>(
     p,
-    "select id,org_id,role,display_name,access_version from kxra.members where id=$1 and active",
+    `select profile.org_id,profile.account_state,profile.session_version,
+      profile.onboarding_completed_at,progress.current_step,profile.first_name,
+      profile.last_name,profile.mfa_state
+     from kxra.profiles profile
+     left join kxra.onboarding_progress progress on progress.user_id=profile.user_id
+     where profile.user_id=$1`,
     [p.id],
   );
   if (!rows[0]) throw new HttpError(403, "Access unavailable");
-  return { ...rows[0], ...p };
+  if (
+    p.source === "fake-provider" &&
+    p.session_version !== rows[0].session_version
+  )
+    throw new HttpError(401, "Session expired");
+  if (rows[0].account_state === "ACTIVE") {
+    const readiness = await query<{
+      role: "owner" | "partner";
+      ready: boolean;
+    }>(
+      p,
+      `select m.role,kxra_private.member_org()=m.org_id as ready
+       from kxra.members m where m.id=$1 and m.active`,
+      [p.id],
+    );
+    if (readiness[0]?.role === "partner" && !readiness[0].ready) {
+      await query(p, "select kxra.resume_required_onboarding()", []);
+      rows = await query<AccountRow>(
+        p,
+        `select profile.org_id,profile.account_state,profile.session_version,
+          profile.onboarding_completed_at,progress.current_step,profile.first_name,
+          profile.last_name,profile.mfa_state
+         from kxra.profiles profile
+         left join kxra.onboarding_progress progress on progress.user_id=profile.user_id
+         where profile.user_id=$1`,
+        [p.id],
+      );
+    }
+  }
+  return { ...p, ...rows[0] };
+}
+export async function actor(): Promise<Actor> {
+  const p = await account();
+  if (p.account_state === "ONBOARDING")
+    throw new HttpError(428, "Onboarding required");
+  if (p.account_state !== "ACTIVE")
+    throw new HttpError(403, "Access unavailable");
+  const rows = await query<Actor>(
+    p,
+    `select m.id,m.org_id,m.role,m.display_name,m.access_version,
+      profile.account_state,profile.session_version
+     from kxra.members m join kxra.profiles profile
+      on profile.user_id=m.id and profile.org_id=m.org_id
+     where m.id=$1 and m.active and profile.account_state='ACTIVE'
+      and kxra_private.member_org()=m.org_id`,
+    [p.id],
+  );
+  if (!rows[0]) throw new HttpError(403, "Access unavailable");
+  return { ...p, ...rows[0], account_state: "ACTIVE" };
 }
 export function owner(a: Actor) {
   if (a.role !== "owner") throw new HttpError(403, "Access unavailable");

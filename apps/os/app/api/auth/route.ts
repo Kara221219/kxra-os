@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { localMode } from "../../../../../packages/db";
+import { localMode, query, type Principal } from "../../../../../packages/db";
 import {
-  fixtureUsers,
-  signSession,
-} from "../../../../../packages/authz/session";
+  fakeAuthProvider,
+  issueFixtureSession,
+  issueLocalProviderSession,
+} from "#kxra/local-runtime";
 import { sameOrigin, supabase } from "../../../lib/auth";
+import crypto from "node:crypto";
 export async function POST(req: Request) {
   try {
     sameOrigin(req);
@@ -19,20 +21,66 @@ export async function POST(req: Request) {
       );
     }
     if (localMode()) {
-      const key = String(f.get("fixture")) as keyof typeof fixtureUsers;
-      const id = fixtureUsers[key];
-      if (!id) throw Error();
-      (await cookies()).set(
-        "kxra_local_session",
-        signSession(id, process.env.KXRA_LOCAL_SECRET || ""),
-        {
-          httpOnly: true,
-          sameSite: "strict",
-          path: "/",
-          maxAge: 28800,
-          secure: false,
-        },
-      );
+      const fixture = f.get("fixture");
+      if (fixture) {
+        await issueFixtureSession(String(fixture));
+      } else {
+        const normalizedEmail = String(f.get("email") || "")
+          .trim()
+          .toLowerCase();
+        const rateSubject = crypto
+          .createHash("sha256")
+          .update(`sign-in:${normalizedEmail}`)
+          .digest("hex");
+        const allowed = await query<{ allowed: boolean }>(
+          null,
+          "select kxra.consume_rate_limit('sign-in',$1,10,900) as allowed",
+          [rateSubject],
+        );
+        if (!allowed[0]?.allowed) throw Error();
+        const identity = await fakeAuthProvider().signIn(
+          normalizedEmail,
+          String(f.get("password") || ""),
+        );
+        const principal: Principal = {
+          id: identity.id,
+          email: identity.email,
+          email_verified: identity.emailVerified,
+          aal: identity.aal,
+          auth_time: Math.floor(Date.now() / 1000),
+          session_version: 1,
+          provider_session_version: identity.providerSessionVersion,
+          source: "fake-provider",
+        };
+        const profile = await query<{
+          account_state: string;
+          session_version: number;
+        }>(
+          principal,
+          "select account_state,session_version from kxra.profiles where user_id=$1",
+          [identity.id],
+        );
+        if (
+          !profile[0] ||
+          ["SUSPENDED", "REVOKED"].includes(profile[0].account_state)
+        )
+          throw Error();
+        await issueLocalProviderSession(identity, profile[0].session_version);
+        const hasJoin = Boolean((await cookies()).get("kxra_join_intent"));
+        const next = !identity.emailVerified
+          ? hasJoin
+            ? "/join/account"
+            : "/login?verify=1"
+          : hasJoin
+            ? "/join/finish"
+            : profile[0].account_state === "ONBOARDING"
+              ? "/onboarding"
+              : "/os";
+        return NextResponse.redirect(
+          new URL(next, process.env.KXRA_ORIGIN || req.url),
+          303,
+        );
+      }
     } else {
       const { error } = await (
         await supabase()

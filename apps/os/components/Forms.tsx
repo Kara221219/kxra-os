@@ -12,8 +12,8 @@ type Project = { id: string; code: string; name: string };
 export function InvitationForm({ projects }: { projects: Project[] }) {
   const ready = useReady();
   const [message, setMessage] = useState("");
-  const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
   return (
     <form
       method="post"
@@ -23,25 +23,35 @@ export function InvitationForm({ projects }: { projects: Project[] }) {
         if (busy) return;
         setBusy(true);
         setMessage("");
-        setToken("");
-        const form = new FormData(event.currentTarget);
+        const formElement = event.currentTarget;
+        const form = new FormData(formElement);
         try {
+          const grants = projects
+            .filter((project) => form.get(`project-${project.id}`) === "on")
+            .map((project) => ({
+              project_id: project.id,
+              role: form.get(`role-${project.id}`),
+            }));
+          if (!grants.length) throw new Error("Choose at least one project");
           const response = await fetch("/api/invitations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              project_id: form.get("project_id"),
               email: form.get("email"),
-              role: form.get("role"),
+              grants,
+              note: form.get("note") || null,
               expires_hours: Number(form.get("expires_hours")),
             }),
           });
           const result = await response.json();
           if (!response.ok) throw Error(result.error);
-          setToken(result.token);
           setMessage(
-            "Invitation created. The token is shown once and has not been sent.",
+            result.state === "SENT"
+              ? `Invitation created for ${result.project_count} project${result.project_count === 1 ? "" : "s"} and captured by the local fake email provider.`
+              : "Invitation created and waiting for configured email delivery.",
           );
+          formElement.reset();
+          router.refresh();
         } catch (error) {
           setMessage(
             error instanceof Error ? error.message : "Invitation unavailable",
@@ -53,35 +63,40 @@ export function InvitationForm({ projects }: { projects: Project[] }) {
     >
       <h2>Create an invitation</h2>
       <p>
-        This creates a one-use, expiring assignment token. KXRA does not send it
-        externally in this environment.
+        The partner creates their own password. The one-use link is delivered
+        only through the configured provider; this environment uses a local fake
+        outbox.
       </p>
       <fieldset disabled={!ready || busy}>
         <label>
           Verified account email
           <input name="email" type="email" required maxLength={320} />
         </label>
+        <fieldset className="assignment-picker">
+          <legend>Project assignments</legend>
+          {projects.map((project) => (
+            <div className="assignment-row" key={project.id}>
+              <label className="check-row">
+                <input type="checkbox" name={`project-${project.id}`} />
+                <span>
+                  {project.code} · {project.name}
+                </span>
+              </label>
+              <label>
+                <span className="sr-only">Role for {project.name}</span>
+                <select name={`role-${project.id}`} defaultValue="viewer">
+                  <option value="viewer">Viewer</option>
+                  <option value="contributor">Contributor</option>
+                </select>
+              </label>
+            </div>
+          ))}
+        </fieldset>
         <label>
-          Project
-          <select name="project_id" required defaultValue="">
-            <option value="" disabled>
-              Choose a project
-            </option>
-            {projects.map((project) => (
-              <option value={project.id} key={project.id}>
-                {project.code} · {project.name}
-              </option>
-            ))}
-          </select>
+          Optional note
+          <textarea name="note" maxLength={2000} />
         </label>
         <div className="form-grid">
-          <label>
-            Access
-            <select name="role" defaultValue="viewer">
-              <option value="viewer">Viewer</option>
-              <option value="contributor">Contributor</option>
-            </select>
-          </label>
           <label>
             Expires after
             <select name="expires_hours" defaultValue="24">
@@ -95,67 +110,6 @@ export function InvitationForm({ projects }: { projects: Project[] }) {
       </fieldset>
       <button disabled={!ready || busy}>
         {busy ? "Creating…" : "Create invitation"}
-      </button>
-      {message && <p role="status">{message}</p>}
-      {token && (
-        <label>
-          One-time token
-          <textarea
-            readOnly
-            value={token}
-            aria-label="One-time invitation token"
-          />
-        </label>
-      )}
-    </form>
-  );
-}
-
-export function RedeemInvitationForm({
-  initialToken = "",
-}: {
-  initialToken?: string;
-}) {
-  const ready = useReady();
-  const router = useRouter();
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  return (
-    <form
-      method="post"
-      className="panel create-form"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        if (busy) return;
-        setBusy(true);
-        setMessage("");
-        const form = new FormData(event.currentTarget);
-        try {
-          const response = await fetch("/api/invitations/redeem", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: form.get("token") }),
-          });
-          const result = await response.json();
-          if (!response.ok) throw Error(result.error);
-          setMessage("Invitation redeemed. Opening your assigned workspace…");
-          router.push(`/os/projects/${result.project_id}`);
-          router.refresh();
-        } catch (error) {
-          setMessage(
-            error instanceof Error ? error.message : "Invitation unavailable",
-          );
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      <label>
-        One-time invitation token
-        <textarea name="token" required defaultValue={initialToken} />
-      </label>
-      <button disabled={!ready || busy}>
-        {busy ? "Checking…" : "Redeem invitation"}
       </button>
       {message && <p role="status">{message}</p>}
     </form>

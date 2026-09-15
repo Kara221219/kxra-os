@@ -1,26 +1,20 @@
 import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
+import { localModeConfiguration } from "#kxra/local-guard";
 export type Principal = {
   id: string;
   aal: "aal1" | "aal2";
   auth_time?: number;
   email?: string;
   email_verified?: boolean;
+  session_version?: number;
+  provider_session_version?: number;
+  source?: "fixture" | "fake-provider" | "supabase";
 };
 let pool: pg.Pool | undefined;
-export function localMode(environment: NodeJS.ProcessEnv = process.env) {
-  return (
-    environment.KXRA_AUTH_MODE === "fixture" &&
-    environment.NODE_ENV !== "production" &&
-    !environment.VERCEL &&
-    environment.KXRA_ORIGIN === "http://127.0.0.1:3210" &&
-    !environment.NEXT_PUBLIC_SUPABASE_URL &&
-    !environment.DATABASE_URL &&
-    !!environment.KXRA_RUNTIME &&
-    typeof environment.KXRA_LOCAL_SECRET === "string" &&
-    environment.KXRA_LOCAL_SECRET.length >= 64
-  );
+export function localMode() {
+  return localModeConfiguration(process.env);
 }
 export function getPool() {
   if (!pool) {
@@ -66,6 +60,7 @@ export async function scoped<T>(
           auth_time: actor?.auth_time,
           email: actor?.email,
           email_verified: actor?.email_verified,
+          session_version: actor?.session_version,
           role: actor ? "authenticated" : "anon",
         }),
       ],

@@ -12,7 +12,7 @@ import {
   fixtureUsers,
 } from "../packages/authz/session";
 import { verifyWebhook } from "../packages/integrations/whatsapp";
-import { localMode } from "../packages/db";
+import { localModeConfiguration } from "../packages/authz/local-guard";
 import crypto from "node:crypto";
 test("money uses exact arithmetic and separates actual, paper and currencies", () => {
   assert.equal(formatMoney(moneyUnits("0.1") + moneyUnits("0.2")), "0.3000");
@@ -82,7 +82,7 @@ test("AT-03 fixture mode rejects hosted, production, non-loopback and weak-secre
     KXRA_LOCAL_SECRET: "x".repeat(64),
     NODE_ENV: "development",
   };
-  assert.equal(localMode(valid), true);
+  assert.equal(localModeConfiguration(valid), true);
   for (const changed of [
     { NODE_ENV: "production" },
     { VERCEL: "1" },
@@ -93,7 +93,7 @@ test("AT-03 fixture mode rejects hosted, production, non-loopback and weak-secre
     { KXRA_LOCAL_SECRET: "short" },
     { KXRA_LOCAL_SECRET: "" },
   ] as Partial<NodeJS.ProcessEnv>[])
-    assert.equal(localMode({ ...valid, ...changed }), false);
+    assert.equal(localModeConfiguration({ ...valid, ...changed }), false);
 });
 test("WhatsApp signature validates raw bytes and rejects altered payload", () => {
   const raw = Buffer.from('{"test":true}'),
