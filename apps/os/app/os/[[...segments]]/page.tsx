@@ -17,9 +17,15 @@ import {
   InvitationForm,
   GateEvidenceForm,
 } from "../../../components/Forms";
+import {
+  AdminView,
+  DashboardSectionView,
+  IdeaInboxView,
+  PortfolioView,
+  WorkLogView,
+} from "../../../components/ControlPlaneViews";
 import { actor, HttpError, owner, type Actor } from "../../../lib/auth";
 import {
-  counts,
   totals,
   listProjects,
   listRecords,
@@ -29,10 +35,17 @@ import {
   type Project,
   type RecordRow,
 } from "../../../lib/data";
+import {
+  adminSnapshot,
+  ideaStates,
+  listIdeas,
+  listPortfolio,
+  listWorkLog,
+  ownerDashboard,
+} from "../../../lib/control-plane";
 import { localMode, query } from "../../../../../packages/db";
 export const dynamic = "force-dynamic";
 const modules: Record<string, [string, string]> = {
-  ideas: ["Idea Inbox", "idea"],
   assumptions: ["Assumptions", "assumption"],
   experiments: ["Experiments", "experiment"],
   decisions: ["Decisions", "decision"],
@@ -148,7 +161,22 @@ export default async function Workspace({
   searchParams,
 }: {
   params: Promise<{ segments?: string[] }>;
-  searchParams: Promise<{ project?: string; version?: string }>;
+  searchParams: Promise<{
+    project?: string;
+    version?: string;
+    state?: string;
+    stage?: string;
+    disposition?: string;
+    sort?: string;
+    direction?: string;
+    page?: string;
+    actor?: string;
+    department?: string;
+    type?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   let a: Actor;
   try {
@@ -178,24 +206,90 @@ export default async function Workspace({
     writable.some((w) => w.id === p.id),
   );
   try {
-    if (
-      !section ||
-      section === "portfolio" ||
-      (section === "projects" && !segments[1])
-    ) {
+    if (!section && a.role === "owner") {
+      const dashboard = await ownerDashboard(a);
+      content = (
+        <>
+          <Heading
+            title="Your operating overview"
+            sub="Persisted work that needs attention, a decision, or review."
+          />
+          <div className="dashboard-control-grid">
+            <DashboardSectionView title="Today" section={dashboard.today} />
+            <DashboardSectionView
+              title="Needs your decision"
+              section={dashboard.needs_your_decision}
+              tone="decision"
+            />
+            <DashboardSectionView
+              title="At risk"
+              section={dashboard.at_risk}
+              tone="risk"
+            />
+            <DashboardSectionView
+              title="Recent activity"
+              section={dashboard.recent_activity}
+            />
+          </div>
+        </>
+      );
+    } else if (section === "portfolio") {
+      owner(a);
+      const stage = queryParameters.stage || undefined;
+      const disposition = queryParameters.disposition || undefined;
+      const sort = queryParameters.sort || "code";
+      const direction = queryParameters.direction === "desc" ? "desc" : "asc";
+      const page = Math.max(1, Number(queryParameters.page || 1) || 1);
+      const result = await listPortfolio(a, {
+        lifecycleStage: stage,
+        disposition,
+        sort,
+        direction,
+        page,
+        pageSize: 10,
+      });
+      const memberRows = await query<{
+        project_id: string;
+        id: string;
+        display_name: string;
+        role: string;
+      }>(
+        a,
+        `select p.id as project_id,m.id,m.display_name,
+          case when m.role='owner' then 'KXRA owner' else pm.role end as role
+         from kxra.projects p join kxra.members m on m.org_id=p.org_id and m.active
+         left join kxra.project_memberships pm on pm.project_id=p.id and pm.user_id=m.id
+          and pm.active and (pm.expires_at is null or pm.expires_at>now())
+         where m.role='owner' or pm.user_id is not null
+         order by p.code,m.role,m.display_name,m.id`,
+      );
+      const membersByProject = memberRows.reduce<
+        Record<string, { id: string; display_name: string; role: string }[]>
+      >((grouped, row) => {
+        (grouped[row.project_id] ||= []).push(row);
+        return grouped;
+      }, {});
+      content = (
+        <>
+          <Heading
+            title="Portfolio"
+            sub="Governed venture state, evidence coverage, capital actuals and next gates."
+          />
+          <PortfolioView
+            result={result}
+            filters={{ stage, disposition, sort, direction }}
+            projects={projects}
+            membersByProject={membersByProject}
+          />
+        </>
+      );
+    } else if (!section || (section === "projects" && !segments[1])) {
       const rows = await listRecords(a);
-      const summary = await counts(a);
       content = (
         <>
           <Heading
             title={
-              section === "portfolio"
-                ? "Portfolio"
-                : section === "projects"
-                  ? "Projects"
-                  : a.role === "owner"
-                    ? "Your operating overview"
-                    : "Your project workspace"
+              section === "projects" ? "Projects" : "Your project workspace"
             }
             sub={
               a.role === "owner"
@@ -210,11 +304,17 @@ export default async function Workspace({
             </div>
             <div className="stat">
               <p>Evidence records</p>
-              <strong>{summary.records}</strong>
+              <strong>{rows.length}</strong>
             </div>
             <div className="stat">
               <p>Open risks</p>
-              <strong>{summary.open_risks}</strong>
+              <strong>
+                {
+                  rows.filter(
+                    (row) => row.kind === "risk" && row.status !== "archived",
+                  ).length
+                }
+              </strong>
             </div>
             <div className="stat">
               <p>Investment recorded</p>
@@ -439,6 +539,58 @@ export default async function Workspace({
               />
             </div>
           )}
+        </>
+      );
+    } else if (section === "ideas") {
+      const state = ideaStates.find((value) => value === queryParameters.state);
+      const page = Math.max(1, Number(queryParameters.page || 1) || 1);
+      if (filter) await project(a, filter);
+      const result = await listIdeas(a, {
+        project: filter,
+        state,
+        page,
+        pageSize: 25,
+      });
+      const partnerRows =
+        a.role === "owner"
+          ? await query<{
+              project_id: string;
+              id: string;
+              display_name: string;
+              role: string;
+            }>(
+              a,
+              `select pm.project_id,m.id,m.display_name,pm.role
+               from kxra.project_memberships pm
+               join kxra.members m on m.id=pm.user_id and m.org_id=pm.org_id
+               where pm.active and m.active and (pm.expires_at is null or pm.expires_at>now())
+               order by pm.project_id,m.display_name,m.id`,
+            )
+          : [];
+      const partnersByProject = partnerRows.reduce<
+        Record<string, { id: string; display_name: string; role: string }[]>
+      >((grouped, row) => {
+        (grouped[row.project_id] ||= []).push(row);
+        return grouped;
+      }, {});
+      content = (
+        <>
+          <Heading
+            title="Idea Inbox"
+            sub={
+              a.role === "owner"
+                ? "All submitted ideas, with explicit state, evidence and sharing controls."
+                : "Your submissions and ideas explicitly shared with you."
+            }
+          />
+          <IdeaInboxView
+            result={result}
+            filters={{ project: filter, state }}
+            projects={projects}
+            writableProjects={writableProjects}
+            owner={a.role === "owner"}
+            partnersByProject={partnersByProject}
+          />
         </>
       );
     } else if (section === "tasks") {
@@ -706,6 +858,7 @@ export default async function Workspace({
       );
     } else if (section === "approvals") {
       owner(a);
+      await query(a, "select kxra.refresh_expired_approvals()", []);
       const rows = await query<{
         id: string;
         action: string;
@@ -716,14 +869,18 @@ export default async function Workspace({
         expires_at: string;
         project_code: string | null;
         target_name: string | null;
+        requester_name: string | null;
+        created_at: string;
       }>(
         a,
         `select a.*,p.code as project_code,
-                coalesce(r.title,m.display_name) as target_name
+                coalesce(r.title,m.display_name) as target_name,
+                requester.display_name as requester_name
          from kxra.approvals a
          left join kxra.projects p on p.id=a.project_id
          left join kxra.records r on r.id=nullif(a.payload->>'record_id','')::uuid
          left join kxra.members m on m.id=nullif(a.payload->>'user_id','')::uuid
+         left join kxra.members requester on requester.id=a.requested_by and requester.org_id=a.org_id
          order by a.created_at desc`,
       );
       content = (
@@ -733,81 +890,70 @@ export default async function Workspace({
             sub="Review the exact action. Consequential changes require owner MFA."
           />
           {rows.map((r) => (
-            <article className="record" key={r.id}>
+            <article className="record" key={r.id} id={`approval-${r.id}`}>
               <h3>
-                {r.action === "record.accept"
-                  ? "Accept record"
-                  : r.action === "membership.change"
-                    ? "Change project access"
-                    : r.action === "project.gate"
-                      ? "Authorize local project gate"
-                      : r.action}
+                {String(r.payload.action_summary || "") ||
+                  (r.action === "record.accept"
+                    ? "Accept record"
+                    : r.action === "membership.change"
+                      ? "Change project access"
+                      : r.action === "project.gate"
+                        ? "Authorize local project gate"
+                        : r.action)}
               </h3>
               <span className="badge">{r.state}</span>
               <dl className="definition">
-                <dt>Target</dt>
-                <dd>{r.target_name || "Unavailable target"}</dd>
+                <dt>Action</dt>
+                <dd>{r.action}</dd>
+                <dt>Requester</dt>
+                <dd>{r.requester_name || "Unknown requester"}</dd>
                 <dt>Project</dt>
                 <dd>{r.project_code || "KXRA Group"}</dd>
+                <dt>Requested</dt>
+                <dd>{new Date(r.created_at).toLocaleString("en-GB")}</dd>
                 <dt>Expires</dt>
                 <dd>{new Date(r.expires_at).toLocaleString("en-GB")}</dd>
-                {r.action === "membership.change" && (
-                  <>
-                    <dt>Before</dt>
-                    <dd>{JSON.stringify(r.payload.before)}</dd>
-                    <dt>After</dt>
-                    <dd>
-                      {JSON.stringify({
-                        role: r.payload.role,
-                        active: r.payload.active,
-                        expires_at: r.payload.expires_at,
-                      })}
-                    </dd>
-                  </>
-                )}
-                {r.action === "record.accept" && (
-                  <>
-                    <dt>Version</dt>
-                    <dd>{String(r.payload.version)}</dd>
-                    <dt>Classification</dt>
-                    <dd>{String(r.payload.classification)}</dd>
-                  </>
-                )}
-                {r.action === "project.gate" && (
-                  <>
-                    <dt>Gate</dt>
-                    <dd>{String(r.payload.gate)}</dd>
-                    <dt>Evidence version</dt>
-                    <dd>{String(r.payload.evidence_version)}</dd>
-                    <dt>Scope</dt>
-                    <dd>{String(r.payload.scope)}</dd>
-                  </>
-                )}
-                {r.action === "account.lifecycle" && (
-                  <>
-                    <dt>Account</dt>
-                    <dd>{String(r.payload.user_id)}</dd>
-                    <dt>Desired state</dt>
-                    <dd>{String(r.payload.desired_state)}</dd>
-                    <dt>Reason</dt>
-                    <dd>{String(r.payload.reason)}</dd>
-                    <dt>Before</dt>
-                    <dd>
-                      <code>{JSON.stringify(r.payload.before)}</code>
-                    </dd>
-                    <dt>After</dt>
-                    <dd>
-                      <code>{JSON.stringify(r.payload.after)}</code>
-                    </dd>
-                  </>
-                )}
+                <dt>Target / recipient</dt>
+                <dd>
+                  {r.payload.recipient
+                    ? JSON.stringify(r.payload.recipient)
+                    : r.target_name || "Not applicable"}
+                </dd>
+                <dt>Before</dt>
+                <dd>
+                  <code>
+                    {r.payload.before
+                      ? JSON.stringify(r.payload.before)
+                      : "Legacy envelope — not supplied"}
+                  </code>
+                </dd>
+                <dt>After</dt>
+                <dd>
+                  <code>
+                    {r.payload.after
+                      ? JSON.stringify(r.payload.after)
+                      : "Legacy envelope — not supplied"}
+                  </code>
+                </dd>
+                <dt>Estimated cost</dt>
+                <dd>
+                  {r.payload.estimated_cost
+                    ? `${String(r.payload.cost_currency || "")} ${String(r.payload.estimated_cost)}`.trim()
+                    : "Not applicable"}
+                </dd>
+                <dt>Risk</dt>
+                <dd>
+                  {String(
+                    r.payload.risk_summary || "Legacy envelope — not supplied",
+                  )}
+                </dd>
               </dl>
               <details>
                 <summary>Exact signed envelope</summary>
                 <pre>{JSON.stringify(r.payload, null, 2)}</pre>
                 <p className="subtle">Digest: {r.payload_hash}</p>
               </details>
-              {r.state === "requested" && (
+              {r.state === "REQUESTED" && (
                 <div className="record-actions">
                   <ActionButton
                     url={"/api/approvals/" + r.id}
@@ -821,12 +967,14 @@ export default async function Workspace({
                   />
                 </div>
               )}
-              {r.state === "approved" &&
+              {r.state === "APPROVED" &&
                 [
                   "record.accept",
                   "membership.change",
                   "project.gate",
                   "account.lifecycle",
+                  "idea.share",
+                  "project.governance",
                 ].includes(r.action) && (
                   <ActionButton
                     url={"/api/approvals/" + r.id + "/execute"}
@@ -931,29 +1079,62 @@ export default async function Workspace({
           </p>
         </>
       );
-    } else if (section === "work-log" || section === "activity") {
-      const rows =
-        section === "work-log"
-          ? (owner(a),
-            await query<{ id: string; action: string; created_at: string }>(
-              a,
-              "select id,action,created_at from kxra.audit_events order by created_at desc limit 100",
-            ))
-          : await query<{ id: string; action: string; created_at: string }>(
-              a,
-              "select id,title as action,created_at from kxra.records where visibility='project_shared' order by updated_at desc limit 100",
-            );
+    } else if (section === "work-log") {
+      owner(a);
+      const page = Math.max(1, Number(queryParameters.page || 1) || 1);
+      if (filter) await project(a, filter);
+      const result = await listWorkLog(a, {
+        project: filter,
+        actor: queryParameters.actor,
+        department: queryParameters.department,
+        type: queryParameters.type,
+        status: queryParameters.status,
+        from: queryParameters.from,
+        to: queryParameters.to,
+        page,
+        pageSize: 50,
+      });
       content = (
         <>
           <Heading
-            title={section === "activity" ? "Project activity" : "Work Log"}
-            sub="Durable records of actual saved work."
+            title="Work Log"
+            sub="Durable, attributable events linked to the artifacts that produced them."
+          />
+          <WorkLogView
+            result={result}
+            filters={{
+              project: filter,
+              actor: queryParameters.actor,
+              department: queryParameters.department,
+              type: queryParameters.type,
+              status: queryParameters.status,
+              from: queryParameters.from,
+              to: queryParameters.to,
+            }}
+            projects={projects}
+          />
+        </>
+      );
+    } else if (section === "activity") {
+      const rows = await query<{
+        id: string;
+        action: string;
+        created_at: string;
+      }>(
+        a,
+        "select id,title as action,created_at from kxra.records where visibility='project_shared' order by updated_at desc limit 100",
+      );
+      content = (
+        <>
+          <Heading
+            title="Project activity"
+            sub="Records visible within your current project access."
           />
           <div className="panel">
-            {rows.map((r) => (
-              <div className="list-item" key={r.id}>
-                <strong>{r.action}</strong>
-                <p>{new Date(r.created_at).toLocaleString("en-GB")}</p>
+            {rows.map((row) => (
+              <div className="list-item" key={row.id}>
+                <strong>{row.action}</strong>
+                <p>{new Date(row.created_at).toLocaleString("en-GB")}</p>
               </div>
             ))}
           </div>
@@ -1068,35 +1249,14 @@ export default async function Workspace({
       );
     } else if (section === "admin") {
       owner(a);
+      const snapshot = await adminSnapshot(a);
       content = (
         <>
-          <Heading title="Administration" />
-          <div className="panel">
-            <h2>Environment</h2>
-            <p>
-              {localMode()
-                ? "Isolated local PostgreSQL with synthetic sign-in"
-                : "Supabase authentication with PostgreSQL RLS"}
-            </p>
-            <p>
-              Owner assurance: {a.aal.toUpperCase()} · authenticated{" "}
-              {a.auth_time
-                ? new Date(a.auth_time * 1000).toLocaleString("en-GB")
-                : "time unavailable"}
-            </p>
-            <p>
-              Approval and invitation actions require recent AAL2
-              authentication.
-            </p>
-            <p>
-              External messaging, model calls, jobs, analytics and production
-              deployment are disabled.
-            </p>
-            <p>
-              Production readiness requires hosted authentication, MFA, storage
-              scanning, rate limiting and recovery verification.
-            </p>
-          </div>
+          <Heading
+            title="Administration"
+            sub="Owner-only account, security, environment and system health controls."
+          />
+          <AdminView snapshot={snapshot} />
         </>
       );
     } else notFound();

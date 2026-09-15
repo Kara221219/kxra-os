@@ -76,6 +76,11 @@ async function upload(
 }
 test("HTTP unauthenticated direct API calls cannot read or write", async () => {
   for (const endpoint of [
+    "dashboard",
+    "portfolio",
+    "ideas",
+    "work-log",
+    "admin",
     "summary",
     "finance-totals",
     "projects",
@@ -92,6 +97,10 @@ test("HTTP unauthenticated direct API calls cannot read or write", async () => {
   ])
     assert.equal((await req(endpoint)).status, 401);
   for (const [endpoint, body] of [
+    ["ideas", { project_id: p2, title: "test", raw_idea: "test" }],
+    ["ideas/00000000-0000-4000-8000-000000000000/state", {}],
+    ["ideas/00000000-0000-4000-8000-000000000000/merge", {}],
+    ["ideas/00000000-0000-4000-8000-000000000000/share-approval", {}],
     ["records", { title: "test" }],
     ["invitations", { project_id: p2 }],
     ["invitations/redeem", { token: "invalid" }],
@@ -176,6 +185,10 @@ test("HTTP crafted project IDs, owner routes and forged identities rejected", as
   assert.equal((await req("projects/not-a-uuid", c)).status, 404);
   assert.equal((await req("partners", c)).status, 403);
   assert.equal((await req("approvals", c)).status, 403);
+  assert.equal((await req("dashboard", c)).status, 403);
+  assert.equal((await req("portfolio", c)).status, 403);
+  assert.equal((await req("work-log", c)).status, 403);
+  assert.equal((await req("admin", c)).status, 403);
   const data = {
     kind: "note",
     title: "HTTP security fixture",
@@ -483,23 +496,16 @@ test("AT-08 HTTP completes the P002 idea-to-accepted-decision loop", async () =>
   const ownerCookie = await login("owner");
   const partnerCookie = await login("partner");
   const partnerId = "20000000-0000-4000-8000-000000000002";
-  const ideaResponse = await req("records", partnerCookie, {
-    kind: "idea",
+  const ideaResponse = await req("ideas", partnerCookie, {
     title: "HTTP bounded fitment idea",
-    body: "Validate one synthetic supplier packet",
+    raw_idea: "Validate one synthetic supplier packet",
     project_id: p2,
-    classification: "USER-SUPPLIED INFORMATION",
-    visibility: "project_shared",
-    data: {},
+    evidence: [],
   });
   assert.equal(ideaResponse.status, 201, await ideaResponse.clone().text());
-  const idea = await ideaResponse.json();
-  const submit = await req(`workflow/ideas/${idea.id}/submit`, partnerCookie, {
-    version: idea.version,
-  });
-  assert.equal(submit.status, 200, await submit.clone().text());
-  const submitted = await submit.json();
-  assert.equal(submitted.status, "submitted");
+  const typedIdea = await ideaResponse.json();
+  const idea = { ...typedIdea, id: typedIdea.record_id };
+  const submitted = { version: idea.version, status: "submitted" };
 
   const initial = await req(`workflow?project_id=${p2}`, ownerCookie);
   assert.equal(initial.status, 200);

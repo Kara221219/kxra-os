@@ -1,6 +1,6 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 1: invitation-only partner identity, onboarding and account administration. It is not production ready and is not deployed.
+KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 2: invitation-only identity and account administration plus the owner control plane, Portfolio and typed Idea Inbox. It is not production ready and is not deployed.
 
 Original source documents, the full private Genesis research and unrelated parent-repository applications remain outside the public repository. The checked-in Genesis registers contain only the classified records required to initialize the platform.
 
@@ -34,14 +34,17 @@ git diff --check
 
 ## Implemented locally
 
-- Owner and partner workspaces, Portfolio and five project pages backed by PostgreSQL.
+- Owner Dashboard with exact attention/decision/risk/activity counts and linked source records.
+- Stable, filterable Portfolio for all five ventures with truthful unknown scores, finance and recommendations.
+- Typed owner/partner Idea Inbox with immutable versions, evidence, state transitions, duplicate merge and approval-gated explicit sharing.
+- Owner Work Log projected from real audit/security events and a redacted, audited Admin view.
 - Multi-project invitations with per-project roles, note, expiry, one-use hash-only token, resend/revoke states and a fake transactional outbox.
 - Branded join flow with locked email, partner-created password, email verification return and an encrypted 30-minute server-only join intent.
 - Mandatory nine-step onboarding with exact project access, optional WhatsApp skip, preferences, exact-version agreement acceptance, resume and re-acknowledgement.
 - Partner Profile, Security, Preferences, Assignments and WhatsApp controls; owner invitation, assignment, lifecycle, session and unpair controls.
 - Account states `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`, enforced at HTTP and database boundaries.
 - Classified operating registers, immutable record history and the typed idea → experiment → task → result → decision → supersession loop.
-- Current-authority owner approvals, exact decimal finance totals and evidence-linked local gates for Projects 002, 003 and 005.
+- Current-authority owner approvals with complete before/after/recipient/cost/risk envelopes, exact decimal finance totals and evidence-linked local gates for Projects 002, 003 and 005.
 - RLS-scoped evidence search and Ask KXRA excerpts with citations. No model receives context or produces answers.
 - Private-by-default quarantined file metadata and bytes. Download and ingestion remain disabled.
 - Seeded AI roles, skills and disabled routines as definitions only.
@@ -49,7 +52,7 @@ git diff --check
 
 ## Security boundary
 
-All 30 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state or approval.
+All 36 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas.
 
 Production defaults to the hosted Supabase adapter and fail-closed local-provider stubs. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend delivery, Storage/scanning, Trigger.dev, PostHog, Sentry, Cloudflare, AI providers and WhatsApp remain unconnected and unverified. Project 004 is research/paper only. Project 005 cannot create or publish a product without reviewed demand authority.
 

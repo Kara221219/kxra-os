@@ -7,9 +7,19 @@ export type Project = {
   name: string;
   status: string;
   stage: string;
+  lifecycle_stage: string | null;
+  disposition: string | null;
   next_action: string;
+  next_gate: string | null;
+  current_recommendation: string | null;
+  owner_user_id: string | null;
   venture_score: number | null;
   confidence_score: number | null;
+  score_coverage: number | null;
+  score_lower_bound: number | null;
+  score_upper_bound: number | null;
+  governance_version: number;
+  governance_updated_at: string;
   live_execution_enabled: boolean;
   product_creation_enabled: boolean;
 };
@@ -79,13 +89,19 @@ export type OperatingLoop = {
 export const listProjects = (a: Actor) =>
   query<Project>(
     a,
-    "select id,code,name,status,stage,next_action,venture_score,confidence_score,live_execution_enabled,product_creation_enabled from kxra.projects order by code",
+    `select id,code,name,status,stage,lifecycle_stage,disposition,next_action,next_gate,
+      current_recommendation,owner_user_id,venture_score,confidence_score,score_coverage,
+      score_lower_bound,score_upper_bound,governance_version,governance_updated_at,
+      live_execution_enabled,product_creation_enabled from kxra.projects order by code`,
   );
 export async function project(a: Actor, id: string) {
   if (!uuid.safeParse(id).success) throw new HttpError(404, "Not found");
   const rows = await query<Project>(
     a,
-    "select id,code,name,status,stage,next_action,venture_score,confidence_score,live_execution_enabled,product_creation_enabled from kxra.projects where id=$1",
+    `select id,code,name,status,stage,lifecycle_stage,disposition,next_action,next_gate,
+      current_recommendation,owner_user_id,venture_score,confidence_score,score_coverage,
+      score_lower_bound,score_upper_bound,governance_version,governance_updated_at,
+      live_execution_enabled,product_creation_enabled from kxra.projects where id=$1`,
     [id],
   );
   if (!rows[0]) throw new HttpError(404, "Not found");
@@ -119,14 +135,12 @@ export async function createRecord(a: Actor, input: unknown) {
       parsed.error.issues.map((x) => x.message).join("; "),
     );
   const v = parsed.data;
-  if (["experiment", "decision", "task", "run"].includes(v.kind))
+  if (["idea", "experiment", "decision", "task", "run"].includes(v.kind))
     throw new HttpError(400, "Use the typed operating workflow");
   if (v.project_id) await project(a, v.project_id);
   if (
     a.role !== "owner" &&
-    (!v.project_id ||
-      v.visibility !== "project_shared" ||
-      !["idea", "note"].includes(v.kind))
+    (!v.project_id || v.visibility !== "project_shared" || v.kind !== "note")
   )
     throw new HttpError(403, "Access unavailable");
   return (

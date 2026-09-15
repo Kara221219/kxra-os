@@ -19,6 +19,19 @@ import {
   counts,
   operatingLoop,
 } from "../../../lib/data";
+import {
+  adminSnapshot,
+  dispositions,
+  getIdea,
+  ideaStates,
+  lifecycleStages,
+  listIdeas,
+  listPortfolio,
+  listWorkLog,
+  ownerDashboard,
+  recommendations,
+  workLogTypes,
+} from "../../../lib/control-plane";
 import { query, scoped, localMode } from "../../../../../packages/db";
 import { uuid, recordInput } from "../../../../../packages/domain";
 import { evidenceAnswer } from "../../../../../packages/ai";
@@ -40,6 +53,20 @@ const evidenceReference = z
   .object({ record_id: uuid, version: positiveVersion })
   .strict();
 const evidenceList = z.array(evidenceReference).min(1).max(20);
+const optionalIdeaText = z.string().trim().max(50000).nullable().optional();
+const ideaFields = {
+  title: z.string().trim().min(1).max(240),
+  raw_idea: z.string().trim().min(1).max(50000),
+  structured_summary: optionalIdeaText,
+  problem_statement: optionalIdeaText,
+  target_customer: optionalIdeaText,
+  validation_plan: optionalIdeaText,
+  next_experiment: optionalIdeaText,
+  source_note: z.string().trim().max(1000).nullable().optional(),
+  evidence: z.array(evidenceReference).max(20).optional(),
+};
+const pageNumber = z.coerce.number().int().positive().default(1);
+const pageSize = z.coerce.number().int().min(1).max(100);
 const gateCode = z.enum([
   "P002_LISTING",
   "P003_FAITHFUL_DELIVERY",
@@ -126,6 +153,182 @@ async function handle(req: Request, ctx: Context) {
     const method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (p[0] === "dashboard" && method === "GET")
+      return json(await ownerDashboard(a));
+    if (p[0] === "portfolio" && method === "GET") {
+      owner(a);
+      const input = z
+        .object({
+          lifecycle_stage: z.enum(lifecycleStages).optional(),
+          disposition: z.enum(dispositions).optional(),
+          sort: z
+            .enum([
+              "code",
+              "name",
+              "lifecycle_stage",
+              "disposition",
+              "venture_score",
+              "confidence_score",
+              "next_gate",
+              "updated_at",
+            ])
+            .default("code"),
+          direction: z.enum(["asc", "desc"]).default("asc"),
+          page: pageNumber,
+          page_size: pageSize.default(10),
+        })
+        .strict()
+        .parse(Object.fromEntries(url.searchParams));
+      return json(
+        await listPortfolio(a, {
+          lifecycleStage: input.lifecycle_stage,
+          disposition: input.disposition,
+          sort: input.sort,
+          direction: input.direction,
+          page: input.page,
+          pageSize: input.page_size,
+        }),
+      );
+    }
+    if (p[0] === "ideas") {
+      if (method === "GET" && !p[1]) {
+        const input = z
+          .object({
+            project_id: uuid.optional(),
+            state: z.enum(ideaStates).optional(),
+            submitter_id: uuid.optional(),
+            page: pageNumber,
+            page_size: pageSize.default(25),
+          })
+          .strict()
+          .parse(Object.fromEntries(url.searchParams));
+        if (input.project_id) await project(a, input.project_id);
+        return json(
+          await listIdeas(a, {
+            project: input.project_id,
+            state: input.state,
+            submitter: input.submitter_id,
+            page: input.page,
+            pageSize: input.page_size,
+          }),
+        );
+      }
+      if (method === "GET" && p[1] && !p[2]) {
+        uuid.parse(p[1]);
+        return json(await getIdea(a, p[1]));
+      }
+      if (method === "POST" && !p[1]) {
+        const input = z
+          .object({ project_id: uuid.nullable(), ...ideaFields })
+          .strict()
+          .parse(await body(req));
+        if (input.project_id) await project(a, input.project_id);
+        const rows = await query<{ record_id: string }>(
+          a,
+          "select (kxra.create_idea($1)).record_id",
+          [JSON.stringify(input)],
+        );
+        return json(await getIdea(a, rows[0].record_id), 201);
+      }
+      if (method === "PATCH" && p[1] && !p[2]) {
+        uuid.parse(p[1]);
+        const input = z
+          .object({ version: positiveVersion, ...ideaFields })
+          .strict()
+          .parse(await body(req));
+        const { version, ...contents } = input;
+        const rows = await query<{ record_id: string }>(
+          a,
+          "select (kxra.update_idea($1,$2,$3)).record_id",
+          [p[1], version, JSON.stringify(contents)],
+        );
+        return json(await getIdea(a, rows[0].record_id));
+      }
+      if (method === "POST" && p[1] && p[2] === "state") {
+        uuid.parse(p[1]);
+        owner(a);
+        const input = z
+          .object({
+            version: positiveVersion,
+            state: z.enum(ideaStates),
+            reason: z.string().trim().min(1).max(2000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ record_id: string }>(
+          a,
+          "select (kxra.transition_idea($1,$2,$3,$4)).record_id",
+          [p[1], input.version, input.state, input.reason],
+        );
+        return json(await getIdea(a, rows[0].record_id));
+      }
+      if (method === "POST" && p[1] && p[2] === "merge") {
+        uuid.parse(p[1]);
+        owner(a);
+        const input = z
+          .object({
+            version: positiveVersion,
+            canonical_id: uuid,
+            reason: z.string().trim().min(1).max(2000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ record_id: string }>(
+          a,
+          "select (kxra.merge_idea_duplicate($1,$2,$3,$4)).record_id",
+          [p[1], input.version, input.canonical_id, input.reason],
+        );
+        return json(await getIdea(a, rows[0].record_id));
+      }
+      if (method === "POST" && p[1] && p[2] === "share-approval") {
+        uuid.parse(p[1]);
+        owner(a);
+        const input = z
+          .object({ user_id: uuid, active: z.boolean() })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.request_idea_share_approval($1,$2,$3)",
+          [p[1], input.user_id, input.active],
+        );
+        return json(rows[0], 201);
+      }
+      throw new HttpError(404, "Not found");
+    }
+    if (p[0] === "work-log" && method === "GET") {
+      owner(a);
+      const input = z
+        .object({
+          project_id: uuid.optional(),
+          actor: z.string().trim().max(200).optional(),
+          department: z.string().trim().max(120).optional(),
+          type: z.enum(workLogTypes).optional(),
+          status: z.string().trim().max(80).optional(),
+          from: z.string().datetime({ offset: true }).optional(),
+          to: z.string().datetime({ offset: true }).optional(),
+          page: pageNumber,
+          page_size: pageSize.default(50),
+        })
+        .strict()
+        .parse(Object.fromEntries(url.searchParams));
+      if (input.project_id) await project(a, input.project_id);
+      return json(
+        await listWorkLog(a, {
+          project: input.project_id,
+          actor: input.actor,
+          department: input.department,
+          type: input.type,
+          status: input.status,
+          from: input.from,
+          to: input.to,
+          page: input.page,
+          pageSize: input.page_size,
+        }),
+      );
+    }
+    if (p[0] === "admin" && method === "GET")
+      return json(await adminSnapshot(a));
     if (p[0] === "account") {
       if (method === "GET" && !p[1]) {
         const [
@@ -782,13 +985,15 @@ async function handle(req: Request, ctx: Context) {
     }
     if (p[0] === "approvals") {
       owner(a);
-      if (method === "GET")
+      if (method === "GET") {
+        await query(a, "select kxra.refresh_expired_approvals()", []);
         return json(
           await query(
             a,
             "select * from kxra.approvals order by created_at desc limit 200",
           ),
         );
+      }
       if (method === "POST" && !p[1]) {
         const input = z
           .discriminatedUnion("action", [
@@ -844,6 +1049,36 @@ async function handle(req: Request, ctx: Context) {
                   .strict(),
               })
               .strict(),
+            z
+              .object({
+                action: z.literal("idea.share"),
+                project_id: uuid,
+                payload: z
+                  .object({
+                    idea_id: uuid,
+                    user_id: uuid,
+                    active: z.boolean(),
+                  })
+                  .strict(),
+              })
+              .strict(),
+            z
+              .object({
+                action: z.literal("project.governance"),
+                project_id: uuid,
+                payload: z
+                  .object({
+                    expected_version: positiveVersion,
+                    lifecycle_stage: z.enum(lifecycleStages),
+                    disposition: z.enum(dispositions),
+                    next_gate: z.string().trim().max(240).nullable(),
+                    next_action: z.string().trim().min(1).max(5000),
+                    current_recommendation: z.enum(recommendations).nullable(),
+                    owner_user_id: uuid.nullable(),
+                  })
+                  .strict(),
+              })
+              .strict(),
           ])
           .parse(await body(req));
         if (input.action === "account.lifecycle") {
@@ -855,6 +1090,31 @@ async function handle(req: Request, ctx: Context) {
               input.payload.desired_state,
               input.payload.reason,
             ],
+          );
+          return json(rows[0], 201);
+        }
+        if (input.action === "idea.share") {
+          const idea = await getIdea(a, input.payload.idea_id);
+          if (idea.project_id !== input.project_id)
+            throw new HttpError(409, "Idea project changed");
+          const rows = await query(
+            a,
+            "select * from kxra.request_idea_share_approval($1,$2,$3)",
+            [
+              input.payload.idea_id,
+              input.payload.user_id,
+              input.payload.active,
+            ],
+          );
+          return json(rows[0], 201);
+        }
+        if (input.action === "project.governance") {
+          await project(a, input.project_id);
+          const { expected_version, ...contents } = input.payload;
+          const rows = await query(
+            a,
+            "select * from kxra.request_project_governance_approval($1,$2,$3)",
+            [input.project_id, expected_version, JSON.stringify(contents)],
           );
           return json(rows[0], 201);
         }
@@ -882,7 +1142,11 @@ async function handle(req: Request, ctx: Context) {
                   ? "authorize_project_gate"
                   : rows[0].action === "account.lifecycle"
                     ? "change_account_lifecycle"
-                    : null;
+                    : rows[0].action === "idea.share"
+                      ? "change_idea_share"
+                      : rows[0].action === "project.governance"
+                        ? "change_project_governance"
+                        : null;
           if (!fn)
             throw new HttpError(409, "Execution is disabled for this action");
           await query(a, `select kxra.${fn}($1)`, [p[1]]);

@@ -22,7 +22,7 @@ async function navigate(page: Page, name: string) {
     .click();
 }
 
-test("owner sign-in, draft creation and persistence", async ({
+test("owner sign-in, typed Idea creation and persistence", async ({
   page,
 }, testInfo) => {
   await fixtureLogin(page, "owner");
@@ -41,14 +41,12 @@ test("owner sign-in, draft creation and persistence", async ({
   await navigate(page, "Idea Inbox");
   const title = "Browser fixture " + Date.now();
   await page.getByLabel("Title", { exact: true }).fill(title);
-  await page
-    .getByLabel("Description / evidence")
-    .fill("Synthetic browser persistence test.");
-  await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved to KXRA.");
+  await page.getByLabel("Raw idea").fill("Synthetic browser persistence test.");
+  await page.getByRole("button", { name: "Submit idea" }).click();
+  await expect(page.getByRole("status")).toHaveText("Idea submitted to KXRA.");
   await page.reload();
   await expect(
-    page.getByRole("link", { name: title, exact: true }),
+    page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(
@@ -96,10 +94,7 @@ test("owner can inspect gate controls, history and invitation foundations", asyn
   ).toBeVisible();
   await expect(page.getByText("exact SKU", { exact: true })).toBeVisible();
 
-  await page
-    .getByRole("link", { name: "Project next action", exact: true })
-    .first()
-    .click();
+  await page.locator(".record-list .record h3 a").first().click();
   await expect(
     page.getByRole("heading", { name: "Version history" }),
   ).toBeVisible();

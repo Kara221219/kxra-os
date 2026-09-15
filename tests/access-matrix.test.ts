@@ -45,7 +45,7 @@ async function addRecord(
   ownerId: string,
   orgId: string,
   projectId: string | null,
-  kind: "knowledge" | "experiment" | "note",
+  kind: "knowledge" | "experiment" | "note" | "idea",
   visibility: "project_shared" | "owner_only",
   marker: string,
 ) {
@@ -129,6 +129,16 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "otherVerification",
         "p2GateAuthorization",
         "otherGateAuthorization",
+        "p2OwnIdea",
+        "p2SharedIdea",
+        "p3Idea",
+        "otherIdea",
+        "p2IdeaShare",
+        "p3IdeaShare",
+        "otherIdeaShare",
+        "p2ShareApproval",
+        "p3ShareApproval",
+        "otherShareApproval",
       ].map((name) => [name, crypto.randomUUID()]),
     ) as Record<string, string>;
     const marker = crypto.randomUUID();
@@ -168,7 +178,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       string,
       string,
       string | null,
-      "knowledge" | "experiment" | "note",
+      "knowledge" | "experiment" | "note" | "idea",
       "project_shared" | "owner_only",
       string,
     ][] = [
@@ -271,8 +281,70 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "owner_only",
         "other group",
       ],
+      [
+        ids.p2OwnIdea,
+        actors.partner,
+        org,
+        p2,
+        "idea",
+        "project_shared",
+        "p2 partner idea",
+      ],
+      [
+        ids.p2SharedIdea,
+        actors.owner,
+        org,
+        p2,
+        "idea",
+        "project_shared",
+        "p2 explicitly shared idea",
+      ],
+      [
+        ids.p3Idea,
+        actors.owner,
+        org,
+        p3,
+        "idea",
+        "project_shared",
+        "p3 explicitly shared idea",
+      ],
+      [
+        ids.otherIdea,
+        otherOwner,
+        otherOrg,
+        otherProject,
+        "idea",
+        "project_shared",
+        "other organisation idea",
+      ],
     ];
     for (const row of recordRows) await addRecord(db, ...row);
+
+    for (const row of [
+      [ids.p2OwnIdea, org, p2, actors.partner, "PARTNER_PORTAL"],
+      [ids.p2SharedIdea, org, p2, actors.owner, "OWNER_PORTAL"],
+      [ids.p3Idea, org, p3, actors.owner, "OWNER_PORTAL"],
+      [ids.otherIdea, otherOrg, otherProject, otherOwner, "OWNER_PORTAL"],
+    ] as const)
+      await db.query(
+        `insert into kxra.ideas(
+          record_id,org_id,project_id,submitted_by,source_type,raw_idea,state
+         ) values($1,$2,$3,$4,$5,'AT-01 typed idea','PROMISING')`,
+        [...row],
+      );
+
+    for (const row of [
+      [ids.p2OwnIdea, org, p2, ids.p2Evidence, actors.partner],
+      [ids.p2SharedIdea, org, p2, ids.p2Evidence, actors.owner],
+      [ids.p3Idea, org, p3, ids.p3Evidence, actors.owner],
+      [ids.otherIdea, otherOrg, otherProject, ids.otherEvidence, otherOwner],
+    ] as const)
+      await db.query(
+        `insert into kxra.idea_evidence(
+          idea_record_id,idea_version,evidence_id,evidence_version,org_id,project_id,added_by
+         ) values($1,1,$4,1,$2,$3,$5)`,
+        [...row],
+      );
 
     for (const row of [
       [ids.p2Link, org, p2, ids.p2Experiment, ids.p2Evidence, actors.owner],
@@ -411,14 +483,92 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       await db.query(
         `insert into kxra.approvals(
           id,org_id,project_id,action,payload,payload_hash,requested_by,state,approved_by,expires_at,consumed_at
-         ) values($1,$2,$3,'project.gate',$4,$5,$6,'executed',$6,now()+interval '1 day',now())`,
+         ) values($1,$2,$3,'project.gate',$4,$5,$6,'EXECUTED',$6,now()+interval '1 day',now())`,
         [row[0], row[1], row[2], row[3], digest(row[0]), row[4]],
+      );
+    for (const row of [
+      [
+        ids.p2ShareApproval,
+        org,
+        p2,
+        ids.p2SharedIdea,
+        actors.partner,
+        actors.owner,
+      ],
+      [ids.p3ShareApproval, org, p3, ids.p3Idea, actors.viewer, actors.owner],
+      [
+        ids.otherShareApproval,
+        otherOrg,
+        otherProject,
+        ids.otherIdea,
+        otherOwner,
+        otherOwner,
+      ],
+    ] as const) {
+      const payload = {
+        idea_id: row[3],
+        idea_version: 1,
+        user_id: row[4],
+        expected_share_version: 0,
+        active: true,
+        before: { active: false, share_version: 0 },
+        after: { active: true, share_version: 1 },
+      };
+      await db.query(
+        `insert into kxra.approvals(
+          id,org_id,project_id,action,payload,payload_hash,requested_by,state,
+          approved_by,expires_at,consumed_at
+         ) values($1,$2,$3,'idea.share',$4,$5,$6,'EXECUTED',$6,
+          now()+interval '1 day',now())`,
+        [row[0], row[1], row[2], payload, digest(row[0]), row[5]],
+      );
+    }
+    for (const row of [
+      [
+        ids.p2IdeaShare,
+        org,
+        p2,
+        ids.p2SharedIdea,
+        actors.partner,
+        actors.owner,
+        ids.p2ShareApproval,
+      ],
+      [
+        ids.p3IdeaShare,
+        org,
+        p3,
+        ids.p3Idea,
+        actors.viewer,
+        actors.owner,
+        ids.p3ShareApproval,
+      ],
+      [
+        ids.otherIdeaShare,
+        otherOrg,
+        otherProject,
+        ids.otherIdea,
+        otherOwner,
+        otherOwner,
+        ids.otherShareApproval,
+      ],
+    ] as const)
+      await db.query(
+        `insert into kxra.idea_shares(
+          id,org_id,project_id,idea_record_id,user_id,approved_by,approval_id
+         ) values($1,$2,$3,$4,$5,$6,$7)`,
+        [...row],
       );
     await db.query(
       `insert into kxra.project_gate_policies(
         org_id,project_id,gate_code,requirements
        ) values($1,$2,'P002_LISTING','[]'::jsonb)`,
       [otherOrg, otherProject],
+    );
+    await db.query(
+      `insert into kxra.project_governance_versions(
+        project_id,version,org_id,next_action
+       ) values($1,1,$2,'remain isolated')`,
+      [otherProject, otherOrg],
     );
     for (const row of [
       [
@@ -633,6 +783,18 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         },
       },
       {
+        table: "project_governance_versions",
+        sql: "select project_id::text as key from kxra.project_governance_versions where project_id=any($1::uuid[])",
+        values: [[p2, p3, otherProject]],
+        expected: {
+          owner: [p2, p3],
+          partner: [p2],
+          viewer: [p3],
+          revoked: [],
+          other: [otherProject],
+        },
+      },
+      {
         table: "records",
         sql: "select id::text as key from kxra.records where id=any($1::uuid[])",
         values: [
@@ -648,6 +810,10 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
             ids.otherExperiment,
             ids.otherPrivate,
             ids.otherGroup,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+            ids.p3Idea,
+            ids.otherIdea,
           ],
         ],
         expected: {
@@ -659,15 +825,24 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
             ids.p3Experiment,
             ids.p3Private,
             ids.groupRecord,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+            ids.p3Idea,
           ],
-          partner: [ids.p2Evidence, ids.p2Experiment],
-          viewer: [ids.p3Evidence, ids.p3Experiment],
+          partner: [
+            ids.p2Evidence,
+            ids.p2Experiment,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+          ],
+          viewer: [ids.p3Evidence, ids.p3Experiment, ids.p3Idea],
           revoked: [],
           other: [
             ids.otherEvidence,
             ids.otherExperiment,
             ids.otherPrivate,
             ids.otherGroup,
+            ids.otherIdea,
           ],
         },
       },
@@ -687,6 +862,10 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
             ids.otherExperiment,
             ids.otherPrivate,
             ids.otherGroup,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+            ids.p3Idea,
+            ids.otherIdea,
           ],
         ],
         expected: {
@@ -698,16 +877,73 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
             ids.p3Experiment,
             ids.p3Private,
             ids.groupRecord,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+            ids.p3Idea,
           ],
-          partner: [ids.p2Evidence, ids.p2Experiment],
-          viewer: [ids.p3Evidence, ids.p3Experiment],
+          partner: [
+            ids.p2Evidence,
+            ids.p2Experiment,
+            ids.p2OwnIdea,
+            ids.p2SharedIdea,
+          ],
+          viewer: [ids.p3Evidence, ids.p3Experiment, ids.p3Idea],
           revoked: [],
           other: [
             ids.otherEvidence,
             ids.otherExperiment,
             ids.otherPrivate,
             ids.otherGroup,
+            ids.otherIdea,
           ],
+        },
+      },
+      {
+        table: "ideas",
+        sql: "select record_id::text as key from kxra.ideas where record_id=any($1::uuid[])",
+        values: [[ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea, ids.otherIdea]],
+        expected: {
+          owner: [ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea],
+          partner: [ids.p2OwnIdea, ids.p2SharedIdea],
+          viewer: [ids.p3Idea],
+          revoked: [],
+          other: [ids.otherIdea],
+        },
+      },
+      {
+        table: "idea_versions",
+        sql: "select record_id::text as key from kxra.idea_versions where record_id=any($1::uuid[])",
+        values: [[ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea, ids.otherIdea]],
+        expected: {
+          owner: [ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea],
+          partner: [ids.p2OwnIdea, ids.p2SharedIdea],
+          viewer: [ids.p3Idea],
+          revoked: [],
+          other: [ids.otherIdea],
+        },
+      },
+      {
+        table: "idea_shares",
+        sql: "select id::text as key from kxra.idea_shares where id=any($1::uuid[])",
+        values: [[ids.p2IdeaShare, ids.p3IdeaShare, ids.otherIdeaShare]],
+        expected: {
+          owner: [ids.p2IdeaShare, ids.p3IdeaShare],
+          partner: [ids.p2IdeaShare],
+          viewer: [ids.p3IdeaShare],
+          revoked: [],
+          other: [ids.otherIdeaShare],
+        },
+      },
+      {
+        table: "idea_evidence",
+        sql: "select idea_record_id::text as key from kxra.idea_evidence where idea_record_id=any($1::uuid[])",
+        values: [[ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea, ids.otherIdea]],
+        expected: {
+          owner: [ids.p2OwnIdea, ids.p2SharedIdea, ids.p3Idea],
+          partner: [ids.p2OwnIdea, ids.p2SharedIdea],
+          viewer: [ids.p3Idea],
+          revoked: [],
+          other: [ids.otherIdea],
         },
       },
       {
@@ -739,18 +975,38 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       {
         table: "approvals",
         sql: "select id::text as key from kxra.approvals where id=any($1::uuid[])",
-        values: [[ids.localApproval, ids.otherApproval]],
+        values: [
+          [
+            ids.localApproval,
+            ids.otherApproval,
+            ids.p2ShareApproval,
+            ids.p3ShareApproval,
+            ids.otherShareApproval,
+          ],
+        ],
         expected: {
-          owner: [ids.localApproval],
+          owner: [ids.localApproval, ids.p2ShareApproval, ids.p3ShareApproval],
           partner: [],
           viewer: [],
           revoked: [],
-          other: [ids.otherApproval],
+          other: [ids.otherApproval, ids.otherShareApproval],
         },
       },
       {
         table: "audit_events",
         sql: "select org_id::text as key from kxra.audit_events where metadata->>'marker'=$1",
+        values: [marker],
+        expected: {
+          owner: [org],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [otherOrg],
+        },
+      },
+      {
+        table: "work_log_entries",
+        sql: "select org_id::text as key from kxra.work_log_entries where source_kind='AUDIT_EVENT' and metadata->>'marker'=$1",
         values: [marker],
         expected: {
           owner: [org],

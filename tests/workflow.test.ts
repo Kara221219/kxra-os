@@ -55,20 +55,24 @@ test("AT-08 completes an exact-version P002 operating loop and isolates it", asy
     await as(db, "partner");
     const idea = (
       await db.query(
-        `insert into kxra.records(org_id,project_id,kind,title,body,classification,visibility)
-         values($1,$2,'idea','Synthetic fitment idea','Test a bounded fitment validation service','USER-SUPPLIED INFORMATION','project_shared')
-         returning id,version`,
-        [org, p2],
+        `select record_id as id,version from kxra.create_idea($1)`,
+        [
+          {
+            project_id: p2,
+            title: "Synthetic fitment idea",
+            raw_idea: "Test a bounded fitment validation service",
+            evidence: [],
+          },
+        ],
       )
     ).rows[0];
     const submitted = (
-      await db.query("select id,version,status from kxra.submit_idea($1,$2)", [
+      await db.query("select id,version,status from kxra.records where id=$1", [
         idea.id,
-        idea.version,
       ])
     ).rows[0];
     assert.equal(submitted.status, "submitted");
-    assert.equal(submitted.version, 2);
+    assert.equal(submitted.version, 1);
 
     await as(db, "owner");
     const evidence = (
