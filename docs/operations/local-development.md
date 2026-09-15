@@ -1,15 +1,61 @@
 # Local operations
 
-Run `npm ci`, then `npm run dev` from the workspace. Open `http://127.0.0.1:3210` (do not change to localhost while using fixture mode). Startup creates an isolated PostgreSQL database and imports the five projects and classified source registers only on first initialization; subsequent startup applies new migrations and preserves edits. Files under `.runtime` are private ignored local state.
+Final Milestone 1 uses deterministic local Auth, email and PostgreSQL adapters. They provide executable contract evidence without contacting Supabase, Resend or another provider.
 
-Database binaries default to Homebrew PostgreSQL 14. Set `KXRA_PG_BIN` to the directory containing initdb/pg_ctl on other machines. Local PostgreSQL is on port 55439 via this workspace's Unix socket only, with TCP disabled. Filesystem access to the cluster is equivalent to local administration; it must contain no real credentials or production data.
+## Start
 
-Use `npm run typecheck`, `npm test`, `npm run test:restart`, `npm run test:e2e`, `npm run build`, and `npm run format:check`. HTTP/browser suites require the running preview. Install the Playwright Chromium headless shell with `npx playwright install chromium --only-shell`. Test failures are not silently skipped. HTTP/browser tests create clearly labelled synthetic records; PostgreSQL adversarial tests roll back.
+Run from the repository root:
 
-Run `npm run test:restart` after `npm test`. It requires the retained synthetic AT-08 workflow, snapshots its completed task and accepted decision-supersession graph under the application RLS role, restarts only this workspace's local PostgreSQL cluster, and compares the same rows after startup migrations and seed verification. It never resets the database.
+```sh
+npm ci
+npm run dev
+```
 
-The app role must never own tables or have bypass privileges. Do not use a Supabase admin/service connection as DATABASE_URL. Hosted variables are examples only in `.env.example`; do not copy hosted placeholders into the fixture run. Fixture mode refuses mixed hosted configuration.
+Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations and imports the five projects plus classified required registers. Existing runtime data is preserved. Local fixture accounts, Auth state, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
 
-Stop the preview with Ctrl-C. `npm run db:stop` stops only the cluster owned by this workspace. There is no automatic destructive reset. Back up `.runtime` only while stopped or using PostgreSQL's supported backup tools. Production backup/recovery has not been validated.
+Database binaries default to Homebrew PostgreSQL 14. Set `KXRA_PG_BIN` to the directory containing `initdb` and `pg_ctl` elsewhere. Filesystem access to the cluster is equivalent to local administration; never put real credentials or production data in it.
 
-If a preview becomes unresponsive after a tool/session restart, inspect the exact listener before terminating it; do not kill unrelated Node or database processes. Preview output can be redirected to `.runtime/preview.log` for diagnosis.
+## Account workflow
+
+The development login lists clearly labelled synthetic identities. Owner partner administration can create a fake multi-project invitation and inspect its fake outbox delivery. The link enters `/join`, where the invited synthetic user creates their own password, verifies email and completes the nine-step wizard. Resend/revoke, reset/change password, fake MFA, session revoke, assignment changes and lifecycle controls are available for local acceptance.
+
+Invitation/verification/reset values are displayed only by the local test surface where necessary to complete deterministic tests. They are not production behavior. Never copy fake proof values, fixture accounts or runtime state into a hosted environment.
+
+## Verify
+
+Keep the preview running for HTTP and browser suites:
+
+```sh
+npm run check
+npm run format:check
+npm run test:restart
+npm run test:e2e
+git diff --check
+```
+
+`npm run check` performs TypeScript checking, all database/domain/HTTP tests, a production Next.js build and `npm run test:artifact`. The artifact scan rejects 16 known fixture identity, selector, state and secret markers. A clean optimized build is required; do not treat a development bundle as the production artifact.
+
+Install the browser once with:
+
+```sh
+npx playwright install chromium --only-shell
+```
+
+If a combined E2E run is interrupted by a terminal/session limit, run the two specs separately and record both results:
+
+```sh
+npx playwright test tests/e2e/workspace.spec.ts
+npx playwright test tests/e2e/accounts.spec.ts
+```
+
+The account spec includes a complete owner-to-partner flow, mobile interruption/resume and responsive/keyboard checks. Representative 1440, 768, 390 and 320 layouts plus 200% zoom reflow were manually inspected for the milestone. Screenshots and Playwright artifacts remain ignored because the repository publication rule allows code, documentation and required seeds only.
+
+Run `npm run test:restart` after `npm test`. It snapshots the retained synthetic AT-08 graph under the application RLS role, restarts only this workspace's cluster and compares exact completed tasks/supersessions. It never resets the database. `npm run db:stop` stops only this cluster. Destructive reset is intentionally disabled.
+
+## Environment boundary
+
+`.env.example` lists hosted target variables with placeholders only. `npm run dev` creates guarded local configuration. Fixture mode rejects production, Vercel, non-loopback, hosted Supabase/database combinations and weak/missing generated secrets. Default production package conditions resolve local Auth/UI modules to stubs; hosted Auth must be configured for real use.
+
+The application role must never own tables, bypass RLS or use a Supabase service/admin connection as `DATABASE_URL`. A local test pass does not authorize provider setup, external email, deployment or production data.
+
+If the preview becomes unresponsive after a tool restart, identify the exact listener before terminating it. Do not kill unrelated Node or PostgreSQL processes.

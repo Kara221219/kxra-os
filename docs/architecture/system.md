@@ -1,47 +1,83 @@
 # Implemented architecture
 
-Status: working local milestone through the first reviewed operating loop and project gates. Reviewed implementation commit: `0c20de47fe1f6cb38646db51c4a90650679aacd7`. The preserved private Genesis brief remains the baseline; current user instructions take precedence.
+Status: Final Milestone 1 is complete in the deterministic local environment at implementation commit `7cbc227bb8e03ff0b5f41d930ae8cbe1d9ece7d9` on `codex/phase-2-completion`. The private Genesis brief, Phase Completion Brief and Final Completion Brief remain the cumulative requirements. This is local evidence, not hosted or production evidence.
 
-## Request and trust flow
+## Trust and request flow
 
-Browser → Next.js route or server component → verified principal → active KXRA member → PostgreSQL transaction → `SET LOCAL ROLE authenticated` + verified subject/assurance claims → RLS → scoped response. Mutations require the configured same-origin header and bounded validated inputs. Anonymous role exists for database negative tests; protected HTTP endpoints reject unauthenticated callers.
+```mermaid
+flowchart LR
+  Browser[Owner or invited partner] --> Next[Next.js route or server component]
+  Next --> Identity[Verified Auth identity]
+  Identity --> Account[Account and session state]
+  Account --> Tx[PostgreSQL transaction]
+  Tx --> Claims[Server-set authenticated role and claims]
+  Claims --> RLS[PostgreSQL RLS and typed functions]
+  RLS --> Response[Scoped response]
+  RLS --> Audit[Audit, security event and outbox state]
+```
 
-Supabase mode verifies `getUser()` with the authentication server, then matches signed claims to the returned subject. Middleware refreshes cookies; it is not an authorization boundary. All handlers independently authorize. Local fixture mode requires explicit selection, nonproduction, no Vercel, exact loopback origin, runtime directory, no hosted database/Supabase URL, and a generated signing secret. Never deploy fixtures.
+Every handler verifies identity independently. Middleware may refresh hosted cookies but never grants access. The application checks KXRA account state, current member state, session version and onboarding/agreement readiness before creating an actor. Database work uses one transaction with `SET LOCAL ROLE authenticated` and server-derived claims; pooled connections reset afterward. Mutations require the configured same-origin header, strict schemas and bounded input.
 
-The application DB login must be NOINHERIT, NOBYPASSRLS, not superuser, not table owner and a member only of `authenticated`/`anon`. No service-role API client is present. Verified subject claims are set server-side, never taken from a request body. Every transaction resets on completion; pooled connections cannot retain a prior request identity.
+The application database login is `NOINHERIT`, `NOBYPASSRLS`, is not a superuser or table owner, and belongs only to the `authenticated` and `anon` roles. There is no browser service-role client. Request bodies and model output never establish identity, email verification, role, organisation, project access, approval or lifecycle state.
 
-## Schema
+## Auth and build boundary
 
-Twenty application tables have RLS enabled. The core scope tables are `organisations`, `members`, `projects`, `project_memberships`, `records`, `record_versions`, `files`, `approvals`, `audit_events`, `whatsapp_pairings` and disabled `inbound_events`. `verifications` records reviewed FACT transitions. `record_links`, `experiment_results`, `result_evidence`, `workflow_tasks` and `workflow_task_versions` hold the exact-version operating graph. `invitations`, `project_gate_policies` and `project_gate_authorizations` hold identity onboarding and controlled local gate authority. Foreign keys bind membership, evidence, files, tasks, results and gates to their organisation/project source records.
+`packages/authz/provider.ts` defines provider-neutral registration, sign-in, email verification, password change/reset, MFA state/challenge/recovery and sign-out-all operations. Supabase remains the production target. The deterministic file-backed provider exists only for local acceptance: it uses scrypt password hashes, digest-only one-use verification/reset tokens and provider session versions.
 
-The general operating registers still use a typed record table (`kind` enum plus constrained JSONB fields). Experiments, decisions, workflow tasks and system runs cannot be forged through generic record writes. Typed security-definer functions create their structured relationships, then ordinary RLS protects reads. Ledger reconciliation, persisted score assessments, document chunks and executable AI/job tables remain future migrations.
+Package import conditions route local Auth/session/UI modules only when Node resolves the `development` condition. The default production build resolves stubs that reject fixture use. `scripts/verify-production-artifact.mjs` scans the optimized `.next` output for 16 fixture identity, selector, state-file and secret markers. Runtime guards still require explicit fixture mode, exact loopback origin, no Vercel or production environment, no hosted Supabase/database combination and generated secrets.
 
-All new evidence has one of the nine required classifications. New user records are drafts; edits increment a version and append a snapshot containing content, classification, lifecycle status, editor, provenance and time. Record identity, author, organisation, project, kind, visibility, source and provenance are immutable. A FACT transition requires a current accepted evidence version, owner review and a recorded verification method. Accepted records cannot be edited in place; a linked superseding decision creates a new immutable decision chain.
+## Invitation and join flow
 
-Projects contain stage/status/next action, complete source provenance and nullable scores. Stable IDs derive from source codes rather than input order. Seed import verifies complete source envelopes and runs in the same advisory-locked transaction as migrations; changes, unknown references and partial imports fail visibly. No real partner grant is part of canonical seed import. Local test memberships are applied separately.
+```mermaid
+sequenceDiagram
+  participant O as Owner
+  participant DB as PostgreSQL
+  participant Mail as Fake outbox
+  participant B as Partner browser
+  participant Auth as Auth provider
 
-## Operating loop and project gates
+  O->>DB: Create email + exact project/role grants + note + expiry
+  DB->>Mail: Queue versioned invitation intent
+  Mail-->>B: /join#token=opaque-token
+  B->>B: Remove fragment immediately
+  B->>DB: POST token once; rate limit and hash
+  DB-->>B: Encrypted HttpOnly join-intent cookie
+  B->>Auth: Create and confirm own password for locked email
+  Auth-->>B: Verify email / return
+  B->>DB: Redeem exact invitation version atomically
+  DB-->>B: Exact memberships + mandatory onboarding
+```
 
-A contributor can submit a project idea. An owner can create an experiment only from the exact submitted idea version and current accepted evidence, with a currency-specific cost cap plus success and stop criteria. The owner assigns the exact experiment version to a current contributor. Only that assignee or an owner can record a result; result evidence is exact-version linked. An owner then creates a decision linked to that experiment, result and accepted evidence. Acceptance copies the reviewed outgoing links to the immutable accepted decision version. Corrections use a linked superseding decision.
+The raw invitation token is delivered in a URL fragment, removed with `history.replaceState`, exchanged once, hashed before database lookup and never written to browser storage, application logs, analytics, cookies, API responses or Auth state. The encrypted AES-256-GCM join-intent cookie is HttpOnly, same-site, bounded to 30 minutes and never outlives the invitation. Its payload binds invitation ID/version, token digest, normalized locked email and expiry.
 
-Projects 002, 003 and 005 have versioned, data-backed gate policies. Their evidence packets require respectively exact SKU/fitment/safety claims, rights/geometry QA claims, or a specific buyer problem with reviewed demand evidence. The packet must itself become accepted through the ordinary exact approval flow before an owner can request and execute gate authority. Resulting authority is always `local_only`; it never flips a project execution flag. Thresholds remain visibly `proposed_unset` because no owner-approved numeric thresholds exist. Project 004 has no live gate: `live_execution_enabled=true` fails at the database layer and no API, UI, job or broker executor exists. Project 005 product creation remains false with no creation/publication route.
+Resend rotates only the delivery version/token and cancels prior pending delivery. The approved grant version remains stable. Material project, role or expiry changes require a replacement invitation and invalidate old links. Redemption locks current state and grants exactly the current invitation rows; mismatch, expiry, revocation and replay fail atomically.
 
-## Approval architecture
+## Account and onboarding model
 
-Only owners create/read approvals. The server validates typed acceptance, membership and project-gate payloads and applies a 24-hour expiry. The canonical digest binds action, organisation, project, complete payload, environment, requester and expiry; JSON key order is normalized. Only a current owner with AAL2 issued within the last 15 minutes can approve/reject or execute. Narrow functions lock the approval and target, recompute the digest, reject stale target state and consume exactly once under concurrency. Membership requests bind the current `access_version`, before/after state and intended expiry, so an older grant cannot undo a newer revocation. `publish`, `spend` and `deploy` still have no executor. Synthetic AAL2 proves the local contract only.
+Invitation states are `PENDING`, `SENT`, `DELIVERY_FAILED`, `REDEEMED`, `EXPIRED` and `REVOKED`. Account states are `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`. Server-controlled transitions and account security events preserve attribution. `SUSPENDED` and `REVOKED`, inactive organisation membership and inactive/expired project membership override all earlier state.
 
-Invitations are created by a recent-AAL2 owner for one project, role, normalized email digest and expiry. Only a verified authenticated identity with the matching email can redeem the one-use token; replay, mismatch and expiry fail. The token is shown once locally and is not stored in plaintext or sent. Hosted Supabase MFA/enrolment and email delivery are not yet validated.
+The onboarding wizard validates nine steps: Welcome, Personal Profile, Security, Project Access, Working With KXRA, optional WhatsApp, Preferences, Terms/Privacy/required agreements and Complete. Project Access is read-only and derived under RLS. Required profile/preferences/agreement data blocks completion. Acceptances bind exact agreement ID/version and timestamp. The two seed legal documents are explicitly labelled `UNAPPROVED_PLACEHOLDER`. An active partner missing a newly required agreement is returned to step 8. Successful completion writes `onboarding_completed_at` and activates the account.
 
-## Knowledge and AI
+Partners may edit only permitted profile and preference fields, change/reset their provider password, exercise fake MFA/session controls, inspect assignments and unpair their own WhatsApp account. Owner lifecycle and assignment changes bind current state through recent-AAL2, one-use exact approvals. Forced sign-out increments session version. Suspension/revocation removes UI, API, SQL, file, Ask and delivery access immediately.
 
-Full-text search runs inside the current principal's RLS transaction. Both global search and explicit project search are filtered before producing the evidence envelope. Explicit inaccessible scopes return the same unavailable response as missing resources. Ask KXRA returns excerpts with record ID, classification and version. It does not call an LLM. Attachments stay outside context in quarantine. No vector store, autonomous memory or cross-project cache exists.
+## Data architecture
 
-AI Team, Skills and Routines are persistent definitions imported from source. Their exact expected seed counts are 13 agents, 12 skills and nine disabled routines. Run execution and job dispatch are disabled; direct generic writes cannot manufacture a completed system run. The future hierarchy remains Owner → Chief of Staff → COO/CFO Analyst/CMO/CTO → useful specialists.
+Thirty private application tables have RLS. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets.
 
-## Stack retained
+The application exposes 42 bounded functions to authenticated or anonymous roles. Tests enumerate every table and function and fail if either grows without an authorization decision. Composite foreign keys bind organisation/project scope. Typed security-definer functions validate consequential workflows; ordinary RLS controls reads.
 
-Next.js/TypeScript is implemented. PostgreSQL RLS is implemented locally with Supabase-compatible auth helpers; Supabase Auth adapters exist. Vercel, hosted Supabase Storage, Trigger.dev, Resend, PostHog, Sentry and Cloudflare remain target services but are unconnected. GitHub is the code remote; production deployment is prohibited. The local database is a development test environment, not a replacement production provider.
+Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
 
-## Public website
+## Existing operating architecture
 
-An original typography-led ivory/forest-green page describes the venture approach and invites contact via the user-provided public email. No customer logos, revenue claims, fabricated case studies or cloned reference artwork. No telemetry or form sends. Private data is never passed to public components. Publication remains prohibited.
+The typed idea → experiment → assigned task → result → decision → supersession loop remains intact. Owner approvals bind action, organisation, project, complete payload, environment, requester, expiry and current target/access version. Only a current owner with AAL2 issued in the last 15 minutes can approve or execute. `publish`, `spend` and `deploy` have no executor.
+
+Projects 002, 003 and 005 retain exact evidence-gate policies and can produce only `local_only` authority. Project 004 rejects live execution and has no broker path. Project 005 rejects product creation/publication. Numeric gate thresholds remain `proposed_unset` until owner-approved evidence exists.
+
+Search and Ask KXRA retrieve only through the current principal's RLS transaction. Explicit inaccessible scopes return the same unavailable result as missing resources. Responses are evidence excerpts with record ID, classification and version; no LLM is called. File bytes remain private quarantine and cannot be downloaded or ingested.
+
+## Email and external services
+
+The local email adapter renders nine versioned templates: Partner Invitation, Invitation Reminder, Password Reset, Email Verification, Welcome, Security Alert, Project Assignment, Access Removed and Approval Required. The outbox has idempotent operation keys and records pending, sent, failed, cancelled and bounced states. The fake transport sends nothing externally.
+
+Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, PostHog, Sentry, Cloudflare and Vercel remain target services only. The current public homepage is a local static route; the separate marketing application and publication boundary belong to later milestones.

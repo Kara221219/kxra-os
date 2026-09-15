@@ -1,29 +1,47 @@
 # Security model and verification limits
 
-Every one of the 20 private application tables has RLS. Owner role is a current database membership, never a model classification. A partner must be an active organisation member with an active, unexpired assignment; a record must additionally be `project_shared`. Viewer assignments cannot write. Contributors can propose ideas and notes and can act only on typed tasks assigned to them. Experiments, decisions, project gates and system runs cannot be created through generic records. Owner-only finance, agent/routine definitions, approvals, invitations, partner information, audit logs and group records remain excluded from partner reads.
+Final Milestone 1 retains PostgreSQL as the authority for KXRA access. Authentication establishes a server-verified subject. KXRA profiles, account state, current organisation membership, exact project membership, onboarding/agreement readiness and current approval state determine what that subject may do. Neither browser input nor an LLM can calculate or grant permission.
 
-## Implemented controls
+## Enforced controls
 
-- Verified identity per request, parameterized SQL, transaction-local roles/claims, 5-second statement timeout, no browser service credentials.
-- Strict request schemas reject forged IDs/roles and unknown top-level fields; project IDs are validated. Database constraints apply even to crafted direct queries.
-- Same-origin mutation checks. HTTP-only, strict same-site local sessions with integrity, issue-time and expiry checks. Hosted cookies refresh via Supabase SSR. Fixture mode fails closed under production, Vercel, non-loopback, weak-secret or hosted-service combinations.
-- One-use invitation tokens are stored only as hashes and bound to normalized verified email, project, role and expiry. Redemption creates only the approved partner assignment. No public role-selection endpoint exists.
-- Immutable scope/visibility/provenance and complete historical snapshots. FACT promotion requires an accepted exact evidence version, owner reviewer and verification method. Accepted decisions are corrected only through linked supersession.
-- Approval digests bind action, organisation, project, exact payload, environment, requester and expiry. Execution requires current owner membership and AAL2 issued within 15 minutes, locks target rows, rejects stale target/access versions and consumes once.
-- File metadata and parent record share composite foreign keys. Owner uploads default to `owner_only`; sharing is explicit. Local bytes go to random server-generated names under private quarantine directories. Filenames are sanitized and streamed bytes are bounded at about 20 MB. No file is delivered or ingested before scanning.
-- Browser responses have nosniff, no framing, same-origin referrers, private-area no-store. Data/attachment bodies are not logged in API errors. No analytics/replay is enabled.
-- Project-gate evidence must be current, accepted, shared and exact-version linked. Gate authorization remains `local_only` and cannot set project execution flags. Trading cannot be enabled with an ordinary database update; no broker adapter exists. Product creation and publication have no route or executor.
+- All 30 private tables have RLS. Tests enumerate the schema and reject a new table without RLS and an explicit matrix decision.
+- The non-owner application login enters one transaction per request, sets only server-derived subject/assurance/email claims and resets the connection after use.
+- Owners are current active database members with active account profiles. Partners also need a live, unexpired project membership and a `project_shared` record. Viewers cannot write.
+- `SUSPENDED` and `REVOKED` account states fail closed across account tables and all existing project/file/search/Ask paths. Organisation or project revocation independently removes access.
+- Protected profile, role, organisation, project, permissions, account state and onboarding-completion fields have no partner mutation path. Direct SQL writes fail under RLS/grants.
+- Exact owner approvals bind before/after state, action, target, project, recipient, environment, requester, expiry and access version. Recent AAL2, row locks, digest recomputation and one-use consumption prevent stale or concurrent replay.
+- Session revocation increments a server-checked version. The fake provider also increments its provider session version; a stale signed cookie is rejected.
+- Same-origin checks cover mutations. Strict request schemas reject unknown fields and crafted IDs. Durable database rate-limit buckets protect join exchange, registration, reset and other account operations.
+- Private response headers disable caching, sniffing and framing and use same-origin referrers. Safe errors do not include data, secrets, raw tokens or attachment bodies.
+
+## Invitation and credential controls
+
+The owner chooses normalized email, one or more exact project/role grants, note and expiry. Raw invitation, verification and reset tokens are generated once and stored only as SHA-256 digests. Passwords are never stored in KXRA tables, issued by the owner, placed in email or returned by an API. The local provider stores only scrypt salt/hash data in ignored mode-0600 runtime state; hosted credentials belong to Supabase Auth.
+
+Invitation URLs use a fragment so the raw token is not part of the HTTP request or referrer. Client code removes the fragment before exchange. A bounded exchange turns the digest and invitation preview into an AES-256-GCM, HttpOnly, same-site join-intent cookie lasting at most 30 minutes. Registration uses its locked email. Redemption rechecks current digest, approved grant version, verified email, expiry, revocation and replay inside the database transaction.
+
+Resend rotates the delivery token without altering the approved grant. A material grant change replaces the invitation. Revocation cancels pending outbox rows. Account suspension/revocation cancels access and delivery and creates auditable lifecycle/security events.
+
+## Fixture exclusion
+
+Local fixture mode requires explicit local configuration, exact loopback origin, no Vercel/production/hosted-service combination and generated secrets. Development-only package import conditions select the local provider and identity selector. Production builds select fail-closed stubs. The artifact test scans all optimized Next.js output for 16 forbidden fixture markers, including fixture emails/IDs, UI labels, selector/state filenames and local secret names.
+
+This is defense in depth. The production target still requires hosted configuration review; a passing artifact scan does not prove hosted identity, deployment or secret management.
 
 ## Tested attack paths
 
-The local suite covers owner, contributor, viewer, revoked, anonymous and separate-organisation principals. A generated matrix populates and reads all 20 tables across shared, owner-private, group and other-organisation scopes. It checks schema-wide RLS, unauthorized INSERT/UPDATE/DELETE, and anonymous denial for every exposed application RPC. HTTP tests cover every current private route family, crafted project IDs, direct API access, files, search and Ask.
+The local contract suite covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous and separate-organisation principals. The expanded matrix reads and attempts unauthorized writes against all 30 tables and audits all 42 exposed functions. HTTP tests cover every current private route family, crafted project IDs, direct API access, cross-project files, search and Ask.
 
-Approval tests reproduce grant → later revocation → old-grant execution and prove the old grant stays stale. They also cover action/project/recipient/environment/expiry binding, JSON key-order normalization, rejected/expired/consumed requests and concurrent one-use execution. Identity tests cover invitation mismatch, expiry and replay plus AAL1/stale/recent AAL2. Data tests cover direct classification promotion, full version attribution, 201-row finance totals, SQL JSON null/type failures, exact decimal arithmetic and open-risk states. Workflow tests cover exact links, task assignment/result/completion, decision acceptance/supersession, five-principal isolation and persistence across a controlled database restart.
+Account tests cover locked-email registration, weak/mismatched passwords, uninvited registration, token mismatch, expiry, replay, old links after resend/replacement, forged lifecycle/profile/assignment fields, exact grants, onboarding bypass, agreement re-acknowledgement, MFA transitions, password reset/change, session revocation, WhatsApp preference without pairing and immediate suspension/reactivation/revocation isolation. Browser tests cover the owner-to-partner journey and mobile resume. Production artifact tests prove the local fixture surface is absent from the optimized build.
 
-Database tests use local admin only for setup/rollback, then explicitly SET ROLE for each tested query. The application itself uses the nonprivileged login. HTTP tests exercise actual running Next handlers. Browser tests exercise forms and partner screens. This is not equivalent to a hosted Supabase penetration test.
+Database tests use local administration only to create/rollback adversarial fixtures, then explicitly switch to application roles. HTTP tests call real Next.js handlers. Browser tests use the rendered application. These results do not constitute a hosted Supabase penetration test.
 
-## Open production gates
+## Existing hard stops
 
-Hosted Auth/MFA enrollment, challenge and recovery; real email invitation delivery; confirmed owner bootstrap; Supabase Storage policies/object proxy plus trusted malware scanning; production CSP nonce design; durable rate limits at auth/API/upload; abuse controls; application-role pooler verification; secret rotation; request/audit retention; current dependency review; security events; backup/PITR plus object restore; queued-job capability issuance/revocation; private AI/provider evaluation. Complete these in staging with separately approved test credentials before requesting production permission.
+File bytes remain quarantined and undeliverable until trusted scanning, extraction, object RLS and delivery-time authorization exist. No model synthesis, agent/job execution, provider message, spending, publication, deployment or live trading executor exists. Project 004 remains paper/research only and Project 005 remains demand-gated.
 
-Storage byte delivery, agent execution, external sends and paid calls fail closed. Do not remove these gates merely to make a demo appear complete.
+## Hosted checks deferred to Milestone 11
+
+The following remain blocked: verified owner bootstrap; Supabase registration/email-confirmation behavior; hosted MFA enrollment, challenge, recovery and recent-AAL2 claims; refresh/session revocation across devices; application-role pooler and RLS behavior; Storage policies and object proxy; real Resend acceptance/bounce/retry; durable distributed abuse controls; CSP nonce design; provider secret rotation; telemetry redaction; backup/PITR and object restore; and delivery-time revocation across jobs/providers.
+
+No real credentials, production data, external sends, paid calls or deployment were used.

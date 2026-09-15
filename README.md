@@ -1,60 +1,71 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. This is a working **local engineering foundation**, not a production-ready service. Original source documents, the prior Genesis specification, and parent-repository applications are preserved.
+KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 1: invitation-only partner identity, onboarding and account administration. It is not production ready and is not deployed.
+
+Original source documents, the full private Genesis research and unrelated parent-repository applications remain outside the public repository. The checked-in Genesis registers contain only the classified records required to initialize the platform.
 
 ## Run locally
 
-Requirements: Node 22+, npm, PostgreSQL binaries. This machine uses `/opt/homebrew/opt/postgresql@14/bin`; set `KXRA_PG_BIN` for another installation.
+Requirements: Node 22+, npm and PostgreSQL binaries. This machine uses `/opt/homebrew/opt/postgresql@14/bin`; set `KXRA_PG_BIN` for another installation.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:3210. Sign in using a clearly labelled synthetic Owner, Partner, Viewer or Revoked identity. The owner sees all five projects; the partner is assigned only seat covers; the viewer only property. No real credentials are needed. Local PostgreSQL listens on a private Unix socket, never a network port. Runtime data and the generated signing secret are excluded from Git.
+Open `http://127.0.0.1:3210`. Development mode exposes clearly labelled synthetic identities and a deterministic local Auth/email provider. The fixture provider is guarded by loopback, non-production and generated-secret checks and is replaced by fail-closed production modules during `next build`.
+
+Local PostgreSQL listens through this workspace's private Unix socket. Runtime data, fake Auth state, email captures, signing secrets and browser artifacts are excluded from Git. Never point local tests at a hosted database.
+
+## Verify
+
+Keep the local preview running for HTTP and browser tests.
 
 ```sh
-npm run typecheck
-npm test
+npm run check
+npm run format:check
 npm run test:restart
 npx playwright install chromium --only-shell
 npm run test:e2e
-npm run build
+git diff --check
 ```
 
-Keep the local preview running for HTTP/browser tests. Database tests roll back; HTTP/browser tests intentionally leave labelled synthetic records for inspection. Run the restart check after `npm test`; it stops and restarts only the isolated local cluster and verifies the retained operating-loop records. Never point tests at a hosted database. `npm run db:stop` stops only this workspace's database. Reset is intentionally disabled. See [local operations](docs/operations/local-development.md).
+`npm run check` runs type checking, the database/domain/HTTP suite, an optimized production build and a scan that rejects fixture identities, controls, state filenames and secrets in the production artifact. Database tests roll back; HTTP/browser tests leave only labelled synthetic local records. The restart check stops and restarts this workspace's isolated cluster, then compares retained operating-loop records.
 
-## What works
+## Implemented locally
 
-- Database-backed owner/partner workspaces, portfolio and five project pages.
-- Classified idea, assumption, experiment, decision, risk, source, task, knowledge and finance registers; draft creation, immutable historical snapshots and durable audit history.
-- A typed idea → experiment → assigned task → result → exact-version decision → approval loop, including linked decision supersession.
-- Current membership checks plus PostgreSQL RLS on every request; owner-only group records, explicit project sharing and tested isolation across all 20 private tables.
-- Canonical owner approvals bind action, organisation, project, payload, environment, requester and expiry. Membership changes reject stale authority and preserve approved expiry.
-- One-use, email-bound local invitation and redemption flows. Consequential actions require recent AAL2; hosted MFA remains unverified.
-- Evidence-linked local project gates for Projects 002, 003 and 005. Project 004 live execution and Project 005 product creation remain disabled.
-- Evidence-only Ask KXRA and scoped full-text search. No model receives context.
-- Local quarantined file upload and metadata isolation. File delivery intentionally disabled until scanning and hosted storage are implemented.
-- Seeded AI role, skill and routine definitions; no autonomous agents or schedules.
-- Original public marketing page with `info@kxra-group.com` contact links. Not published.
+- Owner and partner workspaces, Portfolio and five project pages backed by PostgreSQL.
+- Multi-project invitations with per-project roles, note, expiry, one-use hash-only token, resend/revoke states and a fake transactional outbox.
+- Branded join flow with locked email, partner-created password, email verification return and an encrypted 30-minute server-only join intent.
+- Mandatory nine-step onboarding with exact project access, optional WhatsApp skip, preferences, exact-version agreement acceptance, resume and re-acknowledgement.
+- Partner Profile, Security, Preferences, Assignments and WhatsApp controls; owner invitation, assignment, lifecycle, session and unpair controls.
+- Account states `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`, enforced at HTTP and database boundaries.
+- Classified operating registers, immutable record history and the typed idea → experiment → task → result → decision → supersession loop.
+- Current-authority owner approvals, exact decimal finance totals and evidence-linked local gates for Projects 002, 003 and 005.
+- RLS-scoped evidence search and Ask KXRA excerpts with citations. No model receives context or produces answers.
+- Private-by-default quarantined file metadata and bytes. Download and ingestion remain disabled.
+- Seeded AI roles, skills and disabled routines as definitions only.
+- A static local marketing homepage using `info@kxra-group.com`. Publication remains disabled.
 
-## Boundaries
+## Security boundary
 
-Supabase authentication and cookie refresh adapters exist but have **not been exercised against hosted Supabase**. Hosted owner bootstrap is a reviewed manual script; no real owner account has been created. Hosted MFA enrolment/recovery, email delivery, cloud storage, scanning, live AI, WhatsApp delivery, Trigger.dev jobs, Resend, PostHog and Sentry remain unconnected. Unknown financial results and venture scores remain unknown. Trading is research/paper only. Digital product creation remains gated on reviewed demand evidence.
+All 30 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state or approval.
 
-## Repository
+Production defaults to the hosted Supabase adapter and fail-closed local-provider stubs. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend delivery, Storage/scanning, Trigger.dev, PostHog, Sentry, Cloudflare, AI providers and WhatsApp remain unconnected and unverified. Project 004 is research/paper only. Project 005 cannot create or publish a product without reviewed demand authority.
 
-| Location | Responsibility |
-|---|---|
-| `apps/os` | Next.js/TypeScript interface, server authentication and APIs |
-| `packages/db` | Verified-principal transactions under RLS roles |
-| `packages/domain` | Input schemas, exact money arithmetic, score formulas |
-| `packages/authz` | Strictly local signed fixture sessions |
-| `packages/ai` | Authorised evidence envelope; synthesis disabled |
-| `packages/integrations` | WhatsApp cryptographic foundations |
-| `supabase/migrations` | Additive schema, integrity, workflow, identity and project-gate migrations |
-| `tests` | Database, HTTP, calculation and browser tests |
-| `docs` | Architecture, security, decisions, operations, projects, playbooks |
-| `KXRA-GENESIS/registers` | Required classified seed data; full research/source package is private and excluded |
+## Repository map
 
-Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md). This public repository includes the application, engineering documentation and required seed registers only. Original documents and the full Genesis research/brief remain private on the owner’s machine; they are not required to install, build or run the platform.
+| Location                 | Responsibility                                                            |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `apps/os`                | Next.js/TypeScript private OS, join/onboarding UI and server APIs         |
+| `packages/db`            | Verified-principal transactions under PostgreSQL RLS roles                |
+| `packages/domain`        | Input validation, state contracts, exact money and score formulas         |
+| `packages/authz`         | Provider contract, local fake, encrypted join intent and session controls |
+| `packages/ai`            | Authorized evidence envelopes; model synthesis disabled                   |
+| `packages/integrations`  | Fake email rendering and WhatsApp cryptographic foundations               |
+| `supabase/migrations`    | Additive schema, policy, workflow, account and gate migrations            |
+| `tests`                  | Database, HTTP, contract, persistence and browser evidence                |
+| `docs`                   | Architecture, security, decisions, operations, projects and playbooks     |
+| `KXRA-GENESIS/registers` | Required classified seed data only                                        |
+
+Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md).

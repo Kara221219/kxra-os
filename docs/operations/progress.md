@@ -1,71 +1,79 @@
 # KXRA OS implementation progress
 
-Updated: 14 September 2026. Status: **reviewed local milestone complete through AT-09; final requirements frozen; not production ready**.
+Updated: 15 September 2026. Status: **Final Milestone 1 complete in the deterministic local environment; not hosted or production ready**.
 
-Reviewed implementation commit: `0c20de47fe1f6cb38646db51c4a90650679aacd7` on `codex/genesis-foundation`. The 13 September review baseline and acceptance contract are preserved in [CODEX PHASE COMPLETION BRIEF](CODEX-PHASE-COMPLETION-BRIEF.md). Current results are recorded in [phase acceptance evidence](acceptance-evidence.md).
+Current branch: `codex/phase-2-completion`. Requirements-freeze baseline: `4e597ea2039f8758a254cf42637baff26e7067a2`. Reviewed Genesis implementation ancestor: `0c20de47fe1f6cb38646db51c4a90650679aacd7`. Milestone 1 implementation: `7cbc227bb8e03ff0b5f41d930ae8cbe1d9ece7d9`.
 
-The owner completion addendum has been consolidated with the Genesis and Phase contracts in [KXRA FINAL COMPLETION BRIEF](../../KXRA-FINAL-COMPLETION-BRIEF.md). It preserves AT-01 through AT-18, adds AT-19 through AT-30, defines eleven ordered implementation milestones and makes production-shaped identity/invitation/onboarding/account management the next milestone. The freeze changes requirements and execution order only; it is not evidence that any added feature has been implemented.
+The [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) supplements the Genesis and [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md). Requirements omitted from the latest brief were not deleted. Current executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
 ## What was built
 
-The review's approval, finance, seed, classification/history and upload-sharing defects are fixed with additive migrations and regression tests. KXRA OS now has:
+Migrations `0014`–`0021` add the production-shaped local account domain without altering prior migrations:
 
-- atomic, provenance-checked, stable-ID Genesis seed import;
-- 20 RLS-protected private tables and a five-principal cross-organisation access matrix;
-- complete approval-envelope hashing, current target/access versions, recent-AAL2 checks, expiry and single-use concurrency;
-- one-use email-bound local invitations and assignment redemption;
-- owner-private upload defaults with explicit project sharing and quarantine;
-- complete record snapshots plus evidence-controlled FACT verification;
-- uncapped RLS finance/dashboard aggregates with exact decimal arithmetic;
-- a typed P002 idea → experiment → task → result → accepted decision → superseding decision loop;
-- evidence-linked local-only gates for P002 fitment/safety, P003 rights/geometry QA and P005 reviewed demand;
-- owner and partner UI controls for the operating loop, gate evidence, invitations, real history and assigned tasks.
+- profiles and server-controlled account lifecycle;
+- multi-project invitation grants and separate approved-grant/delivery versions;
+- mandatory nine-step onboarding and exact-version agreement acceptance;
+- user preferences, provider-neutral session revocation and account security events;
+- transactional email outbox and durable rate-limit buckets;
+- exact approval/execution for account lifecycle and project-assignment changes;
+- RLS isolation for incomplete, suspended and revoked accounts.
 
-Project 004 remains paper/research only. The database rejects live execution and no broker path exists. Project 005 remains demand-first; product creation stays false and no creation/publication path exists.
+The Next.js application now provides:
+
+- owner invitation creation with exact project/role assignments, note and expiry, plus list/resend/revoke controls;
+- a branded fragment-token join route, encrypted short-lived join intent, locked email, partner-created password, email verification and atomic redemption;
+- a nine-step responsive onboarding wizard with safe back/forward/refresh/mobile resume and mandatory re-entry for new required agreements;
+- partner Profile, Security, Preferences, Assignments and WhatsApp controls;
+- owner lifecycle, assignment, role, forced-session-revoke and WhatsApp-unpair controls;
+- deterministic fake Auth/email providers for local verification only;
+- production import-condition stubs and an optimized-artifact fixture scan;
+- mobile navigation and account-surface reflow through 320px/200% zoom.
+
+Existing AT-01 through AT-09 operating, finance, seed, file, evidence and project-gate behavior remains passing. Project 004 remains research/paper only. Project 005 remains demand-first; no product creation or publication executor exists.
 
 ## Verification
 
-| Check                              | Current result                                                                      |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| `npm run typecheck`                | PASS                                                                                |
-| `npm test`                         | PASS — 45/45                                                                        |
-| `npm run test:restart`             | PASS — retained task and supersession graph matched before/after restart            |
-| `npm run test:e2e`                 | PASS — 6/6 desktop/mobile                                                           |
-| `npm run build`                    | PASS                                                                                |
-| `npm run format:check`             | PASS                                                                                |
-| `git diff --check`                 | PASS                                                                                |
-| Public-boundary secret/source scan | PASS — original documents, private brief, runtime and test artifacts remain ignored |
+| Check                              | Result                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                    | PASS — typecheck; 53/53 database/domain/HTTP tests; production Next.js build; artifact scan                   |
+| `npm run test:artifact`            | PASS — production output excludes all 16 fixture identity, selector, state and secret markers                 |
+| `npm run test:restart`             | PASS — 22 completed tasks and 30 accepted supersessions matched across controlled restart                     |
+| Account Playwright spec            | PASS — 3/3 owner/partner journey, mobile resume and responsive/keyboard cases                                 |
+| Existing workspace Playwright spec | PASS — 6/6 existing desktop/mobile cases                                                                      |
+| `npm run format:check`             | PASS                                                                                                          |
+| `git diff --check`                 | PASS                                                                                                          |
+| Secret/source boundary scan        | PASS — no credential pattern; original documents, full research, runtime and browser artifacts remain ignored |
 
-The database tests cover all current tables and exposed RPCs. HTTP tests cover every current private route family, owner/partner/viewer/revoked behavior, crafted IDs, direct access, files and retrieval. Fresh-seed tests use disposable clusters and prove rollback after an injected mid-import failure.
+Representative pages were rendered and inspected at 1440, 768, 390 and 320 CSS pixels and at a 200% zoom reflow equivalent. No horizontal document overflow was observed; owner partner administration collapses before tablet width, mobile navigation is keyboard operable and onboarding remains usable. Local screenshots remain excluded under the repository publication rule.
 
-## Priority delivery status
+## Acceptance status
 
-| Area                                            | Verified current state                                                                                                |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Repository/database/auth boundary               | Next.js/TypeScript, additive PostgreSQL migrations, nonprivileged RLS transactions and strict local fixture isolation |
-| Owner and partner access                        | Local owner plus contributor/viewer/revoked/invitee fixtures; server/database authorization on every context lookup   |
-| Portfolio/projects/registers                    | Five canonical projects, scoped workspaces and classified versioned records                                           |
-| Assumptions/experiments/decisions/risks/sources | Persistent registers; experiment and decision creation now use exact typed workflows                                  |
-| Tasks                                           | Exact context-version assignment/completion with immutable task history                                               |
-| Approvals                                       | Current-authority acceptance, membership and local project-gate executors                                             |
-| Finance                                         | Authoritative uncapped actual totals by currency; no ledger reconciliation or FX                                      |
-| Knowledge/Ask                                   | RLS-scoped evidence search with citations; no model synthesis or attachment chunks                                    |
-| Partners                                        | Local invitation/redemption and exact membership changes; no real email/provider activation                           |
-| Files                                           | Private/shared metadata and bounded quarantine; scanning/extraction/download remain disabled                          |
-| AI/skills/routines/runs                         | 13 agents, 12 skills and nine disabled routines as definitions only; no execution                                     |
-| WhatsApp                                        | Cryptographic helper and private schema only; ingress/pairing/delivery remain disabled                                |
-| Public website                                  | Existing static local homepage; separate public build/routes and publication gate remain incomplete                   |
+- AT-01 and AT-02 remain **PASS** against 30 RLS tables and 42 exposed functions.
+- AT-03 remains **BLOCKED** overall because hosted Supabase identity/MFA/session behavior has not run; its expanded deterministic local subset passes.
+- AT-04 through AT-09 remain **PASS**.
+- AT-19, AT-20 and AT-21 are **PASS in the deterministic local environment**.
+- AT-25's local fake-template/outbox subset passes; full AT-25 remains **BLOCKED** pending an authorized provider test.
+- AT-10 through AT-18 remain blocked overall. The Milestone 1 account-specific responsive subset of AT-18 passes.
+- AT-22 through AT-24 and AT-26 through AT-29 are **NOT RUN**. AT-30 remains **BLOCKED**.
 
 ## Security status
 
-AT-01, AT-02 and AT-04 through AT-09 pass their agreed local scenarios. AT-03's local invitation, fixture and recent-AAL2 subset passes; hosted MFA and confirmed provider identity remain blocked. Storage delivery, document ingestion, AI execution, provider messaging and deployment continue to fail closed.
+PostgreSQL remains authoritative. Every private request uses a verified principal and nonprivileged transaction-local RLS role. Partner access requires active account, organisation membership, exact project membership and shared data. Suspension/revocation removes access at UI, HTTP and SQL layers. Raw invitation tokens are fragment-delivered, immediately stripped, digest-only in storage and exchanged for a 30-minute AES-GCM HttpOnly cookie. Password and MFA secrets stay in Auth. The local provider is excluded from production builds by conditional modules and artifact scanning.
 
-The implementation has not used real credentials, a hosted account, production data, external messages, paid model calls, live trading, product publication or production deployment.
+No production deployment, hosted mutation, real owner/partner account, real credential, external email, provider message, paid model call, spending, publication or trading occurred.
 
-## Active blockers and deferrals
+## Active blockers and owner inputs
 
-AT-10 through AT-18 remain blocked as recorded. AT-19 through AT-29 are newly frozen and have not run; AT-30 is blocked pending implementation, owner inputs and separately authorized staging. The immediate next slice is Final Milestone 1: production-shaped invitation-only identity, multi-project invitations, the nine-step onboarding wizard and partner/owner account management using deterministic local Auth/email doubles. Hosted Auth/MFA/email/session verification remains a later controlled staging gate and needs separately authorized credentials.
+- Real Terms, Privacy and any required agreement text need qualified owner approval; the two local documents are visibly `UNAPPROVED_PLACEHOLDER`.
+- Hosted owner identity, Supabase project, MFA/recovery policy and controlled staging authorization are required only at Milestone 11.
+- Resend sender/domain and notification policy remain unapproved and unconnected.
+- Storage/scanner, Trigger.dev, OpenAI, Meta, PostHog, Sentry, Cloudflare and Vercel credentials/configuration remain absent by design.
+- Provider session revocation, delivery failure/bounce behavior, hosted RLS/pooler behavior and telemetry redaction remain unverified.
+
+## Next safe action
+
+Proceed to Final Milestone 2 only: typed Owner Dashboard, complete Portfolio and Idea Inbox behavior for FR-07, FR-08 and FR-10, with AT-22 evidence. Preserve all current account, RLS, project and hard-stop tests. No provider connection or deployment is needed for that slice.
 
 ## Publication boundary
 
-Only application code, engineering documentation and required seed registers are authorized for the public `Kara221219/kxra-os` repository. Original Word/text sources, the full private Genesis brief/research, archives, runtime data, credentials, screenshots and test artifacts remain excluded by `.gitignore`.
+Only application code, engineering documentation and required seed registers may enter the public `Kara221219/kxra-os` repository. Original Word/text sources, the full private Genesis research/brief, archives, `.runtime`, credentials, screenshots and test artifacts remain excluded.
