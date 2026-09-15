@@ -32,8 +32,13 @@ import {
   recommendations,
   workLogTypes,
 } from "../../../lib/control-plane";
+import { loadProjectWorkspace } from "../../../lib/project-workspaces";
 import { query, scoped, localMode } from "../../../../../packages/db";
-import { uuid, recordInput } from "../../../../../packages/domain";
+import {
+  classifications,
+  uuid,
+  recordInput,
+} from "../../../../../packages/domain";
 import { evidenceAnswer } from "../../../../../packages/ai";
 import { renderEmail } from "../../../../../packages/integrations/email";
 import {
@@ -68,8 +73,10 @@ const ideaFields = {
 const pageNumber = z.coerce.number().int().positive().default(1);
 const pageSize = z.coerce.number().int().min(1).max(100);
 const gateCode = z.enum([
+  "P001_REVISIT",
   "P002_LISTING",
   "P003_FAITHFUL_DELIVERY",
+  "P004_PAPER_READINESS",
   "P005_LOCAL_PROTOTYPE",
 ]);
 const gateEvidenceBase = {
@@ -79,6 +86,34 @@ const gateEvidenceBase = {
   evidence: evidenceList,
 };
 const gateEvidenceInput = z.discriminatedUnion("gate", [
+  z
+    .object({
+      ...gateEvidenceBase,
+      gate: z.literal("P001_REVISIT"),
+      claims: z
+        .object({
+          route_evidenced: z.literal(true),
+          liquidity_evidenced: z.literal(true),
+          recovery_evidenced: z.literal(true),
+          buyer_evidenced: z.literal(true),
+          regulatory_evidenced: z.literal(true),
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      ...gateEvidenceBase,
+      gate: z.literal("P004_PAPER_READINESS"),
+      claims: z
+        .object({
+          protocol_defined: z.literal(true),
+          risk_limits_defined: z.literal(true),
+          paper_account_ready: z.literal(true),
+        })
+        .strict(),
+    })
+    .strict(),
   z
     .object({
       ...gateEvidenceBase,
@@ -145,6 +180,27 @@ async function body(req: Request) {
   } catch {
     throw new HttpError(400, "Invalid JSON");
   }
+}
+const projectResourceQueries = {
+  workspaceEntry: "select project_id from kxra.workspace_entries where id=$1",
+  vehicleCompatibility:
+    "select project_id from kxra.vehicle_compatibility where id=$1",
+  propertyAsset: "select project_id from kxra.property_assets where id=$1",
+  digitalOpportunity:
+    "select project_id from kxra.digital_opportunities where id=$1",
+} as const;
+async function requireProjectResource(
+  a: Awaited<ReturnType<typeof actor>>,
+  resource: keyof typeof projectResourceQueries,
+  id: string,
+  projectId: string,
+) {
+  const rows = await query<{ project_id: string }>(
+    a,
+    projectResourceQueries[resource],
+    [id],
+  );
+  if (rows[0]?.project_id !== projectId) throw new HttpError(404, "Not found");
 }
 async function handle(req: Request, ctx: Context) {
   try {
@@ -521,6 +577,298 @@ async function handle(req: Request, ctx: Context) {
     }
     if (p[0] === "projects" && method === "GET")
       return json(p[1] ? await project(a, p[1]) : await listProjects(a));
+    if (p[0] === "project-workspaces") {
+      const projectId = uuid.parse(p[1]);
+      await project(a, projectId);
+      if (method === "GET") {
+        if (!p[2]) return json(await loadProjectWorkspace(a, projectId));
+        if (p[2] === "modules" && p[3] && !p[4])
+          return json(await loadProjectWorkspace(a, projectId, p[3]));
+        throw new HttpError(404, "Not found");
+      }
+      if (p[2] === "entries" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            module_key: z
+              .string()
+              .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+              .max(120),
+            title: z.string().trim().min(1).max(240),
+            summary: z.string().trim().min(1).max(50000),
+            classification: z.enum(classifications),
+            visibility: z.enum(["owner_only", "project_shared"]),
+            payload: z.record(z.string(), z.unknown()),
+            evidence: z.array(evidenceReference).max(20),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_workspace_entry($1,$2,$3,$4,$5,$6,$7,$8)",
+          [
+            projectId,
+            input.module_key,
+            input.title,
+            input.summary,
+            input.classification,
+            input.visibility,
+            input.payload,
+            JSON.stringify(input.evidence),
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "entries" &&
+        p[3] &&
+        p[4] === "review" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const target = uuid.parse(p[3]);
+        await requireProjectResource(a, "workspaceEntry", target, projectId);
+        const input = z
+          .object({ version: positiveVersion })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.review_workspace_entry($1,$2)",
+          [target, input.version],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[2] === "vehicle-compatibility" &&
+        p[3] &&
+        p[4] === "verify" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const target = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "vehicleCompatibility",
+          target,
+          projectId,
+        );
+        const input = z
+          .object({
+            version: positiveVersion,
+            supplier_sku: z.string().trim().min(1).max(240),
+            fitment_evidence_id: uuid,
+            fitment_evidence_version: positiveVersion,
+            safety_evidence_id: uuid,
+            safety_evidence_version: positiveVersion,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.verify_vehicle_compatibility($1,$2,$3,$4,$5,$6,$7)",
+          [
+            target,
+            input.version,
+            input.supplier_sku,
+            input.fitment_evidence_id,
+            input.fitment_evidence_version,
+            input.safety_evidence_id,
+            input.safety_evidence_version,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[2] === "property-assets" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            module_key: z
+              .string()
+              .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+              .max(120),
+            title: z.string().trim().min(1).max(240),
+            asset_kind: z.enum([
+              "PROPERTY_INPUT",
+              "FLOORPLAN",
+              "PHOTO",
+              "SOURCE_ASSET",
+              "DEMO",
+            ]),
+            origin: z.enum(["REAL_INPUT", "AI_GENERATED", "AI_INFERRED"]),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_property_asset($1,$2,$3,$4,$5)",
+          [
+            projectId,
+            input.module_key,
+            input.title,
+            input.asset_kind,
+            input.origin,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "property-assets" &&
+        p[3] &&
+        p[4] === "review" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const target = uuid.parse(p[3]);
+        await requireProjectResource(a, "propertyAsset", target, projectId);
+        const input = z
+          .object({
+            version: positiveVersion,
+            rights_evidence_id: uuid,
+            rights_evidence_version: positiveVersion,
+            geometry_evidence_id: uuid.nullable(),
+            geometry_evidence_version: positiveVersion.nullable(),
+          })
+          .strict()
+          .refine(
+            (value) =>
+              (value.geometry_evidence_id === null) ===
+              (value.geometry_evidence_version === null),
+          )
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.review_property_asset($1,$2,$3,$4,$5,$6)",
+          [
+            target,
+            input.version,
+            input.rights_evidence_id,
+            input.rights_evidence_version,
+            input.geometry_evidence_id,
+            input.geometry_evidence_version,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[2] === "clpr-reviews" && !p[3] && method === "POST") {
+        owner(a);
+        const evidenceFields = {
+          route_evidence_id: uuid,
+          route_evidence_version: positiveVersion,
+          liquidity_evidence_id: uuid,
+          liquidity_evidence_version: positiveVersion,
+          recovery_evidence_id: uuid,
+          recovery_evidence_version: positiveVersion,
+          buyer_evidence_id: uuid,
+          buyer_evidence_version: positiveVersion,
+          regulatory_evidence_id: uuid,
+          regulatory_evidence_version: positiveVersion,
+        };
+        const input = z
+          .object({
+            recommendation: z.enum(["MONITOR", "REVISIT", "DO_NOT_REVISIT"]),
+            rationale: z.string().trim().min(1).max(50000),
+            ...evidenceFields,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_clpr_revisit_review($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+          [
+            projectId,
+            input.recommendation,
+            input.rationale,
+            input.route_evidence_id,
+            input.route_evidence_version,
+            input.liquidity_evidence_id,
+            input.liquidity_evidence_version,
+            input.recovery_evidence_id,
+            input.recovery_evidence_version,
+            input.buyer_evidence_id,
+            input.buyer_evidence_version,
+            input.regulatory_evidence_id,
+            input.regulatory_evidence_version,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[2] === "digital-opportunities" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            title: z.string().trim().min(1).max(240),
+            buyer_problem: z.string().trim().min(1).max(5000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_digital_opportunity($1,$2,$3)",
+          [projectId, input.title, input.buyer_problem],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "digital-opportunities" &&
+        p[3] &&
+        p[4] === "evidence" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        const target = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "digitalOpportunity",
+          target,
+          projectId,
+        );
+        const input = z
+          .object({
+            version: positiveVersion,
+            evidence_id: uuid,
+            evidence_version: positiveVersion,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.attach_digital_demand_evidence($1,$2,$3,$4)",
+          [target, input.version, input.evidence_id, input.evidence_version],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[2] === "digital-opportunities" &&
+        p[3] &&
+        p[4] === "authorize" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const target = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "digitalOpportunity",
+          target,
+          projectId,
+        );
+        const input = z
+          .object({
+            version: positiveVersion,
+            gate_authorization_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.authorize_digital_local_prototype($1,$2,$3)",
+          [target, input.version, input.gate_authorization_id],
+        );
+        return json(rows[0]);
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "invitations") {
       owner(a);
       if (method === "GET") {

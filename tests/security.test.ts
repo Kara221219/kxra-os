@@ -1203,7 +1203,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 36);
+    assert.equal(tables.length, 44);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1254,7 +1254,7 @@ test("AT-01 anonymous can execute only the two bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 52);
+    assert.equal(functions.length, 61);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)
@@ -1419,14 +1419,19 @@ test("AT-09 project gates block unknown evidence and authorize local-only scope"
       live_execution_enabled: false,
       product_creation_enabled: false,
     });
-    assert.equal(
+    assert.deepEqual(
       (
         await db.query(
-          "select * from kxra.project_gate_policies where project_id=$1",
+          "select gate_code,threshold_state from kxra.project_gate_policies where project_id=$1",
           [p4],
         )
-      ).rowCount,
-      0,
+      ).rows,
+      [
+        {
+          gate_code: "P004_PAPER_READINESS",
+          threshold_state: "proposed_unset",
+        },
+      ],
     );
     await denied(
       db,

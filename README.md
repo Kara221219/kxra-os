@@ -1,6 +1,6 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 2: invitation-only identity and account administration plus the owner control plane, Portfolio and typed Idea Inbox. It is not production ready and is not deployed.
+KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3: invitation-only identity, account administration, the owner control plane and database-backed workspaces for all five initial ventures. It is not production ready and is not deployed.
 
 Original source documents, the full private Genesis research and unrelated parent-repository applications remain outside the public repository. The checked-in Genesis registers contain only the classified records required to initialize the platform.
 
@@ -37,6 +37,10 @@ git diff --check
 - Owner Dashboard with exact attention/decision/risk/activity counts and linked source records.
 - Stable, filterable Portfolio for all five ventures with truthful unknown scores, finance and recommendations.
 - Typed owner/partner Idea Inbox with immutable versions, evidence, state transitions, duplicate merge and approval-gated explicit sharing.
+- Every project exposes the exact 18 common workspace modules plus its frozen specialist modules through direct, database-backed routes.
+- Typed workspace entries use strict payload discriminators, immutable versions, exact evidence references and owner review.
+- Project 001 revisit reviews require five distinct current evidence records; Project 002 has an evidence-gated fitment/safety matrix; Project 003 keeps real, generated and inferred property assets distinct.
+- Project 004 has paper-only records, reports and readiness gates with no live path. Project 005 stops at evidence-bound local prototype authority and has no product-creation or publication route.
 - Owner Work Log projected from real audit/security events and a redacted, audited Admin view.
 - Multi-project invitations with per-project roles, note, expiry, one-use hash-only token, resend/revoke states and a fake transactional outbox.
 - Branded join flow with locked email, partner-created password, email verification return and an encrypted 30-minute server-only join intent.
@@ -44,7 +48,7 @@ git diff --check
 - Partner Profile, Security, Preferences, Assignments and WhatsApp controls; owner invitation, assignment, lifecycle, session and unpair controls.
 - Account states `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`, enforced at HTTP and database boundaries.
 - Classified operating registers, immutable record history and the typed idea → experiment → task → result → decision → supersession loop.
-- Current-authority owner approvals with complete before/after/recipient/cost/risk envelopes, exact decimal finance totals and evidence-linked local gates for Projects 002, 003 and 005.
+- Current-authority owner approvals with complete before/after/recipient/cost/risk envelopes, exact decimal finance totals and evidence-linked local gates for all five projects.
 - RLS-scoped evidence search and Ask KXRA excerpts with citations. No model receives context or produces answers.
 - Private-by-default quarantined file metadata and bytes. Download and ingestion remain disabled.
 - Seeded AI roles, skills and disabled routines as definitions only.
@@ -52,7 +56,7 @@ git diff --check
 
 ## Security boundary
 
-All 36 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas.
+All 44 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas, and project-resource paths are re-bound to the authorized project before mutation.
 
 Production defaults to the hosted Supabase adapter and fail-closed local-provider stubs. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend delivery, Storage/scanning, Trigger.dev, PostHog, Sentry, Cloudflare, AI providers and WhatsApp remain unconnected and unverified. Project 004 is research/paper only. Project 005 cannot create or publish a product without reviewed demand authority.
 

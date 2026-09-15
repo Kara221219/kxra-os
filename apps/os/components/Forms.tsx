@@ -810,18 +810,29 @@ export function GateEvidenceForm({
   evidence,
 }: {
   projectId: string;
-  gate: "P002_LISTING" | "P003_FAITHFUL_DELIVERY" | "P005_LOCAL_PROTOTYPE";
+  gate:
+    | "P001_REVISIT"
+    | "P002_LISTING"
+    | "P003_FAITHFUL_DELIVERY"
+    | "P004_PAPER_READINESS"
+    | "P005_LOCAL_PROTOTYPE";
   evidence: WorkflowRecord[];
 }) {
   if (!evidence.length)
     return (
       <p className="notice">Accepted project evidence is required first.</p>
     );
+  if (gate === "P001_REVISIT" && evidence.length < 5)
+    return (
+      <p className="notice">
+        Five distinct current evidence records are required for this gate.
+      </p>
+    );
   return (
     <details className="workflow-controls">
       <summary>Create a gate evidence packet</summary>
       <p>
-        This creates a draft linked to one current accepted source. The packet
+        This creates a draft linked to current accepted evidence. The packet
         must be accepted separately before a local gate authorization can be
         requested.
       </p>
@@ -833,31 +844,78 @@ export function GateEvidenceForm({
           const source = evidence.find(
             (row) => row.id === String(form.get("evidence_id")),
           );
-          if (!source) throw Error("Choose current accepted evidence");
+          if (gate !== "P001_REVISIT" && !source)
+            throw Error("Choose current accepted evidence");
           const claims =
-            gate === "P002_LISTING"
+            gate === "P001_REVISIT"
               ? {
-                  exact_sku: form.get("exact_sku"),
-                  fitment_verified: form.get("fitment_verified") === "on",
-                  safety_evidence_verified:
-                    form.get("safety_evidence_verified") === "on",
+                  route_evidenced: form.get("route_evidenced") === "on",
+                  liquidity_evidenced: form.get("liquidity_evidenced") === "on",
+                  recovery_evidenced: form.get("recovery_evidenced") === "on",
+                  buyer_evidenced: form.get("buyer_evidenced") === "on",
+                  regulatory_evidenced:
+                    form.get("regulatory_evidenced") === "on",
                 }
-              : gate === "P003_FAITHFUL_DELIVERY"
+              : gate === "P002_LISTING"
                 ? {
-                    rights_confirmed: form.get("rights_confirmed") === "on",
-                    geometry_qa_passed: form.get("geometry_qa_passed") === "on",
+                    exact_sku: form.get("exact_sku"),
+                    fitment_verified: form.get("fitment_verified") === "on",
+                    safety_evidence_verified:
+                      form.get("safety_evidence_verified") === "on",
                   }
-                : {
-                    buyer_problem: form.get("buyer_problem"),
-                    demand_reviewed: form.get("demand_reviewed") === "on",
-                  };
+                : gate === "P003_FAITHFUL_DELIVERY"
+                  ? {
+                      rights_confirmed: form.get("rights_confirmed") === "on",
+                      geometry_qa_passed:
+                        form.get("geometry_qa_passed") === "on",
+                    }
+                  : gate === "P004_PAPER_READINESS"
+                    ? {
+                        protocol_defined: form.get("protocol_defined") === "on",
+                        risk_limits_defined:
+                          form.get("risk_limits_defined") === "on",
+                        paper_account_ready:
+                          form.get("paper_account_ready") === "on",
+                      }
+                    : {
+                        buyer_problem: form.get("buyer_problem"),
+                        demand_reviewed: form.get("demand_reviewed") === "on",
+                      };
+          const evidenceReferences =
+            gate === "P001_REVISIT"
+              ? ["route", "liquidity", "recovery", "buyer", "regulatory"].map(
+                  (category) => {
+                    const selected = evidence.find(
+                      (row) =>
+                        row.id ===
+                        String(form.get(`${category}_gate_evidence_id`)),
+                    );
+                    if (!selected)
+                      throw Error(`Choose current ${category} evidence`);
+                    return {
+                      record_id: selected.id,
+                      version: selected.version,
+                    };
+                  },
+                )
+              : [
+                  {
+                    record_id: source!.id,
+                    version: source!.version,
+                  },
+                ];
+          if (
+            gate === "P001_REVISIT" &&
+            new Set(evidenceReferences.map((item) => item.record_id)).size !== 5
+          )
+            throw Error("Choose a distinct evidence record for each category");
           return {
             project_id: projectId,
             gate,
             title: form.get("title"),
             summary: form.get("summary"),
             claims,
-            evidence: [{ record_id: source.id, version: source.version }],
+            evidence: evidenceReferences,
           };
         }}
       >
@@ -869,6 +927,44 @@ export function GateEvidenceForm({
           Review summary
           <textarea name="summary" required maxLength={50000} />
         </label>
+        {gate === "P001_REVISIT" && (
+          <>
+            {[
+              ["route", "Route"],
+              ["liquidity", "Liquidity"],
+              ["recovery", "Failure recovery"],
+              ["buyer", "Buyer"],
+              ["regulatory", "Regulatory"],
+            ].map(([key, label]) => (
+              <EvidenceSelect
+                key={key}
+                rows={evidence}
+                name={`${key}_gate_evidence_id`}
+                label={`${label} evidence`}
+              />
+            ))}
+            <label>
+              <input name="route_evidenced" type="checkbox" required />
+              Route evidence reviewed
+            </label>
+            <label>
+              <input name="liquidity_evidenced" type="checkbox" required />
+              Liquidity evidence reviewed
+            </label>
+            <label>
+              <input name="recovery_evidenced" type="checkbox" required />
+              Failure recovery evidence reviewed
+            </label>
+            <label>
+              <input name="buyer_evidenced" type="checkbox" required />
+              Buyer evidence reviewed
+            </label>
+            <label>
+              <input name="regulatory_evidenced" type="checkbox" required />
+              Regulatory evidence reviewed
+            </label>
+          </>
+        )}
         {gate === "P002_LISTING" && (
           <>
             <label>
@@ -909,17 +1005,41 @@ export function GateEvidenceForm({
             </label>
           </>
         )}
-        <EvidenceSelect rows={evidence} />
+        {gate === "P004_PAPER_READINESS" && (
+          <>
+            <label>
+              <input name="protocol_defined" type="checkbox" required />
+              Paper protocol defined
+            </label>
+            <label>
+              <input name="risk_limits_defined" type="checkbox" required />
+              Paper risk limits defined
+            </label>
+            <label>
+              <input name="paper_account_ready" type="checkbox" required />
+              Paper account readiness reviewed
+            </label>
+          </>
+        )}
+        {gate !== "P001_REVISIT" && <EvidenceSelect rows={evidence} />}
       </MutationForm>
     </details>
   );
 }
 
-function EvidenceSelect({ rows }: { rows: WorkflowRecord[] }) {
+function EvidenceSelect({
+  rows,
+  name = "evidence_id",
+  label = "Accepted evidence",
+}: {
+  rows: WorkflowRecord[];
+  name?: string;
+  label?: string;
+}) {
   return (
     <label>
-      Accepted evidence
-      <select name="evidence_id" required defaultValue="">
+      {label}
+      <select name={name} required defaultValue="">
         <option value="" disabled>
           Choose current accepted evidence
         </option>

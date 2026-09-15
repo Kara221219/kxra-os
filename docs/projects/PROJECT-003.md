@@ -2,10 +2,10 @@
 
 Classification: USER-SUPPLIED INFORMATION for the source concept; DECISION for current implementation gates.
 
-Stage: VALIDATION. Status: VALIDATION / PROOF OF CONCEPT. Venture and confidence scores: NOT ASSESSED. No invented revenue or market validation.
+Stage: VALIDATION. Status: VALIDATION / PROOF OF CONCEPT. Venture and Confidence scores: NOT ASSESSED. No invented revenue or market validation.
 
-Next action: Obtain one rights-cleared property pack and test accurate versus generative production.
+Next action: obtain one rights-cleared property pack and test accurate versus generative production.
 
-The database-backed project page, scoped registers and typed operating loop are implemented. A local faithful-delivery gate accepts only a reviewed, accepted evidence packet with rights confirmation and geometry QA. Any resulting authorization is local-only; no render pipeline, delivery, rights clearance or commercial validation is claimed.
+Implemented locally: all 18 common modules plus Property Inputs, Floorplans, Photos, Source Assets, POC Pipeline, Technology Evaluation, Accuracy QA, Demo Library, Estate Agent Validation, Pricing, Packages and Leads / Feedback. Every property asset records `REAL_INPUT`, `AI_GENERATED` or `AI_INFERRED` independently from rights and geometry QA. An owner review requires exact current rights evidence and geometry evidence when applicable.
 
-The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
+The P003 faithful-delivery gate requires rights confirmation and geometry QA. Authority is local-only; no render pipeline, external delivery, rights-clearance claim or commercial validation exists. The original project specification stays in the owner’s private Genesis package and is not published here.

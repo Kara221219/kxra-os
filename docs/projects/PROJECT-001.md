@@ -2,10 +2,10 @@
 
 Classification: USER-SUPPLIED INFORMATION for the source concept; DECISION for current implementation gates.
 
-Stage: DISCOVERY. Status: MONITOR. Venture and confidence scores: NOT ASSESSED. No invented revenue or market validation.
+Stage: DISCOVERY. Status: MONITOR. Venture and Confidence scores: NOT ASSESSED. No invented revenue or market validation.
 
-Next action: Resolve route, liquidity, failure recovery and merchant differentiation before considering build.
+Next action: resolve route, liquidity, failure recovery, buyer/commercial and regulatory evidence before any revisit decision.
 
-The database-backed project page and scoped registers are implemented. Commercial execution of the venture is not implemented or represented as validated.
+Implemented locally: all 18 common modules plus Technical Research, Architecture / Interoperability, Competitive Landscape, Regulatory, Commercial Case, Revisit Criteria, Red Team and Scorecard. Typed findings and evidence retain exact versions. A revisit recommendation and P001 gate packet each require five distinct current accepted project evidence records; one record cannot be relabelled across categories.
 
-The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
+Commercial execution is absent. The current project recommendation remains evidence-bound monitoring. The original project specification stays in the owner’s private Genesis package and is not published here.

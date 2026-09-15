@@ -17,8 +17,10 @@ const actors = {
   viewer: "20000000-0000-4000-8000-000000000003",
   revoked: "20000000-0000-4000-8000-000000000004",
 };
+const p1 = "30000000-0000-4000-8000-000000000001";
 const p2 = "30000000-0000-4000-8000-000000000002";
 const p3 = "30000000-0000-4000-8000-000000000003";
+const p5 = "30000000-0000-4000-8000-000000000005";
 
 type Actor = keyof typeof actors | "other";
 type Expected = Record<Actor, string[]>;
@@ -139,6 +141,19 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "p2ShareApproval",
         "p3ShareApproval",
         "otherShareApproval",
+        "p2WorkspaceEntry",
+        "p3WorkspaceEntry",
+        "otherWorkspaceEntry",
+        "p2Vehicle",
+        "p3Vehicle",
+        "otherVehicle",
+        "p2PropertyAsset",
+        "p3PropertyAsset",
+        "otherPropertyAsset",
+        "p1ClprReview",
+        "otherClprReview",
+        "p5DigitalOpportunity",
+        "otherDigitalOpportunity",
       ].map((name) => [name, crypto.randomUUID()]),
     ) as Record<string, string>;
     const marker = crypto.randomUUID();
@@ -594,6 +609,120 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
          ) values($1,$2,$3,'P002_LISTING',$4,1,$5,$6)`,
         [...row],
       );
+
+    await db.query(
+      `insert into kxra.project_workspace_modules(
+        org_id,project_id,module_key,label,module_group,source_kind,entry_type,
+        position,description,write_policy
+       ) values
+        ($1,$2,'problem','Problem','COMMON','WORKSPACE_ENTRIES','NARRATIVE',1,
+         'AT-01 other workspace module','CONTRIBUTOR'),
+        ($1,$2,'property-inputs','Property Inputs','SPECIALIST','PROPERTY_ASSETS',null,2,
+         'AT-01 other property module','CONTRIBUTOR')`,
+      [otherOrg, otherProject],
+    );
+    for (const row of [
+      [ids.p2WorkspaceEntry, org, p2, actors.owner, "p2 workspace"],
+      [ids.p3WorkspaceEntry, org, p3, actors.owner, "p3 workspace"],
+      [
+        ids.otherWorkspaceEntry,
+        otherOrg,
+        otherProject,
+        otherOwner,
+        "other workspace",
+      ],
+    ] as const)
+      await db.query(
+        `insert into kxra.workspace_entries(
+          id,org_id,project_id,module_key,record_type,title,summary,payload,
+          classification,visibility,created_by
+         ) values($1,$2,$3,'problem','NARRATIVE',$5::text,'AT-01 typed entry',
+          jsonb_build_object('statement',$5::text),'USER-SUPPLIED INFORMATION','project_shared',$4)`,
+        [...row],
+      );
+    for (const row of [
+      [ids.p2WorkspaceEntry, org, p2, ids.p2Evidence],
+      [ids.p3WorkspaceEntry, org, p3, ids.p3Evidence],
+      [ids.otherWorkspaceEntry, otherOrg, otherProject, ids.otherEvidence],
+    ] as const)
+      await db.query(
+        `insert into kxra.workspace_entry_evidence(
+          entry_id,entry_version,org_id,project_id,evidence_id,evidence_version
+         ) values($1,1,$2,$3,$4,1)`,
+        [...row],
+      );
+    await db.query(
+      `insert into kxra.vehicle_compatibility(
+        id,org_id,project_id,vehicle_family
+       ) values
+        ($1,$2,$3,'Ford F-150'),
+        ($4,$5,$6,'Ford F-150')`,
+      [ids.p3Vehicle, org, p3, ids.otherVehicle, otherOrg, otherProject],
+    );
+    await db.query(
+      `insert into kxra.property_assets(
+        id,org_id,project_id,module_key,title,asset_kind,origin,created_by
+       ) values
+        ($1,$2,$3,'property-inputs','AT-01 P003 real input','PROPERTY_INPUT','REAL_INPUT',$4),
+        ($5,$6,$7,'property-inputs','AT-01 other real input','PROPERTY_INPUT','REAL_INPUT',$8)`,
+      [
+        ids.p3PropertyAsset,
+        org,
+        p3,
+        actors.owner,
+        ids.otherPropertyAsset,
+        otherOrg,
+        otherProject,
+        otherOwner,
+      ],
+    );
+    const p1Evidence = (
+      await db.query(
+        "select id,version from kxra.records where source_code='PROJECT-001-BRIEF'",
+      )
+    ).rows[0];
+    await db.query(
+      `insert into kxra.clpr_revisit_reviews(
+        id,org_id,project_id,recommendation,rationale,
+        route_evidence_id,route_evidence_version,
+        liquidity_evidence_id,liquidity_evidence_version,
+        recovery_evidence_id,recovery_evidence_version,
+        buyer_evidence_id,buyer_evidence_version,
+        regulatory_evidence_id,regulatory_evidence_version,created_by
+       ) values
+        ($1,$2,$3,'MONITOR','AT-01 local review',$4,$5,$4,$5,$4,$5,$4,$5,$4,$5,$6),
+        ($7,$8,$9,'MONITOR','AT-01 other review',$10,1,$10,1,$10,1,$10,1,$10,1,$11)`,
+      [
+        ids.p1ClprReview,
+        org,
+        p1,
+        p1Evidence.id,
+        p1Evidence.version,
+        actors.owner,
+        ids.otherClprReview,
+        otherOrg,
+        otherProject,
+        ids.otherEvidence,
+        otherOwner,
+      ],
+    );
+    await db.query(
+      `insert into kxra.digital_opportunities(
+        id,org_id,project_id,title,buyer_problem,created_by
+       ) values
+        ($1,$2,$3,'AT-01 local opportunity','AT-01 local buyer problem',$4),
+        ($5,$6,$7,'AT-01 other opportunity','AT-01 other buyer problem',$8)`,
+      [
+        ids.p5DigitalOpportunity,
+        org,
+        p5,
+        actors.owner,
+        ids.otherDigitalOpportunity,
+        otherOrg,
+        otherProject,
+        otherOwner,
+      ],
+    );
 
     for (const [id, orgId, projectId, approvedBy] of [
       [ids.localInvitation, org, p2, actors.owner],
@@ -1273,6 +1402,115 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           viewer: [],
           revoked: [],
           other: [],
+        },
+      },
+      {
+        table: "project_workspace_modules",
+        sql: `select project_id::text as key from kxra.project_workspace_modules
+              where module_key='problem' and project_id=any($1::uuid[])`,
+        values: [[p2, p3, otherProject]],
+        expected: {
+          owner: [p2, p3],
+          partner: [p2],
+          viewer: [p3],
+          revoked: [],
+          other: [otherProject],
+        },
+      },
+      {
+        table: "workspace_entries",
+        sql: "select id::text as key from kxra.workspace_entries where id=any($1::uuid[])",
+        values: [
+          [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry, ids.otherWorkspaceEntry],
+        ],
+        expected: {
+          owner: [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry],
+          partner: [ids.p2WorkspaceEntry],
+          viewer: [ids.p3WorkspaceEntry],
+          revoked: [],
+          other: [ids.otherWorkspaceEntry],
+        },
+      },
+      {
+        table: "workspace_entry_versions",
+        sql: "select entry_id::text as key from kxra.workspace_entry_versions where entry_id=any($1::uuid[])",
+        values: [
+          [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry, ids.otherWorkspaceEntry],
+        ],
+        expected: {
+          owner: [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry],
+          partner: [ids.p2WorkspaceEntry],
+          viewer: [ids.p3WorkspaceEntry],
+          revoked: [],
+          other: [ids.otherWorkspaceEntry],
+        },
+      },
+      {
+        table: "workspace_entry_evidence",
+        sql: "select entry_id::text as key from kxra.workspace_entry_evidence where entry_id=any($1::uuid[])",
+        values: [
+          [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry, ids.otherWorkspaceEntry],
+        ],
+        expected: {
+          owner: [ids.p2WorkspaceEntry, ids.p3WorkspaceEntry],
+          partner: [ids.p2WorkspaceEntry],
+          viewer: [ids.p3WorkspaceEntry],
+          revoked: [],
+          other: [ids.otherWorkspaceEntry],
+        },
+      },
+      {
+        table: "vehicle_compatibility",
+        sql: "select id::text as key from kxra.vehicle_compatibility where id=any($1::uuid[])",
+        values: [
+          [
+            "62000000-0000-4000-8000-000000000001",
+            ids.p3Vehicle,
+            ids.otherVehicle,
+          ],
+        ],
+        expected: {
+          owner: ["62000000-0000-4000-8000-000000000001", ids.p3Vehicle],
+          partner: ["62000000-0000-4000-8000-000000000001"],
+          viewer: [ids.p3Vehicle],
+          revoked: [],
+          other: [ids.otherVehicle],
+        },
+      },
+      {
+        table: "property_assets",
+        sql: "select id::text as key from kxra.property_assets where id=any($1::uuid[])",
+        values: [[ids.p3PropertyAsset, ids.otherPropertyAsset]],
+        expected: {
+          owner: [ids.p3PropertyAsset],
+          partner: [],
+          viewer: [ids.p3PropertyAsset],
+          revoked: [],
+          other: [ids.otherPropertyAsset],
+        },
+      },
+      {
+        table: "clpr_revisit_reviews",
+        sql: "select id::text as key from kxra.clpr_revisit_reviews where id=any($1::uuid[])",
+        values: [[ids.p1ClprReview, ids.otherClprReview]],
+        expected: {
+          owner: [ids.p1ClprReview],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [ids.otherClprReview],
+        },
+      },
+      {
+        table: "digital_opportunities",
+        sql: "select id::text as key from kxra.digital_opportunities where id=any($1::uuid[])",
+        values: [[ids.p5DigitalOpportunity, ids.otherDigitalOpportunity]],
+        expected: {
+          owner: [ids.p5DigitalOpportunity],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [ids.otherDigitalOpportunity],
         },
       },
       {

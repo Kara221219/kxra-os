@@ -1,10 +1,10 @@
 # Security model and verification limits
 
-Final Milestone 2 retains PostgreSQL as the authority for KXRA access. Authentication establishes a server-verified subject. KXRA profiles, account state, current organisation membership, exact project membership, onboarding/agreement readiness, explicit record access and current approval state determine what that subject may do. Neither browser input nor an LLM can calculate or grant permission.
+Final Milestone 3 retains PostgreSQL as the authority for KXRA access. Authentication establishes a server-verified subject. KXRA profiles, account state, current organisation membership, exact project membership, onboarding/agreement readiness, explicit record access and current approval state determine what that subject may do. Neither browser input nor an LLM can calculate or grant permission.
 
 ## Enforced controls
 
-- All 36 private tables have RLS. Tests enumerate the schema and reject a new table without RLS and an explicit matrix decision.
+- All 44 private tables have RLS. Tests enumerate the schema and reject a new table without RLS and an explicit matrix decision.
 - The non-owner application login enters one transaction per request, sets only server-derived subject/assurance/email claims and resets the connection after use.
 - Owners are current active database members with active account profiles. Partners also need a live, unexpired project membership and a `project_shared` record. Viewers cannot write.
 - `SUSPENDED` and `REVOKED` account states fail closed across account tables and all existing project/file/search/Ask paths. Organisation or project revocation independently removes access.
@@ -15,6 +15,8 @@ Final Milestone 2 retains PostgreSQL as the authority for KXRA access. Authentic
 - Work Log rows originate from persisted audit/security events and carry a unique source identity. Admin reads are owner-only, return boolean connection presence instead of credential values and create an audit event before returning data.
 - Session revocation increments a server-checked version. The fake provider also increments its provider session version; a stale signed cookie is rejected.
 - Same-origin checks cover mutations. Strict request schemas reject unknown fields and crafted IDs. Durable database rate-limit buckets protect join exchange, registration, reset and other account operations.
+- Project workspace APIs first authorize the route project, then re-bind every nested workspace entry, vehicle, property asset or opportunity ID to that same project through a fixed query map. Missing, inaccessible and cross-project resources return the same unavailable response.
+- Workspace mutations use narrow security-definer functions. Partners cannot choose creator identity or owner-only visibility. Evidence references must resolve to current accepted project-shared versions in the same organisation and project.
 - Private response headers disable caching, sniffing and framing and use same-origin referrers. Safe errors do not include data, secrets, raw tokens or attachment bodies.
 
 ## Invitation and credential controls
@@ -33,17 +35,19 @@ This is defense in depth. The production target still requires hosted configurat
 
 ## Tested attack paths
 
-The local contract suite covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous and separate-organisation principals. The expanded matrix reads and attempts unauthorized writes against all 36 tables and audits all 52 exposed functions. HTTP tests cover every current private route family, crafted project IDs, direct API access, cross-project files, search, Ask, Ideas and owner control-plane routes.
+The local contract suite covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous and separate-organisation principals. The expanded matrix reads and attempts unauthorized writes against all 44 tables and audits all 61 exposed functions. HTTP tests cover every current private route family, crafted project IDs, direct API access, cross-project files, search, Ask, Ideas, owner control-plane routes and project workspace resources.
 
 Account tests cover locked-email registration, weak/mismatched passwords, uninvited registration, token mismatch, expiry, replay, old links after resend/replacement, forged lifecycle/profile/assignment fields, exact grants, onboarding bypass, agreement re-acknowledgement, MFA transitions, password reset/change, session revocation, WhatsApp preference without pairing and immediate suspension/reactivation/revocation isolation. Browser tests cover the owner-to-partner journey and mobile resume. Production artifact tests prove the local fixture surface is absent from the optimized build.
 
 Control-plane tests cover submitter-only Ideas, explicit share grant/removal, membership revocation, cross-project denial, generic-write bypass attempts, stale Idea and governance versions, every Idea state, duplicate merge, complete approval envelopes for all enabled actions, recent-AAL2 denial, one-use/concurrent/stale execution, exact Dashboard counts, stable Portfolio pagination, linked Work Log rows and audited/redacted Admin access. Browser tests repeat the owner/partner boundary and responsive behavior through 320px and 200% reflow.
 
+Workspace tests enumerate every common and specialist module, validate typed payloads and immutable versions, and repeat unauthenticated, revoked, crafted-ID, direct-API and cross-project denial at SQL and HTTP layers. They prove that fitment/safety cannot be verified without exact evidence, property origin remains explicit, the five Project 001 evidence categories cannot reuse one record, Project 004 cannot store a non-paper report or enable live execution, and Project 005 has no creation or publication route. Desktop and mobile tests cover direct module URLs, denied states and reflow at 1440, 768, 390, 320 and 200%.
+
 Database tests use local administration only to create/rollback adversarial fixtures, then explicitly switch to application roles. HTTP tests call real Next.js handlers. Browser tests use the rendered application. These results do not constitute a hosted Supabase penetration test.
 
 ## Existing hard stops
 
-File bytes remain quarantined and undeliverable until trusted scanning, extraction, object RLS and delivery-time authorization exist. No model synthesis, agent/job execution, provider message, spending, publication, deployment or live trading executor exists. Project 004 remains paper/research only and Project 005 remains demand-gated.
+File bytes remain quarantined and undeliverable until trusted scanning, extraction, object RLS and delivery-time authorization exist. No model synthesis, agent/job execution, provider message, spending, publication, deployment or live trading executor exists. Project 004 remains paper/research only. Project 005 can reach only a local prototype authority tied to exact demand evidence; creation and publication remain absent.
 
 ## Hosted checks deferred to Milestone 11
 

@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Status: Final Milestone 2 is complete in the deterministic local environment on `codex/phase-2-completion`. The private Genesis brief, Phase Completion Brief and Final Completion Brief remain the cumulative requirements. This is local evidence, not hosted or production evidence.
+Status: Final Milestone 3 is complete in the deterministic local environment on `codex/phase-2-completion`. The private Genesis brief, Phase Completion Brief and Final Completion Brief remain the cumulative requirements. This is local evidence, not hosted or production evidence.
 
 ## Trust and request flow
 
@@ -62,9 +62,9 @@ Partners may edit only permitted profile and preference fields, change/reset the
 
 ## Data architecture
 
-Thirty-six private application tables have RLS. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets. Migrations `0022`–`0025` add typed Ideas, Idea versions/evidence/shares, project-governance history and real Work Log projections.
+Forty-four private application tables have RLS. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets. Migrations `0022`–`0025` add typed Ideas, Idea versions/evidence/shares, project-governance history and real Work Log projections. Migrations `0026`–`0028` add project module definitions, typed workspace entries and versions, exact evidence links, vehicle compatibility, property asset provenance, CLPR revisit reviews and demand-gated digital opportunities.
 
-The application exposes 52 bounded functions to authenticated or anonymous roles. Tests enumerate every table and function and fail if either grows without an authorization decision. Composite foreign keys bind organisation/project scope. Typed security-definer functions validate consequential workflows; ordinary RLS controls reads.
+The application exposes 61 bounded functions to authenticated or anonymous roles. Tests enumerate every table and function and fail if either grows without an authorization decision. Composite foreign keys bind organisation/project scope. Typed security-definer functions validate consequential workflows; ordinary RLS controls reads.
 
 Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
 
@@ -72,9 +72,29 @@ Seed import remains advisory-locked, atomic, source-envelope verified and stable
 
 The typed idea → experiment → assigned task → result → decision → supersession loop remains intact. Owner approvals bind action, organisation, project, complete payload, environment, requester, expiry and current target/access version. Only a current owner with AAL2 issued in the last 15 minutes can approve or execute. `publish`, `spend` and `deploy` have no executor.
 
-Projects 002, 003 and 005 retain exact evidence-gate policies and can produce only `local_only` authority. Project 004 rejects live execution and has no broker path. Project 005 rejects product creation/publication. Numeric gate thresholds remain `proposed_unset` until owner-approved evidence exists.
+All five projects have explicit evidence-gate policies and can produce only `local_only` authority. Project 001 requires distinct current route, liquidity, recovery, buyer and regulatory evidence. Project 002 requires exact SKU, fitment and safety evidence. Project 003 requires rights and geometry evidence. Project 004 readiness remains paper-only and cannot enable live execution. Project 005 requires reviewed buyer-demand evidence and rejects product creation/publication. Numeric gate thresholds remain `proposed_unset` until an approved scoring policy exists.
 
 Search and Ask KXRA retrieve only through the current principal's RLS transaction. Explicit inaccessible scopes return the same unavailable result as missing resources. Responses are evidence excerpts with record ID, classification and version; no LLM is called. File bytes remain private quarantine and cannot be downloaded or ingested.
+
+## Project workspace architecture
+
+Each project receives the same 18 common modules from `project_workspace_modules`: Overview, Problem, Customer, Value Proposition, Market, Research, Assumptions, Experiments, Decisions, Risks, Finance, Roadmap, Tasks, Files, Activity, Metrics, Partners and Approvals. The registry then adds 8 specialist modules for Project 001, 12 each for Projects 002 and 003, 13 for Project 004 and 16 for Project 005. Direct routes resolve only module keys present for the authorized project.
+
+```mermaid
+flowchart TD
+  Route[Project + module route] --> ProjectRLS[Exact project lookup under RLS]
+  ProjectRLS --> Registry[Database module registry]
+  Registry --> Loader[Typed source loader]
+  Loader --> Entries[Workspace entries + versions + evidence]
+  Loader --> Existing[Records, loop, files, tasks, finance]
+  Loader --> Specialist[Vehicle, property, CLPR or demand tables]
+  Specialist --> Policy[Evidence and hard-stop functions]
+  Policy --> Audit[Persisted audit event]
+```
+
+Typed workspace entries accept only the payload keys defined for their record type. Evidence-bearing review requires exact current accepted record versions. Partners can create only project-shared entries in projects where they are current contributors; owner-only modules return an explicit denied state without querying their protected data. Crafted nested resource IDs are resolved through fixed SQL maps and must belong to the project in the route.
+
+Specialist state is explicit. Project 002 starts each supported vehicle family at `UNKNOWN` for SKU, fitment and safety and can move to `VERIFIED` only with exact current evidence. Project 003 records `REAL_INPUT`, `AI_GENERATED` or `AI_INFERRED` independently from rights and geometry QA. Project 001 requires five distinct current evidence records for a revisit recommendation or gate packet. Project 004 payload checks force paper-only research and reports and expose no broker, credential, live toggle or executor. Project 005 uses only `DISCOVERY`, `EVIDENCE_REVIEW` and `LOCAL_PROTOTYPE_AUTHORIZED`; gated planning modules expose no mutation controls and there are no creation or publication endpoints.
 
 ## Owner control plane
 

@@ -12,10 +12,8 @@ import {
   UploadForm,
   AskForm,
   EditRecordForm,
-  OperatingLoopForms,
   WorkflowTaskCards,
   InvitationForm,
-  GateEvidenceForm,
 } from "../../../components/Forms";
 import {
   AdminView,
@@ -24,6 +22,7 @@ import {
   PortfolioView,
   WorkLogView,
 } from "../../../components/ControlPlaneViews";
+import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
 import { actor, HttpError, owner, type Actor } from "../../../lib/auth";
 import {
   totals,
@@ -43,6 +42,7 @@ import {
   listWorkLog,
   ownerDashboard,
 } from "../../../lib/control-plane";
+import { loadProjectWorkspace } from "../../../lib/project-workspaces";
 import { localMode, query } from "../../../../../packages/db";
 export const dynamic = "force-dynamic";
 const modules: Record<string, [string, string]> = {
@@ -359,186 +359,25 @@ export default async function Workspace({
         </>
       );
     } else if (section === "projects" && segments[1]) {
-      const p = await project(a, segments[1]);
-      const [rows, loop, gatePolicies, gateAuthorizations] = await Promise.all([
-        listRecords(a, undefined, p.id),
-        operatingLoop(a, p.id),
-        query<{
-          gate_code:
-            "P002_LISTING" | "P003_FAITHFUL_DELIVERY" | "P005_LOCAL_PROTOTYPE";
-          policy_version: number;
-          requirements: string[];
-          threshold_state: string;
-        }>(
-          a,
-          "select gate_code,policy_version,requirements,threshold_state from kxra.project_gate_policies where project_id=$1",
-          [p.id],
-        ),
-        query<{
-          id: string;
-          gate_code: string;
-          evidence_id: string;
-          evidence_version: number;
-          scope: string;
-        }>(
-          a,
-          "select id,gate_code,evidence_id,evidence_version,scope from kxra.project_gate_authorizations where project_id=$1 order by created_at desc",
-          [p.id],
-        ),
-      ]);
-      const currentById = new Map(loop.records.map((row) => [row.id, row]));
+      if (segments.length > 3) notFound();
+      const workspace = await loadProjectWorkspace(
+        a,
+        segments[1],
+        segments[2] || "overview",
+      );
       content = (
         <>
-          <Heading title={p.name} sub={`${p.code} · ${p.status}`} />
-          <div className="panel">
-            <h2>Next gate</h2>
-            <p>{p.next_action}</p>
-            <span className="badge">
-              Venture score: {p.venture_score ?? "Not assessed"}
-            </span>
-          </div>
-          {gatePolicies.map((policy) => (
-            <section className="panel" key={policy.gate_code}>
-              <div className="record-top">
-                <div>
-                  <h2>Project gate</h2>
-                  <p>{policy.gate_code.replaceAll("_", " ")}</p>
-                </div>
-                <span className="badge amber">Thresholds proposed / unset</span>
-              </div>
-              <p>Required evidence:</p>
-              <ul>
-                {policy.requirements.map((requirement) => (
-                  <li key={requirement}>{requirement}</li>
-                ))}
-              </ul>
-              <p className="subtle">
-                Policy v{policy.policy_version}. Any authorization is
-                local-only; it does not enable creation, publishing, purchasing
-                or live execution.
-              </p>
-              {gateAuthorizations
-                .filter(
-                  (authorization) =>
-                    authorization.gate_code === policy.gate_code,
-                )
-                .map((authorization) => (
-                  <p className="success" key={authorization.id}>
-                    Local-only authorization recorded from evidence v
-                    {authorization.evidence_version}. External release remains
-                    disabled.
-                  </p>
-                ))}
-              {a.role === "owner" && (
-                <GateEvidenceForm
-                  projectId={p.id}
-                  gate={policy.gate_code}
-                  evidence={loop.records.filter(
-                    (record) => record.status === "accepted",
-                  )}
-                />
-              )}
-            </section>
-          ))}
-          <section className="panel" id="operating-loop">
-            <div className="record-top">
-              <div>
-                <h2>Operating loop</h2>
-                <p>
-                  Ideas, experiments, results and decisions retain exact
-                  evidence versions. Actions below are checked again by
-                  PostgreSQL.
-                </p>
-              </div>
-              <span className="badge">
-                {loop.results.length} result
-                {loop.results.length === 1 ? "" : "s"}
-              </span>
-            </div>
-            <div className="workflow-flow" aria-label="Operating loop status">
-              <div>
-                <small>Ideas</small>
-                <strong>
-                  {loop.records.filter((row) => row.kind === "idea").length}
-                </strong>
-              </div>
-              <div>
-                <small>Experiments</small>
-                <strong>
-                  {
-                    loop.records.filter((row) => row.kind === "experiment")
-                      .length
-                  }
-                </strong>
-              </div>
-              <div>
-                <small>Results</small>
-                <strong>{loop.results.length}</strong>
-              </div>
-              <div>
-                <small>Decisions</small>
-                <strong>
-                  {loop.records.filter((row) => row.kind === "decision").length}
-                </strong>
-              </div>
-            </div>
-            {loop.links.length > 0 && (
-              <details>
-                <summary>
-                  Evidence and lifecycle links ({loop.links.length})
-                </summary>
-                {loop.links.map((link) => (
-                  <p className="workflow-link" key={link.id}>
-                    <Link href={`/os/record/${link.from_record_id}`}>
-                      {currentById.get(link.from_record_id)?.title || "Record"}{" "}
-                      v{link.from_version}
-                    </Link>{" "}
-                    <span>{link.relation.replaceAll("_", " ")}</span>{" "}
-                    <Link href={`/os/record/${link.to_record_id}`}>
-                      {currentById.get(link.to_record_id)?.title || "Evidence"}{" "}
-                      v{link.to_version}
-                    </Link>
-                  </p>
-                ))}
-              </details>
-            )}
-            <OperatingLoopForms
-              projectId={p.id}
-              actorId={a.id}
-              owner={a.role === "owner"}
-              records={loop.records}
-              results={loop.results}
-              tasks={loop.tasks}
-              members={loop.members}
-            />
-          </section>
-          <div className="tabs">
-            <a href="#operating-loop">operating loop</a>
-            {[
-              "assumptions",
-              "experiments",
-              "decisions",
-              "risks",
-              "sources",
-              "tasks",
-              "files",
-            ].map((s) => (
-              <Link key={s} href={"/os/" + s + "?project=" + p.id}>
-                {s.replace("sources", "research")}
-              </Link>
-            ))}
-          </div>
-          <Records rows={rows} projects={projects} />
-          {writableProjects.some((w) => w.id === p.id) && (
-            <div style={{ marginTop: 24 }}>
-              <RecordForm
-                kind="note"
-                projects={[p]}
-                pid={p.id}
-                partner={a.role !== "owner"}
-              />
-            </div>
-          )}
+          <Heading
+            title={workspace.project.name}
+            sub={`${workspace.project.code} · ${workspace.project.status}`}
+          >
+            <Link href="/os/projects">All projects</Link>
+          </Heading>
+          <ProjectWorkspaceView
+            workspace={workspace}
+            owner={a.role === "owner"}
+            actorId={a.id}
+          />
         </>
       );
     } else if (section === "ideas") {

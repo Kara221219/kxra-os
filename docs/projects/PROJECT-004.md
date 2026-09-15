@@ -2,12 +2,10 @@
 
 Classification: USER-SUPPLIED INFORMATION for the source concept; DECISION for current implementation gates.
 
-Stage: FEASIBILITY. Status: INTERNAL R&D / PAPER ONLY. Venture and confidence scores: NOT ASSESSED. No invented revenue or market validation.
+Stage: FEASIBILITY. Status: INTERNAL R&D / PAPER ONLY. Venture and Confidence scores: NOT ASSESSED. No invented performance or market validation.
 
-Next action: Define paper protocol and pass readiness checks; no live execution.
+Next action: define the paper protocol and pass paper-readiness checks; no live execution.
 
-The database-backed project page and scoped registers are implemented. Commercial execution of the venture is not implemented or represented as validated.
+Implemented locally: all 18 common modules plus Research, Market Calendar, Watchlist, Strategy, Readiness, Paper Account, Historical Data, Paper Experiments, Risk Ledger, Schedule, Run History, Midday Reports and After-Close Reports. Paper research payloads must set `paper_only=true`; a database trigger applies the same rule to both report modules. The P004 paper-readiness gate records protocol, risk-limit and paper-account evidence without enabling any live capability.
 
-The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
-
-Hard stop: research/paper only. The schema rejects `live_execution_enabled=true`, including an administrator-level direct update in the local acceptance test. There is no project-gate policy, API/UI/job enablement path, broker adapter or live-trade executor.
+Hard stop: research/paper only. The schema rejects `live_execution_enabled=true`. There is no broker adapter, live credential, live toggle, live approval, order path or trade executor. The original project specification stays in the owner’s private Genesis package and is not published here.

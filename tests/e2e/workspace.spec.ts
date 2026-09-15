@@ -84,16 +84,20 @@ test("owner can inspect gate controls, history and invitation foundations", asyn
     page.getByRole("heading", { name: "US Vehicle Seat Covers" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Project gate" }),
+    page.getByRole("heading", { name: "P002 LISTING", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("Thresholds proposed / unset", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Operating loop" }),
-  ).toBeVisible();
   await expect(page.getByText("exact SKU", { exact: true })).toBeVisible();
 
+  await page.goto(`/os/projects/${project}/experiments`);
+  await expect(
+    page.getByRole("heading", { name: "Experiments", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Operating loop status")).toBeVisible();
+
+  await page.goto(`/os/projects/${project}/research`);
   await page.locator(".record-list .record h3 a").first().click();
   await expect(
     page.getByRole("heading", { name: "Version history" }),

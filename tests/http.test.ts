@@ -831,9 +831,18 @@ test("AT-09 HTTP P005 gate permits only an approved local prototype record", asy
   assert.equal(project.product_creation_enabled, false);
   assert.equal(project.live_execution_enabled, false);
   assert.deepEqual(
-    (await (await req(`project-gates?project_id=${p4}`, owner)).json())
-      .policies,
-    [],
+    (
+      await (await req(`project-gates?project_id=${p4}`, owner)).json()
+    ).policies.map((row: { gate_code: string; threshold_state: string }) => ({
+      gate_code: row.gate_code,
+      threshold_state: row.threshold_state,
+    })),
+    [
+      {
+        gate_code: "P004_PAPER_READINESS",
+        threshold_state: "proposed_unset",
+      },
+    ],
   );
   assert.equal(
     (

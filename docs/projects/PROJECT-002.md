@@ -2,10 +2,10 @@
 
 Classification: USER-SUPPLIED INFORMATION for the source concept; DECISION for current implementation gates.
 
-Stage: VALIDATION. Status: VALIDATION / LAUNCH PREPARATION. Venture and confidence scores: NOT ASSESSED. No invented revenue or market validation.
+Stage: VALIDATION. Status: VALIDATION / LAUNCH PREPARATION. Venture and Confidence scores: NOT ASSESSED. No invented revenue or market validation.
 
-Next action: Obtain exact supplier SKUs, fitment and safety evidence; model landed contribution.
+Next action: obtain exact supplier SKUs, fitment and safety evidence; model landed contribution from deterministic inputs.
 
-The database-backed project page, scoped registers and typed operating loop are implemented. A local listing gate accepts only a reviewed, accepted evidence packet containing an exact supplier SKU plus confirmed fitment and safety evidence. Its policy threshold remains visibly proposed/unset. Any resulting authorization is local-only and does not publish a listing or claim commercial validation.
+Implemented locally: all 18 common modules plus Product Catalogue, Supplier Evidence, Fitment Matrix, Vehicle Compatibility, Safety / Airbag Evidence, Creative Assets, Marketplace, eBay Listings, Pricing, Competitors, Unit Economics and Orders / Performance. Ford F-150, Ram / Dodge Ram and Toyota Tacoma begin with unknown SKU, fitment and safety state. Only an owner can promote a row to verified, and the database requires exact current accepted fitment and safety evidence from this project.
 
-The original project specification remains in the owner’s private Genesis package and is not published here. The public seed register and this engineering summary are sufficient to run the project workspace. Record new evidence as classified versioned records.
+The P002 listing gate also requires exact SKU, fitment and safety claims. Authority is local-only; no marketplace publication executor or commercial validation claim exists. The original project specification stays in the owner’s private Genesis package and is not published here.
