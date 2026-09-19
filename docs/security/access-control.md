@@ -2,6 +2,8 @@
 
 Final Milestone 3 retains PostgreSQL as the authority for KXRA access. Authentication establishes a server-verified subject. KXRA profiles, account state, current organisation membership, exact project membership, onboarding/agreement readiness, explicit record access and current approval state determine what that subject may do. Neither browser input nor an LLM can calculate or grant permission.
 
+Audit note, 19 September 2026: current RLS blocks unassigned projects, but Ask KXRA permits one partner request to combine all projects that partner can access. This violates the frozen one-project context boundary and must be fixed before model activation. The approved customer platform also requires normalized many-to-many organization membership and new tenant/entitlement tests; see [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md).
+
 ## Enforced controls
 
 - All 44 private tables have RLS. Tests enumerate the schema and reject a new table without RLS and an explicit matrix decision.

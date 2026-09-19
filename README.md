@@ -1,6 +1,8 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3: invitation-only identity, account administration, the owner control plane and database-backed workspaces for all five initial ventures. It is not production ready and is not deployed.
+KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3: invitation-only identity, account administration, the owner control plane and database-backed workspaces for the five original ventures. It is not production ready and is not deployed. The 19 September audit also found a partner Ask KXRA scope defect that must be repaired before any model is enabled.
+
+The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. It adds the approved customer-platform direction, Brand Studio, subscriptions and separate custom projects, first-private-access agreement gate, Projects 006/007, layered public site, owner connection runbook and AT-01 through AT-47. Those additions are specified, not yet implemented.
 
 Original source documents, the full private Genesis research and unrelated parent-repository applications remain outside the public repository. The checked-in Genesis registers contain only the classified records required to initialize the platform.
 
@@ -75,4 +77,4 @@ Production defaults to the hosted Supabase adapter and fail-closed local-provide
 | `docs`                   | Architecture, security, decisions, operations, projects and playbooks     |
 | `KXRA-GENESIS/registers` | Required classified seed data only                                        |
 
-Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md).
+Start with [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md), [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md).

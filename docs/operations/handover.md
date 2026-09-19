@@ -1,73 +1,91 @@
 # Engineering handover
 
-Updated: 16 September 2026.
+Updated: 19 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on branch `codex/phase-2-completion`. The requirements-freeze baseline is `4e597ea2039f8758a254cf42637baff26e7067a2`; the reviewed Genesis implementation ancestor is `0c20de47fe1f6cb38646db51c4a90650679aacd7`; the last pushed Milestone 2 baseline is `6a2e76a8fc9081707145d8ea10f9e190694918ef`.
+Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The audited pushed implementation baseline is `9e8733bebdb967760835b3a82087b45a7f5a6197`; use branch HEAD for this brief/handover revision. The requirements-freeze baseline is `4e597ea2039f8758a254cf42637baff26e7067a2`, and the reviewed Genesis implementation ancestor is `0c20de47fe1f6cb38646db51c4a90650679aacd7`.
 
-The branch has not been merged to `main` and nothing has been deployed. GitHub destination is the public `Kara221219/kxra-os` repository. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications.
+The branch is not merged and nothing is deployed. GitHub's default branch remains the stale `codex/genesis-foundation` revision `e9e317a41b0f7a64f4b652152f7ef7c2a5ef3781`; do not change it until the release gate and owner approval. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications.
 
-Read [acceptance evidence](acceptance-evidence.md), [progress](progress.md), [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0006](../decisions/0006-project-workspaces.md), the [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and the root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md). Direct user instructions remain controlling.
+Read, in order:
 
-## Delivered milestone
+1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md) — current self-contained audit and execution contract;
+2. [acceptance evidence](acceptance-evidence.md);
+3. [progress](progress.md);
+4. [architecture](../architecture/system.md) and [security](../security/access-control.md);
+5. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved history.
 
-Final Milestone 3 is complete in the deterministic local environment. AT-23 passes locally; AT-01, AT-02, AT-04 through AT-09, AT-19 through AT-22 and AT-24 remain passing. AT-03 and AT-18 remain blocked overall because their hosted or product-wide portions have not run. No local result is hosted or production proof.
+Direct user instructions remain controlling. PostgreSQL authorization, project/tenant isolation, Project 004's permanent paper-only boundary and the repository publication boundary remain non-negotiable.
 
-Migrations `0026_project_workspaces.sql`, `0027_project_workspace_hardening.sql` and `0028_project_workspace_evidence_hardening.sql` are additive and applied. They expand the private RLS schema from 36 to 44 tables and the audited exposed-function set from 52 to 61. Never rewrite an applied migration; add a later migration for any correction.
+## Actual delivered state
 
-## Reproduce
+Final Milestones 1–3 work in the deterministic local environment. Migrations `0026`–`0028` are the latest applied migrations and must never be rewritten. The current schema has 44 RLS tables and 61 audited exposed functions. Account/invitation/onboarding, owner control plane, five venture workspaces, six internal approval executors, exact finance and the typed operating loop are implemented locally.
+
+The audit found:
+
+- partner isolation is strong for the current single-organization model at database, HTTP and browser layers;
+- Ask KXRA is broken against the frozen one-project contract because it permits `All projects I can access`/null `project_id`; the exact insufficient-evidence phrase is also wrong;
+- files stop safely at quarantine, AI/skills/routines are definitions, WhatsApp is cryptographic scaffolding, and provider/public/customer workflows are absent;
+- the current membership model cannot support one identity in multiple customer organizations safely;
+- legal documents are unapproved placeholders;
+- no independent marketing app, CI workflow, provider connection, backup restore or production deployment exists.
+
+The approved supplemental direction adds a multi-tenant customer platform, Brand Studio, subscriptions/free partner entitlements, separately priced custom projects, a first-private-access agreement gate, Project 006 YouTube automation, Project 007 secure repository intelligence and an original layered-scroll marketing site. None is implemented yet; the brief provides exact architecture and AT-31–47.
+
+## Reproduce the audited evidence
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3210` and use only clearly labelled synthetic identities. In another terminal:
+Open `http://127.0.0.1:3210` using only the labelled synthetic identities. In another terminal run:
 
 ```sh
 npm run check
 npm run format:check
 npm run test:restart
 npm run test:e2e
+npm audit --omit=dev
+npm audit
 git diff --check
 ```
 
-Latest pre-commit evidence: 71/71 database/domain/HTTP tests; optimized production build and 16-marker artifact scan; controlled restart retained 32 completed tasks and 50 accepted supersessions; full browser suite 25 passed with 3 intentional device-specific skips; responsive checks passed at 1440/768/390/320 and 200% reflow.
+Audit results: 71/71 database/domain/HTTP tests and optimized build/artifact scan passed; 25 browser scenarios passed with 3 intentional device-specific skips; restart retained the current accumulated 33 tasks/52 supersessions; formatting and both dependency audits passed with zero reported findings. HTTP/browser suites retain labelled synthetic records, so their counts drift; Slice 0 must make CI disposable/deterministic.
 
-HTTP/browser tests require the local preview. PostgreSQL adversarial tests roll back. HTTP/browser tests retain labelled synthetic rows for inspection. Never point fixture tests at a hosted database.
+Local results do not prove hosted Auth/MFA/Storage, pooler RLS, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel or backup behavior.
 
-## Milestone 3 implementation map
+## Required next slice
 
-- `supabase/migrations/0026_project_workspaces.sql`: exact module registry, typed entry/version/evidence tables, vehicle compatibility, property provenance, CLPR revisit reviews, digital opportunities and P001/P004 gates.
-- `0027_project_workspace_hardening.sql`: RLS helper grant, paper-only Project 004 reports, corrected property lookup and fail-closed opportunity authorization.
-- `0028_project_workspace_evidence_hardening.sql`: five-distinct-record Project 001 evidence requirement.
-- `apps/os/lib/project-workspaces.ts`: authorized project/module loader and typed source projections.
-- `apps/os/components/ProjectWorkspaceView.tsx`: common/specialist navigation, hard stops, empty/denied/gated states and typed renderers.
-- `apps/os/components/ProjectWorkspaceForms.tsx`: bounded workspace and specialist mutations.
-- `apps/os/app/api/[...path]/route.ts`: strict workspace APIs and fixed nested-resource project binding.
-- `apps/os/app/os/[[...segments]]/page.tsx`: direct `/os/projects/:id/:module` routes.
-- `tests/project-workspaces.test.ts`: SQL/RLS/hard-stop AT-23 contract.
-- `tests/project-workspaces-http.test.ts`: identity, crafted-ID, specialist and absent-executor HTTP contract.
-- `tests/e2e/project-workspaces.spec.ts`: owner/partner direct URLs, exact module counts, hard stops and responsive evidence.
-- Existing access, security, HTTP and browser suites: expanded 44-table/61-function regression boundary.
+Execute Slice 0 from the new brief before broadening capabilities:
+
+1. require exactly one currently authorized project for partner Ask;
+2. return exactly `INSUFFICIENT KXRA EVIDENCE.` when evidence is insufficient;
+3. add SQL/API/browser tests for missing, null, unauthorized and multi-project requests plus revocation;
+4. add pinned hermetic CI, lint, migration/RLS, secret/dependency/security and artifact checks;
+5. make each complete test run start from or clean up to a known fixture state;
+6. rerun every current regression and update acceptance evidence.
+
+Then add the normalized multi-tenant identity, first-access legal gate and commercial/entitlement foundation through additive migrations before Final Milestone 4. This prerequisite is necessary because the newly approved customer model changes identity and scope assumptions used by every later file, Ask, AI and provider path.
 
 ## Security invariants
 
-PostgreSQL is authoritative. Never accept subject, verified email, role, organisation, project list, account state, onboarding completion, Idea access, workspace scope or approval from a browser body or model. Every retrieval uses the verified principal under RLS.
+- Verify the server identity and active account/organization/project scope before retrieval; use a transaction-local non-bypass RLS role.
+- Never accept user/role/tenant/project/entitlement/approval from request bodies, cookies without verification or model output.
+- Partners/customers see only current assigned projects and explicitly shared rows. Reauthorize before bytes, model response, provider send or publication.
+- A service worker may use only a signed stored initiating scope/capability and cannot become a general service-role data path.
+- Keep Project 004 paper only. Preserve P001–P005 exact hard stops and add the P006/P007 gates before any side effect.
+- Do not activate an NDA placeholder, paid model, external email/message, Stripe live mode, YouTube publication, candidate-code execution on a trusted host, deployment or public site.
+- Financial and entitlement arithmetic is deterministic database/domain logic, never model output.
+- All applied migrations are immutable; corrections use a later migration.
 
-Authorize the route project first. Resolve nested resource IDs only through fixed queries under the same principal and verify that each row belongs to the route project before calling a mutation function. Partners may create only project-shared typed entries in current contributor projects. Owner-only finance, approval and full activity data must remain unqueried for partners.
+## Provider and owner boundaries
 
-Keep Project 001’s five evidence categories distinct and current. Never promote Project 002 fitment or safety without exact accepted evidence. Never collapse Project 003 real, generated and inferred origin. Project 004 remains paper/research only with no broker, credential, live flag or executor. Project 005 stops at exact `LOCAL_PROTOTYPE_AUTHORIZED`; creation and publication routes remain absent.
+Continue through local code, fake adapters and tests without requesting credentials. The owner runbook in the brief gives exact later steps for legal documents, Supabase staging, Stripe, OpenAI, YouTube, a read-only GitHub App, Resend, Trigger.dev, PostHog, Sentry, Cloudflare, Vercel and optional Meta.
 
-Consequential workflows use a comprehensible version-2 approval envelope and bind exact action, organisation, project, payload, requester, environment and expiry. Execution rechecks current target versions under a row lock, requires recent AAL2 and consumes once. `publish`, external messaging, `spend`, `deploy` and high-cost AI have no executor.
+When an external activation becomes the next dependency, present the exact configured endpoint/scopes/environment/action for review. Never ask for raw secrets in chat. Production merge/default-branch change, deployment, public publication, live billing, real customer contact and YouTube/WhatsApp sends require owner approval of the concrete action.
 
-## Known boundaries
+## Publication boundary
 
-Real Supabase MFA/email/session and pooler behavior, owner bootstrap, Resend, Storage/scanning, Trigger.dev, AI providers, WhatsApp, telemetry, backup/restore and deployment remain unverified. Legal documents are unapproved placeholders. Numeric Venture/Confidence scoring policies remain unresolved, so scores must stay null/Not Assessed.
-
-Production, public publication, real credentials, real partner messages, paid calls, spending and trading remain unauthorized.
-
-## Next engineering action
-
-Implement Final Milestone 4 in the frozen order: secure file and knowledge lifecycle with a local private-object adapter, scanner contract, server-controlled `QUARANTINE → CLEAN → EXTRACTED → INDEXED` transitions, versioned extraction/chunks, delivery-time RLS, failure/retry/reconciliation and AT-04/AT-10 evidence. Preserve every Milestone 1–3 regression and do not connect hosted providers yet.
+Commit only platform code, engineering documentation and required classified seeds. Do not commit the original Word/text sources, private Genesis research, credentials, `.runtime`, databases, object backups, screenshots, traces or generated test artifacts.

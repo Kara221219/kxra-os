@@ -2,6 +2,22 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 19 September repository audit and completion contract
+
+- `docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md`
+- `docs/operations/acceptance-evidence.md`
+- `docs/operations/progress.md`
+- `docs/operations/handover.md`
+- `docs/operations/work-log.md`
+- `docs/decisions/0007-customer-platform-and-new-projects.md`
+- `docs/projects/PROJECT-006.md`
+- `docs/projects/PROJECT-007.md`
+- `docs/architecture/system.md`
+- `docs/security/access-control.md`
+- `README.md`
+
+This audit changes documentation and approved target specifications only. It does not claim that the new customer platform, Brand Studio, Projects 006/007 or any provider integration has been implemented.
+
 ## Final Milestone 3 additions and changes
 
 - `apps/os/app/api/[...path]/route.ts`

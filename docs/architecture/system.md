@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Status: Final Milestone 3 is complete in the deterministic local environment on `codex/phase-2-completion`. The private Genesis brief, Phase Completion Brief and Final Completion Brief remain the cumulative requirements. This is local evidence, not hosted or production evidence.
+Status: Final Milestone 3 is implemented in the deterministic local environment on `codex/phase-2-completion`. The 19 September repository audit found a broken one-project Ask KXRA contract and confirmed that customer tenancy, subscriptions, providers and the independent public application are absent. The current target architecture and ordered migration path are in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md). This document describes the implemented architecture unless a section explicitly says otherwise; it is not hosted or production evidence.
 
 ## Trust and request flow
 
