@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Status: Final Milestone 3 is implemented in the deterministic local environment on `codex/phase-2-completion`. The 19 September repository audit found a broken one-project Ask KXRA contract and confirmed that customer tenancy, subscriptions, providers and the independent public application are absent. The current target architecture and ordered migration path are in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md). This document describes the implemented architecture unless a section explicitly says otherwise; it is not hosted or production evidence.
+Status: Final Milestone 3 and Phase 2 Slice 0 are implemented in the deterministic local environment on `codex/phase-2-completion`. The one-project Ask KXRA defect found in the 19 September audit is fixed and covered by clean SQL/API/browser tests. Customer tenancy, subscriptions, providers and the independent public application remain absent. The current target architecture and ordered migration path are in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md). This document describes the implemented architecture unless a section explicitly says otherwise; it is not hosted or production evidence.
 
 ## Trust and request flow
 
@@ -24,7 +24,7 @@ The application database login is `NOINHERIT`, `NOBYPASSRLS`, is not a superuser
 
 `packages/authz/provider.ts` defines provider-neutral registration, sign-in, email verification, password change/reset, MFA state/challenge/recovery and sign-out-all operations. Supabase remains the production target. The deterministic file-backed provider exists only for local acceptance: it uses scrypt password hashes, digest-only one-use verification/reset tokens and provider session versions.
 
-Package import conditions route local Auth/session/UI modules only when Node resolves the `development` condition. The default production build resolves stubs that reject fixture use. `scripts/verify-production-artifact.mjs` scans the optimized `.next` output for 16 fixture identity, selector, state-file and secret markers. Runtime guards still require explicit fixture mode, exact loopback origin, no Vercel or production environment, no hosted Supabase/database combination and generated secrets.
+Package import conditions route local Auth/session/UI modules only when Node resolves the `development` condition. The default production build resolves stubs that reject fixture use. `scripts/verify-production-artifact.mjs` scans the optimized `.next` output for 16 fixture identity, selector, state-file and secret markers. Runtime guards require explicit fixture mode, an HTTP `127.0.0.1` origin, no Vercel or production environment, no hosted Supabase/database combination and generated secrets. Random unprivileged loopback ports support isolated test runs; `localhost`, non-loopback and HTTPS fixture origins fail.
 
 ## Invitation and join flow
 
@@ -62,11 +62,11 @@ Partners may edit only permitted profile and preference fields, change/reset the
 
 ## Data architecture
 
-Forty-four private application tables have RLS. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets. Migrations `0022`–`0025` add typed Ideas, Idea versions/evidence/shares, project-governance history and real Work Log projections. Migrations `0026`–`0028` add project module definitions, typed workspace entries and versions, exact evidence links, vehicle compatibility, property asset provenance, CLPR revisit reviews and demand-gated digital opportunities.
+Forty-four private application tables have RLS and at least one explicit policy. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets. Migrations `0022`–`0025` add typed Ideas, Idea versions/evidence/shares, project-governance history and real Work Log projections. Migrations `0026`–`0028` add project module definitions, typed workspace entries and versions, exact evidence links, vehicle compatibility, property asset provenance, CLPR revisit reviews and demand-gated digital opportunities. Migration `0029` provisions project-dependent governance/reference state on insertion so Supabase's migrations-before-seed order is reproducible; `0030` names explicit deny-all policies for internal ingress and rate-limit tables.
 
 The application exposes 61 bounded functions to authenticated or anonymous roles. Tests enumerate every table and function and fail if either grows without an authorization decision. Composite foreign keys bind organisation/project scope. Typed security-definer functions validate consequential workflows; ordinary RLS controls reads.
 
-Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
+Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Project insertion initializes lifecycle/disposition/gate state, the current governance snapshot, 18 common modules, code-specific specialist modules, gate policy and any bounded static reference rows in the same transaction. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
 
 ## Existing operating architecture
 
@@ -74,7 +74,7 @@ The typed idea → experiment → assigned task → result → decision → supe
 
 All five projects have explicit evidence-gate policies and can produce only `local_only` authority. Project 001 requires distinct current route, liquidity, recovery, buyer and regulatory evidence. Project 002 requires exact SKU, fitment and safety evidence. Project 003 requires rights and geometry evidence. Project 004 readiness remains paper-only and cannot enable live execution. Project 005 requires reviewed buyer-demand evidence and rejects product creation/publication. Numeric gate thresholds remain `proposed_unset` until an approved scoring policy exists.
 
-Search and Ask KXRA retrieve only through the current principal's RLS transaction. Explicit inaccessible scopes return the same unavailable result as missing resources. Responses are evidence excerpts with record ID, classification and version; no LLM is called. File bytes remain private quarantine and cannot be downloaded or ingested.
+Search and Ask KXRA retrieve only through the current principal's RLS transaction. Ask requires exactly one project UUID; missing, null, multiple, inaccessible and revoked scopes fail before retrieval, with no all-project fallback. Explicit inaccessible scopes return the same unavailable result as missing resources. Responses are evidence excerpts with record ID, classification and version; zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.` and no LLM is called. File bytes remain private quarantine and cannot be downloaded or ingested.
 
 ## Project workspace architecture
 

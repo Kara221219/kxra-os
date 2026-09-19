@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { runtimeFile, testOrigin } from "./support/runtime";
 
-const base = "http://127.0.0.1:3210";
+const base = testOrigin;
 const projects = {
   p1: "30000000-0000-4000-8000-000000000001",
   p2: "30000000-0000-4000-8000-000000000002",
@@ -113,7 +114,7 @@ async function providerLogin(
 
 function fakeMessages() {
   return (
-    JSON.parse(fs.readFileSync(".runtime/fake-email.json", "utf8")) as {
+    JSON.parse(fs.readFileSync(runtimeFile("fake-email.json"), "utf8")) as {
       messages: FakeMessage[];
     }
   ).messages;
@@ -459,12 +460,12 @@ async function onboardPartner() {
   );
   assert.equal(
     fs
-      .readFileSync(".runtime/fake-auth.json", "utf8")
+      .readFileSync(runtimeFile("fake-auth.json"), "utf8")
       .includes(rawInvitationToken),
     false,
   );
   const identityState = JSON.parse(
-    fs.readFileSync(".runtime/fake-auth.json", "utf8"),
+    fs.readFileSync(runtimeFile("fake-auth.json"), "utf8"),
   ) as { users: Record<string, { id: string }> };
   return {
     owner,

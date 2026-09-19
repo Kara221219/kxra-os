@@ -5,7 +5,10 @@ import path from "node:path";
 import pg from "pg";
 
 const root = path.resolve(import.meta.dirname, "..");
-const configPath = path.join(root, ".runtime/database.json");
+const runtime = path.resolve(
+  process.env.KXRA_RUNTIME || path.join(root, ".runtime"),
+);
+const configPath = path.join(runtime, "database.json");
 
 if (!fs.existsSync(configPath)) {
   throw Error("Local database is not initialized. Run npm run db:start first.");

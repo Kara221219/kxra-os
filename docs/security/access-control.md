@@ -2,11 +2,11 @@
 
 Final Milestone 3 retains PostgreSQL as the authority for KXRA access. Authentication establishes a server-verified subject. KXRA profiles, account state, current organisation membership, exact project membership, onboarding/agreement readiness, explicit record access and current approval state determine what that subject may do. Neither browser input nor an LLM can calculate or grant permission.
 
-Audit note, 19 September 2026: current RLS blocks unassigned projects, but Ask KXRA permits one partner request to combine all projects that partner can access. This violates the frozen one-project context boundary and must be fixed before model activation. The approved customer platform also requires normalized many-to-many organization membership and new tenant/entitlement tests; see [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md).
+Slice 0 note, 19 September 2026: Ask KXRA now requires one authorized project UUID at schema, server, database and rendered-form boundaries. Missing, null, array/multiple, inaccessible and revoked scopes fail before retrieval, and empty evidence uses the exact frozen phrase. Model synthesis remains disabled. The approved customer platform still requires normalized many-to-many organization membership and new tenant/entitlement tests; see [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md).
 
 ## Enforced controls
 
-- All 44 private tables have RLS. Tests enumerate the schema and reject a new table without RLS and an explicit matrix decision.
+- All 44 private tables have RLS and at least one explicit policy. Internal ingress and rate-limit tables use named false policies and remain reachable only through their bounded security-definer paths. Tests reject a new table without RLS or an explicit policy.
 - The non-owner application login enters one transaction per request, sets only server-derived subject/assurance/email claims and resets the connection after use.
 - Owners are current active database members with active account profiles. Partners also need a live, unexpired project membership and a `project_shared` record. Viewers cannot write.
 - `SUSPENDED` and `REVOKED` account states fail closed across account tables and all existing project/file/search/Ask paths. Organisation or project revocation independently removes access.
@@ -18,6 +18,7 @@ Audit note, 19 September 2026: current RLS blocks unassigned projects, but Ask K
 - Session revocation increments a server-checked version. The fake provider also increments its provider session version; a stale signed cookie is rejected.
 - Same-origin checks cover mutations. Strict request schemas reject unknown fields and crafted IDs. Durable database rate-limit buckets protect join exchange, registration, reset and other account operations.
 - Project workspace APIs first authorize the route project, then re-bind every nested workspace entry, vehicle, property asset or opportunity ID to that same project through a fixed query map. Missing, inaccessible and cross-project resources return the same unavailable response.
+- Ask KXRA accepts exactly one project, authorizes it before search, executes retrieval under the current RLS transaction and has no all-project fallback. Request bodies cannot supply a user, role or alternate project list. Revocation is effective on the next request.
 - Workspace mutations use narrow security-definer functions. Partners cannot choose creator identity or owner-only visibility. Evidence references must resolve to current accepted project-shared versions in the same organisation and project.
 - Private response headers disable caching, sniffing and framing and use same-origin referrers. Safe errors do not include data, secrets, raw tokens or attachment bodies.
 
@@ -31,13 +32,13 @@ Resend rotates the delivery token without altering the approved grant. A materia
 
 ## Fixture exclusion
 
-Local fixture mode requires explicit local configuration, exact loopback origin, no Vercel/production/hosted-service combination and generated secrets. Development-only package import conditions select the local provider and identity selector. Production builds select fail-closed stubs. The artifact test scans all optimized Next.js output for 16 forbidden fixture markers, including fixture emails/IDs, UI labels, selector/state filenames and local secret names.
+Local fixture mode requires explicit local configuration, an HTTP `127.0.0.1` origin on an unprivileged port, no Vercel/production/hosted-service combination and generated secrets. `localhost`, non-loopback and HTTPS fixture origins fail. Development-only package import conditions select the local provider and identity selector. Production builds select fail-closed stubs. The artifact test scans all optimized Next.js output for 16 forbidden fixture markers, including fixture emails/IDs, UI labels, selector/state filenames and local secret names.
 
 This is defense in depth. The production target still requires hosted configuration review; a passing artifact scan does not prove hosted identity, deployment or secret management.
 
 ## Tested attack paths
 
-The local contract suite covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous and separate-organisation principals. The expanded matrix reads and attempts unauthorized writes against all 44 tables and audits all 61 exposed functions. HTTP tests cover every current private route family, crafted project IDs, direct API access, cross-project files, search, Ask, Ideas, owner control-plane routes and project workspace resources.
+The local contract suite covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous and separate-organisation principals. The expanded matrix reads and attempts unauthorized writes against all 44 tables and audits all 61 exposed functions. HTTP tests cover every current private route family, crafted project IDs, direct API access, cross-project files, search, Ask, Ideas, owner control-plane routes and project workspace resources. Ask-specific tests cover missing/null/array/multiple/inaccessible/revoked project scope and the exact insufficient-evidence contract.
 
 Account tests cover locked-email registration, weak/mismatched passwords, uninvited registration, token mismatch, expiry, replay, old links after resend/replacement, forged lifecycle/profile/assignment fields, exact grants, onboarding bypass, agreement re-acknowledgement, MFA transitions, password reset/change, session revocation, WhatsApp preference without pairing and immediate suspension/reactivation/revocation isolation. Browser tests cover the owner-to-partner journey and mobile resume. Production artifact tests prove the local fixture surface is absent from the optimized build.
 

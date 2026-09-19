@@ -1224,8 +1224,10 @@ export function AskForm({ projects }: { projects: Project[] }) {
       >
         <label>
           Project
-          <select disabled={!ready} name="project_id">
-            <option value="">All projects I can access</option>
+          <select disabled={!ready} name="project_id" required defaultValue="">
+            <option value="" disabled>
+              Select one project
+            </option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.code} · {p.name}

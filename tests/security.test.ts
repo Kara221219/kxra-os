@@ -5,9 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
+import { runtimeFile } from "./support/runtime";
 const root = process.cwd();
 const config = JSON.parse(
-  fs.readFileSync(path.join(root, ".runtime/database.json"), "utf8"),
+  fs.readFileSync(runtimeFile("database.json"), "utf8"),
 );
 const admin = new pg.Pool({ ...config, user: os.userInfo().username });
 const org = "10000000-0000-4000-8000-000000000001";

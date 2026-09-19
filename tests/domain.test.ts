@@ -13,6 +13,7 @@ import {
 } from "../packages/authz/session";
 import { verifyWebhook } from "../packages/integrations/whatsapp";
 import { localModeConfiguration } from "../packages/authz/local-guard";
+import { evidenceAnswer, INSUFFICIENT_EVIDENCE } from "../packages/ai";
 import crypto from "node:crypto";
 test("money uses exact arithmetic and separates actual, paper and currencies", () => {
   assert.equal(formatMoney(moneyUnits("0.1") + moneyUnits("0.2")), "0.3000");
@@ -66,6 +67,10 @@ test("request identity cannot be injected into record schema", () => {
     false,
   );
 });
+test("AT-11 evidence-only answers use the exact insufficiency contract", () => {
+  assert.equal(evidenceAnswer("missing", []).answer, INSUFFICIENT_EVIDENCE);
+  assert.equal(INSUFFICIENT_EVIDENCE, "INSUFFICIENT KXRA EVIDENCE.");
+});
 test("local sessions are signed, expiring and reject tampering", () => {
   const key = "x".repeat(64),
     token = signSession(fixtureUsers.partner, key);
@@ -83,10 +88,18 @@ test("AT-03 fixture mode rejects hosted, production, non-loopback and weak-secre
     NODE_ENV: "development",
   };
   assert.equal(localModeConfiguration(valid), true);
+  assert.equal(
+    localModeConfiguration({ ...valid, KXRA_ORIGIN: "http://127.0.0.1:43127" }),
+    true,
+  );
   for (const changed of [
     { NODE_ENV: "production" },
     { VERCEL: "1" },
     { KXRA_ORIGIN: "http://localhost:3210" },
+    { KXRA_ORIGIN: "https://127.0.0.1:3210" },
+    { KXRA_ORIGIN: "http://127.0.0.2:3210" },
+    { KXRA_ORIGIN: "http://127.0.0.1:80" },
+    { KXRA_ORIGIN: "http://127.0.0.1:3210/private" },
     { NEXT_PUBLIC_SUPABASE_URL: "https://fixture.supabase.invalid" },
     { DATABASE_URL: "postgresql://fixture.invalid/db" },
     { KXRA_RUNTIME: "" },

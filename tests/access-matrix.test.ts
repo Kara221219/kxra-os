@@ -5,9 +5,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
+import { runtimeFile } from "./support/runtime";
 
 const config = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), ".runtime/database.json"), "utf8"),
+  fs.readFileSync(runtimeFile("database.json"), "utf8"),
 );
 const admin = new pg.Pool({ ...config, user: os.userInfo().username });
 const org = "10000000-0000-4000-8000-000000000001";
@@ -579,11 +580,16 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
        ) values($1,$2,'P002_LISTING','[]'::jsonb)`,
       [otherOrg, otherProject],
     );
-    await db.query(
-      `insert into kxra.project_governance_versions(
-        project_id,version,org_id,next_action
-       ) values($1,1,$2,'remain isolated')`,
-      [otherProject, otherOrg],
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from kxra.project_governance_versions
+           where project_id=$1 and version=1 and org_id=$2
+            and next_action='remain isolated'`,
+          [otherProject, otherOrg],
+        )
+      ).rows[0].n,
+      1,
     );
     for (const row of [
       [
@@ -614,10 +620,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       `insert into kxra.project_workspace_modules(
         org_id,project_id,module_key,label,module_group,source_kind,entry_type,
         position,description,write_policy
-       ) values
-        ($1,$2,'problem','Problem','COMMON','WORKSPACE_ENTRIES','NARRATIVE',1,
-         'AT-01 other workspace module','CONTRIBUTOR'),
-        ($1,$2,'property-inputs','Property Inputs','SPECIALIST','PROPERTY_ASSETS',null,2,
+       ) values($1,$2,'property-inputs','Property Inputs','SPECIALIST','PROPERTY_ASSETS',null,2,
          'AT-01 other property module','CONTRIBUTOR')`,
       [otherOrg, otherProject],
     );

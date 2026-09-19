@@ -5,16 +5,38 @@ import os from "node:os";
 import pg from "pg";
 import { importSeeds, loadSeeds, seedFixtures } from "./seed.mjs";
 const root = path.resolve(import.meta.dirname, "..");
-const runtime = path.join(root, ".runtime");
+const runtime = path.resolve(
+  process.env.KXRA_RUNTIME || path.join(root, ".runtime"),
+);
 const data = path.join(runtime, "postgres");
 const socket = path.join(runtime, "socket");
-const bin = process.env.KXRA_PG_BIN || "/opt/homebrew/opt/postgresql@14/bin";
+function postgresBin() {
+  if (process.env.KXRA_PG_BIN) return process.env.KXRA_PG_BIN;
+  for (const candidate of [
+    "/opt/homebrew/opt/postgresql@14/bin",
+    "/opt/homebrew/opt/postgresql@16/bin",
+    "/usr/local/opt/postgresql@14/bin",
+    "/usr/local/opt/postgresql@16/bin",
+  ])
+    if (fs.existsSync(path.join(candidate, "pg_ctl"))) return candidate;
+  try {
+    return execFileSync("pg_config", ["--bindir"], {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    throw Error("PostgreSQL binaries unavailable; set KXRA_PG_BIN");
+  }
+}
+const bin = postgresBin();
+const port = Number(process.env.KXRA_PG_PORT || 55439);
+if (!Number.isInteger(port) || port < 1024 || port > 65535)
+  throw Error("KXRA_PG_PORT must be a valid unprivileged port");
 fs.mkdirSync(socket, { recursive: true, mode: 0o700 });
 fs.chmodSync(runtime, 0o700);
 const adminUser = os.userInfo().username;
 const config = {
   host: socket,
-  port: 55439,
+  port,
   user: adminUser,
   database: "postgres",
 };
@@ -51,7 +73,7 @@ async function start() {
         "-l",
         path.join(runtime, "postgres.log"),
         "-o",
-        `-k '${socket}' -p 55439 -h ''`,
+        `-k '${socket}' -p ${port} -h ''`,
         "-w",
         "start",
       ],

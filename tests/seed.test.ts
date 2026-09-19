@@ -12,10 +12,11 @@ import {
   stableId,
   validateSeeds,
 } from "../scripts/seed.mjs";
+import { runtimeFile } from "./support/runtime";
 
 const root = process.cwd();
 const baseConfig = JSON.parse(
-  fs.readFileSync(path.join(root, ".runtime/database.json"), "utf8"),
+  fs.readFileSync(runtimeFile("database.json"), "utf8"),
 );
 const adminConfig = {
   ...baseConfig,
@@ -101,6 +102,111 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
         )
       ).rows[0].n,
       5,
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select code,lifecycle_stage,disposition,next_gate
+           from kxra.projects order by code`,
+        )
+      ).rows,
+      [
+        {
+          code: "PROJECT-001",
+          lifecycle_stage: "PROBLEM_DISCOVERY",
+          disposition: "MONITOR",
+          next_gate: "P001_REVISIT",
+        },
+        {
+          code: "PROJECT-002",
+          lifecycle_stage: "VALIDATION",
+          disposition: "ACTIVE",
+          next_gate: "P002_LISTING",
+        },
+        {
+          code: "PROJECT-003",
+          lifecycle_stage: "VALIDATION",
+          disposition: "ACTIVE",
+          next_gate: "P003_FAITHFUL_DELIVERY",
+        },
+        {
+          code: "PROJECT-004",
+          lifecycle_stage: "FEASIBILITY",
+          disposition: "MONITOR",
+          next_gate: "P004_PAPER_READINESS",
+        },
+        {
+          code: "PROJECT-005",
+          lifecycle_stage: "VALIDATION",
+          disposition: "ACTIVE",
+          next_gate: "P005_LOCAL_PROTOTYPE",
+        },
+      ],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select p.code,
+            count(*) filter(where m.module_group='COMMON')::int as common,
+            count(*) filter(where m.module_group='SPECIALIST')::int as specialist
+           from kxra.projects p
+           join kxra.project_workspace_modules m on m.project_id=p.id
+           group by p.code order by p.code`,
+        )
+      ).rows,
+      [
+        { code: "PROJECT-001", common: 18, specialist: 8 },
+        { code: "PROJECT-002", common: 18, specialist: 12 },
+        { code: "PROJECT-003", common: 18, specialist: 12 },
+        { code: "PROJECT-004", common: 18, specialist: 13 },
+        { code: "PROJECT-005", common: 18, specialist: 16 },
+      ],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int as n from kxra.project_gate_policies",
+        )
+      ).rows[0].n,
+      5,
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select count(*)::int as n from kxra.project_governance_versions v
+           join kxra.projects p on p.id=v.project_id
+           where v.version=p.governance_version and v.next_gate=p.next_gate`,
+        )
+      ).rows[0].n,
+      5,
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select id::text,vehicle_family,fitment_state,safety_state
+           from kxra.vehicle_compatibility order by vehicle_family`,
+        )
+      ).rows,
+      [
+        {
+          id: "62000000-0000-4000-8000-000000000001",
+          vehicle_family: "Ford F-150",
+          fitment_state: "UNKNOWN",
+          safety_state: "UNKNOWN",
+        },
+        {
+          id: "62000000-0000-4000-8000-000000000002",
+          vehicle_family: "Ram / Dodge Ram",
+          fitment_state: "UNKNOWN",
+          safety_state: "UNKNOWN",
+        },
+        {
+          id: "62000000-0000-4000-8000-000000000003",
+          vehicle_family: "Toyota Tacoma",
+          fitment_state: "UNKNOWN",
+          safety_state: "UNKNOWN",
+        },
+      ],
     );
     assert.equal((await db.query("select * from kxra.members")).rowCount, 0);
     assert.equal(

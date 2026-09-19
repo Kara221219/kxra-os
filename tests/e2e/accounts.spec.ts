@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
+import { runtimeFile } from "../support/runtime";
 
 const projectTwo = "30000000-0000-4000-8000-000000000002";
 const projectThree = "30000000-0000-4000-8000-000000000003";
@@ -23,7 +24,7 @@ function marker() {
 
 function latestAction(recipient: string, template: string) {
   const state = JSON.parse(
-    fs.readFileSync(".runtime/fake-email.json", "utf8"),
+    fs.readFileSync(runtimeFile("fake-email.json"), "utf8"),
   ) as { messages: FakeMessage[] };
   const message = [...state.messages]
     .reverse()

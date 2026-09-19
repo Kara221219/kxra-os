@@ -1316,7 +1316,7 @@ async function handle(req: Request, ctx: Context) {
           ? z
               .object({
                 question: z.string().trim().min(1).max(500),
-                project_id: uuid.nullable().optional(),
+                project_id: uuid,
               })
               .strict()
               .parse(await body(req))

@@ -1,6 +1,6 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3: invitation-only identity, account administration, the owner control plane and database-backed workspaces for the five original ventures. It is not production ready and is not deployed. The 19 September audit also found a partner Ask KXRA scope defect that must be repaired before any model is enabled.
+KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3 and Phase 2 Slice 0: invitation-only identity, account administration, the owner control plane, database-backed workspaces for the five original ventures, one-project Ask KXRA authorization and disposable CI. It is not production ready and is not deployed.
 
 The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. It adds the approved customer-platform direction, Brand Studio, subscriptions and separate custom projects, first-private-access agreement gate, Projects 006/007, layered public site, owner connection runbook and AT-01 through AT-47. Those additions are specified, not yet implemented.
 
@@ -21,18 +21,15 @@ Local PostgreSQL listens through this workspace's private Unix socket. Runtime d
 
 ## Verify
 
-Keep the local preview running for HTTP and browser tests.
+The canonical verification command creates its own random-port PostgreSQL and application runtime, then removes it without touching the preserved developer database.
 
 ```sh
-npm run check
-npm run format:check
-npm run test:restart
 npx playwright install chromium --only-shell
-npm run test:e2e
+npm run test:ci
 git diff --check
 ```
 
-`npm run check` runs type checking, the database/domain/HTTP suite, an optimized production build and a scan that rejects fixture identities, controls, state filenames and secrets in the production artifact. Database tests roll back; HTTP/browser tests leave only labelled synthetic local records. The restart check stops and restarts this workspace's isolated cluster, then compares retained operating-loop records.
+`npm run test:ci` creates a fresh Unix-socket-only PostgreSQL cluster, migrates and seeds it, starts Next.js on an available loopback port, runs lint/type checks, 73 database/domain/HTTP tests, migration/RLS verification, 30 desktop/mobile browser scenarios, restart persistence, an optimized production build, fixture-artifact exclusion and publication/secret scanning. It stops the database even on failure. GitHub Actions runs the same contract and dependency audits with pinned action revisions.
 
 ## Implemented locally
 
@@ -51,14 +48,14 @@ git diff --check
 - Account states `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`, enforced at HTTP and database boundaries.
 - Classified operating registers, immutable record history and the typed idea → experiment → task → result → decision → supersession loop.
 - Current-authority owner approvals with complete before/after/recipient/cost/risk envelopes, exact decimal finance totals and evidence-linked local gates for all five projects.
-- RLS-scoped evidence search and Ask KXRA excerpts with citations. No model receives context or produces answers.
+- RLS-scoped evidence search and one-project Ask KXRA excerpts with citations. Missing, multiple, inaccessible and revoked scopes fail before retrieval; zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.`. No model receives context or produces answers.
 - Private-by-default quarantined file metadata and bytes. Download and ingestion remain disabled.
 - Seeded AI roles, skills and disabled routines as definitions only.
 - A static local marketing homepage using `info@kxra-group.com`. Publication remains disabled.
 
 ## Security boundary
 
-All 44 private application tables use Row Level Security. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas, and project-resource paths are re-bound to the authorized project before mutation.
+All 44 private application tables use Row Level Security and an explicit policy. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas, and project-resource paths are re-bound to the authorized project before mutation.
 
 Production defaults to the hosted Supabase adapter and fail-closed local-provider stubs. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend delivery, Storage/scanning, Trigger.dev, PostHog, Sentry, Cloudflare, AI providers and WhatsApp remain unconnected and unverified. Project 004 is research/paper only. Project 005 cannot create or publish a product without reviewed demand authority.
 

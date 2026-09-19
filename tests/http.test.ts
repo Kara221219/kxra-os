@@ -2,10 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { moneyUnits } from "../packages/domain";
+import { runtimeFile, testOrigin } from "./support/runtime";
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
   nativeFetch(input, { ...init, signal: AbortSignal.timeout(20000) });
-const base = "http://127.0.0.1:3210";
+const base = testOrigin;
 const p2 = "30000000-0000-4000-8000-000000000002",
   p3 = "30000000-0000-4000-8000-000000000003",
   p4 = "30000000-0000-4000-8000-000000000004",
@@ -41,7 +42,7 @@ async function req(
 }
 function fakeEmailAction(operationKey: string) {
   const state = JSON.parse(
-    fs.readFileSync(".runtime/fake-email.json", "utf8"),
+    fs.readFileSync(runtimeFile("fake-email.json"), "utf8"),
   ) as {
     messages: { operationKey: string; text: string }[];
   };
@@ -241,6 +242,13 @@ test("HTTP create, read, update with version conflict, retrieve evidence within 
 });
 test("HTTP cross-project search and Ask reject inaccessible scope", async () => {
   const c = await login("partner");
+  for (const payload of [
+    { question: "project" },
+    { question: "project", project_id: null },
+    { question: "project", project_id: [p2, p3] },
+    { question: "project", project_ids: [p2, p3] },
+  ])
+    assert.equal((await req("ask", c, payload)).status, 400);
   assert.equal((await req("search?q=project&project_id=" + p3, c)).status, 404);
   assert.equal(
     (await req("ask", c, { question: "project", project_id: p3 })).status,
@@ -253,6 +261,25 @@ test("HTTP cross-project search and Ask reject inaccessible scope", async () => 
   );
   const revoked = await login("revoked");
   assert.equal((await req("search?q=project", revoked)).status, 403);
+  assert.equal(
+    (await req("ask", revoked, { question: "project", project_id: p2 })).status,
+    403,
+  );
+});
+test("AT-11 Ask is one-project only and returns the exact insufficiency phrase", async () => {
+  const c = await login("partner");
+  const response = await req("ask", c, {
+    question: "term-that-cannot-exist-9f4620c0",
+    project_id: p2,
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    mode: "evidence-only",
+    model: null,
+    question: "term-that-cannot-exist-9f4620c0",
+    answer: "INSUFFICIENT KXRA EVIDENCE.",
+    citations: [],
+  });
 });
 test("HTTP cross-project files hidden; all bytes quarantined", async () => {
   const owner = await login("owner");

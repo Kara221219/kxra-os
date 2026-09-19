@@ -73,6 +73,24 @@ test("partner navigation and crafted project URL protect private work", async ({
   ).toBeVisible();
 });
 
+test("AT-11 Ask requires one project and reports insufficient evidence exactly", async ({
+  page,
+}) => {
+  await fixtureLogin(page, "partner");
+  await navigate(page, "Ask KXRA");
+  const project = page.getByRole("combobox", { name: "Project" });
+  await expect(project).toHaveValue("");
+  await expect(project.getByRole("option").first()).toHaveText(
+    "Select one project",
+  );
+  await project.selectOption("30000000-0000-4000-8000-000000000002");
+  await page
+    .getByLabel("Ask about your evidence")
+    .fill("term-that-cannot-exist-9f4620c0");
+  await page.getByRole("button", { name: "Find evidence" }).click();
+  await expect(page.getByText("INSUFFICIENT KXRA EVIDENCE.")).toBeVisible();
+});
+
 test("owner can inspect gate controls, history and invitation foundations", async ({
   page,
 }) => {

@@ -1,11 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { testOrigin } from "./support/runtime";
 
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
   nativeFetch(input, { ...init, signal: AbortSignal.timeout(20000) });
-const base = "http://127.0.0.1:3210";
+const base = testOrigin;
 const projects = {
   p1: "30000000-0000-4000-8000-000000000001",
   p2: "30000000-0000-4000-8000-000000000002",

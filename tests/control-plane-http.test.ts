@@ -5,16 +5,17 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
+import { runtimeFile, testOrigin } from "./support/runtime";
 
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
   nativeFetch(input, { ...init, signal: AbortSignal.timeout(20000) });
-const base = "http://127.0.0.1:3210";
+const base = testOrigin;
 const org = "10000000-0000-4000-8000-000000000001";
 const ownerId = "20000000-0000-4000-8000-000000000001";
 const p2 = "30000000-0000-4000-8000-000000000002";
 const config = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), ".runtime/database.json"), "utf8"),
+  fs.readFileSync(runtimeFile("database.json"), "utf8"),
 );
 const admin = new pg.Pool({ ...config, user: os.userInfo().username });
 

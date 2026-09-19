@@ -6,6 +6,9 @@ export type Evidence = {
   classification: string;
   version: number;
 };
+
+export const INSUFFICIENT_EVIDENCE = "INSUFFICIENT KXRA EVIDENCE.";
+
 export function evidenceAnswer(question: string, evidence: Evidence[]) {
   return {
     mode: "evidence-only",
@@ -13,7 +16,7 @@ export function evidenceAnswer(question: string, evidence: Evidence[]) {
     question,
     answer: evidence.length
       ? "Relevant authorised evidence is shown below. Model synthesis is not enabled."
-      : "Insufficient KXRA evidence.",
+      : INSUFFICIENT_EVIDENCE,
     citations: evidence.map((e) => ({
       record_id: e.id,
       title: e.title,
