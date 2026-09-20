@@ -33,13 +33,17 @@ import {
   workLogTypes,
 } from "../../../lib/control-plane";
 import { loadProjectWorkspace } from "../../../lib/project-workspaces";
-import { query, scoped, localMode } from "../../../../../packages/db";
+import { query, localMode } from "../../../../../packages/db";
 import {
   classifications,
   uuid,
   recordInput,
 } from "../../../../../packages/domain";
 import { evidenceAnswer } from "../../../../../packages/ai";
+import {
+  privateObjectStore,
+  sha256 as objectSha256,
+} from "../../../../../packages/storage";
 import { renderEmail } from "../../../../../packages/integrations/email";
 import {
   fakeAuthProvider,
@@ -48,8 +52,6 @@ import {
 } from "#kxra/local-runtime";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ path: string[] }> };
@@ -1597,12 +1599,57 @@ async function handle(req: Request, ctx: Context) {
               question: url.searchParams.get("q") || "",
               project_id: url.searchParams.get("project_id"),
             };
-      const rows = await search(
-        a,
-        input.question,
-        input.project_id || undefined,
-      );
-      return json(p[0] === "ask" ? evidenceAnswer(input.question, rows) : rows);
+      if (p[0] === "search")
+        return json(
+          await search(a, input.question, input.project_id || undefined),
+        );
+      const requestId = crypto.randomUUID();
+      const projectId = uuid.parse(input.project_id);
+      await project(a, projectId);
+      const queryHash = crypto
+        .createHash("sha256")
+        .update(input.question)
+        .digest("hex");
+      const run = (
+        await query<{ id: string }>(
+          a,
+          "select kxra.begin_knowledge_query($1,$2,$3,$4) as id",
+          [projectId, requestId, queryHash, "PROJECT_EVIDENCE"],
+        )
+      )[0].id;
+      let finalized = false;
+      try {
+        const rows = await search(a, input.question, projectId);
+        const references = rows.map((row) => ({
+          type: row.source_type,
+          id: row.id,
+          version: row.version,
+        }));
+        const completion = (
+          await query<{ allowed: boolean }>(
+            a,
+            "select kxra.complete_knowledge_query($1,$2,$3,$4) as allowed",
+            [
+              run,
+              JSON.stringify(references),
+              rows.length ? "DELIVERED" : "EMPTY",
+              null,
+            ],
+          )
+        )[0];
+        finalized = true;
+        if (!completion?.allowed) throw new HttpError(404, "Not found");
+        return json(evidenceAnswer(input.question, rows));
+      } catch (error) {
+        if (!finalized)
+          await query(a, "select kxra.complete_knowledge_query($1,$2,$3,$4)", [
+            run,
+            "[]",
+            "FAILED",
+            "QUERY_FAILED",
+          ]).catch(() => {});
+        throw error;
+      }
     }
     if (p[0] === "approvals") {
       owner(a);
@@ -1794,25 +1841,68 @@ async function handle(req: Request, ctx: Context) {
           return json(
             await query(
               a,
-              "select id,project_id,filename,mime_type,size_bytes,scan_status from kxra.files order by created_at desc",
+              `select id,project_id,filename,mime_type,detected_mime,size_bytes,
+                scan_status,lifecycle_state,state_reason_code,current_version
+               from kxra.files order by created_at desc`,
             ),
           );
         if (!uuid.safeParse(p[1]).success)
           throw new HttpError(404, "Not found");
-        const rows = await query<{ scan_status: string }>(
-          a,
-          "select scan_status from kxra.files where id=$1",
-          [p[1]],
-        );
-        if (!rows[0]) throw new HttpError(404, "Not found");
-        throw new HttpError(
-          423,
-          "File delivery is disabled pending malware scanning and storage validation",
-        );
+        const delivery = (
+          await query<{
+            delivery_id: string;
+            file_version_id: string;
+            object_key: string;
+            filename: string;
+            mime_type: string;
+            size_bytes: number;
+            sha256: string;
+          }>(a, "select * from kxra.authorize_file_delivery($1,$2)", [
+            p[1],
+            crypto.randomUUID(),
+          ])
+        )[0];
+        if (!delivery) throw new HttpError(404, "Not found");
+        let content: Buffer;
+        try {
+          content = await privateObjectStore(localMode()).get(
+            delivery.object_key,
+          );
+        } catch {
+          await query(a, "select kxra.complete_file_delivery($1,$2,$3)", [
+            delivery.delivery_id,
+            objectSha256(Buffer.alloc(0)),
+            0,
+          ]);
+          throw new HttpError(409, "File is temporarily unavailable");
+        }
+        const allowed = (
+          await query<{ allowed: boolean }>(
+            a,
+            "select kxra.complete_file_delivery($1,$2,$3) as allowed",
+            [delivery.delivery_id, objectSha256(content), content.length],
+          )
+        )[0]?.allowed;
+        if (!allowed) throw new HttpError(404, "Not found");
+        return new Response(new Uint8Array(content), {
+          status: 200,
+          headers: {
+            "Content-Type": delivery.mime_type,
+            "Content-Length": String(content.length),
+            "Content-Disposition": `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(delivery.filename)}`,
+            "Cache-Control": "private, no-store",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
       }
       if (method === "POST") {
-        if (!localMode())
-          throw new HttpError(503, "Hosted storage is not configured");
+        let store;
+        try {
+          store = privateObjectStore(localMode());
+        } catch {
+          throw new HttpError(503, "Private storage is not configured");
+        }
         const length = Number(req.headers.get("content-length"));
         if (!Number.isSafeInteger(length) || length <= 0 || length > 20980000)
           throw new HttpError(413, "File request must be at most 20 MB");
@@ -1837,13 +1927,19 @@ async function handle(req: Request, ctx: Context) {
           headers: { "content-type": req.headers.get("content-type") || "" },
           body: buffer,
         }).formData();
-        const allowedFields = new Set(["project_id", "visibility", "file"]);
+        const allowedFields = new Set([
+          "project_id",
+          "visibility",
+          "request_id",
+          "file",
+        ]);
         for (const key of form.keys())
           if (!allowedFields.has(key))
             throw new HttpError(400, "Invalid upload fields");
         if (
           form.getAll("project_id").length !== 1 ||
           form.getAll("visibility").length > 1 ||
+          form.getAll("request_id").length > 1 ||
           form.getAll("file").length !== 1
         )
           throw new HttpError(400, "Invalid upload fields");
@@ -1866,49 +1962,63 @@ async function handle(req: Request, ctx: Context) {
         const filename =
           file.name.replace(/[\x00-\x1f\x7f/\\]/g, "_").slice(0, 240) ||
           "document";
-        const id = crypto.randomUUID(),
-          objectKey = `${pid}/${id}`;
         const content = Buffer.from(await file.arrayBuffer());
-        const sha = crypto.createHash("sha256").update(content).digest("hex");
-        const directory = path.join(
-            process.env.KXRA_RUNTIME!,
-            "quarantine",
+        const sha = objectSha256(content);
+        const suppliedRequest = form.get("request_id");
+        const requestId = suppliedRequest
+          ? uuid.parse(suppliedRequest)
+          : crypto.randomUUID();
+        const saved = (
+          await query<{
+            file_id: string;
+            record_id: string;
+            file_version_id: string;
+            object_key: string;
+            lifecycle_state: string;
+          }>(a, "select * from kxra.create_file_upload($1,$2,$3,$4,$5,$6,$7)", [
             pid,
-          ),
-          destination = path.join(directory, id);
-        await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+            filename,
+            file.type || "application/octet-stream",
+            file.size,
+            sha,
+            visibility,
+            requestId,
+          ])
+        )[0];
         try {
-          const saved = await scoped(a, async (db) => {
-            const r = await db.query(
-              "insert into kxra.records(org_id,project_id,kind,title,body,classification,visibility,created_by) values($1,$2,'note',$3,'File in quarantine; not available to AI.','USER-SUPPLIED INFORMATION',$5,$4) returning id",
-              [a.org_id, pid, filename, a.id, visibility],
+          await store.putImmutable(
+            saved.object_key,
+            content,
+            file.type || "application/octet-stream",
+          );
+        } catch {
+          const existing = await store.head(saved.object_key).catch(() => null);
+          if (
+            !existing ||
+            existing.sha256 !== sha ||
+            existing.size !== content.length
+          )
+            throw new HttpError(
+              503,
+              "File metadata was recorded but private object storage did not accept the upload",
             );
-            const f = await db.query(
-              "insert into kxra.files(id,org_id,project_id,record_id,filename,object_key,mime_type,size_bytes,sha256,created_by) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id,filename,scan_status",
-              [
-                id,
-                a.org_id,
-                pid,
-                r.rows[0].id,
-                filename,
-                objectKey,
-                file.type || "application/octet-stream",
-                file.size,
-                sha,
-                a.id,
-              ],
-            );
-            await fs.writeFile(destination, content, {
-              flag: "wx",
-              mode: 0o600,
-            });
-            return f.rows[0];
-          });
-          return json(saved, 201);
-        } catch (e) {
-          await fs.unlink(destination).catch(() => {});
-          throw e;
         }
+        const lifecycle = (
+          await query<{ lifecycle_state: string }>(
+            a,
+            "select kxra.finalize_file_upload($1,$2,$3,$4) as lifecycle_state",
+            [saved.file_id, requestId, sha, content.length],
+          )
+        )[0].lifecycle_state;
+        return json(
+          {
+            id: saved.file_id,
+            record_id: saved.record_id,
+            filename,
+            lifecycle_state: lifecycle,
+          },
+          201,
+        );
       }
     }
     if (p[0] === "partners") {

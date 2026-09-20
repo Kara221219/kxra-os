@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { processFileJobs } from "../../packages/storage/worker";
 
 async function fixtureLogin(page: Page, fixture: string) {
   await page.goto("/login");
@@ -87,7 +88,7 @@ test("AT-11 Ask requires one project and reports insufficient evidence exactly",
   page,
 }) => {
   await fixtureLogin(page, "partner");
-  await navigate(page, "Ask KXRA");
+  await page.goto("/os/ask");
   const project = page.getByRole("combobox", { name: "Project" });
   await expect(project).toHaveValue("");
   await expect(project.getByRole("option").first()).toHaveText(
@@ -99,6 +100,47 @@ test("AT-11 Ask requires one project and reports insufficient evidence exactly",
     .fill("term-that-cannot-exist-9f4620c0");
   await page.getByRole("button", { name: "Find evidence" }).click();
   await expect(page.getByText("INSUFFICIENT KXRA EVIDENCE.")).toBeVisible();
+});
+
+test("AT-10 owner upload is processed, cited and downloaded through the private proxy", async ({
+  page,
+}, testInfo) => {
+  const project = "30000000-0000-4000-8000-000000000002";
+  const marker = `browserchunk${Date.now()}${testInfo.project.name}`.replace(
+    /[^a-z0-9]/gi,
+    "",
+  );
+  const filename = `${marker}.txt`;
+  await fixtureLogin(page, "owner");
+  await page.goto(`/os/files?project=${project}`);
+  await page
+    .getByRole("combobox", { name: "Who can see this file?" })
+    .selectOption("project_shared");
+  await page.locator('input[type="file"][name="file"]').setInputFiles({
+    name: filename,
+    mimeType: "text/plain",
+    buffer: Buffer.from(`${marker} browser lifecycle evidence`),
+  });
+  await page.getByRole("button", { name: "Upload file" }).click();
+  await expect(page.getByRole("status")).toHaveText(
+    "Uploaded securely. Trusted processing is now queued.",
+  );
+  await processFileJobs({
+    workerReference: `browser-file-${testInfo.project.name}`,
+  });
+  await page.reload();
+  await expect(page.getByRole("link", { name: filename })).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: filename }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(filename);
+
+  await page.goto("/os/ask");
+  await page.getByRole("combobox", { name: "Project" }).selectOption(project);
+  await page.getByLabel("Ask about your evidence").fill(marker);
+  await page.getByRole("button", { name: "Find evidence" }).click();
+  await expect(page.getByText("Indexed file evidence").first()).toBeVisible();
+  await expect(page.getByText(marker, { exact: false }).first()).toBeVisible();
 });
 
 test("owner can inspect gate controls, history and invitation foundations", async ({

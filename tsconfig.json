@@ -18,6 +18,7 @@
     "apps/**/*.ts",
     "apps/**/*.tsx",
     "packages/**/*.ts",
+    "scripts/**/*.ts",
     "tests/**/*.ts",
     "playwright.config.ts"
   ],

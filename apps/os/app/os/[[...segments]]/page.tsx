@@ -729,11 +729,14 @@ export default async function Workspace({
       const files = await query<{
         id: string;
         filename: string;
-        scan_status: string;
+        lifecycle_state: string;
+        state_reason_code: string | null;
         size_bytes: number;
       }>(
         a,
-        "select id,filename,scan_status,size_bytes from kxra.files where ($1::uuid is null or project_id=$1) order by created_at desc",
+        `select id,filename,lifecycle_state,state_reason_code,size_bytes
+         from kxra.files where ($1::uuid is null or project_id=$1)
+         order by created_at desc`,
         [filter || null],
       );
       content = (
@@ -747,8 +750,11 @@ export default async function Workspace({
               files.map((f) => (
                 <div className="list-item" key={f.id}>
                   <Link href={"/api/files/" + f.id}>{f.filename}</Link>{" "}
-                  <span className="badge">{f.scan_status}</span>
+                  <span className="badge">{f.lifecycle_state}</span>
                   <p>{f.size_bytes} bytes</p>
+                  {f.state_reason_code && (
+                    <p className="subtle">{f.state_reason_code}</p>
+                  )}
                 </div>
               ))
             ) : (

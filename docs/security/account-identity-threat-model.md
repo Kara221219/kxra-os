@@ -1,6 +1,6 @@
 # Account and invitation threat model
 
-Date: 20 September 2026. Scope: local account, invitation, onboarding, selected-tenant and first-private-access legal paths through Phase 2 Slice 1 on `codex/phase-2-completion`.
+Date: 20 September 2026. Scope: local account, invitation, onboarding, selected-tenant and first-private-access legal paths through Phase 2 Slice 2 on `codex/phase-2-completion`. File processing, delivery and knowledge retrieval threats are detailed in the [file/knowledge threat model](file-knowledge-threat-model.md).
 
 ## Protected assets
 

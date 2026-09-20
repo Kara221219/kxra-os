@@ -2,6 +2,61 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 20 September Phase 2 Slice 2
+
+Secure private-file and knowledge implementation:
+
+- `.env.example`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `apps/os/components/Forms.tsx`
+- `apps/os/components/ProjectWorkspaceView.tsx`
+- `apps/os/lib/data.ts`
+- `apps/os/lib/project-workspaces.ts`
+- `apps/os/package.json`
+- `package.json`
+- `packages/ai/index.ts`
+- `packages/storage/index.ts`
+- `packages/storage/worker.ts`
+- `scripts/build-os.mjs`
+- `scripts/database.mjs`
+- `scripts/file-worker.ts`
+- `scripts/local.mjs`
+- `scripts/verify-persistence.mjs`
+- `supabase/migrations/0039_secure_file_and_knowledge_lifecycle.sql`
+- `supabase/migrations/0040_file_worker_and_reconciliation.sql`
+- `supabase/migrations/0041_file_processing_timestamps.sql`
+- `supabase/migrations/0042_reconciliation_parameter_binding.sql`
+- `supabase/migrations/0043_complete_file_lifecycle.sql`
+- `supabase/migrations/0044_file_lifecycle_defaults.sql`
+- `tsconfig.json`
+
+Acceptance and regression coverage:
+
+- `tests/file-knowledge.test.ts`
+- `tests/access-matrix.test.ts`
+- `tests/control-plane-http.test.ts`
+- `tests/http.test.ts`
+- `tests/security.test.ts`
+- `tests/e2e/workspace.spec.ts`
+
+Architecture, security and operating evidence:
+
+- `README.md`
+- `docs/architecture/system.md`
+- `docs/decisions/0009-secure-file-and-knowledge-lifecycle.md`
+- `docs/security/access-control.md`
+- `docs/security/account-identity-threat-model.md`
+- `docs/security/file-knowledge-threat-model.md`
+- `docs/operations/acceptance-evidence.md`
+- `docs/operations/files-changed.md`
+- `docs/operations/handover.md`
+- `docs/operations/local-development.md`
+- `docs/operations/progress.md`
+- `docs/operations/work-log.md`
+
+The slice adds no real provider credential, hosted object, production scanner, external send, deployment or private source document.
+
 ## 20 September Phase 2 Slice 1
 
 Identity, legal, commercial and custom-project implementation:

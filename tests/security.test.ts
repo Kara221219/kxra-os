@@ -190,6 +190,7 @@ test("cross-project files and search never return another project", () =>
   tx(async (db) => {
     const r2 = await record(db),
       r3 = await record(db, p3);
+    await db.query("reset role");
     for (const [pid, r] of [
       [p2, r2],
       [p3, r3],
@@ -1208,7 +1209,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 79);
+    assert.equal(tables.length, 89);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1259,7 +1260,7 @@ test("AT-01 anonymous can execute only the two bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 75);
+    assert.equal(functions.length, 81);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)

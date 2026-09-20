@@ -1,12 +1,25 @@
 # KXRA OS implementation progress
 
-Updated: 20 September 2026. Status: **Phase 2 Slice 1 is implemented and verified in a disposable local environment. It is not deployed or production ready.**
+Updated: 20 September 2026. Status: **Phase 2 Slice 2 secure files and knowledge is implemented and verified with deterministic local adapters. It is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 1 started from pushed baseline `f81e7840c775c9431dbfec91216a1339eb0bf881`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
+Current branch: `codex/phase-2-completion`. Slice 2 started from pushed Slice 1 commit `7003cbfc67e35a6d7ef7b23b9ae275260062e111`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in this slice
+## Completed in Slice 2
+
+- Added a private object adapter with create-only local storage and a Supabase private-bucket target. Object keys are opaque, generated in PostgreSQL and partitioned by tenant/project/file/version; callers cannot submit a key.
+- Added idempotent upload intents and the complete `UPLOADING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → EXTRACTED → INDEXING → INDEXED` lifecycle, plus `REJECTED`, `FAILED` and `NEEDS_REVIEW` states. Processing starts only after the object write is finalized.
+- Added a private `kxra_worker` role, leased jobs, scan/extraction evidence, immutable file versions, versioned chunks, delivery/query events and object reconciliation. Browser roles cannot claim jobs or promote lifecycle state.
+- Added deterministic local adversarial scanning for size, executable/active extensions, executable signatures, EICAR, archive policy, MIME/magic mismatch, macro/active PDF content and invalid encoding/JSON. The adapter is fixture-only and fails closed in production/Vercel.
+- Added bounded text/JSON/image-metadata extraction and chunks carrying exact file/record versions, offsets, hashes, extraction version, classification and audience. Unsupported PDFs fail visibly and never enter retrieval.
+- Search and evidence-only Ask now include only current RLS-authorized `INDEXED` chunks. Every Ask records a redacted query run, validates versioned citations and rechecks authority before delivery; changed access withholds the answer and clears references.
+- Added server-mediated private downloads with current authorization, object hash/size verification, delivery-time reauthorization and `private, no-store` responses. No permanent raw object URL is exposed.
+- Added reconciliation for verified, missing, mismatched and orphan objects. Restart verification rehashes every registered private object and compares chunk/job manifests.
+- Added SQL, HTTP and desktop/mobile acceptance coverage for clean, malicious, mismatched, macro, archive, extraction-failure, retry, revocation, cross-project, chunk citation, download and reconciliation paths.
+- Added migrations `0039`–`0044`, ADR 0009 and the file/knowledge threat model without rewriting prior migrations.
+
+## Preserved Slice 1 implementation
 
 - Added normalized global account identities and many-to-many organization memberships with the four security roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
 - Added explicit organization selection for multi-membership accounts. The HttpOnly organization cookie is only a selector; every request revalidates the account and active membership in PostgreSQL. JWT metadata, headers, paths, request bodies and model output cannot assign organization or role authority.
@@ -24,8 +37,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 38 ordered migrations, 79 RLS-protected tables with explicit policies and 75 audited exposed functions.
-- 81 database/domain/HTTP tests and 32 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 28 applicable passes and four intentional device-specific skips.
+- 44 ordered migrations, 89 RLS-protected tables with explicit policies and 81 audited exposed functions.
+- 90 database/domain/HTTP tests and 34 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 30 applicable passes and four intentional device-specific skips.
 - Owner control plane, invitation/account lifecycle, five original venture workspaces, one-project Ask KXRA, exact finance, approvals and work-log foundations remain passing.
 - Explicit tenant selection, legal gate, deterministic commercial records, usage reservations, free grants and custom-project commercial separation pass with synthetic local evidence.
 
@@ -38,11 +51,11 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - The multi-tenant and first-private-access boundaries work locally. Hosted Supabase Auth, real owner bootstrap, pooler behavior and solicitor-approved legal content remain unverified.
 - Commercial state and bounded APIs work with fake signed events. Stripe products/prices, checkout, webhook endpoint, portal, tax/refund/cancellation policy and customer billing UI are not connected.
 - Custom-project intake and exact proposal/payment activation foundations work. Owner triage/proposal/change-control UI, invoices, customer milestone UX and approved legal/SOW text remain incomplete.
-- Ask KXRA has the correct tenant/project boundary but lacks clean document extraction/chunking, model synthesis, citation validation, budget/tool controls and durable AI run evidence.
+- Ask KXRA has the correct tenant/project/chunk boundary, durable redacted query attempts, versioned citation validation and delivery-time reauthorization. Provider-neutral fake-model synthesis, claim validation, budgets, tool controls and complete AI run evidence remain incomplete.
+- File lifecycle, download and reconciliation pass locally with deterministic adapters. Hosted Supabase Storage, a production malware engine, a disposable no-network extractor and an empty-target restore drill remain unverified.
 
 ### Missing
 
-- Secure file scanning, extraction/indexing, authorized byte delivery and object reconciliation/restore.
 - Executable AI run substrate, skill versions, capability broker, routine scheduler/recovery and complete approval integration.
 - KXRA Brand Studio, Projects 006/007, YouTube and repository-analysis workflows.
 - WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
@@ -67,7 +80,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Implement the secure file and knowledge lifecycle: quarantine-to-clean scanning, immutable extraction/chunks, object-level authorization, project-bound retrieval and delivery-time revocation. Preserve the new tenant/legal gate and extend the matrix before any model or provider receives content. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
+Implement the permission-safe Ask KXRA fake-model contract and typed AI execution substrate: immutable evidence envelopes, schema/claim validation, model policy, agent/skill versions, budget reservations, run/step/tool/handoff evidence and prompt/tool-injection tests. Keep external model dispatch disabled until provider data controls and budgets are approved. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
 
 ## Publication boundary
 

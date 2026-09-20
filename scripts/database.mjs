@@ -47,7 +47,16 @@ function running() {
     });
     return true;
   } catch {
-    return false;
+    try {
+      execFileSync(
+        path.join(bin, "pg_isready"),
+        ["-h", socket, "-p", String(port), "-d", "postgres"],
+        { stdio: "ignore" },
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 async function start() {

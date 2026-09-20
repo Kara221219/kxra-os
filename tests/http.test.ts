@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import { moneyUnits } from "../packages/domain";
+import { processFileJobs } from "../packages/storage/worker";
 import { runtimeFile, testOrigin } from "./support/runtime";
 const nativeFetch = globalThis.fetch;
 const fetch: typeof nativeFetch = (input, init) =>
@@ -281,7 +283,7 @@ test("AT-11 Ask is one-project only and returns the exact insufficiency phrase",
     citations: [],
   });
 });
-test("HTTP cross-project files hidden; all bytes quarantined", async () => {
+test("HTTP cross-project files stay hidden and indexed bytes require current access", async () => {
   const owner = await login("owner");
   const f = new FormData();
   f.set("project_id", p3);
@@ -298,11 +300,14 @@ test("HTTP cross-project files hidden; all bytes quarantined", async () => {
   });
   assert.equal(uploaded.status, 201, await uploaded.clone().text());
   const file = await uploaded.json();
+  await processFileJobs({ workerReference: "http-file-lifecycle" });
   const partner = await login("partner");
   assert.equal((await req("files/" + file.id, partner)).status, 404);
   const visible = await (await req("files", partner)).json();
   assert.ok(!visible.some((x: { id: string }) => x.id === file.id));
-  assert.equal((await req("files/" + file.id, owner)).status, 423);
+  const delivered = await req("files/" + file.id, owner);
+  assert.equal(delivered.status, 200, await delivered.clone().text());
+  assert.equal(await delivered.text(), "synthetic security test");
 });
 test("AT-04 owner uploads default private and sharing remains explicit and scoped", async () => {
   const owner = await login("owner");
@@ -314,6 +319,7 @@ test("AT-04 owner uploads default private and sharing remains explicit and scope
   );
   assert.equal(privateUpload.status, 201, await privateUpload.clone().text());
   const privateFile = await privateUpload.json();
+  await processFileJobs({ workerReference: "http-private-file" });
   const partnerFiles = await (await req("files", partner)).json();
   assert.ok(
     !partnerFiles.some((row: { id: string }) => row.id === privateFile.id),
@@ -323,7 +329,7 @@ test("AT-04 owner uploads default private and sharing remains explicit and scope
     [],
   );
   assert.equal((await req("files/" + privateFile.id, partner)).status, 404);
-  assert.equal((await req("files/" + privateFile.id, owner)).status, 423);
+  assert.equal((await req("files/" + privateFile.id, owner)).status, 200);
 
   const sharedUpload = await upload(
     owner,
@@ -333,6 +339,7 @@ test("AT-04 owner uploads default private and sharing remains explicit and scope
   );
   assert.equal(sharedUpload.status, 201, await sharedUpload.clone().text());
   const sharedFile = await sharedUpload.json();
+  await processFileJobs({ workerReference: "http-shared-file" });
   const sharedList = await (await req("files", partner)).json();
   assert.ok(sharedList.some((row: { id: string }) => row.id === sharedFile.id));
   assert.ok(
@@ -341,7 +348,7 @@ test("AT-04 owner uploads default private and sharing remains explicit and scope
         row.title === "shareduploadmarker evidence.txt",
     ),
   );
-  assert.equal((await req("files/" + sharedFile.id, partner)).status, 423);
+  assert.equal((await req("files/" + sharedFile.id, partner)).status, 200);
 
   assert.equal(
     (await upload(partner, p2, "forged-private.txt", "owner_only")).status,
@@ -370,6 +377,99 @@ test("AT-04 owner uploads default private and sharing remains explicit and scope
       )
     ).status,
     404,
+  );
+});
+test("AT-10 HTTP upload retries, malware rejection and chunk-scoped Ask fail closed", async () => {
+  const owner = await login("owner");
+  const partner = await login("partner");
+  const requestId = crypto.randomUUID();
+  const marker = `chunkonly${Date.now()}evidence`;
+  const cleanForm = () => {
+    const form = new FormData();
+    form.set("project_id", p2);
+    form.set("visibility", "project_shared");
+    form.set("request_id", requestId);
+    form.set(
+      "file",
+      new File([marker], "bounded-evidence.txt", { type: "text/plain" }),
+    );
+    return form;
+  };
+  const first = await fetch(base + "/api/files", {
+    method: "POST",
+    headers: { cookie: owner, origin: base },
+    body: cleanForm(),
+  });
+  assert.equal(first.status, 201, await first.clone().text());
+  const firstFile = await first.json();
+  const retry = await fetch(base + "/api/files", {
+    method: "POST",
+    headers: { cookie: owner, origin: base },
+    body: cleanForm(),
+  });
+  assert.equal(retry.status, 201, await retry.clone().text());
+  assert.equal((await retry.json()).id, firstFile.id);
+  await processFileJobs({ workerReference: "http-at10-clean" });
+
+  const answer = await req("ask", partner, {
+    question: marker,
+    project_id: p2,
+  });
+  assert.equal(answer.status, 200, await answer.clone().text());
+  const envelope = await answer.json();
+  assert.ok(
+    envelope.citations.some(
+      (citation: { citation_type: string; file_id: string }) =>
+        citation.citation_type === "CHUNK" && citation.file_id === firstFile.id,
+    ),
+  );
+
+  const malwareMarker = `malware${Date.now()}marker`;
+  const malicious = new FormData();
+  malicious.set("project_id", p2);
+  malicious.set("visibility", "project_shared");
+  malicious.set(
+    "file",
+    new File(
+      [
+        `${malwareMarker} X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*`,
+      ],
+      "malware-fixture.txt",
+      { type: "text/plain" },
+    ),
+  );
+  const maliciousUpload = await fetch(base + "/api/files", {
+    method: "POST",
+    headers: { cookie: owner, origin: base },
+    body: malicious,
+  });
+  assert.equal(
+    maliciousUpload.status,
+    201,
+    await maliciousUpload.clone().text(),
+  );
+  const maliciousFile = await maliciousUpload.json();
+  await processFileJobs({ workerReference: "http-at10-malware" });
+  assert.equal((await req(`files/${maliciousFile.id}`, owner)).status, 404);
+  const rejected = (await (await req("files", owner)).json()).find(
+    (row: { id: string }) => row.id === maliciousFile.id,
+  );
+  assert.equal(rejected.lifecycle_state, "REJECTED");
+  assert.equal(rejected.state_reason_code, "MALWARE_DETECTED");
+  assert.deepEqual(
+    await (
+      await req("ask", partner, {
+        question: malwareMarker,
+        project_id: p2,
+      })
+    ).json(),
+    {
+      mode: "evidence-only",
+      model: null,
+      question: malwareMarker,
+      answer: "INSUFFICIENT KXRA EVIDENCE.",
+      citations: [],
+    },
   );
 });
 test("AT-07 HTTP finance validation and uncapped aggregate endpoint use exact decimals", async () => {

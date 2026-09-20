@@ -1107,7 +1107,9 @@ export function UploadForm({
 }) {
   const ready = useReady();
   const [msg, setMsg] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [requestId, setRequestId] = useState("");
+  useEffect(() => setRequestId(crypto.randomUUID()), []);
   const router = useRouter();
   return (
     <form
@@ -1123,9 +1125,8 @@ export function UploadForm({
           const r = await fetch("/api/files", { method: "POST", body: f });
           const b = await r.json();
           if (!r.ok) throw Error(b.error);
-          setMsg(
-            "Uploaded to quarantine. File contents are not available to AI.",
-          );
+          setMsg("Uploaded securely. Trusted processing is now queued.");
+          setRequestId(crypto.randomUUID());
           router.refresh();
         } catch (e) {
           setMsg(
@@ -1139,6 +1140,7 @@ export function UploadForm({
       }}
     >
       <h2>Upload a project file</h2>
+      <input type="hidden" name="request_id" value={requestId} />
       <label>
         Project
         <select
@@ -1177,7 +1179,8 @@ export function UploadForm({
       </label>
       <p className="subtle">
         Maximum 20 MB. Confirm the project and audience before uploading. New
-        files stay in quarantine.
+        files remain unavailable until trusted scanning, extraction and indexing
+        finish.
       </p>
       <button disabled={!ready || busy}>
         {busy ? "Uploading…" : "Upload file"}
@@ -1192,7 +1195,10 @@ export function AskForm({ projects }: { projects: Project[] }) {
     answer?: string;
     error?: string;
     citations?: {
+      citation_type: "RECORD" | "CHUNK";
       record_id: string;
+      chunk_id: string | null;
+      file_id: string | null;
       title: string;
       excerpt: string;
       classification: string;
@@ -1249,10 +1255,18 @@ export function AskForm({ projects }: { projects: Project[] }) {
       <div aria-live="polite">
         <p>{result.error || result.answer}</p>
         {result.citations?.map((c) => (
-          <article className="record" key={c.record_id}>
+          <article
+            className="record"
+            key={`${c.citation_type}:${c.chunk_id || c.record_id}`}
+          >
             <h3>
               <a href={"/os/record/" + c.record_id}>{c.title}</a>
             </h3>
+            <p className="subtle">
+              {c.citation_type === "CHUNK"
+                ? "Indexed file evidence"
+                : "Record evidence"}
+            </p>
             <span className="badge">{c.classification}</span>
             <p>{c.excerpt}</p>
           </article>

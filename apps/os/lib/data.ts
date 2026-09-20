@@ -222,13 +222,44 @@ export async function operatingLoop(
     };
   });
 }
+export type EvidenceRow = RecordRow & {
+  source_type: "RECORD" | "CHUNK";
+  record_id: string;
+  chunk_id: string | null;
+  file_id: string | null;
+};
+
 export async function search(a: Actor, q: string, pid?: string) {
   if (pid) await project(a, pid);
   if (!q.trim()) return [];
   if (q.length > 500) throw new HttpError(400, "Search is too long");
-  return query<RecordRow>(
+  return query<EvidenceRow>(
     a,
-    `select * from kxra.records where ($2::uuid is null or project_id=$2) and to_tsvector('english',title || ' ' || body) @@ plainto_tsquery('english',$1) order by updated_at desc limit 20`,
+    `with requested as (select plainto_tsquery('english',$1) as query)
+     select * from (
+      select record.id,record.org_id,record.project_id,record.kind,record.title,
+       record.body,record.data,record.classification,record.visibility,record.status,
+       record.created_by,record.version,record.source_code,record.created_at,
+       record.updated_at,'RECORD'::text as source_type,record.id as record_id,
+       null::uuid as chunk_id,null::uuid as file_id,
+       ts_rank(to_tsvector('english',record.title||' '||record.body),requested.query) as relevance
+      from kxra.records record cross join requested
+      where ($2::uuid is null or record.project_id=$2)
+       and to_tsvector('english',record.title||' '||record.body) @@ requested.query
+      union all
+      select chunk.id,chunk.org_id,chunk.project_id,'knowledge'::kxra.record_kind,
+       file.filename,chunk.content,'{}'::jsonb,record.classification,record.visibility,
+       'accepted'::text,record.created_by,chunk.source_version,null::text,
+       chunk.created_at,chunk.created_at,'CHUNK'::text,chunk.record_id,chunk.id,
+       chunk.file_id,ts_rank(chunk.search_document,requested.query)
+      from kxra.knowledge_chunks chunk
+      join kxra.files file on file.id=chunk.file_id
+      join kxra.records record on record.id=chunk.record_id
+      cross join requested
+      where ($2::uuid is null or chunk.project_id=$2)
+       and chunk.search_document @@ requested.query
+     ) evidence
+     order by relevance desc,updated_at desc,id limit 20`,
     [q, pid || null],
   );
 }

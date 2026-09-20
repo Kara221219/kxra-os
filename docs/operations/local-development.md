@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations and imports the five projects plus classified required registers. Existing runtime data is preserved. Local fixture accounts, Auth state, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
+Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations, imports the five projects plus classified required registers and runs the deterministic private-file worker beside Next.js. Existing runtime data is preserved. Local fixture accounts, Auth state, private objects, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
 
 Database binaries default to Homebrew PostgreSQL 14. Set `KXRA_PG_BIN` to the directory containing `initdb` and `pg_ctl` elsewhere. Filesystem access to the cluster is equivalent to local administration; never put real credentials or production data in it.
 
@@ -50,11 +50,20 @@ npx playwright test tests/e2e/accounts.spec.ts
 
 The account spec includes a complete owner-to-partner flow, mobile interruption/resume and responsive/keyboard checks. Representative 1440, 768, 390 and 320 layouts plus 200% zoom reflow were manually inspected for the milestone. Screenshots and Playwright artifacts remain ignored because the repository publication rule allows code, documentation and required seeds only.
 
-Run `npm run test:restart` after `npm test`. It snapshots the retained synthetic AT-08 graph under the application RLS role, restarts only this workspace's cluster and compares exact completed tasks/supersessions. It never resets the database. `npm run db:stop` stops only this cluster. Destructive reset is intentionally disabled.
+Run `npm run test:restart` after `npm test`. It snapshots the retained synthetic AT-08 graph plus file versions, chunks and processing jobs under the application RLS role; hashes every registered private object; restarts only this workspace's cluster; and compares the complete manifest and hashes. It never resets the database. `npm run db:stop` stops only this cluster. Destructive reset is intentionally disabled.
+
+The worker can also be run explicitly:
+
+```sh
+npm run worker:files
+npm run worker:files:reconcile
+```
+
+These commands use the fixture scanner/extractor only inside guarded local mode. The adapter deliberately refuses production/Vercel execution. It recognizes a bounded test set and does not replace a production malware service or extraction sandbox.
 
 ## Environment boundary
 
-`.env.example` lists hosted target variables with placeholders only. `npm run dev` creates guarded local configuration. Fixture mode rejects production, Vercel, non-loopback, hosted Supabase/database combinations and weak/missing generated secrets. Default production package conditions resolve local Auth/UI modules to stubs; hosted Auth must be configured for real use.
+`.env.example` lists hosted target variables with placeholders only. `npm run dev` creates guarded local configuration. Fixture mode rejects production, Vercel, non-loopback, hosted Supabase/database combinations and weak/missing generated secrets. Default production package conditions resolve local Auth/UI modules to stubs; hosted Auth must be configured for real use. Hosted file processing additionally needs a private Storage bucket, a server-only Storage secret, a restricted worker database connection, a trusted scanner and a disposable no-network extractor. None is connected by local setup.
 
 The application role must never own tables, bypass RLS or use a Supabase service/admin connection as `DATABASE_URL`. A local test pass does not authorize provider setup, external email, deployment or production data.
 

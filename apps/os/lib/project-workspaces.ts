@@ -159,6 +159,8 @@ export type WorkspaceFile = {
   mime_type: string;
   size_bytes: number;
   scan_status: string;
+  lifecycle_state: string;
+  state_reason_code: string | null;
   created_at: string;
 };
 
@@ -356,7 +358,8 @@ export async function loadProjectWorkspace(
   } else if (module.source_kind === "FILES") {
     result.files = await query<WorkspaceFile>(
       a,
-      `select id,filename,mime_type,size_bytes,scan_status,created_at
+      `select id,filename,mime_type,size_bytes,scan_status,lifecycle_state,
+        state_reason_code,created_at
        from kxra.files where project_id=$1 order by created_at desc,id`,
       [projectId],
     );

@@ -58,6 +58,24 @@ const child = spawn(
     },
   },
 );
+const fileWorker = spawn(
+  process.execPath,
+  [
+    path.join(root, "node_modules", "tsx", "dist", "cli.mjs"),
+    path.join(root, "scripts", "file-worker.ts"),
+    "--watch",
+  ],
+  { cwd: root, stdio: "inherit", env: environment },
+);
 for (const signal of ["SIGTERM", "SIGINT"])
-  process.on(signal, () => child.kill(signal));
-child.on("exit", (code) => process.exit(code || 0));
+  process.on(signal, () => {
+    child.kill(signal);
+    fileWorker.kill(signal);
+  });
+child.on("exit", (code) => {
+  if (fileWorker.exitCode === null) fileWorker.kill("SIGTERM");
+  process.exit(code || 0);
+});
+fileWorker.on("exit", (code) => {
+  if (code && child.exitCode === null) child.kill("SIGTERM");
+});

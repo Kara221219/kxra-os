@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
@@ -68,6 +69,40 @@ async function snapshot() {
               and current_decision.status='accepted'
               and prior_decision.title='HTTP bounded prototype decision'
               and prior_decision.status='accepted'
+          ),'[]'::jsonb),
+          'file_versions',coalesce((
+            select jsonb_agg(jsonb_build_object(
+              'id',v.id,
+              'file_id',v.file_id,
+              'object_key',v.object_key,
+              'sha256',v.sha256,
+              'size_bytes',v.size_bytes,
+              'lifecycle_state',v.lifecycle_state,
+              'source_record_version',v.source_record_version,
+              'chunks',coalesce((
+                select jsonb_agg(jsonb_build_object(
+                  'id',c.id,
+                  'ordinal',c.ordinal,
+                  'content_sha256',c.content_sha256,
+                  'start_offset',c.start_offset,
+                  'end_offset',c.end_offset,
+                  'classification',c.classification,
+                  'audience',c.audience
+                ) order by c.ordinal)
+                from kxra.knowledge_chunks c where c.file_version_id=v.id
+              ),'[]'::jsonb)
+            ) order by v.id)
+            from kxra.file_versions v
+          ),'[]'::jsonb),
+          'file_jobs',coalesce((
+            select jsonb_agg(jsonb_build_object(
+              'id',j.id,
+              'file_version_id',j.file_version_id,
+              'state',j.state,
+              'attempts',j.attempts,
+              'last_reason_code',j.last_reason_code
+            ) order by j.id)
+            from kxra.file_processing_jobs j
           ),'[]'::jsonb)
         ) as manifest
       `)
@@ -79,7 +114,33 @@ async function snapshot() {
   }
 }
 
+function verifyPrivateObjects(manifest) {
+  for (const version of manifest.file_versions) {
+    const objectPath = path.resolve(
+      runtime,
+      "objects",
+      ...version.object_key.split("/"),
+    );
+    const objectRoot = path.resolve(runtime, "objects") + path.sep;
+    assert.ok(
+      objectPath.startsWith(objectRoot),
+      "Unsafe object key in manifest",
+    );
+    assert.ok(
+      fs.existsSync(objectPath),
+      `Missing private object ${version.id}`,
+    );
+    const bytes = fs.readFileSync(objectPath);
+    assert.equal(bytes.length, version.size_bytes);
+    assert.equal(
+      crypto.createHash("sha256").update(bytes).digest("hex"),
+      version.sha256,
+    );
+  }
+}
+
 const before = await snapshot();
+verifyPrivateObjects(before);
 assert.ok(
   before.completed_tasks.length > 0,
   "No completed AT-08 HTTP task found. Run npm test first.",
@@ -99,7 +160,8 @@ execFileSync(process.execPath, ["scripts/database.mjs", "start"], {
 });
 
 const after = await snapshot();
+verifyPrivateObjects(after);
 assert.deepEqual(after, before);
 console.log(
-  `AT-08 restart persistence PASS (${after.completed_tasks.length} completed task(s), ${after.supersessions.length} accepted supersession(s)).`,
+  `AT-08/10 restart persistence PASS (${after.completed_tasks.length} completed task(s), ${after.supersessions.length} accepted supersession(s), ${after.file_versions.length} private object version(s)).`,
 );

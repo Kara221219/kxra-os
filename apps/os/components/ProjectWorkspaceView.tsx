@@ -593,8 +593,11 @@ function ModuleBody({
           {workspace.files.map((file) => (
             <div className="list-item" key={file.id}>
               <Link href={`/api/files/${file.id}`}>{file.filename}</Link>
-              <span className="badge">{file.scan_status}</span>
+              <span className="badge">{file.lifecycle_state}</span>
               <p>{file.size_bytes} bytes</p>
+              {file.state_reason_code && (
+                <p className="subtle">{file.state_reason_code}</p>
+              )}
             </div>
           ))}
           {!workspace.files.length && <p>No files uploaded.</p>}

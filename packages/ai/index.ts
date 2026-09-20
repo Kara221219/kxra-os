@@ -1,6 +1,10 @@
 // Retrieval is performed under the current principal before this envelope exists.
 export type Evidence = {
   id: string;
+  source_type?: "RECORD" | "CHUNK";
+  record_id?: string;
+  chunk_id?: string | null;
+  file_id?: string | null;
   title: string;
   body: string;
   classification: string;
@@ -18,7 +22,10 @@ export function evidenceAnswer(question: string, evidence: Evidence[]) {
       ? "Relevant authorised evidence is shown below. Model synthesis is not enabled."
       : INSUFFICIENT_EVIDENCE,
     citations: evidence.map((e) => ({
-      record_id: e.id,
+      citation_type: e.source_type || "RECORD",
+      record_id: e.record_id || e.id,
+      chunk_id: e.chunk_id || null,
+      file_id: e.file_id || null,
       title: e.title,
       excerpt: e.body.slice(0, 700),
       classification: e.classification,
