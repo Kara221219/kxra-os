@@ -1,83 +1,73 @@
 # KXRA OS implementation progress
 
-Updated: 19 September 2026. Status: **Phase 2 Slice 0 is complete and fully verified in a disposable local environment. Major customer, provider and release capabilities remain unbuilt. Nothing is hosted or production ready.**
+Updated: 20 September 2026. Status: **Phase 2 Slice 1 is implemented and verified in a disposable local environment. It is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 0 started from `0109f8f9cb7cbe0947189bd538c0b2b8ba7c3ab7`, which descends from the reviewed Genesis implementation. This branch is not merged and no default-branch change, production deployment or external activation was performed.
+Current branch: `codex/phase-2-completion`. Slice 1 started from pushed baseline `f81e7840c775c9431dbfec91216a1339eb0bf881`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
 
-The cumulative implementation contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. The later brief supplements earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
+The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
 ## Completed in this slice
 
-- Ask KXRA now requires one UUID project on every request. Missing, null, array, multiple and inaccessible scopes fail before retrieval; revocation is rechecked by the server/database boundary.
-- Empty evidence responses use the frozen exact text `INSUFFICIENT KXRA EVIDENCE.` in domain, API and rendered browser behavior.
-- Disposable CI now allocates random loopback application/PostgreSQL ports, creates a fresh Unix-socket-only PostgreSQL cluster, migrates and seeds it, runs the full SQL/HTTP/browser suite, verifies restart persistence, builds the production application, scans the artifact and publication candidates, then stops the database.
-- GitHub Actions uses pinned checkout and Node setup action commits and runs the disposable suite plus production/all-dependency audits.
-- Migrations `0029` and `0030` correct clean seed ordering, provision project governance/workspace/gate/vehicle reference state after project insertion, and make deny-all policies explicit for internal ingress/rate-limit tables. Applied migrations `0001`–`0028` were not rewritten.
-- Customer discovery and solicitor-preparation packs were produced in the private ignored business pack. They are not legal terms and are excluded from the public repository.
+- Added normalized global account identities and many-to-many organization memberships with the four security roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
+- Added explicit organization selection for multi-membership accounts. The HttpOnly organization cookie is only a selector; every request revalidates the account and active membership in PostgreSQL. JWT metadata, headers, paths, request bodies and model output cannot assign organization or role authority.
+- Every scoped database transaction now sets one server-derived `request.kxra.org_id`. Selected-tenant policies prevent an account from combining roles or records across its memberships. Membership revocation takes effect on the next request while other memberships remain usable.
+- Added approved-version legal documents, requirements, immutable presentations, exact acceptance/decline evidence and re-acknowledgement/release-manifest foundations. An active requirement can reference only an approved exact hash. Unapproved placeholders cannot activate or satisfy a release manifest.
+- Added a first-private-access gate and agreement UI/API. Before acceptance, private OS, project, file, search and Ask routes return typed `AGREEMENT_REQUIRED`; context selection and agreement presentation remain reachable.
+- Added deterministic plan/version/feature, billing customer/subscription/event, entitlement, usage reservation/aggregate/adjustment, offer/price/tax and owner free-grant records. Signed fake Stripe-style events reject tampering and expiry; database reconciliation handles replay and out-of-order events.
+- Added concurrency-safe usage reservation/completion and deterministic entitlement decisions. Owner grants are auditable, scoped, expiring/revocable and do not fabricate a provider subscription.
+- Added private custom-project requests, triage/proposal/acceptance/payment/change/milestone records. A subscription cannot create delivery work. Only a capability-authorized KXRA manager can author a proposal, and project activation requires the exact current accepted proposal plus its configured payment gate.
+- Added customer-facing custom-project intake UI and APIs for plans, entitlements, usage, grants and custom-project workflow foundations. Live Stripe checkout/webhooks/customer portal remain absent.
+- Added eight additive migrations, `0031`–`0038`; no applied migration was rewritten. Fresh migration-before-seed order now classifies the KXRA organization correctly and seeds legal placeholders only as inactive, unapproved records.
+- Added AT-31–34 and AT-46 SQL/domain/HTTP/browser evidence, including dual-tenant isolation, exact legal acceptance, billing replay/concurrency, free-grant revocation and commercial separation.
+- Fixed repeat-run legal fixture collisions, stale RLS-table dashboard assertions and a desktop/mobile navigation race found by the expanded browser suite.
 
 ## Verified implementation
 
-- Next.js 15 / React 19 / TypeScript application with PostgreSQL as the authorization and state authority.
-- All 44 KXRA tables have RLS and at least one explicit policy. The application login is `NOINHERIT`, `NOBYPASSRLS` and non-superuser.
-- Owner control plane, invitations, account lifecycle, nine-step onboarding, local AAL2 checks, Portfolio, Ideas, six approval executors, exact finance and real Work Log projections.
-- SQL/HTTP/browser isolation for owner, contributor, viewer, revoked, suspended, anonymous and separate-organisation principals, including crafted IDs, direct API calls, files, search, Ask and nested workspace resources.
-- Exactly Projects 001–005 with 18 common modules, their approved specialist modules and hard stops. Project 004 remains paper/research only; Project 005 remains demand gated.
-- Typed idea → experiment → task → result/evidence → decision → approval → supersession loop.
-- RLS-scoped evidence search, private-by-default quarantine metadata, HMAC/challenge foundations, and agent/skill/disabled-routine definitions.
+- Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
+- 38 ordered migrations, 79 RLS-protected tables with explicit policies and 75 audited exposed functions.
+- 81 database/domain/HTTP tests and 32 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 28 applicable passes and four intentional device-specific skips.
+- Owner control plane, invitation/account lifecycle, five original venture workspaces, one-project Ask KXRA, exact finance, approvals and work-log foundations remain passing.
+- Explicit tenant selection, legal gate, deterministic commercial records, usage reservations, free grants and custom-project commercial separation pass with synthetic local evidence.
 
-Definitions, disabled controls and local provider doubles are not counted as connected capabilities.
-
-## Verification evidence
-
-| Check                    | Result                                                                                                                              |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run test:ci`        | **PASS** — 73/73 database/domain/HTTP tests; 27 applicable browser tests passed and 3 device-specific scenarios skipped as designed |
-| migration/RLS audit      | **PASS** — 30 contiguous migrations; 44 protected tables; explicit policies; non-bypass application roles                           |
-| restart persistence      | **PASS** — disposable-state task and accepted supersession counts survived a controlled database restart                            |
-| production build         | **PASS** — optimized Next.js build completed                                                                                        |
-| production artifact scan | **PASS** — all 16 fixture identity/state/secret markers absent                                                                      |
-| publication/secret scan  | **PASS** — tracked and untracked nonignored publication candidates checked against private paths and six credential patterns        |
-| dependency audits        | **PASS** — `npm audit --omit=dev` and `npm audit` reported zero vulnerabilities                                                     |
-| documentation integrity  | **PASS** — 28 Markdown files resolved local links and all public Genesis register JSON parsed                                       |
-| document integrity       | **PASS** — both private DOCX files and the discovery XLSX passed ZIP/package integrity checks and visual QA                         |
-| `git diff --check`       | **PASS**                                                                                                                            |
-
-These results do not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, backup recovery or production behavior.
+Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
 
 ## Remaining work
 
 ### Partial
 
-- Hosted Supabase Auth/MFA/session, files/knowledge, approvals, email, legal acceptance infrastructure and the public preview have local foundations but no provider-backed acceptance.
-- Ask KXRA now has the correct one-project authorization boundary, but secure document extraction/chunking, model synthesis, citation validation, budget/tool controls and durable AI run evidence are absent.
-- AI agents, skills and routines remain definitions; routines are disabled and no general autonomous executor exists.
+- The multi-tenant and first-private-access boundaries work locally. Hosted Supabase Auth, real owner bootstrap, pooler behavior and solicitor-approved legal content remain unverified.
+- Commercial state and bounded APIs work with fake signed events. Stripe products/prices, checkout, webhook endpoint, portal, tax/refund/cancellation policy and customer billing UI are not connected.
+- Custom-project intake and exact proposal/payment activation foundations work. Owner triage/proposal/change-control UI, invoices, customer milestone UX and approved legal/SOW text remain incomplete.
+- Ask KXRA has the correct tenant/project boundary but lacks clean document extraction/chunking, model synthesis, citation validation, budget/tool controls and durable AI run evidence.
 
 ### Missing
 
-- Many-to-many customer organizations, explicit tenant selection, first-private-access NDA gate, plans/subscriptions/entitlements/usage, owner free grants and the separately priced custom-project workflow.
-- Clean file scanning, extraction/indexing, authorized byte delivery, AI run/tool/budget substrate, complete provider approvals, WhatsApp gateway and backup/object restore.
-- KXRA Brand Studio, Projects 006/007, independent public/private/customer builds and the layered industry marketing site.
-- Connected staging providers, telemetry, production release evidence and first-customer rehearsal.
+- Secure file scanning, extraction/indexing, authorized byte delivery and object reconciliation/restore.
+- Executable AI run substrate, skill versions, capability broker, routine scheduler/recovery and complete approval integration.
+- KXRA Brand Studio, Projects 006/007, YouTube and repository-analysis workflows.
+- WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
+- Independent public/private/customer builds, layered industry marketing site and public forms.
+- Connected staging providers, telemetry, backup/restore evidence, production release evidence and first-customer rehearsal.
 
 ## Project status
 
-- Projects 001–005: implemented as deterministic local records/workspaces with hard stops; scores remain truthfully null/Not Assessed.
-- Project 006, Finance Unfolded YouTube Content Engine: specified only; no seed, workflow, OAuth or publication path exists.
-- Project 007, GitHub Repository Intelligence & Secure Reuse: specified only; no seed, scanner/sandbox or adoption path exists.
+- Projects 001–005 remain implemented as deterministic local records/workspaces with their hard stops. Scores remain truthfully null/Not Assessed.
+- Project 004 remains research/paper only and has no live trading path.
+- Project 005 remains demand gated and has no product publication path.
+- Projects 006 and 007 are specified in documentation only; they are not seeded or executable.
 
 ## Active owner and external inputs
 
-- Qualified UK solicitor approval for NDA/confidentiality, Terms, Privacy, cookies, AI/data processing and custom-project terms.
-- Initial customer segment, discovery interviews, launch plan/limits/price policy, free-partner policy and custom-project commercial policy.
-- Final private app subdomain, support/privacy mailboxes, public copy/brand assets and retention/recovery targets.
-- Finance Unfolded channel ownership proof and editorial/publication policy.
-- Staging/provider accounts and budgets at the later gates documented in the completion brief.
+- Qualified UK solicitor approval for the exact NDA/confidentiality, Terms, Privacy, cookie, AI/data-processing and custom-project documents. The software cannot activate placeholders.
+- Customer discovery interviews and decisions for initial segment, launch plan, plan limits, approximately £30 pricing hypothesis, free-partner policy and custom-project commercial policy.
+- Entity/public contact details, retention/recovery targets, support/privacy mailboxes and approved public copy/brand assets.
+- Later staging credentials and budgets through provider secret stores, never chat or Git.
 
-These inputs do not block continued local implementation with synthetic fixtures and disabled provider adapters.
+These inputs do not block continued local work with synthetic fixtures and disabled adapters.
 
 ## Next safe action
 
-Implement Slice 1 from Phase Completion Brief 02: normalized many-to-many account/organization membership, explicit tenant selection, an inactive-until-approved first-private-access agreement gate, deterministic plans/entitlements/usage/free grants and custom-project commercial records. Preserve every current regression and add AT-31–34 plus the legal-placeholder release block before any provider activation.
+Implement the secure file and knowledge lifecycle: quarantine-to-clean scanning, immutable extraction/chunks, object-level authorization, project-bound retrieval and delivery-time revocation. Preserve the new tenant/legal gate and extend the matrix before any model or provider receives content. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
 
 ## Publication boundary
 

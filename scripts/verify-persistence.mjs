@@ -16,6 +16,7 @@ if (!fs.existsSync(configPath)) {
 
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const owner = "20000000-0000-4000-8000-000000000001";
+const organisation = "10000000-0000-4000-8000-000000000001";
 
 async function snapshot() {
   const db = new pg.Client(config);
@@ -24,7 +25,7 @@ async function snapshot() {
     await db.query("begin");
     await db.query("set local role authenticated");
     await db.query(
-      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
       [
         owner,
         JSON.stringify({
@@ -32,6 +33,7 @@ async function snapshot() {
           aal: "aal2",
           auth_time: Math.floor(Date.now() / 1000),
         }),
+        organisation,
       ],
     );
     const manifest = (

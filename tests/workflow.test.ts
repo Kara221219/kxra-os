@@ -26,12 +26,13 @@ async function as(
   db: pg.PoolClient,
   user: keyof typeof users | string | null,
   aal = "aal2",
+  organisationId = org,
 ) {
   await db.query("reset role");
   await db.query(`set local role ${user ? "authenticated" : "anon"}`);
   const id = user && user in users ? users[user as keyof typeof users] : user;
   await db.query(
-    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
     [
       id || "",
       JSON.stringify({
@@ -39,6 +40,7 @@ async function as(
         aal,
         auth_time: Math.floor(Date.now() / 1000),
       }),
+      user ? organisationId : "",
     ],
   );
 }
@@ -281,7 +283,7 @@ test("AT-08 completes an exact-version P002 operating loop and isolates it", asy
       "insert into kxra.members(id,org_id,display_name,role) values($1,$2,'Foreign owner','owner')",
       [foreignOwner, foreignOrg],
     );
-    await as(db, foreignOwner);
+    await as(db, foreignOwner, "aal2", foreignOrg);
     assert.equal(
       (await db.query("select * from kxra.record_links")).rowCount,
       0,

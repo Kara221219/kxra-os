@@ -23,6 +23,7 @@ import {
   WorkLogView,
 } from "../../../components/ControlPlaneViews";
 import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
+import { CustomProjectRequestForm } from "../../../components/CommercialForms";
 import { actor, HttpError, owner, type Actor } from "../../../lib/auth";
 import {
   totals,
@@ -183,7 +184,12 @@ export default async function Workspace({
     a = await actor();
   } catch (e) {
     if (e instanceof HttpError && e.status === 401) redirect("/login");
-    if (e instanceof HttpError && e.status === 428) redirect("/onboarding");
+    if (e instanceof HttpError && e.code === "TENANT_SELECTION_REQUIRED")
+      redirect("/select-organisation");
+    if (e instanceof HttpError && e.code === "AGREEMENT_REQUIRED")
+      redirect("/agreements");
+    if (e instanceof HttpError && e.code === "ONBOARDING_REQUIRED")
+      redirect("/onboarding");
     return (
       <main className="login">
         <h1>Access unavailable</h1>
@@ -460,6 +466,69 @@ export default async function Workspace({
               No workflow tasks are currently assigned.
             </div>
           )}
+        </>
+      );
+    } else if (section === "custom-projects") {
+      const requests = await query<{
+        id: string;
+        problem: string;
+        desired_outcome: string;
+        state: string;
+        reuse_consent: boolean;
+        created_at: string;
+        proposals: {
+          id: string;
+          version: number;
+          state: string;
+          price_minor: number;
+          currency: string;
+          valid_until: string;
+        }[];
+      }>(
+        a,
+        `select request.id,request.problem,request.desired_outcome,request.state,
+          request.reuse_consent,request.created_at,
+          coalesce(jsonb_agg(jsonb_build_object(
+            'id',proposal.id,'version',proposal.version,'state',proposal.state,
+            'price_minor',proposal.price_minor,'currency',proposal.currency,
+            'valid_until',proposal.valid_until
+          ) order by proposal.version) filter(where proposal.id is not null),'[]'::jsonb) as proposals
+         from kxra.custom_project_requests request
+         left join kxra.project_proposals proposal on proposal.request_id=request.id
+         group by request.id order by request.created_at desc`,
+      );
+      content = (
+        <>
+          <Heading
+            title="Custom projects"
+            sub="Private requests and separately scoped KXRA proposals."
+          />
+          <CustomProjectRequestForm />
+          <div className="record-list">
+            {requests.map((request) => (
+              <article className="record" key={request.id}>
+                <div className="record-top">
+                  <h3>{request.problem}</h3>
+                  <span className="badge">{request.state}</span>
+                </div>
+                <p>{request.desired_outcome}</p>
+                <footer>
+                  <span>{request.proposals.length} proposal version(s)</span>
+                  <span>
+                    {request.reuse_consent
+                      ? "Generalized-learning consent recorded"
+                      : "No reuse consent"}
+                  </span>
+                  <span>
+                    {new Date(request.created_at).toLocaleDateString("en-GB")}
+                  </span>
+                </footer>
+              </article>
+            ))}
+            {!requests.length && (
+              <div className="empty">No custom project requests yet.</div>
+            )}
+          </div>
         </>
       );
     } else if (modules[section]) {

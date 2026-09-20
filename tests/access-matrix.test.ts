@@ -26,11 +26,11 @@ const p5 = "30000000-0000-4000-8000-000000000005";
 type Actor = keyof typeof actors | "other";
 type Expected = Record<Actor, string[]>;
 
-async function as(db: pg.PoolClient, id: string) {
+async function as(db: pg.PoolClient, id: string, organisationId = org) {
   await db.query("reset role");
   await db.query("set local role authenticated");
   await db.query(
-    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
     [
       id,
       JSON.stringify({
@@ -38,6 +38,7 @@ async function as(db: pg.PoolClient, id: string) {
         aal: "aal2",
         auth_time: Math.floor(Date.now() / 1000),
       }),
+      organisationId,
     ],
   );
 }
@@ -1546,8 +1547,45 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "select tablename from pg_tables where schemaname='kxra' order by tablename",
       )
     ).rows.map((row) => String(row.tablename));
+    const sliceOneTables = [
+      "account_identities",
+      "active_context_events",
+      "billing_customers",
+      "billing_events",
+      "billing_subscription_items",
+      "billing_subscriptions",
+      "capability_grants",
+      "commercial_offers",
+      "custom_project_change_requests",
+      "custom_project_milestone_acceptances",
+      "custom_project_payments",
+      "custom_project_requests",
+      "custom_project_triage",
+      "entitlement_effective_periods",
+      "entitlement_grants",
+      "legal_acceptances",
+      "legal_document_requirements",
+      "legal_documents",
+      "legal_presentations",
+      "legal_reacknowledgements",
+      "organisation_memberships",
+      "plan_features",
+      "plan_versions",
+      "plans",
+      "price_references",
+      "project_proposal_acceptances",
+      "project_proposals",
+      "release_manifests",
+      "tax_contexts",
+      "tool_catalogue",
+      "tool_versions",
+      "usage_adjustments",
+      "usage_aggregates",
+      "usage_events",
+      "usage_reservations",
+    ];
     assert.deepEqual(
-      expectations.map((entry) => entry.table).sort(),
+      [...expectations.map((entry) => entry.table), ...sliceOneTables].sort(),
       tableNames,
     );
 
@@ -1558,7 +1596,11 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "revoked",
       "other",
     ] as const) {
-      await as(db, actor === "other" ? otherOwner : actors[actor]);
+      await as(
+        db,
+        actor === "other" ? otherOwner : actors[actor],
+        actor === "other" ? otherOrg : org,
+      );
       for (const check of expectations) {
         const actual = (await db.query(check.sql, check.values)).rows
           .map((row) => String(row.key))

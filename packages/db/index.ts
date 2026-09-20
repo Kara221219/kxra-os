@@ -5,6 +5,8 @@ import { localModeConfiguration } from "#kxra/local-guard";
 export type Principal = {
   id: string;
   aal: "aal1" | "aal2";
+  /** Server-resolved request context. Never populate this from JWT metadata. */
+  organisation_id?: string;
   auth_time?: number;
   email?: string;
   email_verified?: boolean;
@@ -51,7 +53,7 @@ export async function scoped<T>(
     await db.query("set local statement_timeout='5s'");
     await db.query(`set local role ${actor ? "authenticated" : "anon"}`);
     await db.query(
-      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
       [
         actor?.id || "",
         JSON.stringify({
@@ -63,6 +65,7 @@ export async function scoped<T>(
           session_version: actor?.session_version,
           role: actor ? "authenticated" : "anon",
         }),
+        actor?.organisation_id || "",
       ],
     );
     const result = await work(db);

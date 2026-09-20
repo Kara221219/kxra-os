@@ -570,6 +570,279 @@ async function handle(req: Request, ctx: Context) {
       }
       throw new HttpError(404, "Not found");
     }
+    if (p[0] === "plans" && method === "GET") {
+      return json(
+        await query(
+          a,
+          `select plan.plan_key,plan.name,version.id as plan_version_id,
+            version.version,version.currency,version.amount_minor::text,
+            version.billing_interval,version.tax_behavior,version.commercial_copy,
+            coalesce(jsonb_agg(jsonb_build_object(
+              'feature_key',feature.feature_key,
+              'quantity_limit',feature.quantity_limit,
+              'usage_window',feature.usage_window
+            ) order by feature.feature_key) filter(where feature.id is not null),'[]'::jsonb) as features
+           from kxra.plans plan
+           join kxra.plan_versions version on version.plan_id=plan.id and version.state='ACTIVE'
+           left join kxra.plan_features feature on feature.plan_version_id=version.id
+           where plan.state='ACTIVE'
+           group by plan.plan_key,plan.name,version.id,version.version,version.currency,
+             version.amount_minor,version.billing_interval,version.tax_behavior,
+             version.commercial_copy
+           order by plan.name,version.version`,
+        ),
+      );
+    }
+    if (p[0] === "entitlements" && method === "GET") {
+      const input = z
+        .object({
+          feature: z.string().regex(/^[a-z][a-z0-9]*(?:[.:_-][a-z0-9]+)*$/),
+          units: z.coerce.number().int().positive().max(1_000_000).default(1),
+        })
+        .strict()
+        .parse(Object.fromEntries(url.searchParams));
+      return json(
+        (
+          await query(a, "select * from kxra.entitlement_decision($1,$2)", [
+            input.feature,
+            input.units,
+          ])
+        )[0],
+      );
+    }
+    if (p[0] === "usage-reservations" && method === "POST") {
+      if (!p[1]) {
+        const input = z
+          .object({
+            feature: z.string().regex(/^[a-z][a-z0-9]*(?:[.:_-][a-z0-9]+)*$/),
+            units: z.number().int().positive().max(1_000_000),
+            idempotency_key: z.string().trim().min(8).max(240),
+          })
+          .strict()
+          .parse(await body(req));
+        return json(
+          (
+            await query(a, "select (kxra.reserve_usage($1,$2,$3)).*", [
+              input.feature,
+              input.units,
+              input.idempotency_key,
+            ])
+          )[0],
+          201,
+        );
+      }
+      const reservationId = uuid.parse(p[1]);
+      if (p[2] !== "complete" || p[3]) throw new HttpError(404, "Not found");
+      const input = z
+        .object({
+          outcome: z.enum(["SUCCESS", "FAILURE"]),
+          provider_units: z.number().int().nonnegative().nullable(),
+          provider_cost_minor: z.number().int().nonnegative().nullable(),
+          provider_currency: z
+            .string()
+            .regex(/^[A-Z]{3}$/)
+            .nullable(),
+        })
+        .strict()
+        .parse(await body(req));
+      return json(
+        (
+          await query(
+            a,
+            "select (kxra.complete_usage_reservation($1,$2,$3,$4,$5)).*",
+            [
+              reservationId,
+              input.outcome,
+              input.provider_units,
+              input.provider_cost_minor,
+              input.provider_currency,
+            ],
+          )
+        )[0],
+      );
+    }
+    if (p[0] === "entitlement-grants") {
+      recentOwnerMfa(a);
+      if (method === "POST" && !p[1]) {
+        const input = z
+          .object({
+            organisation_id: uuid,
+            feature: z.string().regex(/^[a-z][a-z0-9]*(?:[.:_-][a-z0-9]+)*$/),
+            quantity_limit: z.number().int().positive().nullable(),
+            usage_window: z.enum(["MONTH", "NONE"]),
+            expires_at: z.string().datetime({ offset: true }).nullable(),
+            reason: z.string().trim().min(1).max(1000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.grant_free_entitlement($1,$2,$3,$4,$5,$6) as id",
+          [
+            input.organisation_id,
+            input.feature,
+            input.quantity_limit,
+            input.usage_window,
+            input.expires_at,
+            input.reason,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (method === "POST" && p[1] && p[2] === "revoke" && !p[3]) {
+        const grantId = uuid.parse(p[1]);
+        const input = z
+          .object({ reason: z.string().trim().min(1).max(1000) })
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.revoke_free_entitlement($1,$2)", [
+          grantId,
+          input.reason,
+        ]);
+        return json({ ok: true });
+      }
+      throw new HttpError(404, "Not found");
+    }
+    if (p[0] === "custom-projects") {
+      if (method === "GET" && !p[1]) {
+        return json(
+          await query(
+            a,
+            `select request.*,
+              coalesce(jsonb_agg(jsonb_build_object(
+                'id',proposal.id,'version',proposal.version,'state',proposal.state,
+                'proposal_hash',proposal.proposal_hash,'price_minor',proposal.price_minor,
+                'currency',proposal.currency,'valid_until',proposal.valid_until
+              ) order by proposal.version) filter(where proposal.id is not null),'[]'::jsonb) as proposals
+             from kxra.custom_project_requests request
+             left join kxra.project_proposals proposal on proposal.request_id=request.id
+             group by request.id order by request.created_at desc`,
+          ),
+        );
+      }
+      if (method === "POST" && !p[1]) {
+        const input = z
+          .object({
+            problem: z.string().trim().min(1).max(20000),
+            desired_outcome: z.string().trim().min(1).max(20000),
+            constraints: z.string().max(20000).default(""),
+            reuse_consent: z.boolean().default(false),
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.submit_custom_project_request($1,$2,$3,$4,$5) as id",
+          [
+            input.problem,
+            input.desired_outcome,
+            input.constraints,
+            input.reuse_consent,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[1] && p[2] === "proposals" && !p[3] && method === "POST") {
+        const requestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            scope: z.string().trim().min(1).max(50000),
+            exclusions: z.string().max(30000),
+            assumptions: z.string().max(30000),
+            milestones: z
+              .array(z.record(z.string(), z.unknown()))
+              .min(1)
+              .max(50),
+            price_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            currency: z.string().regex(/^[A-Z]{3}$/),
+            tax_treatment: z.string().trim().min(1).max(500),
+            payment_gate: z.enum(["NONE", "DEPOSIT", "PAID_IN_FULL"]),
+            deposit_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            legal_document_id: uuid,
+            legal_document_version: positiveVersion,
+            legal_document_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+            valid_until: z.string().datetime({ offset: true }),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_project_proposal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+          [
+            requestId,
+            input.scope,
+            input.exclusions,
+            input.assumptions,
+            JSON.stringify(input.milestones),
+            input.price_minor,
+            input.currency,
+            input.tax_treatment,
+            input.payment_gate,
+            input.deposit_minor,
+            input.legal_document_id,
+            input.legal_document_version,
+            input.legal_document_sha256,
+            input.valid_until,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[1] === "proposals" &&
+        p[2] &&
+        p[3] === "accept" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const proposalId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            proposal_hash: z.string().regex(/^[a-f0-9]{64}$/),
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.accept_project_proposal($1,$2,$3) as id",
+          [proposalId, input.proposal_hash, input.request_id],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[1] === "proposals" &&
+        p[2] &&
+        p[3] === "activate" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const proposalId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            project_code: z.string().regex(/^[A-Z][A-Z0-9-]{2,39}$/),
+            project_name: z.string().trim().min(1).max(240),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.activate_custom_project($1,$2,$3) as id",
+          [proposalId, input.project_code, input.project_name],
+        );
+        return json(rows[0], 201);
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "summary" && method === "GET") return json(await counts(a));
     if (p[0] === "finance-totals" && method === "GET") {
       owner(a);
@@ -1694,7 +1967,11 @@ async function handle(req: Request, ctx: Context) {
       throw new HttpError(503, "WhatsApp gateway is disabled");
     throw new HttpError(404, "Not found");
   } catch (e) {
-    if (e instanceof HttpError) return json({ error: e.message }, e.status);
+    if (e instanceof HttpError)
+      return json(
+        { error: e.message, ...(e.code ? { code: e.code } : {}) },
+        e.status,
+      );
     if (e instanceof z.ZodError)
       return json({ error: "Invalid request fields" }, 400);
     if (

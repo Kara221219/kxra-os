@@ -27,6 +27,7 @@ const partnerNav = [
   ["My Projects", "projects"],
   ["Ask KXRA", "ask"],
   ["Ideas", "ideas"],
+  ["Custom Projects", "custom-projects"],
   ["Tasks", "tasks"],
   ["Files", "files"],
   ["Activity", "activity"],
@@ -83,6 +84,9 @@ export default function Shell({
           </nav>
         </details>
         <div className="identity">
+          <Link href="/select-organisation" title="Change organisation">
+            {actor.organisation_name}
+          </Link>
           <Link href="/os/profile">{actor.display_name}</Link>
           <form action="/api/auth" method="post">
             <button className="text-button" name="logout" value="1">

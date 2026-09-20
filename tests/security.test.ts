@@ -30,7 +30,7 @@ async function as(
   await db.query("reset role");
   await db.query(`set local role ${user ? "authenticated" : "anon"}`);
   await db.query(
-    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
     [
       user ? users[user] : "",
       JSON.stringify({
@@ -38,6 +38,7 @@ async function as(
         sub: user ? users[user] : null,
         auth_time: Math.floor(Date.now() / 1000),
       }),
+      user ? org : "",
     ],
   );
 }
@@ -1167,7 +1168,10 @@ test("AT-01 separate organisation and every private table enforce RLS", () =>
       (await db.query("select * from kxra.projects where id=$1", [p])).rowCount,
       0,
     );
-    await db.query("select set_config('request.jwt.claim.sub',$1,true)", [x]);
+    await db.query(
+      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.kxra.org_id',$2,true)",
+      [x, o],
+    );
     assert.deepEqual(
       (await db.query("select id from kxra.projects")).rows.map((x) => x.id),
       [p],
@@ -1204,7 +1208,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 44);
+    assert.equal(tables.length, 79);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1255,7 +1259,7 @@ test("AT-01 anonymous can execute only the two bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 61);
+    assert.equal(functions.length, 75);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)

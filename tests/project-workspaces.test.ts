@@ -37,7 +37,7 @@ async function as(
   await db.query(`set local role ${user ? "authenticated" : "anon"}`);
   const id = user ? users[user] : null;
   await db.query(
-    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+    "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
     [
       id || "",
       JSON.stringify({
@@ -45,6 +45,7 @@ async function as(
         aal,
         auth_time: Math.floor(Date.now() / 1000),
       }),
+      user ? org : "",
     ],
   );
 }

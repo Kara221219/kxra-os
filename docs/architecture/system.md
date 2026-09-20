@@ -1,24 +1,26 @@
 # Implemented architecture
 
-Status: Final Milestone 3 and Phase 2 Slice 0 are implemented in the deterministic local environment on `codex/phase-2-completion`. The one-project Ask KXRA defect found in the 19 September audit is fixed and covered by clean SQL/API/browser tests. Customer tenancy, subscriptions, providers and the independent public application remain absent. The current target architecture and ordered migration path are in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) and [ADR 0007](../decisions/0007-customer-platform-and-new-projects.md). This document describes the implemented architecture unless a section explicitly says otherwise; it is not hosted or production evidence.
+Status: Final Milestone 3 and Phase 2 Slices 0–1 are implemented in the deterministic local environment on `codex/phase-2-completion`. Multi-tenant identity, first-private-access legal gating and deterministic commercial/custom-project foundations now exist locally. Providers, Brand Studio, Projects 006/007 and the independent public application remain absent. The target architecture is in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md); the implemented Slice 1 decisions are in [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md). This document is not hosted or production evidence.
 
 ## Trust and request flow
 
 ```mermaid
 flowchart LR
-  Browser[Owner or invited partner] --> Next[Next.js route or server component]
-  Next --> Identity[Verified Auth identity]
-  Identity --> Account[Account and session state]
-  Account --> Tx[PostgreSQL transaction]
-  Tx --> Claims[Server-set authenticated role and claims]
-  Claims --> RLS[PostgreSQL RLS and typed functions]
-  RLS --> Response[Scoped response]
-  RLS --> Audit[Audit, security event and outbox state]
+  Browser[Owner, partner or customer] --> Next[Next.js route or server component]
+  Next --> Identity[Verified Auth subject]
+  Identity --> Membership[Current account + organization memberships]
+  Membership --> Selector[Explicit selected organization]
+  Selector --> Tx[PostgreSQL transaction]
+  Tx --> Context[Authenticated role + request.kxra.org_id]
+  Context --> Legal[Exact legal gate]
+  Legal --> RLS[PostgreSQL RLS + typed functions]
+  RLS --> Response[Tenant/project-scoped response]
+  RLS --> Audit[Audit, context and commercial evidence]
 ```
 
-Every handler verifies identity independently. Middleware may refresh hosted cookies but never grants access. The application checks KXRA account state, current member state, session version and onboarding/agreement readiness before creating an actor. Database work uses one transaction with `SET LOCAL ROLE authenticated` and server-derived claims; pooled connections reset afterward. Mutations require the configured same-origin header, strict schemas and bounded input.
+Every handler verifies identity independently. Middleware may refresh hosted cookies but never grants access. The application loads current normalized memberships. A single membership is selected deterministically; multiple memberships require explicit selection. The HttpOnly organization cookie is a selector, not a grant. PostgreSQL revalidates it and records the selection. Database work uses one transaction with `SET LOCAL ROLE authenticated`, server-derived identity claims and one server-derived `request.kxra.org_id`; pooled connections reset afterward. Mutations require the configured same-origin header, strict schemas and bounded input.
 
-The application database login is `NOINHERIT`, `NOBYPASSRLS`, is not a superuser or table owner, and belongs only to the `authenticated` and `anon` roles. There is no browser service-role client. Request bodies and model output never establish identity, email verification, role, organisation, project access, approval or lifecycle state.
+The application database login is `NOINHERIT`, `NOBYPASSRLS`, is not a superuser or table owner, and belongs only to the `authenticated` and `anon` roles. There is no browser service-role client. Request bodies, headers, paths, unverified cookies, JWT organization metadata and model output never establish identity, email verification, role, organization, project access, legal acceptance, entitlement, approval or lifecycle state.
 
 ## Auth and build boundary
 
@@ -56,17 +58,42 @@ Resend rotates only the delivery version/token and cancels prior pending deliver
 
 Invitation states are `PENDING`, `SENT`, `DELIVERY_FAILED`, `REDEEMED`, `EXPIRED` and `REVOKED`. Account states are `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`. Server-controlled transitions and account security events preserve attribution. `SUSPENDED` and `REVOKED`, inactive organisation membership and inactive/expired project membership override all earlier state.
 
-The onboarding wizard validates nine steps: Welcome, Personal Profile, Security, Project Access, Working With KXRA, optional WhatsApp, Preferences, Terms/Privacy/required agreements and Complete. Project Access is read-only and derived under RLS. Required profile/preferences/agreement data blocks completion. Acceptances bind exact agreement ID/version and timestamp. The two seed legal documents are explicitly labelled `UNAPPROVED_PLACEHOLDER`. An active partner missing a newly required agreement is returned to step 8. Successful completion writes `onboarding_completed_at` and activates the account.
+The onboarding wizard validates nine steps: Welcome, Personal Profile, Security, Project Access, Working With KXRA, optional WhatsApp, Preferences, Terms/Privacy/required agreements and Complete. Project Access is read-only and derived under RLS. Required profile/preferences/agreement data blocks completion. The two legacy seed agreement records remain explicitly labelled `UNAPPROVED_PLACEHOLDER` for local onboarding evidence.
+
+The Slice 1 first-private-access gate is separate and stricter. Only an approved exact legal document/hash may become an active requirement. It stores an immutable presentation snapshot and exact acceptance or decline. A missing current acceptance prevents actor creation and returns `AGREEMENT_REQUIRED` before private routes. A new mandatory version reopens the gate without deleting old evidence. The placeholders have no active requirement and cannot pass the commercial release manifest.
 
 Partners may edit only permitted profile and preference fields, change/reset their provider password, exercise fake MFA/session controls, inspect assignments and unpair their own WhatsApp account. Owner lifecycle and assignment changes bind current state through recent-AAL2, one-use exact approvals. Forced sign-out increments session version. Suspension/revocation removes UI, API, SQL, file, Ask and delivery access immediately.
 
 ## Data architecture
 
-Forty-four private application tables have RLS and at least one explicit policy. The original 20 cover organisations, members, projects, memberships, classified records and versions, files, approvals, audit, invitations, operating-loop relations, project gates and disabled WhatsApp ingress. Migrations `0014`–`0021` add profiles, invitation project grants, onboarding progress, user preferences, agreement documents/acceptances, session revocations, transactional email outbox, account security events and durable rate-limit buckets. Migrations `0022`–`0025` add typed Ideas, Idea versions/evidence/shares, project-governance history and real Work Log projections. Migrations `0026`–`0028` add project module definitions, typed workspace entries and versions, exact evidence links, vehicle compatibility, property asset provenance, CLPR revisit reviews and demand-gated digital opportunities. Migration `0029` provisions project-dependent governance/reference state on insertion so Supabase's migrations-before-seed order is reproducible; `0030` names explicit deny-all policies for internal ingress and rate-limit tables.
+Seventy-nine private application tables have RLS and at least one explicit policy. Migrations `0001`–`0030` implement the original organizations, projects, records, files, approvals, account/invitation/onboarding, operating loop, owner control plane and five workspaces. Migrations `0031`–`0035` add normalized identities/memberships, selected tenant context, capabilities and the exact legal gate. Migrations `0036`–`0038` harden fresh seed classification and disambiguate custom-project output/default identifiers without rewriting prior migrations.
 
-The application exposes 61 bounded functions to authenticated or anonymous roles. Tests enumerate every table and function and fail if either grows without an authorization decision. Composite foreign keys bind organisation/project scope. Typed security-definer functions validate consequential workflows; ordinary RLS controls reads.
+The application exposes 75 bounded functions to authenticated or anonymous roles. Tests enumerate every table and exposed function and fail if either grows without an authorization decision. Composite foreign keys bind organization/project scope. Typed security-definer functions validate context, legal, entitlement, usage, billing-reconciliation and custom-project transitions; ordinary RLS controls reads.
 
 Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Project insertion initializes lifecycle/disposition/gate state, the current governance snapshot, 18 common modules, code-specific specialist modules, gate policy and any bounded static reference rows in the same transaction. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
+
+## Tenant, legal and commercial foundation
+
+`account_identities` is the global identity anchor. `organisation_memberships` assigns one role and relationship to that account in one organization. Legacy `members` and `profiles` remain compatibility projections for existing workflows; they do not authorize a new tenant context. `active_context_events` records successful selections. Removing one membership does not remove another.
+
+The legal model separates source documents, active requirements, presentations, responses and re-acknowledgements. Triggers make presented/accepted evidence immutable. Requirements bind organization, optional membership/relationship audience, exact document/version/hash, exact acceptance wording/version/hash and effective dates. Release manifests must reference approved exact legal and commercial items; a placeholder or missing item fails.
+
+Commercial access is deterministic:
+
+```mermaid
+flowchart LR
+  Event[Verified fake/provider event] --> Reconcile[Idempotent billing reconciliation]
+  Plan[Immutable plan version + features] --> Decision[Entitlement decision]
+  Grant[Explicit owner free grant] --> Decision
+  Reconcile --> Decision
+  Decision --> Reserve[Transactional usage reservation]
+  Reserve --> Complete[Success, failure or release]
+  Complete --> Aggregate[Usage + cost evidence]
+```
+
+Plans and features are versioned. Billing customers/subscriptions/items/events are normalized. Entitlement decisions return an allow/deny reason and source. Usage reservations lock the effective allowance so concurrent requests cannot exceed it; completion records deterministic units and integer minor-unit cost. Owner free grants carry reason, scope, expiry, issuer and revocation and never fabricate billing subscriptions. The local HMAC verifier and reconciliation function model signed Stripe events, but no public webhook, checkout, customer portal or real price exists.
+
+Custom-project requests are private organization records. Proposal versions bind scope, exclusions, assumptions, milestones, price/currency/tax text, payment gate, legal document hash and expiry. Proposal authors need `custom_project.manage`; customer admins cannot self-price. Acceptance uses the exact current hash. A customer project is created only after the configured payment/deposit gate. Subscription entitlement is never treated as custom delivery authority.
 
 ## Existing operating architecture
 
@@ -123,4 +150,4 @@ The Work Log is not a free-form register. Triggers project real audit and accoun
 
 The local email adapter renders nine versioned templates: Partner Invitation, Invitation Reminder, Password Reset, Email Verification, Welcome, Security Alert, Project Assignment, Access Removed and Approval Required. The outbox has idempotent operation keys and records pending, sent, failed, cancelled and bounced states. The fake transport sends nothing externally.
 
-Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, PostHog, Sentry, Cloudflare and Vercel remain target services only. The current public homepage is a local static route; the separate marketing application and publication boundary belong to later milestones.
+Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend, Stripe, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, YouTube, GitHub analysis, PostHog, Sentry, Cloudflare and Vercel remain target services only. The current public homepage is a local static route; the separate marketing application and publication boundary belong to later milestones.

@@ -359,7 +359,7 @@ export async function seedFixtures(db) {
       "No KXRA privacy notice has been approved. This local-only placeholder records that a reviewed privacy notice is still required before production onboarding.",
     ],
   ];
-  for (const [id, key, title, body] of agreementFixtures)
+  for (const [id, key, title, body] of agreementFixtures) {
     await db.query(
       `insert into kxra.agreement_documents(
         id,org_id,document_key,version,title,body,status,required
@@ -369,6 +369,24 @@ export async function seedFixtures(db) {
         required=excluded.required`,
       [id, org, key, title, body],
     );
+    await db.query(
+      `insert into kxra.legal_documents(
+        id,org_id,document_type,audience,jurisdiction,version,title,
+        rendered_content,content_sha256,status
+       ) values(
+        $1,$2,case $3 when 'terms' then 'TERMS' when 'privacy' then 'PRIVACY' else 'NDA' end,
+        'ALL','GB',1,$4,$5,$6,'UNAPPROVED_PLACEHOLDER'
+       ) on conflict(id,version) do nothing`,
+      [
+        id,
+        org,
+        key,
+        title,
+        body,
+        crypto.createHash("sha256").update(body).digest("hex"),
+      ],
+    );
+  }
 
   for (const user of [ids.partner, ids.viewer])
     for (const [agreementId] of agreementFixtures)

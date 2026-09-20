@@ -1,95 +1,90 @@
 # Engineering handover
 
-Updated: 19 September 2026.
+Updated: 20 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. Slice 0 started from `0109f8f9cb7cbe0947189bd538c0b2b8ba7c3ab7`, which descends from the reviewed Genesis implementation. Use branch HEAD for the current implementation.
+Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The reviewed and pushed Slice 1 baseline is `f81e7840c775c9431dbfec91216a1339eb0bf881`; use branch HEAD for the current implementation after the Slice 1 commit.
 
-The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. Direct user instructions remain controlling. PostgreSQL authorization, project/tenant isolation, Project 004's permanent paper-only boundary and the repository publication boundary remain non-negotiable.
+The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary and the repository publication boundary remain non-negotiable.
 
 Read, in order:
 
-1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md) — current self-contained audit and execution contract;
-2. [acceptance evidence](acceptance-evidence.md);
-3. [progress](progress.md);
-4. [architecture](../architecture/system.md) and [security](../security/access-control.md);
-5. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved history.
+1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md);
+2. [acceptance evidence](acceptance-evidence.md) and [progress](progress.md);
+3. [architecture](../architecture/system.md), [security](../security/access-control.md) and [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md);
+4. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved requirements.
 
 ## Actual delivered state
 
-Final Milestones 1–3 and Phase 2 Slice 0 work in the deterministic local environment. Migrations `0001`–`0030` are ordered and applied; never rewrite an applied migration. The current schema has 44 RLS tables and 61 audited functions in the exposed `kxra` schema. Account/invitation/onboarding, owner control plane, five venture workspaces, six internal approval executors, exact finance and the typed operating loop are implemented locally.
+Final Milestones 1–3 and Phase 2 Slices 0–1 work in the deterministic local environment. Migrations `0001`–`0038` are ordered and applied; never rewrite one. The schema has 79 RLS-protected tables and 75 audited exposed functions.
 
-Slice 0 added:
+Slice 1 added:
 
-- mandatory one-project Ask KXRA requests and exact `INSUFFICIENT KXRA EVIDENCE.` behavior;
-- missing/null/array/multiple/unauthorized/revoked SQL/API/browser regressions;
-- fresh-seed lifecycle provisioning for governance state, 18 common modules, exact P001–P005 specialist modules, all five gates, P002 vehicle rows and governance snapshots;
-- explicit deny policies on internal ingress and durable rate-limit tables;
-- a disposable random-port PostgreSQL/application test harness, migration/RLS audit, production artifact scan and publication/secret scan;
-- a pinned GitHub Actions workflow;
-- a private customer-discovery pack/tracker and solicitor instruction brief, all ignored by Git.
+- global account identities and many-to-many organization memberships;
+- explicit, audited organization selection with server/database membership verification;
+- transaction-local selected tenant context and selected-tenant RLS policies;
+- approved exact legal documents, requirements, presentations, responses, re-acknowledgement and release-manifest checks;
+- a typed first-private-access gate across private HTML/API/file/search/Ask paths;
+- plans, versions, features, billing state, entitlements, usage reservations/events/aggregates and owner free grants;
+- Stripe-style local HMAC verification and deterministic replay/out-of-order reconciliation without a live provider route;
+- offers, price/tax references and private custom-project request, proposal, acceptance, payment, change and milestone state;
+- customer custom-project intake UI plus bounded plan, entitlement, usage, grant and custom-project APIs;
+- SQL/HTTP/browser tests for AT-31–34 and the AT-46 placeholder boundary.
 
-Ask is now correctly scoped before retrieval. It still has no document chunk pipeline, model synthesis, citation validator or durable AI run/budget/tool log. Files stop safely at quarantine. AI agents, skills and routines remain definitions, and routines are disabled. WhatsApp remains cryptographic scaffolding. Customer tenancy, subscriptions, Brand Studio, Projects 006/007, provider-backed workflows and an independent marketing application remain absent.
+Legacy `members`/`profiles` remain compatibility projections for existing Milestone 1–3 workflows. `account_identities` and `organisation_memberships` are authoritative for tenant context. Do not let new code infer tenant role from legacy rows or JWT organization metadata.
 
-## Reproduce the current evidence
+Legal seed records are deliberately `UNAPPROVED_PLACEHOLDER` and have no active requirement. Synthetic approved test documents exist only inside rolled-back/disposable fixtures. No production legal text, Stripe product, subscription, customer, price or credential is seeded.
 
-Requirements: Node.js 22, locked npm dependencies, Chromium for Playwright and local PostgreSQL binaries. The canonical local command is:
+## Reproduce the evidence
+
+Requirements: Node.js 22, locked npm dependencies, Chromium for Playwright and local PostgreSQL binaries.
 
 ```sh
 npm ci
-npx playwright install chromium
+npx playwright install chromium --only-shell
 npm run test:ci
+git diff --check
 ```
 
-`test:ci` creates and destroys a disposable runtime under `.runtime/ci`; it does not use the preserved developer database. It runs lint/typecheck/format, 73 database/domain/HTTP tests, migration/RLS verification, 30 desktop/mobile browser scenarios, restart persistence, the optimized production build, fixture-artifact exclusion and publication/secret scanning.
+The clean contract creates and destroys a disposable runtime under `.runtime/ci`. It runs lint/typecheck/format, 81 database/domain/HTTP tests, the 38-migration/79-table RLS audit, 32 desktop/mobile scenarios, restart persistence, optimized production build, fixture-artifact exclusion and publication/secret scanning.
 
-Latest result:
-
-- 73/73 database/domain/HTTP tests passed;
-- 27 applicable browser tests passed, with 3 intentional device-specific skips;
-- 30 migrations and all 44 RLS tables passed the migration/security audit;
-- restart persistence, production build, all 16 fixture-marker exclusions and the six-pattern publication scan passed;
-- production and complete npm dependency audits reported zero vulnerabilities;
-- no real credential, external send, paid API call, trading action or deployment was used.
-
-Run `git diff --check` again at the final commit gate. Local evidence does not prove hosted Auth/MFA/Storage, pooler RLS, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel or backup behavior.
+Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, Cloudflare or backup behavior.
 
 ## Next implementation slice
 
-Implement Slice 1 from Phase Completion Brief 02 before Final Milestone 4:
+Build the secure file and knowledge lifecycle before enabling Ask/model synthesis:
 
-1. normalize identities and many-to-many organization memberships without weakening current single-organization access;
-2. require one explicit current organization on private requests and add cross-tenant SQL/API/browser/cache tests;
-3. add versioned legal documents and a first-private-access gate that cannot activate an unapproved placeholder;
-4. add deterministic plans, entitlements, concurrent usage reservations, owner free grants and fake signed Stripe event state;
-5. add private custom-project request, versioned proposal, acceptance/payment gate and change-control records;
-6. preserve all current tests and add AT-31–34 plus the AT-46 placeholder/release block.
+1. define quarantine, scan, clean, rejected, extracted and indexed states with immutable object/checksum provenance;
+2. add fake malware/scanner and extraction adapters with adversarial fixtures;
+3. authorize bytes, metadata, chunks and search at tenant/project/database boundaries;
+4. reauthorize before download, retrieval, model dispatch and provider delivery;
+5. add cross-tenant files/chunks/search tests, revocation during an open run and object/database reconciliation;
+6. retain `AGREEMENT_REQUIRED` before all private file/knowledge paths;
+7. update AT-04, AT-10, AT-11, AT-27 and AT-29 evidence without connecting a provider.
 
-Use additive migrations. Do not import solicitor text until counsel approves an exact version. Safe synthetic legal fixtures may test workflow state, but must be visibly non-operative and unable to unlock a production release.
+After that, implement the typed AI run/skill/routine substrate and then Brand Studio through fake adapters. Projects 006/007 and public marketing remain later bounded slices.
 
 ## Security invariants
 
-- Verify server identity and active account/organization/project scope before retrieval; use a transaction-local non-bypass RLS role.
-- Never accept user, role, tenant, project, entitlement or approval authority from request bodies, unverified cookies or model output.
-- Ask, search, files, jobs and provider actions must carry one authorized tenant and one authorized project where applicable. Reauthorize before byte/model/provider delivery.
-- A service worker may use only a signed stored initiating scope/capability and cannot become a general service-role data path.
-- Keep Project 004 paper only. Preserve P001–P005 hard stops and add P006/P007 gates before any side effect.
-- Do not activate an NDA placeholder, external email/message, paid model, Stripe live mode, YouTube publication, candidate-code execution on a trusted host, deployment or public site.
-- Financial, entitlement and usage arithmetic is deterministic database/domain logic, never model output.
-- Every new table needs RLS and an explicit policy; every route/function must extend the access matrix.
+- Verify the server identity, active account and selected organization before retrieval. The organization cookie is a selector only.
+- Set `request.kxra.org_id` from a server-verified membership inside each transaction. Never read tenant authority from request/JWT/model fields.
+- Require one authorized project for project-bound retrieval. Reauthorize before bytes, chunks, model context or provider delivery.
+- Apply the exact approved legal requirement before private access. Unapproved placeholders cannot activate or pass release checks.
+- Calculate entitlement, usage and money in deterministic database/domain code. Models never calculate permissions, balances or billing state.
+- A subscription never authorizes custom implementation. Only the current exact accepted proposal and configured payment gate may create a customer project.
+- Every new table needs RLS and an explicit policy. Every function and route must extend negative access tests.
+- Keep Project 004 paper only and preserve all P001–P005 hard stops.
 
 ## Private business-readiness artifacts
 
-The ignored private business pack dated 2026-09-19 contains the completed Customer Discovery Pack, Customer Discovery Tracker and Solicitor Brief alongside the previously prepared business plan, decks, financial model and operating playbooks. The DOCX/XLSX packages passed structural and visual review. The solicitor brief is an instruction pack, not legal advice or approved customer-facing terms.
+The ignored private business pack dated 2026-09-19 contains the Customer Discovery Pack, Customer Discovery Tracker and Solicitor Brief alongside the existing business plan, decks, financial model and playbooks. The packages passed structural and visual review. The solicitor brief is an instruction pack, not legal advice or approved customer-facing terms.
 
-Do not commit these artifacts. Use the discovery pack to recruit and record interviews without selling a feature list. Give the solicitor brief to qualified UK counsel and return only approved versioned documents/metadata to the implementation through the private release process.
+Do not commit these artifacts. Use the discovery pack for interviews and give the solicitor brief to qualified UK counsel. Import only counsel-approved exact document versions and metadata through the private legal release process.
 
 ## Provider and owner boundaries
 
-Continue local code, fake adapters and tests without requesting credentials. The owner runbook in Phase Completion Brief 02 gives later steps for legal documents, Supabase staging, Stripe, OpenAI, YouTube, a read-only GitHub App, Resend, Trigger.dev, PostHog, Sentry, Cloudflare, Vercel and optional Meta.
-
-When external activation becomes the next dependency, present the exact endpoint, scopes, environment and prepared action for review. Never ask for raw secrets in chat. Default-branch change, production merge/deploy, public publication, live billing, real customer contact and YouTube/WhatsApp sends require owner approval of the concrete action.
+Continue local code, fake adapters and tests without requesting credentials. When external activation is the next dependency, present the exact endpoint, scopes, environment and prepared action. Never ask for raw secrets in chat. Default-branch changes, production merge/deploy, public publication, live billing, real customer contact and YouTube/WhatsApp sends require owner approval of the concrete action.
 
 ## Publication boundary
 

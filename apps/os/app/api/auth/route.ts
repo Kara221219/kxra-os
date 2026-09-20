@@ -6,7 +6,11 @@ import {
   issueFixtureSession,
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
-import { sameOrigin, supabase } from "../../../lib/auth";
+import {
+  clearOrganisationContext,
+  sameOrigin,
+  supabase,
+} from "../../../lib/auth";
 import crypto from "node:crypto";
 export async function POST(req: Request) {
   try {
@@ -14,6 +18,7 @@ export async function POST(req: Request) {
     const f = await req.formData();
     if (f.get("logout")) {
       (await cookies()).delete("kxra_local_session");
+      await clearOrganisationContext();
       if (!localMode()) await (await supabase()).auth.signOut();
       return NextResponse.redirect(
         new URL("/login", process.env.KXRA_ORIGIN || req.url),

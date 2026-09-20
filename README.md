@@ -1,10 +1,10 @@
 # KXRA OS
 
-KXRA Group's venture operating workspace. The repository is a working local engineering foundation through Final Milestone 3 and Phase 2 Slice 0: invitation-only identity, account administration, the owner control plane, database-backed workspaces for the five original ventures, one-project Ask KXRA authorization and disposable CI. It is not production ready and is not deployed.
+KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Final Milestone 3 and Phase 2 Slice 1: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, five original venture workspaces, deterministic commercial foundations and separately scoped custom-project intake.
 
-The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. It adds the approved customer-platform direction, Brand Studio, subscriptions and separate custom projects, first-private-access agreement gate, Projects 006/007, layered public site, owner connection runbook and AT-01 through AT-47. Those additions are specified, not yet implemented.
+It is not deployed or production ready. Hosted providers, approved legal terms, live billing, customer onboarding, AI execution, Brand Studio, WhatsApp, Projects 006/007 and the independent public site remain incomplete.
 
-Original source documents, the full private Genesis research and unrelated parent-repository applications remain outside the public repository. The checked-in Genesis registers contain only the classified records required to initialize the platform.
+The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. Original source documents, full private Genesis research and unrelated parent-repository applications remain outside the public repository. Checked-in Genesis registers contain only classified records required to initialize the platform.
 
 ## Run locally
 
@@ -15,13 +15,11 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3210`. Development mode exposes clearly labelled synthetic identities and a deterministic local Auth/email provider. The fixture provider is guarded by loopback, non-production and generated-secret checks and is replaced by fail-closed production modules during `next build`.
+Open `http://127.0.0.1:3210`. Development mode exposes clearly labelled synthetic identities and deterministic local Auth/email/billing fixtures. Fixture mode requires loopback, development, no Vercel or hosted Auth configuration and a generated secret. Production builds resolve fail-closed fixture stubs.
 
-Local PostgreSQL listens through this workspace's private Unix socket. Runtime data, fake Auth state, email captures, signing secrets and browser artifacts are excluded from Git. Never point local tests at a hosted database.
+Local PostgreSQL uses a private Unix socket. Runtime data, fake provider state, signing secrets and browser artifacts are excluded from Git. Never point local tests at a hosted database.
 
 ## Verify
-
-The canonical verification command creates its own random-port PostgreSQL and application runtime, then removes it without touching the preserved developer database.
 
 ```sh
 npx playwright install chromium --only-shell
@@ -29,49 +27,44 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh Unix-socket-only PostgreSQL cluster, migrates and seeds it, starts Next.js on an available loopback port, runs lint/type checks, 73 database/domain/HTTP tests, migration/RLS verification, 30 desktop/mobile browser scenarios, restart persistence, an optimized production build, fixture-artifact exclusion and publication/secret scanning. It stops the database even on failure. GitHub Actions runs the same contract and dependency audits with pinned action revisions.
+`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 38 migrations, then runs formatting/type checks, 81 database/domain/HTTP tests, a 79-table RLS audit, 32 desktop/mobile browser scenarios, restart persistence, an optimized production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
 
 ## Implemented locally
 
-- Owner Dashboard with exact attention/decision/risk/activity counts and linked source records.
-- Stable, filterable Portfolio for all five ventures with truthful unknown scores, finance and recommendations.
-- Typed owner/partner Idea Inbox with immutable versions, evidence, state transitions, duplicate merge and approval-gated explicit sharing.
-- Every project exposes the exact 18 common workspace modules plus its frozen specialist modules through direct, database-backed routes.
-- Typed workspace entries use strict payload discriminators, immutable versions, exact evidence references and owner review.
-- Project 001 revisit reviews require five distinct current evidence records; Project 002 has an evidence-gated fitment/safety matrix; Project 003 keeps real, generated and inferred property assets distinct.
-- Project 004 has paper-only records, reports and readiness gates with no live path. Project 005 stops at evidence-bound local prototype authority and has no product-creation or publication route.
-- Owner Work Log projected from real audit/security events and a redacted, audited Admin view.
-- Multi-project invitations with per-project roles, note, expiry, one-use hash-only token, resend/revoke states and a fake transactional outbox.
-- Branded join flow with locked email, partner-created password, email verification return and an encrypted 30-minute server-only join intent.
-- Mandatory nine-step onboarding with exact project access, optional WhatsApp skip, preferences, exact-version agreement acceptance, resume and re-acknowledgement.
-- Partner Profile, Security, Preferences, Assignments and WhatsApp controls; owner invitation, assignment, lifecycle, session and unpair controls.
-- Account states `INVITED`, `REGISTERED`, `EMAIL_VERIFIED`, `ONBOARDING`, `ACTIVE`, `SUSPENDED` and `REVOKED`, enforced at HTTP and database boundaries.
-- Classified operating registers, immutable record history and the typed idea → experiment → task → result → decision → supersession loop.
-- Current-authority owner approvals with complete before/after/recipient/cost/risk envelopes, exact decimal finance totals and evidence-linked local gates for all five projects.
-- RLS-scoped evidence search and one-project Ask KXRA excerpts with citations. Missing, multiple, inaccessible and revoked scopes fail before retrieval; zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.`. No model receives context or produces answers.
-- Private-by-default quarantined file metadata and bytes. Download and ingestion remain disabled.
+- Global account identities with many-to-many organization memberships and roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
+- Explicit organization selection for dual-membership users. The browser cookie only proposes context; PostgreSQL verifies the live membership and selected tenant on every request.
+- Transaction-scoped PostgreSQL RLS across all 79 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
+- Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
+- First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
+- Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.
+- Five original venture workspaces with exact common/specialist modules and hard stops. Project 004 remains paper only; Project 005 remains demand gated.
+- One-project Ask KXRA authorization and RLS-scoped evidence excerpts. Zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.`; model synthesis is disabled.
+- Deterministic plans, plan versions/features, normalized billing state, entitlements, usage reservations/events/aggregates and owner free grants.
+- Stripe-style local HMAC verification and replay/out-of-order event reconciliation. No live webhook or Stripe credential is configured.
+- Private custom-project request, proposal, exact acceptance, payment gate, change and milestone records. Subscription access cannot create custom delivery work.
+- Customer custom-project intake UI and bounded APIs for plans, entitlements, usage, grants and custom-project foundations.
+- Private-by-default quarantined file metadata. Byte delivery, scanning, extraction and indexing remain disabled.
 - Seeded AI roles, skills and disabled routines as definitions only.
-- A static local marketing homepage using `info@kxra-group.com`. Publication remains disabled.
 
 ## Security boundary
 
-All 44 private application tables use Row Level Security and an explicit policy. Every private request starts with a verified server identity and runs through the non-owner application login under transaction-local `authenticated` claims. The browser and model cannot choose a user, role, organisation, project, invitation state, account state, Idea share or approval. A partner's project assignment alone does not expose another person's Ideas, and project-resource paths are re-bound to the authorized project before mutation.
+Every private request begins with a verified server identity and a transaction under the non-owner `authenticated` role. The server selects one organization from current database membership and sets `request.kxra.org_id`; RLS and bounded functions enforce tenant, project, legal and commercial state. Revocation is checked on the next request. The LLM never calculates permissions, entitlements, usage or money.
 
-Production defaults to the hosted Supabase adapter and fail-closed local-provider stubs. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend delivery, Storage/scanning, Trigger.dev, PostHog, Sentry, Cloudflare, AI providers and WhatsApp remain unconnected and unverified. Project 004 is research/paper only. Project 005 cannot create or publish a product without reviewed demand authority.
+Legal placeholders, local fake events and synthetic accounts are test data only. Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Storage/scanning, Resend, Stripe, OpenAI, Trigger.dev, PostHog, Sentry, Cloudflare, Vercel, YouTube and Meta WhatsApp remain disconnected and unverified.
 
 ## Repository map
 
 | Location                 | Responsibility                                                            |
 | ------------------------ | ------------------------------------------------------------------------- |
-| `apps/os`                | Next.js/TypeScript private OS, join/onboarding UI and server APIs         |
-| `packages/db`            | Verified-principal transactions under PostgreSQL RLS roles                |
-| `packages/domain`        | Input validation, state contracts, exact money and score formulas         |
-| `packages/authz`         | Provider contract, local fake, encrypted join intent and session controls |
-| `packages/ai`            | Authorized evidence envelopes; model synthesis disabled                   |
-| `packages/integrations`  | Fake email rendering and WhatsApp cryptographic foundations               |
-| `supabase/migrations`    | Additive schema, policy, workflow, account and gate migrations            |
-| `tests`                  | Database, HTTP, contract, persistence and browser evidence                |
+| `apps/os`                | Next.js private OS, tenant/legal/customer UI and server APIs              |
+| `packages/db`            | Verified-principal, selected-tenant PostgreSQL transactions               |
+| `packages/domain`        | Validation, state contracts, exact money and score formulas               |
+| `packages/authz`         | Provider contract, local fake, join intent and session controls           |
+| `packages/ai`            | Authorized evidence envelopes; model synthesis remains disabled           |
+| `packages/integrations`  | Fake email, WhatsApp cryptography and Stripe-style signature foundations  |
+| `supabase/migrations`    | Additive schema, RLS, identity, legal, commercial and workflow migrations |
+| `tests`                  | Database, HTTP, contract, persistence and browser acceptance evidence     |
 | `docs`                   | Architecture, security, decisions, operations, projects and playbooks     |
-| `KXRA-GENESIS/registers` | Required classified seed data only                                        |
+| `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                     |
 
-Start with [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md), [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md) and [security](docs/security/access-control.md).
+Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md), [security](docs/security/access-control.md) and [ADR 0008](docs/decisions/0008-multi-tenant-legal-commercial-foundation.md).

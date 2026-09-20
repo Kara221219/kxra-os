@@ -2,6 +2,64 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 20 September Phase 2 Slice 1
+
+Identity, legal, commercial and custom-project implementation:
+
+- `.env.example`
+- `apps/os/app/agreements/page.tsx`
+- `apps/os/app/api/agreements/route.ts`
+- `apps/os/app/api/context/route.ts`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/app/api/auth/route.ts`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `apps/os/app/select-organisation/page.tsx`
+- `apps/os/components/CommercialForms.tsx`
+- `apps/os/components/Shell.tsx`
+- `apps/os/lib/auth.ts`
+- `apps/os/lib/http.ts`
+- `packages/db/index.ts`
+- `packages/integrations/billing.ts`
+- `scripts/seed.mjs`
+- `supabase/migrations/0031_multi_tenant_identity_and_legal_gate.sql`
+- `supabase/migrations/0032_commercial_and_custom_projects.sql`
+- `supabase/migrations/0033_policy_helper_execution.sql`
+- `supabase/migrations/0034_legal_and_commercial_hardening.sql`
+- `supabase/migrations/0035_selected_tenant_visibility_and_legal_presentation.sql`
+- `supabase/migrations/0036_kxra_organisation_seed_defaults.sql`
+- `supabase/migrations/0037_project_proposal_output_disambiguation.sql`
+- `supabase/migrations/0038_customer_project_identifier_default.sql`
+
+Acceptance and regression coverage:
+
+- `tests/phase2-commercial.test.ts`
+- `tests/phase2-http.test.ts`
+- `tests/e2e/phase2-identity-legal.spec.ts`
+- `tests/access-matrix.test.ts`
+- `tests/control-plane-http.test.ts`
+- `tests/control-plane.test.ts`
+- `tests/project-workspaces.test.ts`
+- `tests/security.test.ts`
+- `tests/workflow.test.ts`
+- `tests/e2e/control-plane.spec.ts`
+- `tests/e2e/workspace.spec.ts`
+
+Canonical documentation:
+
+- `README.md`
+- `docs/architecture/system.md`
+- `docs/decisions/0007-customer-platform-and-new-projects.md`
+- `docs/decisions/0008-multi-tenant-legal-commercial-foundation.md`
+- `docs/operations/acceptance-evidence.md`
+- `docs/operations/files-changed.md`
+- `docs/operations/handover.md`
+- `docs/operations/progress.md`
+- `docs/operations/work-log.md`
+- `docs/security/access-control.md`
+- `docs/security/account-identity-threat-model.md`
+
+Original source documents, private Genesis research, business-pack DOCX/XLSX files, credentials and generated runtime/test artifacts are not part of this slice or publication set.
+
 ## 19 September repository audit and completion contract
 
 - `docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md`

@@ -11,18 +11,28 @@ async function fixtureLogin(page: Page, fixture: string) {
 }
 
 async function navigate(page: Page, name: string) {
-  if (await page.locator(".mobile-menu").isVisible()) {
-    await page.getByText("Menu", { exact: true }).click();
+  const mobileMenu = page.locator(".mobile-menu > summary");
+  const desktopLink = page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name, exact: true });
+  await expect
+    .poll(async () => {
+      const [mobile, desktop] = await Promise.all([
+        mobileMenu.isVisible(),
+        desktopLink.isVisible(),
+      ]);
+      return mobile === desktop ? "loading" : mobile ? "mobile" : "desktop";
+    })
+    .not.toBe("loading");
+  if (await mobileMenu.isVisible()) {
+    await mobileMenu.click();
     await page
       .getByRole("navigation", { name: "Mobile navigation" })
       .getByRole("link", { name, exact: true })
       .click();
     return;
   }
-  await page
-    .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name, exact: true })
-    .click();
+  await desktopLink.click();
 }
 
 async function expectNoDocumentOverflow(page: Page) {

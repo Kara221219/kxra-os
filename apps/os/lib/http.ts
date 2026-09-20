@@ -39,7 +39,10 @@ export async function readJson(request: Request, maximumBytes = 100_000) {
 
 export function safeHttpError(error: unknown) {
   if (error instanceof HttpError)
-    return privateJson({ error: error.message }, error.status);
+    return privateJson(
+      { error: error.message, ...(error.code ? { code: error.code } : {}) },
+      error.status,
+    );
   if (error instanceof z.ZodError)
     return privateJson({ error: "Invalid request fields" }, 400);
   const code = (error as { code?: string }).code;

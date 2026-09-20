@@ -1,6 +1,6 @@
 # ADR 0007 — Customer platform, Brand Studio and controlled project expansion
 
-Date: 19 September 2026. Status: accepted as a target architecture; not implemented.
+Date: 19 September 2026. Status: accepted. The Slice 1 identity, legal and commercial foundations are implemented locally; Brand Studio, Projects 006/007 and provider/public delivery remain pending.
 
 ## Context
 
