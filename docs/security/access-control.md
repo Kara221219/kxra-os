@@ -6,7 +6,7 @@ Phase 2 Slices 1–2 add normalized many-to-many identity, explicit tenant selec
 
 ## Enforced controls
 
-- All 89 private tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
+- All 109 private tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
 - The application login is non-superuser, `NOINHERIT` and `NOBYPASSRLS`. Each request enters a transaction, sets `ROLE authenticated`, verified subject claims and one server-derived `request.kxra.org_id`, then resets the pooled connection.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
@@ -18,7 +18,9 @@ Phase 2 Slices 1–2 add normalized many-to-many identity, explicit tenant selec
 - File upload intent, object key, lifecycle promotion, chunks and delivery authority are server/database controlled. Browser roles cannot choose a key, claim processing work or mark a file clean.
 - Only the current `INDEXED` file version can enter search/Ask. Derived chunks inherit tenant, project, parent record, exact versions, classification and audience and remain behind parent RLS.
 - Downloads use a server proxy. It creates an authorization event, reads the private object, verifies hash/size, rechecks membership version/project/record/lifecycle and returns `private, no-store`; no permanent raw object URL is exposed.
-- Ask query runs retain a question hash and version references rather than raw prompts. Citation and authority revalidation immediately before delivery clears references and withholds output after revocation or stale evidence.
+- Ask query and agent runs retain hashes and exact version references rather than raw prompts/answers. Model context is created only after RLS retrieval into an immutable one-project envelope. Atomic query/run/citation revalidation immediately before delivery clears references and withholds output after revocation or stale evidence.
+- Browser roles cannot mutate AI execution evidence or call private worker functions. `kxra_ai_worker` can only claim a pre-authorized run, record its exact skill-bound tool call and finish/fail with usage and QA evidence. A model or document cannot add tools, permissions, budget or project scope.
+- AI budget arithmetic and reconciliation run under PostgreSQL row locks. Unknown model substitution, paid dispatch with zero reservation, unapproved agent/skill versions, invalid schema/citations and usage overage fail closed.
 - The deterministic scanner/extractor is fixture-only and fails closed in production/Vercel. Hosted processing cannot activate without a trusted scanner and isolated extraction worker.
 
 ## Legal gate
@@ -48,9 +50,9 @@ Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an u
 
 ## Tested attack paths
 
-The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 89 tables and audits all 81 exposed functions.
+The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 109 tables and audits all 87 exposed functions.
 
-SQL/HTTP/browser tests cover crafted tenant/project IDs, forged headers/body/JWT metadata, immediate membership revocation, cross-tenant projects/commercial state, direct API access, files, indexed chunks, search, Ask, nested workspace resources, exact legal presentation/acceptance and typed gate errors. File tests cover EICAR, executables, macros, active PDF, archive policy, MIME deception, extraction failure, idempotent retry, forged worker calls, cross-project discovery, revocation between authorization and delivery, stale query evidence, object mismatch/orphan reconciliation and restart hashes. Billing tests cover signature tamper/expiry, event replay/order, concurrent usage and free-grant revocation. Custom-project tests cover customer self-pricing denial, stale/hash mismatch, payment gating and cross-tenant isolation.
+SQL/HTTP/browser tests cover crafted tenant/project IDs, forged headers/body/JWT metadata, immediate membership revocation, cross-tenant projects/commercial state, direct API access, files, indexed chunks, search, Ask, nested workspace resources, exact legal presentation/acceptance and typed gate errors. File tests cover EICAR, executables, macros, active PDF, archive policy, MIME deception, extraction failure, idempotent retry, forged worker calls, cross-project discovery, revocation between authorization and delivery, stale query evidence, object mismatch/orphan reconciliation and restart hashes. AI tests cover draft/approved manifest boundaries, exact run scope, prompt/tool injection, worker grants, invalid output, timeout/provider failure, retry, concurrent budget reservation, unknown model substitution and revocation before claim and after synthesis. Billing tests cover signature tamper/expiry, event replay/order, concurrent usage and free-grant revocation. Custom-project tests cover customer self-pricing denial, stale/hash mismatch, payment gating and cross-tenant isolation.
 
 Account, owner-control, project-workspace, finance, approval and browser-responsive suites remain part of the same clean disposable contract. These tests use synthetic local administration to create adversarial fixtures, then execute application behavior under the non-bypass roles. They are not a hosted Supabase or provider penetration test.
 
@@ -60,6 +62,6 @@ No model synthesis, general agent/job executor, provider message, live billing, 
 
 ## Hosted checks deferred
 
-Still blocked: real owner bootstrap; Supabase registration/email/MFA/recovery/refresh/session behavior; hosted pooler RLS; private Storage bucket/policies, trusted malware engine and isolated extractor; approved legal content; Stripe checkout/webhook/portal/tax/refund/cancellation; Resend acceptance/bounce/retry; Trigger.dev workers; AI model/cost controls; Meta/YouTube/GitHub provider grants; telemetry redaction; CSP/edge controls; secret rotation; database-plus-object empty-target restore; and delivery-time revocation across distributed jobs.
+Still blocked: real owner bootstrap; Supabase registration/email/MFA/recovery/refresh/session behavior; hosted pooler RLS; private Storage bucket/policies, trusted malware engine and isolated extractor; approved legal content; Stripe checkout/webhook/portal/tax/refund/cancellation; Resend acceptance/bounce/retry; Trigger.dev workers; external model retention/region/rate/spend and crash-recovery controls; Meta/YouTube/GitHub provider grants; telemetry redaction; CSP/edge controls; secret rotation; database-plus-object empty-target restore; and delivery-time revocation across distributed jobs.
 
 No real credential, production data, external send, paid call, deployment or customer onboarding was used in this evidence.

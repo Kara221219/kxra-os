@@ -239,6 +239,22 @@ test("HTTP create, read, update with version conflict, retrieve evidence within 
       (x: { record_id: string }) => x.record_id === row.id,
     ),
   );
+  const synthesized = await req("ask", c, {
+    question: "isolationevidence",
+    project_id: p2,
+    mode: "model",
+  });
+  assert.equal(synthesized.status, 200, await synthesized.clone().text());
+  const modelAnswer = await synthesized.json();
+  assert.equal(modelAnswer.mode, "model");
+  assert.equal(modelAnswer.provider, "fake");
+  assert.equal(modelAnswer.model, "gpt-5.6-sol");
+  assert.match(modelAnswer.run_id, /^[0-9a-f-]{36}$/);
+  assert.ok(
+    modelAnswer.citations.some(
+      (x: { record_id: string }) => x.record_id === row.id,
+    ),
+  );
   const viewer = await login("viewer");
   assert.equal((await req("records/" + row.id, viewer)).status, 404);
 });
@@ -255,6 +271,26 @@ test("HTTP cross-project search and Ask reject inaccessible scope", async () => 
   assert.equal(
     (await req("ask", c, { question: "project", project_id: p3 })).status,
     404,
+  );
+  assert.equal(
+    (
+      await req("ask", c, {
+        question: "project",
+        project_id: p3,
+        mode: "model",
+      })
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await req("ask", c, {
+        question: "project",
+        project_id: p2,
+        mode: "unapproved-model",
+      })
+    ).status,
+    400,
   );
   const r = await req("search?q=project", c);
   assert.equal(r.status, 200);

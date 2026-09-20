@@ -144,8 +144,8 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const adminResponse = await api("admin", owner);
   assert.equal(adminResponse.status, 200, await adminResponse.clone().text());
   const snapshot = await adminResponse.json();
-  assert.equal(snapshot.database.rls_tables, 89);
-  assert.equal(snapshot.database.protected_tables, 89);
+  assert.equal(snapshot.database.rls_tables, 109);
+  assert.equal(snapshot.database.protected_tables, 109);
   assert.ok(
     Object.values(snapshot.integrations).every(
       (value) => typeof value === "boolean",

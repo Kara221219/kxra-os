@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Status: Final Milestone 4 and Phase 2 Slices 0–2 are implemented in the deterministic local environment on `codex/phase-2-completion`. Multi-tenant identity, first-private-access legal gating, deterministic commercial/custom-project foundations and the private file/knowledge lifecycle now exist locally. Hosted providers, model synthesis, the AI execution substrate, Brand Studio, Projects 006/007 and the independent public application remain absent. The target architecture is in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md); implemented decisions are in [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md) and [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md). This document is not hosted or production evidence.
+Status: Final Milestones 1–4 and Phase 2 Slices 0–3 are implemented in the deterministic local environment on `codex/phase-2-completion`. Multi-tenant identity, first-private-access legal gating, deterministic commercial/custom-project foundations, the private file/knowledge lifecycle and permission-safe local AI execution now exist. Hosted providers, Brand Studio, Projects 006/007 and the independent public application remain absent. The target architecture is in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md); implemented decisions include [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md), [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md) and [ADR 0010](../decisions/0010-permission-safe-ai-execution.md). This document is not hosted or production evidence.
 
 ## Trust and request flow
 
@@ -66,9 +66,9 @@ Partners may edit only permitted profile and preference fields, change/reset the
 
 ## Data architecture
 
-Eighty-nine private application tables have RLS and at least one explicit policy. Migrations `0001`–`0030` implement the original organizations, projects, records, files, approvals, account/invitation/onboarding, operating loop, owner control plane and five workspaces. Migrations `0031`–`0038` add normalized identities/memberships, selected tenant context, capabilities, exact legal gating and commercial/custom-project foundations. Migrations `0039`–`0044` add immutable file versions, processing and delivery/query evidence, RLS chunks, worker-only reconciliation and the complete lifecycle without rewriting prior migrations.
+One hundred and nine private application tables have RLS and at least one explicit policy. Migrations `0001`–`0030` implement the original organizations, projects, records, files, approvals, account/invitation/onboarding, operating loop, owner control plane and five workspaces. Migrations `0031`–`0038` add normalized identities/memberships, selected tenant context, capabilities, exact legal gating and commercial/custom-project foundations. Migrations `0039`–`0044` add immutable file versions, processing and delivery/query evidence, RLS chunks, worker-only reconciliation and the complete lifecycle. Migrations `0045`–`0046` add versioned model/agent/skill/budget policy and append-only authorization, attempt, step, tool, evidence, usage, evaluation, failure and reconciliation records without rewriting prior migrations.
 
-The application exposes 81 bounded functions to authenticated or anonymous roles. Tests enumerate every table and exposed function and fail if either grows without an authorization decision. Composite foreign keys bind organization/project scope. Typed security-definer functions validate context, legal, entitlement, usage, billing reconciliation, custom-project and file/knowledge transitions; ordinary RLS controls reads. Private processing/reconciliation functions are executable only by `kxra_worker`.
+The application exposes 87 bounded functions to authenticated or anonymous roles. Tests enumerate every table and exposed function and fail if either grows without an authorization decision. Composite foreign keys bind organization/project scope. Typed security-definer functions validate context, legal, entitlement, usage, billing reconciliation, custom-project, file/knowledge and AI-run transitions; ordinary RLS controls reads. Private file processing/reconciliation functions are executable only by `kxra_worker`; private AI claim/tool/finalization functions are executable only by `kxra_ai_worker`.
 
 Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Project insertion initializes lifecycle/disposition/gate state, the current governance snapshot, 18 common modules, code-specific specialist modules, gate policy and any bounded static reference rows in the same transaction. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
 
@@ -101,7 +101,39 @@ The typed idea → experiment → assigned task → result → decision → supe
 
 All five projects have explicit evidence-gate policies and can produce only `local_only` authority. Project 001 requires distinct current route, liquidity, recovery, buyer and regulatory evidence. Project 002 requires exact SKU, fitment and safety evidence. Project 003 requires rights and geometry evidence. Project 004 readiness remains paper-only and cannot enable live execution. Project 005 requires reviewed buyer-demand evidence and rejects product creation/publication. Numeric gate thresholds remain `proposed_unset` until an approved scoring policy exists.
 
-Search and Ask KXRA retrieve only through the current principal's RLS transaction. Ask requires exactly one project UUID; missing, null, multiple, inaccessible and revoked scopes fail before retrieval, with no all-project fallback. Explicit inaccessible scopes return the same unavailable result as missing resources. Responses are evidence excerpts with exact record or indexed-chunk IDs, parent file/record references, classification and version; zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.` and no LLM is called. Each query stores a redacted hash and authorized references, then rechecks current membership, project, parent record, lifecycle and source version before delivery.
+Search and Ask KXRA retrieve only through the current principal's RLS transaction. Ask requires exactly one project UUID; missing, null, multiple, inaccessible and revoked scopes fail before retrieval, with no all-project fallback. Explicit inaccessible scopes return the same unavailable result as missing resources. Evidence-only responses contain exact record or indexed-chunk IDs, parent file/record references, classification and version. Model mode is available only through the deterministic local fake adapter: zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.` without dispatch, while non-empty evidence enters the typed AI run flow below. External model mode returns a typed unavailable response until a provider is configured. Every query stores a redacted hash and exact authorized references and rechecks current authority before delivery.
+
+## AI execution architecture
+
+```mermaid
+sequenceDiagram
+  participant U as Current user
+  participant W as Next.js request
+  participant DB as PostgreSQL authority
+  participant X as kxra_ai_worker
+  participant M as Fake/future model adapter
+
+  U->>W: Question + one project + model mode
+  W->>DB: Retrieve under current RLS
+  W->>DB: Authorize exact agent/skill/model + reserve budget
+  DB-->>W: Run + immutable evidence envelope + allowed tools
+  W->>DB: Link redacted knowledge-query run
+  W->>X: Run ID + authorized evidence excerpts
+  X->>DB: Claim with fresh authority/budget check
+  X->>M: One structured model call through broker
+  M-->>X: Structured answer + usage
+  X->>DB: Tool evidence + usage + schema/citation/policy evaluation
+  W->>DB: Atomic query/run/citation/current-authority finalization
+  DB-->>U: Deliver or withhold
+```
+
+The 13 Genesis agents and 12 Genesis skills are imported as typed `DRAFT` manifests. Descriptive definitions do not execute. The only approved local capability is `AGT-ASK`/`SKL-ASK-001`; it has one-project/run memory, no side effects and exactly `knowledge.retrieve` plus `model.generate.structured`. Owner AI Team and Skills screens expose the typed current versions and boundaries. Run History exposes only redacted scope, policy, state, evidence counts, tool calls, usage and failures.
+
+`begin_agent_run` verifies current identity, selected membership/version, legal requirements, project access, exact source versions, classification policy, agent/skill/model version match and a row-locked budget. It creates an immutable envelope and input links before dispatch. The worker role can only claim, record an authorized tool call and finish/fail a run. Documents and model text cannot add a tool. Raw questions and model output are represented by hashes in run evidence rather than copied into the log.
+
+Strict output validation requires one known envelope citation for every claim, rejects duplicate or stale citations and accepts the exact insufficiency response only when the envelope is empty. Ask delivery atomically binds the linked knowledge query to the completed run, rechecks authority plus every cited record/chunk version/hash and marks both delivered or withheld together. Retry is limited to retryable failures and three attempts, and each attempt receives a fresh reservation and its own bounded tool allowance.
+
+The seeded model policy is `LOCAL-FAKE-SOL` and makes no network request. Non-fake policies require a paid reservation. Astra requires a separate approved escalation policy and current `ai.astra_escalate` capability; neither is seeded. Trigger.dev execution/recovery, external provider controls, autonomous handoffs and routine scheduling remain unavailable. See [ADR 0010](../decisions/0010-permission-safe-ai-execution.md) and the [AI threat model](../security/ai-execution-threat-model.md).
 
 ## Private file and knowledge lifecycle
 

@@ -1,10 +1,10 @@
 # Engineering handover
 
-Updated: 20 September 2026.
+Updated: 21 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The reviewed and pushed Slice 1 baseline is `7003cbfc67e35a6d7ef7b23b9ae275260062e111`; use branch HEAD for the current Slice 2 implementation.
+Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed Slice 2 baseline is `1866b11af9770a023b5452d2d1f3092f91df0fed`; use branch HEAD for the current Slice 3 implementation.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary and the repository publication boundary remain non-negotiable.
 
@@ -12,12 +12,26 @@ Read, in order:
 
 1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md);
 2. [acceptance evidence](acceptance-evidence.md) and [progress](progress.md);
-3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md), [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md) and the [file/knowledge threat model](../security/file-knowledge-threat-model.md);
+3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0010](../decisions/0010-permission-safe-ai-execution.md) and the [AI execution threat model](../security/ai-execution-threat-model.md), plus ADRs 0008/0009 and their threat models;
 4. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved requirements.
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–2 work in the deterministic local environment. Migrations `0001`–`0044` are ordered and applied; never rewrite one. The schema has 89 RLS-protected tables and 81 audited exposed functions.
+Final Milestones 1–4 and Phase 2 Slices 0–3 work in the deterministic local environment. Migrations `0001`–`0046` are ordered and applied; never rewrite one after this slice is committed. The schema has 109 RLS-protected tables and 87 audited exposed functions.
+
+Slice 3 added:
+
+- typed, versioned model, agent, skill/tool and deterministic budget policy;
+- 13 Genesis agents and 12 skills as non-executable drafts plus one narrowly approved local Ask capability;
+- immutable one-project evidence envelopes and append-only run/attempt/step/tool/usage/QA/failure/reconciliation evidence;
+- a restricted `kxra_ai_worker` claim/finalization boundary and a matching in-process capability broker;
+- strict structured output, claim and exact citation validation without raw prompt/answer retention in run logs;
+- row-locked cost/run/token reservations, bounded retry with linked attempts and reconciliation-required overage state;
+- atomic knowledge-query and agent-output delivery after current membership, legal, project and citation reauthorization;
+- evidence-only and deterministic local fake-model Ask modes plus typed owner Agent, Skill and Run History views;
+- SQL, HTTP and desktop/mobile evidence for success, invalid output, timeout, provider failure, retry, tool injection, unknown-model substitution, budget concurrency, RLS and pre/post-execution revocation.
+
+The fake model makes no network request. External OpenAI/Astra adapters, Trigger.dev recovery, scheduled routines and autonomous handoffs remain disabled.
 
 Slice 2 added:
 
@@ -60,23 +74,23 @@ npm run test:ci
 git diff --check
 ```
 
-The clean contract creates and destroys a disposable runtime under `.runtime/ci`. It runs lint/typecheck/format, 90 database/domain/HTTP tests, the 44-migration/89-table RLS audit, 34 desktop/mobile scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning.
+The clean contract creates and destroys a disposable runtime under `.runtime/ci`. It runs lint/typecheck/format, 99 database/domain/HTTP tests, the 46-migration/109-table RLS audit, 36 desktop/mobile scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, Cloudflare or backup behavior.
 
 ## Next implementation slice
 
-Complete permission-safe Ask KXRA and the typed AI substrate before any provider activation:
+Implement Brand Studio through deterministic local generation adapters before any provider activation:
 
-1. add a provider-neutral fake model adapter and strict response/claim/citation schema;
-2. bind each evidence envelope to exact authorized record/chunk versions and one project;
-3. add versioned executable agent and skill manifests, capabilities and manager/approval boundaries;
-4. add run, attempt, step, tool, evidence, handoff, QA, failure and reconciliation records;
-5. add deterministic budget reservation/reconciliation and Sol-default/Astra-escalation policy;
-6. test stale citations, invalid output, timeout, retry, prompt injection and attempted tool/scope expansion;
-7. keep external model calls disabled until provider retention, region, data controls and budgets are approved.
+1. add typed brand profiles, source assets, jobs, output versions and export records under tenant/project RLS;
+2. define the first bounded customer tools and entitlement/usage keys without inventing product claims;
+3. keep generation local/fake while testing schema, provenance, cross-tenant isolation, quota concurrency and stale/revoked delivery;
+4. require explicit approval for public/export side effects and provide no publication executor;
+5. surface truthful empty, unavailable, draft, failed and ready states in the customer workspace;
+6. preserve the separate custom-project commercial gate;
+7. keep external generation and paid calls disabled until provider retention, region, data controls and budgets are approved.
 
-Then implement Brand Studio through fake generation adapters. Projects 006/007, routines, provider adapters and public marketing remain later bounded slices.
+Projects 006/007, routine scheduling, external provider adapters and the independent public marketing application remain later bounded slices.
 
 ## Security invariants
 

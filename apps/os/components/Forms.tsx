@@ -1189,11 +1189,21 @@ export function UploadForm({
     </form>
   );
 }
-export function AskForm({ projects }: { projects: Project[] }) {
+export function AskForm({
+  projects,
+  synthesisEnabled = false,
+}: {
+  projects: Project[];
+  synthesisEnabled?: boolean;
+}) {
   const ready = useReady();
   const [result, setResult] = useState<{
     answer?: string;
     error?: string;
+    mode?: "evidence-only" | "model";
+    provider?: string | null;
+    model?: string | null;
+    run_id?: string;
     citations?: {
       citation_type: "RECORD" | "CHUNK";
       record_id: string;
@@ -1220,6 +1230,7 @@ export function AskForm({ projects }: { projects: Project[] }) {
               body: JSON.stringify({
                 question: f.get("question"),
                 project_id: f.get("project_id") || null,
+                mode: f.get("mode") || "evidence-only",
               }),
             });
             setResult(await r.json());
@@ -1242,6 +1253,15 @@ export function AskForm({ projects }: { projects: Project[] }) {
           </select>
         </label>
         <label>
+          Response mode
+          <select name="mode" defaultValue="evidence-only">
+            <option value="evidence-only">Evidence only</option>
+            {synthesisEnabled && (
+              <option value="model">Local test synthesis</option>
+            )}
+          </select>
+        </label>
+        <label>
           Ask about your evidence
           <input
             name="question"
@@ -1254,6 +1274,11 @@ export function AskForm({ projects }: { projects: Project[] }) {
       </form>
       <div aria-live="polite">
         <p>{result.error || result.answer}</p>
+        {result.mode === "model" && result.model && (
+          <p className="subtle">
+            {result.provider} · {result.model} · run {result.run_id}
+          </p>
+        )}
         {result.citations?.map((c) => (
           <article
             className="record"

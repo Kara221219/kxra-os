@@ -102,6 +102,60 @@ test("AT-11 Ask requires one project and reports insufficient evidence exactly",
   await expect(page.getByText("INSUFFICIENT KXRA EVIDENCE.")).toBeVisible();
 });
 
+test("typed AI registries expose a permission-safe local Ask run", async ({
+  page,
+}, testInfo) => {
+  const project = "30000000-0000-4000-8000-000000000002";
+  const marker = `aimodel${Date.now()}${testInfo.project.name}`.replace(
+    /[^a-z0-9]/gi,
+    "",
+  );
+  await fixtureLogin(page, "owner");
+  const created = await page.evaluate(
+    async ({ projectId, evidenceMarker }) => {
+      const response = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "knowledge",
+          title: "AI browser evidence",
+          body: `${evidenceMarker} is bounded local evidence.`,
+          project_id: projectId,
+          classification: "EXTERNAL RESEARCH",
+          visibility: "project_shared",
+          data: {},
+        }),
+      });
+      return { status: response.status, body: await response.json() };
+    },
+    { projectId: project, evidenceMarker: marker },
+  );
+  expect(created.status).toBe(201);
+  await page.goto("/os/ask");
+  await page.getByRole("combobox", { name: "Project" }).selectOption(project);
+  await page
+    .getByRole("combobox", { name: "Response mode" })
+    .selectOption("model");
+  await page.getByLabel("Ask about your evidence").fill(marker);
+  await page.getByRole("button", { name: "Find evidence" }).click();
+  await expect(page.getByText(/fake · gpt-5\.6-sol · run/)).toBeVisible();
+  const runText = await page.getByText(/fake · gpt-5\.6-sol · run/).innerText();
+  const runId = runText.split("run ")[1];
+  expect(runId).toMatch(/^[0-9a-f-]{36}$/);
+
+  await navigate(page, "AI Team");
+  await expect(page.getByText("AGT-ASK", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Ask KXRA Evidence Assistant", { exact: true }),
+  ).toBeVisible();
+  await navigate(page, "Skills");
+  await expect(page.getByText("SKL-ASK-001", { exact: true })).toBeVisible();
+  await navigate(page, "Run History");
+  const runRow = page.getByRole("row").filter({ hasText: runId });
+  await expect(runRow.getByText(runId, { exact: true })).toBeVisible();
+  await expect(runRow.getByText("DELIVERED", { exact: true })).toBeVisible();
+});
+
 test("AT-10 owner upload is processed, cited and downloaded through the private proxy", async ({
   page,
 }, testInfo) => {

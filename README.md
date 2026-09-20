@@ -27,13 +27,13 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 44 migrations, then runs formatting/type checks, 90 database/domain/HTTP tests, an 89-table RLS audit, 34 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
+`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 46 migrations, then runs formatting/type checks, 99 database/domain/HTTP tests, a 109-table RLS audit, 36 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
 
 ## Implemented locally
 
 - Global account identities with many-to-many organization memberships and roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
 - Explicit organization selection for dual-membership users. The browser cookie only proposes context; PostgreSQL verifies the live membership and selected tenant on every request.
-- Transaction-scoped PostgreSQL RLS across all 89 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
+- Transaction-scoped PostgreSQL RLS across all 109 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
 - Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
 - First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
 - Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.

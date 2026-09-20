@@ -39,7 +39,19 @@ import {
   uuid,
   recordInput,
 } from "../../../../../packages/domain";
-import { evidenceAnswer } from "../../../../../packages/ai";
+import {
+  ASK_AGENT_CODE,
+  ASK_SKILL_CODE,
+  LOCAL_SOL_POLICY_CODE,
+  LOCAL_ZERO_COST_BUDGET_CODE,
+  estimateModelInputTokens,
+  evidenceAnswer,
+  hashStructured,
+  modelAnswer,
+  prepareModelEvidence,
+  type ModelEvidence,
+} from "../../../../../packages/ai";
+import { executeAskAgentRun } from "../../../../../packages/ai/worker";
 import {
   privateObjectStore,
   sha256 as objectSha256,
@@ -1592,12 +1604,16 @@ async function handle(req: Request, ctx: Context) {
               .object({
                 question: z.string().trim().min(1).max(500),
                 project_id: uuid,
+                mode: z
+                  .enum(["evidence-only", "model"])
+                  .default("evidence-only"),
               })
               .strict()
               .parse(await body(req))
           : {
               question: url.searchParams.get("q") || "",
               project_id: url.searchParams.get("project_id"),
+              mode: "evidence-only" as const,
             };
       if (p[0] === "search")
         return json(
@@ -1606,10 +1622,20 @@ async function handle(req: Request, ctx: Context) {
       const requestId = crypto.randomUUID();
       const projectId = uuid.parse(input.project_id);
       await project(a, projectId);
-      const queryHash = crypto
-        .createHash("sha256")
-        .update(input.question)
-        .digest("hex");
+      if (
+        input.mode === "model" &&
+        (!localMode() || !["fixture", "fake-provider"].includes(a.source || ""))
+      )
+        throw new HttpError(
+          503,
+          "AI synthesis is not configured for this environment",
+          "AI_PROVIDER_UNAVAILABLE",
+        );
+      const queryHash = hashStructured({
+        question: input.question,
+        project_id: projectId,
+        mode: input.mode,
+      });
       const run = (
         await query<{ id: string }>(
           a,
@@ -1618,6 +1644,7 @@ async function handle(req: Request, ctx: Context) {
         )
       )[0].id;
       let finalized = false;
+      let agentRunId: string | null = null;
       try {
         const rows = await search(a, input.question, projectId);
         const references = rows.map((row) => ({
@@ -1625,6 +1652,167 @@ async function handle(req: Request, ctx: Context) {
           id: row.id,
           version: row.version,
         }));
+        if (input.mode === "model" && rows.length) {
+          const reservationEvidence = prepareModelEvidence(
+            rows.map((row) => ({
+              ...row,
+              envelope_item_id: row.id,
+              source_sha256: "0".repeat(64),
+            })),
+          );
+          const reservedInputTokens = estimateModelInputTokens(
+            input.question,
+            projectId,
+            reservationEvidence,
+          );
+          const authorized = (
+            await query<{
+              run_id: string;
+              provider: "FAKE" | "OPENAI";
+              model: string;
+              evidence_items: {
+                id: string;
+                source_type: "RECORD" | "CHUNK";
+                source_id: string;
+                source_version: number;
+                source_sha256: string;
+              }[];
+            }>(
+              a,
+              `select * from kxra.begin_agent_run(
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17
+               )`,
+              [
+                projectId,
+                crypto.randomUUID(),
+                ASK_AGENT_CODE,
+                1,
+                ASK_SKILL_CODE,
+                1,
+                LOCAL_SOL_POLICY_CODE,
+                1,
+                LOCAL_ZERO_COST_BUDGET_CODE,
+                1,
+                hashStructured({
+                  question: input.question,
+                  project_id: projectId,
+                  evidence: references,
+                }),
+                JSON.stringify(references),
+                0,
+                reservedInputTokens,
+                4000,
+                "ASK",
+                null,
+              ],
+            )
+          )[0];
+          if (!authorized)
+            throw new HttpError(503, "AI run authorization unavailable");
+          agentRunId = authorized.run_id;
+          const rowByReference = new Map(
+            rows.map((row) => [
+              `${row.source_type}:${row.id}:${row.version}`,
+              row,
+            ]),
+          );
+          const modelEvidence = prepareModelEvidence(
+            authorized.evidence_items.map((item) => {
+              const source = rowByReference.get(
+                `${item.source_type}:${item.source_id}:${item.source_version}`,
+              );
+              if (!source)
+                throw new HttpError(
+                  503,
+                  "Authorized evidence could not be resolved",
+                );
+              return {
+                ...source,
+                envelope_item_id: item.id,
+                source_sha256: item.source_sha256,
+              } satisfies ModelEvidence;
+            }),
+          );
+          const attached = (
+            await query<{ allowed: boolean }>(
+              a,
+              "select kxra.attach_knowledge_agent_run($1,$2) as allowed",
+              [run, agentRunId],
+            )
+          )[0]?.allowed;
+          if (!attached)
+            throw new HttpError(503, "AI run attachment unavailable");
+          const execution = await executeAskAgentRun({
+            runId: agentRunId,
+            projectId,
+            question: input.question,
+            evidence: modelEvidence,
+            localFixture: true,
+          });
+          if (execution.state !== "COMPLETED" || !execution.output) {
+            const failure =
+              execution.state === "RECONCILIATION_REQUIRED"
+                ? "AI_USAGE_RECONCILIATION_REQUIRED"
+                : execution.failureCode || "AI_EXECUTION_FAILED";
+            const completion = (
+              await query<{ allowed: boolean }>(
+                a,
+                "select kxra.complete_knowledge_query($1,$2,$3,$4) as allowed",
+                [run, "[]", "FAILED", failure],
+              )
+            )[0];
+            finalized = true;
+            if (!completion?.allowed) throw new HttpError(404, "Not found");
+            return json(
+              {
+                error: "AI synthesis unavailable",
+                code: failure,
+                run_id: agentRunId,
+              },
+              execution.state === "RECONCILIATION_REQUIRED" ? 503 : 502,
+            );
+          }
+          const citedById = new Map(
+            modelEvidence.map((item) => [item.envelope_item_id, item]),
+          );
+          const citedReferences = [
+            ...new Map(
+              execution.output.citations.map((citation) => {
+                const source = citedById.get(citation.evidence_item_id);
+                if (!source)
+                  throw new HttpError(503, "Validated citation unavailable");
+                const reference = {
+                  type: source.source_type || "RECORD",
+                  id: source.id,
+                  version: source.version,
+                };
+                return [
+                  `${reference.type}:${reference.id}:${reference.version}`,
+                  reference,
+                ];
+              }),
+            ).values(),
+          ];
+          const delivery = (
+            await query<{ allowed: boolean }>(
+              a,
+              "select kxra.finalize_ask_delivery($1,$2,$3) as allowed",
+              [run, agentRunId, JSON.stringify(citedReferences)],
+            )
+          )[0];
+          finalized = true;
+          if (!delivery?.allowed) throw new HttpError(404, "Not found");
+          return json(
+            modelAnswer(
+              input.question,
+              execution.provider,
+              execution.model,
+              agentRunId,
+              execution.output,
+              modelEvidence,
+            ),
+          );
+        }
         const completion = (
           await query<{ allowed: boolean }>(
             a,
@@ -1641,6 +1829,10 @@ async function handle(req: Request, ctx: Context) {
         if (!completion?.allowed) throw new HttpError(404, "Not found");
         return json(evidenceAnswer(input.question, rows));
       } catch (error) {
+        if (agentRunId)
+          await query(a, "select kxra.cancel_agent_run($1)", [
+            agentRunId,
+          ]).catch(() => {});
         if (!finalized)
           await query(a, "select kxra.complete_knowledge_query($1,$2,$3,$4)", [
             run,

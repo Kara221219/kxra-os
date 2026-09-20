@@ -24,6 +24,11 @@ import {
 } from "../../../components/ControlPlaneViews";
 import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
 import { CustomProjectRequestForm } from "../../../components/CommercialForms";
+import {
+  AgentRegistryView,
+  AgentRunHistoryView,
+  SkillLibraryView,
+} from "../../../components/AIExecutionViews";
 import { actor, HttpError, owner, type Actor } from "../../../lib/auth";
 import {
   totals,
@@ -531,10 +536,105 @@ export default async function Workspace({
           </div>
         </>
       );
+    } else if (section === "agents") {
+      owner(a);
+      const agents = await query<
+        Parameters<typeof AgentRegistryView>[0]["agents"][number]
+      >(
+        a,
+        `select manifest.code,manifest.role,manifest.manager_code,manifest.current_version,
+          version.description,version.objective,version.tool_capabilities,version.permissions,
+          version.memory_scope,version.project_scope,version.approval_boundary,
+          version.qa_process,version.success_criteria,version.model_policy_code,version.status
+         from kxra.agent_manifests manifest
+         join kxra.agent_manifest_versions version
+          on version.agent_id=manifest.id and version.version=manifest.current_version
+         order by case when manifest.code='AGT-ASK' then 0 else 1 end,manifest.code`,
+      );
+      content = (
+        <>
+          <Heading
+            title="AI Agent Registry"
+            sub="Versioned capability contracts. Draft definitions cannot execute."
+          />
+          <p className="notice">
+            KXRA uses a managed hierarchy. Only approved manifests with a bound
+            skill, model policy, budget and current user authority may run.
+          </p>
+          <AgentRegistryView agents={agents} />
+        </>
+      );
+    } else if (section === "skills") {
+      owner(a);
+      const skills = await query<
+        Parameters<typeof SkillLibraryView>[0]["skills"][number]
+      >(
+        a,
+        `select manifest.code,manifest.name,owner.code as owner_agent_code,
+          manifest.current_version,version.when_to_use,version.side_effect_class,
+          version.failure_handling,version.approval_boundary,version.status,
+          coalesce((select array_agg(binding.tool_code order by binding.tool_code)
+           from kxra.skill_tool_bindings binding where binding.skill_id=manifest.id
+            and binding.skill_version=manifest.current_version),'{}'::text[]) as tools
+         from kxra.skill_manifests manifest
+         join kxra.agent_manifests owner on owner.id=manifest.owner_agent_id
+         join kxra.skill_manifest_versions version
+          on version.skill_id=manifest.id and version.version=manifest.current_version
+         order by case when manifest.code='SKL-ASK-001' then 0 else 1 end,manifest.code`,
+      );
+      content = (
+        <>
+          <Heading
+            title="Skills Library"
+            sub="Typed, versioned operating procedures and their exact tool boundaries."
+          />
+          <SkillLibraryView skills={skills} />
+        </>
+      );
+    } else if (section === "runs") {
+      owner(a);
+      const runs = await query<
+        Parameters<typeof AgentRunHistoryView>[0]["runs"][number]
+      >(
+        a,
+        `select run.id,project.code as project_code,agent.code as agent_code,
+          run.agent_version,skill.code as skill_code,run.skill_version,
+          member.display_name as initiated_by_name,run.provider,run.model,run.origin,
+          run.state,run.delivery_state,coalesce(attempts.count,0)::integer as attempt_count,
+          coalesce(tools.count,0)::integer as tool_call_count,
+          coalesce(evidence.count,0)::integer as evidence_count,
+          coalesce(usage.input_tokens,0)::text as input_tokens,
+          coalesce(usage.output_tokens,0)::text as output_tokens,
+          coalesce(usage.cost_minor,0)::text as cost_minor,
+          failure.failure_code,run.created_at,run.completed_at
+         from kxra.agent_runs run
+         join kxra.agent_manifests agent on agent.id=run.agent_id
+         join kxra.skill_manifests skill on skill.id=run.skill_id
+         left join kxra.projects project on project.id=run.project_id
+         left join kxra.members member on member.id=run.initiated_by and member.org_id=run.org_id
+         left join lateral(select count(*) from kxra.agent_run_attempts item where item.run_id=run.id) attempts on true
+         left join lateral(select count(*) from kxra.agent_tool_calls item where item.run_id=run.id) tools on true
+         left join lateral(select count(*) from kxra.evidence_envelope_items item
+          join kxra.evidence_envelopes envelope on envelope.id=item.envelope_id where envelope.run_id=run.id) evidence on true
+         left join lateral(select sum(item.input_tokens) as input_tokens,
+          sum(item.output_tokens) as output_tokens,sum(item.cost_minor) as cost_minor
+          from kxra.provider_usage_events item where item.run_id=run.id) usage on true
+         left join lateral(select item.failure_code from kxra.run_failures item
+          where item.run_id=run.id order by item.created_at desc,item.id desc limit 1) failure on true
+         order by run.created_at desc,run.id desc limit 200`,
+      );
+      content = (
+        <>
+          <Heading
+            title="Agent Run History"
+            sub="Redacted authorization, execution, evidence, usage and delivery state."
+          />
+          <AgentRunHistoryView runs={runs} />
+        </>
+      );
     } else if (modules[section]) {
       const [title, kind] = modules[section];
-      if (["finance", "agents", "skills", "routines", "runs"].includes(section))
-        owner(a);
+      if (["finance", "routines"].includes(section)) owner(a);
       const rows = await listRecords(a, kind, filter);
       const cash = section === "finance" ? await totals(a) : [];
       content = (
@@ -718,10 +818,12 @@ export default async function Workspace({
             sub="Find source-linked evidence within your current access."
           />
           <p className="notice">
-            Evidence search is working. AI synthesis and paid model calls are
-            disabled.
+            Evidence search is working.{" "}
+            {localMode()
+              ? "Deterministic fake-model synthesis is available for local acceptance testing; no external model is called."
+              : "External AI synthesis and paid model calls are disabled until a provider is configured."}
           </p>
-          <AskForm projects={projects} />
+          <AskForm projects={projects} synthesisEnabled={localMode()} />
         </>
       );
     } else if (section === "files") {

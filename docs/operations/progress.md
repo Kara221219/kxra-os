@@ -1,12 +1,26 @@
 # KXRA OS implementation progress
 
-Updated: 20 September 2026. Status: **Phase 2 Slice 2 secure files and knowledge is implemented and verified with deterministic local adapters. It is not deployed or production ready.**
+Updated: 21 September 2026. Status: **Phase 2 Slice 3 permission-safe AI execution is implemented and verified with a deterministic local model adapter. It is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 2 started from pushed Slice 1 commit `7003cbfc67e35a6d7ef7b23b9ae275260062e111`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
+Current branch: `codex/phase-2-completion`. Slice 3 started from pushed Slice 2 commit `1866b11af9770a023b5452d2d1f3092f91df0fed`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in Slice 2
+## Completed in Slice 3
+
+- Added typed, versioned model policies, agent manifests, skill manifests/tool bindings and deterministic budget policies. The 13 Genesis agents and 12 Genesis skills import as `DRAFT`; descriptive registry records cannot execute.
+- Added the narrowly approved `AGT-ASK`/`SKL-ASK-001` local contract with one-project/run memory, no consequential side effects and only current evidence retrieval plus one structured fake-model call.
+- Added immutable evidence envelopes and append-only run, attempt, step, tool, evidence-link, handoff, provider-usage, evaluation, failure and reconciliation records behind RLS.
+- Added a private `kxra_ai_worker` role. Browser/application roles cannot claim or finish work; the worker receives only bounded claim, tool-evidence, finish and failure functions.
+- Added row-locked cost/run/input/output budget reservation and exact reconciliation. Retries are capped, require current authority and a new reservation, link attempts and apply tool-call limits per attempt.
+- Added strict response, claim and citation schemas. Unknown/stale/duplicate citations, unsupported claims, unknown model substitution, prompt/tool expansion, provider errors, timeouts and usage overage fail closed.
+- Added atomic Ask delivery that rechecks account/membership version, legal gate, project assignment and every cited record/chunk version/hash and marks the linked knowledge query and agent run delivered or withheld together.
+- Added explicit evidence-only and local test synthesis modes. Empty evidence never dispatches a model. Production model mode remains unavailable until an external adapter is configured and approved.
+- Replaced generic AI Team, Skills and Run History pages with typed owner views showing manifest boundaries and redacted execution/usage evidence.
+- Added migrations `0045`–`0046`, ADR 0010 and the AI execution threat model without rewriting prior migrations.
+- Added nine focused AI execution tests plus HTTP and desktop/mobile browser coverage for real local synthesis, registries and run history.
+
+## Preserved Slice 2 implementation
 
 - Added a private object adapter with create-only local storage and a Supabase private-bucket target. Object keys are opaque, generated in PostgreSQL and partitioned by tenant/project/file/version; callers cannot submit a key.
 - Added idempotent upload intents and the complete `UPLOADING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → EXTRACTED → INDEXING → INDEXED` lifecycle, plus `REJECTED`, `FAILED` and `NEEDS_REVIEW` states. Processing starts only after the object write is finalized.
@@ -37,8 +51,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 44 ordered migrations, 89 RLS-protected tables with explicit policies and 81 audited exposed functions.
-- 90 database/domain/HTTP tests and 34 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 30 applicable passes and four intentional device-specific skips.
+- 46 ordered migrations, 109 RLS-protected tables with explicit policies and 87 audited exposed functions.
+- 99 database/domain/HTTP tests and 36 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 32 applicable passes and four intentional device-specific skips.
 - Owner control plane, invitation/account lifecycle, five original venture workspaces, one-project Ask KXRA, exact finance, approvals and work-log foundations remain passing.
 - Explicit tenant selection, legal gate, deterministic commercial records, usage reservations, free grants and custom-project commercial separation pass with synthetic local evidence.
 
@@ -51,12 +65,12 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - The multi-tenant and first-private-access boundaries work locally. Hosted Supabase Auth, real owner bootstrap, pooler behavior and solicitor-approved legal content remain unverified.
 - Commercial state and bounded APIs work with fake signed events. Stripe products/prices, checkout, webhook endpoint, portal, tax/refund/cancellation policy and customer billing UI are not connected.
 - Custom-project intake and exact proposal/payment activation foundations work. Owner triage/proposal/change-control UI, invoices, customer milestone UX and approved legal/SOW text remain incomplete.
-- Ask KXRA has the correct tenant/project/chunk boundary, durable redacted query attempts, versioned citation validation and delivery-time reauthorization. Provider-neutral fake-model synthesis, claim validation, budgets, tool controls and complete AI run evidence remain incomplete.
+- Ask KXRA has the correct tenant/project/chunk boundary, deterministic local fake-model synthesis, strict claim/citation validation, budgets, tool controls, redacted run evidence and atomic delivery-time reauthorization. External OpenAI dispatch, provider data controls, distributed crash recovery and approved paid budgets remain incomplete.
 - File lifecycle, download and reconciliation pass locally with deterministic adapters. Hosted Supabase Storage, a production malware engine, a disposable no-network extractor and an empty-target restore drill remain unverified.
 
 ### Missing
 
-- Executable AI run substrate, skill versions, capability broker, routine scheduler/recovery and complete approval integration.
+- Routine scheduling/recovery, autonomous handoff execution and consequential-action approval integration. Definitions and evidence tables exist, but no scheduler or handoff mutation path is enabled.
 - KXRA Brand Studio, Projects 006/007, YouTube and repository-analysis workflows.
 - WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
 - Independent public/private/customer builds, layered industry marketing site and public forms.
@@ -80,7 +94,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Implement the permission-safe Ask KXRA fake-model contract and typed AI execution substrate: immutable evidence envelopes, schema/claim validation, model policy, agent/skill versions, budget reservations, run/step/tool/handoff evidence and prompt/tool-injection tests. Keep external model dispatch disabled until provider data controls and budgets are approved. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
+Implement KXRA Brand Studio with deterministic local generation adapters, typed brand inputs/outputs, entitlement/usage boundaries, project isolation and approval-safe export. Keep external generation, publication and paid providers disabled until staging controls and budgets are approved. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
 
 ## Publication boundary
 
