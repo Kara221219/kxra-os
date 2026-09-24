@@ -24,6 +24,7 @@ import {
 } from "../../../components/ControlPlaneViews";
 import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
 import { CustomProjectRequestForm } from "../../../components/CommercialForms";
+import BrandStudio from "../../../components/BrandStudio";
 import {
   AgentRegistryView,
   AgentRunHistoryView,
@@ -49,6 +50,7 @@ import {
   ownerDashboard,
 } from "../../../lib/control-plane";
 import { loadProjectWorkspace } from "../../../lib/project-workspaces";
+import { loadBrandStudio } from "../../../lib/brand-studio";
 import { localMode, query } from "../../../../../packages/db";
 export const dynamic = "force-dynamic";
 const modules: Record<string, [string, string]> = {
@@ -367,6 +369,22 @@ export default async function Workspace({
               <Link href="/os/ask">Search your evidence ↗</Link>
             </section>
           </div>
+          {a.role !== "owner" && (
+            <section className="panel" style={{ marginTop: 24 }}>
+              <h2>Business tools</h2>
+              <p>
+                Your organization only sees tools covered by a current
+                subscription entitlement or an auditable free owner grant.
+                Custom implementation remains separately scoped and priced.
+              </p>
+              <div className="record-actions">
+                <Link href="/os/tools">View available tools ↗</Link>
+                <Link href="/os/custom-projects">
+                  Request a custom project ↗
+                </Link>
+              </div>
+            </section>
+          )}
         </>
       );
     } else if (section === "projects" && segments[1]) {
@@ -471,6 +489,91 @@ export default async function Workspace({
               No workflow tasks are currently assigned.
             </div>
           )}
+        </>
+      );
+    } else if (section === "tools") {
+      const [tools, studio] = await Promise.all([
+        query<{
+          tool_key: string;
+          name: string;
+          description: string;
+          activation_event: string;
+        }>(
+          a,
+          `select tool.tool_key,tool.name,tool.description,version.activation_event
+           from kxra.tool_catalogue tool
+           join kxra.tool_versions version on version.tool_id=tool.id
+            and version.state='ACTIVE'
+           where tool.state='ACTIVE' order by tool.name`,
+        ),
+        loadBrandStudio(a),
+      ]);
+      content = (
+        <>
+          <Heading
+            title="Business tools"
+            sub="Entitlement-controlled tools for repeatable business work."
+          />
+          <div className="record-list">
+            {tools.map((tool) => {
+              const available =
+                tool.tool_key === "brand-studio" &&
+                studio.entitlements.access.allowed;
+              return (
+                <article className="record" key={tool.tool_key}>
+                  <div className="record-top">
+                    <h2>{tool.name}</h2>
+                    <span className={`badge${available ? "" : " amber"}`}>
+                      {available ? "Included" : "Not included"}
+                    </span>
+                  </div>
+                  <p>{tool.description}</p>
+                  <p className="subtle">
+                    Activation event: {tool.activation_event}
+                  </p>
+                  {available ? (
+                    <Link href="/os/brand-studio">Open Brand Studio ↗</Link>
+                  ) : (
+                    <p>
+                      Ask KXRA about a subscription or owner-issued free partner
+                      grant. No paid subscription is inferred from account
+                      access.
+                    </p>
+                  )}
+                </article>
+              );
+            })}
+            {!tools.length && <div className="empty">No tools are active.</div>}
+          </div>
+          <section className="panel" style={{ marginTop: 24 }}>
+            <h2>Need something specific?</h2>
+            <p>
+              A platform subscription does not include bespoke implementation.
+              Submit a private custom-project request for separate triage,
+              proposal and commercial approval.
+            </p>
+            <Link href="/os/custom-projects">Request a custom project ↗</Link>
+          </section>
+        </>
+      );
+    } else if (section === "brand-studio") {
+      const snapshot = await loadBrandStudio(a);
+      content = (
+        <>
+          <Heading
+            title="KXRA Brand Studio"
+            sub="Source-linked brand profiles, campaign briefs and controlled creative export."
+          >
+            <Link href="/os/tools">All tools</Link>
+          </Heading>
+          <BrandStudio
+            snapshot={snapshot}
+            projects={writableProjects.map(({ id, code, name }) => ({
+              id,
+              code,
+              name,
+            }))}
+          />
         </>
       );
     } else if (section === "custom-projects") {

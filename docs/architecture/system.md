@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Status: Final Milestones 1–4 and Phase 2 Slices 0–3 are implemented in the deterministic local environment on `codex/phase-2-completion`. Multi-tenant identity, first-private-access legal gating, deterministic commercial/custom-project foundations, the private file/knowledge lifecycle and permission-safe local AI execution now exist. Hosted providers, Brand Studio, Projects 006/007 and the independent public application remain absent. The target architecture is in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md); implemented decisions include [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md), [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md) and [ADR 0010](../decisions/0010-permission-safe-ai-execution.md). This document is not hosted or production evidence.
+Status: Final Milestones 1–4 and Phase 2 Slices 0–4 are implemented in the deterministic local environment on `codex/phase-2-completion`. Multi-tenant identity, first-private-access legal gating, deterministic commercial/custom-project foundations, the private file/knowledge lifecycle, permission-safe local AI execution and the local KXRA Brand Studio first-value loop now exist. Hosted providers, Projects 006/007 and the independent public application remain absent. The target architecture is in [Phase Completion Brief 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md); implemented decisions include [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md), [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md), [ADR 0010](../decisions/0010-permission-safe-ai-execution.md) and [ADR 0011](../decisions/0011-kxra-brand-studio-local-product.md). This document is not hosted or production evidence.
 
 ## Trust and request flow
 
@@ -66,9 +66,9 @@ Partners may edit only permitted profile and preference fields, change/reset the
 
 ## Data architecture
 
-One hundred and nine private application tables have RLS and at least one explicit policy. Migrations `0001`–`0030` implement the original organizations, projects, records, files, approvals, account/invitation/onboarding, operating loop, owner control plane and five workspaces. Migrations `0031`–`0038` add normalized identities/memberships, selected tenant context, capabilities, exact legal gating and commercial/custom-project foundations. Migrations `0039`–`0044` add immutable file versions, processing and delivery/query evidence, RLS chunks, worker-only reconciliation and the complete lifecycle. Migrations `0045`–`0046` add versioned model/agent/skill/budget policy and append-only authorization, attempt, step, tool, evidence, usage, evaluation, failure and reconciliation records without rewriting prior migrations.
+One hundred and twenty-three private application tables have RLS and at least one explicit policy. Migrations `0001`–`0030` implement the original organizations, projects, records, files, approvals, account/invitation/onboarding, operating loop, owner control plane and five workspaces. Migrations `0031`–`0038` add normalized identities/memberships, selected tenant context, capabilities, exact legal gating and commercial/custom-project foundations. Migrations `0039`–`0044` add immutable file versions, processing and delivery/query evidence, RLS chunks, worker-only reconciliation and the complete lifecycle. Migrations `0045`–`0046` add versioned model/agent/skill/budget policy and append-only authorization, attempt, step, tool, evidence, usage, evaluation, failure and reconciliation records. Migrations `0047`–`0048` add Brand Studio source, profile, campaign, creative, review, export, delivery and product-event records plus their bounded mutation contracts without rewriting prior migrations.
 
-The application exposes 87 bounded functions to authenticated or anonymous roles. Tests enumerate every table and exposed function and fail if either grows without an authorization decision. Composite foreign keys bind organization/project scope. Typed security-definer functions validate context, legal, entitlement, usage, billing reconciliation, custom-project, file/knowledge and AI-run transitions; ordinary RLS controls reads. Private file processing/reconciliation functions are executable only by `kxra_worker`; private AI claim/tool/finalization functions are executable only by `kxra_ai_worker`.
+The application exposes 102 bounded functions to authenticated or anonymous roles. Tests enumerate every table and exposed function and fail if either grows without an authorization decision. Composite foreign keys bind organization/project scope. Typed security-definer functions validate context, legal, entitlement, usage, billing reconciliation, custom-project, file/knowledge, AI-run and Brand Studio transitions; ordinary RLS controls reads. Private file processing/reconciliation functions are executable only by `kxra_worker`; private AI claim/tool/finalization functions are executable only by `kxra_ai_worker`.
 
 Seed import remains advisory-locked, atomic, source-envelope verified and stable-ID based. Project insertion initializes lifecycle/disposition/gate state, the current governance snapshot, 18 common modules, code-specific specialist modules, gate policy and any bounded static reference rows in the same transaction. Canonical seed import has no real partner grants. Local fixture accounts, exact unapproved legal placeholders and fake outbox examples are separate, deterministic development fixtures.
 
@@ -134,6 +134,33 @@ The 13 Genesis agents and 12 Genesis skills are imported as typed `DRAFT` manife
 Strict output validation requires one known envelope citation for every claim, rejects duplicate or stale citations and accepts the exact insufficiency response only when the envelope is empty. Ask delivery atomically binds the linked knowledge query to the completed run, rechecks authority plus every cited record/chunk version/hash and marks both delivered or withheld together. Retry is limited to retryable failures and three attempts, and each attempt receives a fresh reservation and its own bounded tool allowance.
 
 The seeded model policy is `LOCAL-FAKE-SOL` and makes no network request. Non-fake policies require a paid reservation. Astra requires a separate approved escalation policy and current `ai.astra_escalate` capability; neither is seeded. Trigger.dev execution/recovery, external provider controls, autonomous handoffs and routine scheduling remain unavailable. See [ADR 0010](../decisions/0010-permission-safe-ai-execution.md) and the [AI threat model](../security/ai-execution-threat-model.md).
+
+## Brand Studio architecture
+
+```mermaid
+flowchart LR
+  Source[Consented supplied source snapshot] --> Profile[Versioned draft brand profile]
+  Profile --> ProfileReview[Exact profile decision]
+  ProfileReview --> Brief[Versioned campaign brief]
+  Brief --> BriefReview[Exact brief decision]
+  BriefReview --> Reserve[Database usage reservation]
+  Reserve --> Generate[Deterministic local adapter]
+  Generate --> Variant[Immutable creative variant]
+  Variant --> HumanReview[Brand + claims + rights + accessibility + compliance]
+  HumanReview --> Export[Metered private export]
+  Export --> Recheck[Current tenant/project/entitlement/content review]
+  Recheck --> Download[No-store TEXT / MARKDOWN / JSON]
+```
+
+Brand Studio is a tenant tool, while every source, profile, brief, variant and export is bound to one project. The route first resolves the current server-verified actor and project under RLS. Security-definer mutations repeat current write-access and `brand-studio.access` checks. `brand.generate` and `brand.export` use the existing row-locked entitlement and usage-reservation engine; the model or browser never calculates access or quota.
+
+`brand_sources` stores source identity, rights basis and consent. `brand_source_versions` stores the exact supplied text, hash, classification and truthful acquisition/security state. Website URLs must be public HTTPS locators, but the current product does not fetch them: customers paste the source snapshot and the record states `PROVIDER_DISABLED`. This avoids presenting an unimplemented SSRF-safe fetch service as working.
+
+Profiles and campaign briefs use append-only versions. A correction creates a new draft while the previously approved version remains approved until the new exact version is approved. Each inferred profile field links to an exact source version and classification. A campaign binds one approved profile version and cannot generate until its own exact version is approved.
+
+Generation starts only after a successful deterministic reservation. The local adapter accepts bounded typed inputs, makes no network/model call and produces review-required text variants with input hash, adapter/version, channel and lineage. Editing creates a child variant and supersedes the parent; reviewed creative is immutable. An `APPROVE_EXPORT` review requires all five boolean checks to pass and binds the exact content hash. Export creation revalidates the latest exact review and consumes its own usage unit.
+
+Download calls `authorize_brand_export` on every request. It rechecks the current organization membership, project access, export/content/review relationship and current feature entitlement immediately before rendering bytes. Withheld attempts are recorded. Responses are private, `no-store` and `nosniff`; no public object or publication/scheduling endpoint exists. An external generation adapter must later bind an approved model/run policy, source-retention controls and staging budget evidence before activation. See [ADR 0011](../decisions/0011-kxra-brand-studio-local-product.md) and the [Brand Studio threat model](../security/brand-studio-threat-model.md).
 
 ## Private file and knowledge lifecycle
 

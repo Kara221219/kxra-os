@@ -757,6 +757,78 @@ export async function importSeeds(db, bundle, { failAfter = Infinity } = {}) {
     );
   if (askAgentId !== stableId("agent-manifest:AGT-ASK"))
     throw Error("Ask agent identity mismatch");
+
+  const brandTool = {
+    tool_key: "brand-studio",
+    name: "KXRA Brand Studio",
+    description:
+      "Create a source-linked brand profile, campaign brief and reviewed channel variants with controlled export.",
+    version: 1,
+    activation_event: "First approved Brand Studio export delivered",
+    usage_unit: "creative_variant",
+    configuration: {
+      required_features: [
+        "brand-studio.access",
+        "brand.generate",
+        "brand.export",
+      ],
+      source_intake: {
+        website_url: true,
+        website_fetch: false,
+        supplied_snapshot_required: true,
+      },
+      generation_adapter: "LOCAL_DETERMINISTIC",
+      external_generation_enabled: false,
+      publication_enabled: false,
+      classification: "DECISION",
+      authority: "approved_phase_2_local_product_contract",
+    },
+  };
+  const brandToolId = stableId(`tool:${brandTool.tool_key}`);
+  const brandToolVersionId = stableId(
+    `tool:${brandTool.tool_key}:v${brandTool.version}`,
+  );
+  await db.query(
+    `insert into kxra.tool_catalogue(id,tool_key,name,description,state)
+     values($1,$2,$3,$4,'ACTIVE') on conflict(tool_key) do nothing`,
+    [brandToolId, brandTool.tool_key, brandTool.name, brandTool.description],
+  );
+  await db.query(
+    `insert into kxra.tool_versions(
+      id,tool_id,version,state,activation_event,usage_unit,configuration,effective_at
+     ) values($1,$2,$3,'ACTIVE',$4,$5,$6,now())
+     on conflict(tool_id,version) do nothing`,
+    [
+      brandToolVersionId,
+      brandToolId,
+      brandTool.version,
+      brandTool.activation_event,
+      brandTool.usage_unit,
+      brandTool.configuration,
+    ],
+  );
+  const savedBrandTool = (
+    await db.query(
+      `select tool.id,tool.name,tool.description,tool.state,version.id as version_id,
+        version.state as version_state,version.activation_event,version.usage_unit,
+        version.configuration=$3::jsonb as configuration_matches
+       from kxra.tool_catalogue tool join kxra.tool_versions version on version.tool_id=tool.id
+       where tool.tool_key=$1 and version.version=$2`,
+      [brandTool.tool_key, brandTool.version, brandTool.configuration],
+    )
+  ).rows[0];
+  if (
+    savedBrandTool?.id !== brandToolId ||
+    savedBrandTool?.version_id !== brandToolVersionId ||
+    savedBrandTool?.name !== brandTool.name ||
+    savedBrandTool?.description !== brandTool.description ||
+    savedBrandTool?.state !== "ACTIVE" ||
+    savedBrandTool?.version_state !== "ACTIVE" ||
+    savedBrandTool?.activation_event !== brandTool.activation_event ||
+    savedBrandTool?.usage_unit !== brandTool.usage_unit ||
+    savedBrandTool?.configuration_matches !== true
+  )
+    throw Error("Brand Studio tool provenance mismatch; review required");
 }
 export async function seedFixtures(db) {
   for (const [key, id] of Object.entries(ids)) {
@@ -867,4 +939,46 @@ export async function seedFixtures(db) {
       "insert into kxra.project_memberships(org_id,project_id,user_id,role,active) values($1,$2,$3,$4,$5) on conflict(project_id,user_id) do nothing",
       [org, projectId(code), ids[who], role, active],
     );
+
+  const localBrandEntitlements = [
+    ["brand-studio.access", null, "NONE"],
+    ["brand.generate", 120, "MONTH"],
+    ["brand.export", 120, "MONTH"],
+  ];
+  for (const [feature, quantity, windowName] of localBrandEntitlements) {
+    const grantId = stableId(`local-fixture-entitlement:${feature}`);
+    await db.query(
+      `insert into kxra.entitlement_grants(
+        id,org_id,feature_key,source,state,quantity_limit,usage_window,
+        policy_version,reason,issued_by,starts_at
+       ) values($1,$2,$3,'FREE_OWNER_GRANT','ACTIVE',$4,$5,1,$6,$7,$8)
+       on conflict(id) do nothing`,
+      [
+        grantId,
+        org,
+        feature,
+        quantity,
+        windowName,
+        "LOCAL FIXTURE ONLY — synthetic Brand Studio acceptance entitlement",
+        ids.owner,
+        new Date("2020-01-01T00:00:00.000Z"),
+      ],
+    );
+    await db.query(
+      `insert into kxra.entitlement_effective_periods(
+        id,org_id,feature_key,source_type,source_id,quantity_limit,usage_window,
+        policy_version,effective_from
+       ) values($1,$2,$3,'OWNER_GRANT',$4,$5,$6,1,$7)
+       on conflict(id) do nothing`,
+      [
+        stableId(`local-fixture-entitlement-period:${feature}`),
+        org,
+        feature,
+        grantId,
+        quantity,
+        windowName,
+        new Date("2020-01-01T00:00:00.000Z"),
+      ],
+    );
+  }
 }

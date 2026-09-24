@@ -1,60 +1,32 @@
 # KXRA OS implementation progress
 
-Updated: 21 September 2026. Status: **Phase 2 Slice 3 permission-safe AI execution is implemented and verified with a deterministic local model adapter. It is not deployed or production ready.**
+Updated: 24 September 2026. Status: **Phase 2 Slice 4 KXRA Brand Studio is implemented and verified with deterministic local adapters. It is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 3 started from pushed Slice 2 commit `1866b11af9770a023b5452d2d1f3092f91df0fed`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation or external send occurred.
+Current branch: `codex/phase-2-completion`. Slice 4 started from pushed Slice 3 commit `bd28538fcb3a5ca9e82c4fa01f5eb419b2eda98b`, which descends from the reviewed Genesis implementation. The branch is not merged and no default-branch change, production deployment, provider activation, external send or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in Slice 3
+## Completed in Slice 4
 
-- Added typed, versioned model policies, agent manifests, skill manifests/tool bindings and deterministic budget policies. The 13 Genesis agents and 12 Genesis skills import as `DRAFT`; descriptive registry records cannot execute.
-- Added the narrowly approved `AGT-ASK`/`SKL-ASK-001` local contract with one-project/run memory, no consequential side effects and only current evidence retrieval plus one structured fake-model call.
-- Added immutable evidence envelopes and append-only run, attempt, step, tool, evidence-link, handoff, provider-usage, evaluation, failure and reconciliation records behind RLS.
-- Added a private `kxra_ai_worker` role. Browser/application roles cannot claim or finish work; the worker receives only bounded claim, tool-evidence, finish and failure functions.
-- Added row-locked cost/run/input/output budget reservation and exact reconciliation. Retries are capped, require current authority and a new reservation, link attempts and apply tool-call limits per attempt.
-- Added strict response, claim and citation schemas. Unknown/stale/duplicate citations, unsupported claims, unknown model substitution, prompt/tool expansion, provider errors, timeouts and usage overage fail closed.
-- Added atomic Ask delivery that rechecks account/membership version, legal gate, project assignment and every cited record/chunk version/hash and marks the linked knowledge query and agent run delivered or withheld together.
-- Added explicit evidence-only and local test synthesis modes. Empty evidence never dispatches a model. Production model mode remains unavailable until an external adapter is configured and approved.
-- Replaced generic AI Team, Skills and Run History pages with typed owner views showing manifest boundaries and redacted execution/usage evidence.
-- Added migrations `0045`–`0046`, ADR 0010 and the AI execution threat model without rewriting prior migrations.
-- Added nine focused AI execution tests plus HTTP and desktop/mobile browser coverage for real local synthesis, registries and run history.
+- Added 14 project-scoped RLS tables for Brand Studio sources/versions, profiles/versions/evidence, assets, campaign briefs/versions, creative requests/variants/reviews, exports/deliveries and product events.
+- Added 15 bounded authenticated functions for source, profile, brief, generation, revision, review, export and delivery transitions. Browser roles have no direct mutation authority.
+- Added consented customer-supplied source snapshots with rights basis, exact hashes and provenance. Public HTTPS locators are syntactically constrained; remote fetch is truthfully disabled and no source text is obtained from the network.
+- Added append-only, correctable profile and campaign versions. Exact decisions preserve the prior approved profile until a replacement version is approved.
+- Added `brand-studio.access`, `brand.generate` and `brand.export` entitlement checks. Generation and export reserve usage transactionally before work; fixture grants are clearly local and do not fabricate a subscription.
+- Added a strict deterministic local text generator with bounded channels/content, input hash, adapter version, review warnings and no model/network/publication action.
+- Added creative parent/child lineage, immutable reviewed content and a five-part brand, claims, rights, accessibility and compliance review. Export binds the latest exact review and content hash.
+- Added text, Markdown and JSON export. Every download rechecks current membership, project access, entitlement and review/content relationship and records delivered or withheld outcomes.
+- Added Business Tools and Brand Studio owner/partner navigation plus a responsive source-to-export customer workflow. It states that website fetching, external generation, scheduling and publication are disabled.
+- Added ADR 0011 and a Brand Studio threat model. Fixed a real route defect where PostgreSQL composite-function expansion could invoke a mutating decision more than once; all mutating composite calls now use a single `FROM function(...)` evaluation.
+- Added database/domain, HTTP and desktop/mobile browser evidence for hostile locators, anonymous/crafted/viewer denial, project isolation, versioning, metering, review, export and revocation.
 
-## Preserved Slice 2 implementation
-
-- Added a private object adapter with create-only local storage and a Supabase private-bucket target. Object keys are opaque, generated in PostgreSQL and partitioned by tenant/project/file/version; callers cannot submit a key.
-- Added idempotent upload intents and the complete `UPLOADING → QUARANTINED → SCANNING → CLEAN → EXTRACTING → EXTRACTED → INDEXING → INDEXED` lifecycle, plus `REJECTED`, `FAILED` and `NEEDS_REVIEW` states. Processing starts only after the object write is finalized.
-- Added a private `kxra_worker` role, leased jobs, scan/extraction evidence, immutable file versions, versioned chunks, delivery/query events and object reconciliation. Browser roles cannot claim jobs or promote lifecycle state.
-- Added deterministic local adversarial scanning for size, executable/active extensions, executable signatures, EICAR, archive policy, MIME/magic mismatch, macro/active PDF content and invalid encoding/JSON. The adapter is fixture-only and fails closed in production/Vercel.
-- Added bounded text/JSON/image-metadata extraction and chunks carrying exact file/record versions, offsets, hashes, extraction version, classification and audience. Unsupported PDFs fail visibly and never enter retrieval.
-- Search and evidence-only Ask now include only current RLS-authorized `INDEXED` chunks. Every Ask records a redacted query run, validates versioned citations and rechecks authority before delivery; changed access withholds the answer and clears references.
-- Added server-mediated private downloads with current authorization, object hash/size verification, delivery-time reauthorization and `private, no-store` responses. No permanent raw object URL is exposed.
-- Added reconciliation for verified, missing, mismatched and orphan objects. Restart verification rehashes every registered private object and compares chunk/job manifests.
-- Added SQL, HTTP and desktop/mobile acceptance coverage for clean, malicious, mismatched, macro, archive, extraction-failure, retry, revocation, cross-project, chunk citation, download and reconciliation paths.
-- Added migrations `0039`–`0044`, ADR 0009 and the file/knowledge threat model without rewriting prior migrations.
-
-## Preserved Slice 1 implementation
-
-- Added normalized global account identities and many-to-many organization memberships with the four security roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
-- Added explicit organization selection for multi-membership accounts. The HttpOnly organization cookie is only a selector; every request revalidates the account and active membership in PostgreSQL. JWT metadata, headers, paths, request bodies and model output cannot assign organization or role authority.
-- Every scoped database transaction now sets one server-derived `request.kxra.org_id`. Selected-tenant policies prevent an account from combining roles or records across its memberships. Membership revocation takes effect on the next request while other memberships remain usable.
-- Added approved-version legal documents, requirements, immutable presentations, exact acceptance/decline evidence and re-acknowledgement/release-manifest foundations. An active requirement can reference only an approved exact hash. Unapproved placeholders cannot activate or satisfy a release manifest.
-- Added a first-private-access gate and agreement UI/API. Before acceptance, private OS, project, file, search and Ask routes return typed `AGREEMENT_REQUIRED`; context selection and agreement presentation remain reachable.
-- Added deterministic plan/version/feature, billing customer/subscription/event, entitlement, usage reservation/aggregate/adjustment, offer/price/tax and owner free-grant records. Signed fake Stripe-style events reject tampering and expiry; database reconciliation handles replay and out-of-order events.
-- Added concurrency-safe usage reservation/completion and deterministic entitlement decisions. Owner grants are auditable, scoped, expiring/revocable and do not fabricate a provider subscription.
-- Added private custom-project requests, triage/proposal/acceptance/payment/change/milestone records. A subscription cannot create delivery work. Only a capability-authorized KXRA manager can author a proposal, and project activation requires the exact current accepted proposal plus its configured payment gate.
-- Added customer-facing custom-project intake UI and APIs for plans, entitlements, usage, grants and custom-project workflow foundations. Live Stripe checkout/webhooks/customer portal remain absent.
-- Added eight additive migrations, `0031`–`0038`; no applied migration was rewritten. Fresh migration-before-seed order now classifies the KXRA organization correctly and seeds legal placeholders only as inactive, unapproved records.
-- Added AT-31–34 and AT-46 SQL/domain/HTTP/browser evidence, including dual-tenant isolation, exact legal acceptance, billing replay/concurrency, free-grant revocation and commercial separation.
-- Fixed repeat-run legal fixture collisions, stale RLS-table dashboard assertions and a desktop/mobile navigation race found by the expanded browser suite.
-
-## Verified implementation
+## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 46 ordered migrations, 109 RLS-protected tables with explicit policies and 87 audited exposed functions.
-- 99 database/domain/HTTP tests and 36 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 32 applicable passes and four intentional device-specific skips.
-- Owner control plane, invitation/account lifecycle, five original venture workspaces, one-project Ask KXRA, exact finance, approvals and work-log foundations remain passing.
-- Explicit tenant selection, legal gate, deterministic commercial records, usage reservations, free grants and custom-project commercial separation pass with synthetic local evidence.
+- 48 ordered additive migrations, 123 RLS-protected tables with explicit policies and 102 audited exposed functions.
+- 104 database/domain/HTTP tests and 38 desktop/mobile browser scenarios in the clean disposable contract. The browser matrix has 34 applicable passes and four intentional device-specific skips.
+- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 213-file publication/secret scan pass.
+- Invitation/account lifecycle, selected-tenant legal gate, owner control plane, five original venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
 
@@ -62,16 +34,18 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ### Partial
 
-- The multi-tenant and first-private-access boundaries work locally. Hosted Supabase Auth, real owner bootstrap, pooler behavior and solicitor-approved legal content remain unverified.
-- Commercial state and bounded APIs work with fake signed events. Stripe products/prices, checkout, webhook endpoint, portal, tax/refund/cancellation policy and customer billing UI are not connected.
-- Custom-project intake and exact proposal/payment activation foundations work. Owner triage/proposal/change-control UI, invoices, customer milestone UX and approved legal/SOW text remain incomplete.
-- Ask KXRA has the correct tenant/project/chunk boundary, deterministic local fake-model synthesis, strict claim/citation validation, budgets, tool controls, redacted run evidence and atomic delivery-time reauthorization. External OpenAI dispatch, provider data controls, distributed crash recovery and approved paid budgets remain incomplete.
-- File lifecycle, download and reconciliation pass locally with deterministic adapters. Hosted Supabase Storage, a production malware engine, a disposable no-network extractor and an empty-target restore drill remain unverified.
+- **Brand Studio:** the local first-value path works. Remote website fetch/refresh, image/video assets, external model generation, provider queues, sector-specific claim policies, complete retention/deletion UX and any publication integration remain unimplemented.
+- **Identity/legal:** local multi-tenant and first-access boundaries work. Hosted Supabase Auth/MFA/session/pooler behavior, real owner bootstrap and solicitor-approved legal content remain unverified.
+- **Commercial:** normalized state, entitlements and local signed fixtures work. Stripe products/prices, checkout, webhook route, customer portal, tax/refund/cancellation policy and billing UI are disconnected.
+- **Custom projects:** private intake and exact proposal/payment activation foundations work. Owner triage/proposal/change-control UI, invoices, customer milestone UX and approved SOW/legal text remain incomplete.
+- **AI:** permission-safe local synthesis, strict citations, budgets and redacted run evidence work. External OpenAI dispatch, provider data controls, paid budgets and distributed crash recovery remain incomplete.
+- **Files:** local lifecycle/download/reconciliation works. Hosted Supabase Storage, production malware scanning, disposable no-network extraction and empty-target restore remain unverified.
 
 ### Missing
 
-- Routine scheduling/recovery, autonomous handoff execution and consequential-action approval integration. Definitions and evidence tables exist, but no scheduler or handoff mutation path is enabled.
-- KXRA Brand Studio, Projects 006/007, YouTube and repository-analysis workflows.
+- PROJECT-006 Finance Unfolded YouTube Content Engine records, modules, approval-safe upload intent and tests.
+- PROJECT-007 GitHub Repository Intelligence & Secure Reuse records, quarantine/analysis/adoption pipeline and tests.
+- Versioned routine scheduling/recovery, event triggers and notification intents.
 - WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
 - Independent public/private/customer builds, layered industry marketing site and public forms.
 - Connected staging providers, telemetry, backup/restore evidence, production release evidence and first-customer rehearsal.
@@ -82,6 +56,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - Project 004 remains research/paper only and has no live trading path.
 - Project 005 remains demand gated and has no product publication path.
 - Projects 006 and 007 are specified in documentation only; they are not seeded or executable.
+- Brand Studio is a platform tool scoped through existing customer/partner projects; it is not a fabricated sixth venture record.
 
 ## Active owner and external inputs
 
@@ -94,7 +69,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Implement KXRA Brand Studio with deterministic local generation adapters, typed brand inputs/outputs, entitlement/usage boundaries, project isolation and approval-safe export. Keep external generation, publication and paid providers disabled until staging controls and budgets are approved. In parallel, turn the private discovery and solicitor packs into owner-led interviews and counsel review; do not encode draft legal text as approved.
+Implement Projects 006 and 007 as idempotent project records, exact common/specialist module registries and evidence gates. Build only local content/repository-analysis workflows: no YouTube upload, candidate-code execution, merge, deployment or external provider access. Extend every RLS, HTTP and browser matrix before enabling a provider adapter.
 
 ## Publication boundary
 

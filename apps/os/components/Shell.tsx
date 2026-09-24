@@ -5,6 +5,8 @@ const ownerNav = [
   ["Portfolio", "portfolio"],
   ["Idea Inbox", "ideas"],
   ["Projects", "projects"],
+  ["Business Tools", "tools"],
+  ["Brand Studio", "brand-studio"],
   ["Research", "sources"],
   ["Experiments", "experiments"],
   ["Decisions", "decisions"],
@@ -25,6 +27,8 @@ const ownerNav = [
 const partnerNav = [
   ["Home", ""],
   ["My Projects", "projects"],
+  ["Business Tools", "tools"],
+  ["Brand Studio", "brand-studio"],
   ["Ask KXRA", "ask"],
   ["Ideas", "ideas"],
   ["Custom Projects", "custom-projects"],

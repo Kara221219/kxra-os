@@ -1642,6 +1642,58 @@ pre {
   padding: 32px;
 }
 
+.brand-form,
+.studio-section {
+  margin-top: 24px;
+}
+.brand-form > h2,
+.brand-form > p,
+.brand-form > fieldset,
+.brand-form > button,
+.brand-form > [role="status"] {
+  grid-column: 1 / -1;
+}
+.brand-form fieldset,
+.compact-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.brand-form legend,
+.compact-form legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+.compact-form {
+  grid-template-columns: 1fr;
+  margin-top: 16px;
+  padding: 2px 0 8px;
+}
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+.brand-usage {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.brand-usage .stat strong {
+  font-size: 22px;
+}
+.brand-usage .stat span {
+  display: block;
+  margin-top: 7px;
+}
+.studio-section > h2 {
+  margin-bottom: 14px;
+}
+.studio-section .record ul {
+  padding-left: 22px;
+  color: var(--muted);
+}
+
 @media (max-width: 1000px) {
   .workspace-score-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1665,6 +1717,10 @@ pre {
   }
   .workspace-navigation a {
     width: 100%;
+  }
+  .brand-usage,
+  .check-grid {
+    grid-template-columns: 1fr;
   }
 }
 
