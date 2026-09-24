@@ -1,43 +1,35 @@
 # KXRA OS implementation progress
 
-Updated: 24 September 2026. Status: **Phase 2 Slice 5 is implemented and verified with deterministic local evidence. The system is not deployed or production ready.**
+Updated: 24 September 2026. Status: **Phase 2 Slice 6 is implemented with deterministic local evidence. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 5 started from pushed Slice 4 commit `747408c3118c34626737cd963617685596168bc6`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 6 started from pushed Slice 5 commit `b39f9006183f2c49b27c15408f8ea23edea9cf72`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in Slice 5
+## Completed in Slice 6
 
-- Extended the canonical atomic seed from five to exactly seven projects while preserving Projects 001–005.
-- Added PROJECT-006 Finance Unfolded and PROJECT-007 Repository Intelligence lifecycle/disposition/gate defaults, 18 specialist modules each and dedicated evidence-gate policies.
-- Added 12 project-scoped RLS tables for YouTube channel/content/version/review/upload-intent evidence and repository candidate/quarantine/assessment/proposal/version/review/implementation-intent evidence.
-- Added ten bounded authenticated workflow functions plus private channel-binding controls. New direct writes are denied; immutable versions, append-only evidence, exact hashes, current authority and idempotency are enforced in PostgreSQL.
-- PROJECT-006 now creates complete immutable content packages, requires an independent exact-version review of every source/claim/originality/rights/disclosure/compliance/render/caption/metadata check, and ends at `adapter=DISABLED`, `delivery_state=NOT_SENT`. Revision or disconnect withdraws stale intents.
-- PROJECT-007 now records exact pinned candidates, controlled no-execution quarantine and bounded assessment evidence, rejects safety overclaims, requires independent exact-proposal approval, and ends at `git_execution_state=NOT_STARTED` with merge/release/deploy false.
-- Seeded the two requested repositories only as untrusted reference metadata at exact reviewed commits; no tree hash, scan, licence or adoption claim is invented.
-- Added responsive owner/partner project UI and strict HTTP schemas/routes. Nested project-resource checks and PostgreSQL RLS reject anonymous, unassigned, revoked and crafted-project access before context can leak.
-- Added ADR 0012, the combined threat model and an operating review playbook.
-- Fixed private-function grant hardening so existing RLS helpers retain their explicit grants, corrected PostgreSQL URL validation, encoded JSON arrays explicitly, prevented repeated composite-function execution and removed test-order assumptions.
+- Imported all nine Genesis routine definitions into typed, immutable manifests with stable identities, exact hashes, action graphs, trigger/timezone/calendar configuration, service identity, project scope, budgets, concurrency, leases, retry and notification policy.
+- Kept every imported version `DRAFT`, every manifest disabled and every notification adapter disabled. Exact-hash owner approval is required before enablement.
+- Added authoritative schedule/event slots, explicit business/exchange-calendar facts, bounded worker claims, leases, append-only checkpoints, completion/failure, expired-lease recovery and reauthorization before retry.
+- Enforced one run per logical slot/event, Europe/London DST conversion, explicit XNYS open-day evidence, checkpoint-preserving recovery and cancellation when the routine/service/version is revoked.
+- Added owner-only Routine Registry and strict HTTP routes for approval, state, calendar, local slot and event controls. Partner, anonymous, crafted-scope and direct-DML paths fail closed.
+- Added disabled append-only notification intents. Unchanged success is quiet; a changed review outcome or terminal actionable failure can create one idempotent `DISABLED` / `NOT_SENT` intent.
+- Added ADR 0013, a routine threat model and approval/recovery playbook.
 
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 51 ordered additive migrations, 135 RLS-protected tables with explicit policies and 112 audited public functions.
-- 109 database/domain/HTTP tests and 38 desktop/mobile browser scenarios in the clean disposable contract: 34 applicable passes and four intentional device-specific skips.
-- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 222-file publication/secret scan pass.
+- 53 ordered additive migrations, 143 RLS-protected tables with explicit policies and 118 audited public functions.
+- 114 database/domain/HTTP tests and 40 desktop/mobile browser scenarios in the clean disposable contract: 36 applicable passes and four intentional device-specific skips.
+- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 230-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
 
 ## Acceptance status for this slice
 
-- **AT-37 PARTIAL:** the channel binding model and revocation behavior exist; real YouTube OAuth/callback/token custody is absent.
-- **AT-38 PASS locally:** a synthetic package completes immutable evidence, independent review and stale-version checks.
-- **AT-39 PARTIAL:** a disabled idempotent upload intent and withdrawal/reconciliation state exist; no provider upload/schedule/analytics adapter exists.
-- **AT-40 PARTIAL:** exact candidate and quarantine contracts exist with synthetic records; no archive acquisition or production scanner is connected.
-- **AT-41 PARTIAL:** bounded security/licence assessment records and hard stops exist; no real isolated scanner/sandbox evidence exists.
-- **AT-42 PASS locally:** an exact independently approved adoption proposal can create only a no-execution implementation intent.
-- **AT-43 PASS locally:** direct SQL, HTTP and browser tests cover project isolation and hard stops across Projects 006/007.
+- **AT-14 PASS locally:** fake-clock schedule/event idempotency, Europe/London DST, XNYS calendar facts, lease/checkpoint recovery, revocation before retry, quiet unchanged completion and disabled actionable-failure intent all pass. Trigger.dev and external delivery remain disconnected.
+- **AT-24 regression PASS locally:** routine approval, state and run outcomes project typed audit/Work Log events.
 
 ## Remaining work
 
@@ -48,11 +40,11 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - Commercial: Stripe products/prices, checkout, webhook, portal and approved billing policies remain disconnected.
 - Custom projects: owner triage/proposal/change-control and customer milestone/payment UX remain incomplete.
 - AI/files: external OpenAI dispatch, production Storage/scanning/extraction, paid budgets and distributed recovery remain incomplete.
-- Projects 006/007: provider/scanner adapters remain intentionally disabled as detailed above.
+- Projects 006/007: provider/scanner adapters remain intentionally disabled.
+- Routines: no always-on scheduler, Trigger.dev task, hosted worker or notification delivery adapter is connected.
 
 ### Missing
 
-- Versioned routine scheduling/recovery, event triggers and notification intents.
 - WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
 - Independent public/private/customer builds, layered industry marketing site and public forms.
 - Connected staging providers, telemetry, backup/restore evidence, production release evidence and first-customer rehearsal.
@@ -70,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Implement the versioned Routine Registry, scheduler/lease/retry/recovery contract and notification intents with no external delivery. Then add provider-neutral adapters in staging-sized slices, beginning with hosted Auth/Storage and legal activation prerequisites. Preserve the public/private boundary and extend every RLS, HTTP and browser matrix before connecting a provider.
+Implement the WhatsApp identity-pairing and durable ingress/outbound-intent foundation with provider transport disabled. Verify signature/deduplication, explicit project selection, authorization before retrieval and again before delivery, media quarantine/transcription consent, revocation and complete audit evidence. Then continue provider-neutral staging slices, hosted Auth/Storage and legal activation prerequisites. Preserve the public/private boundary and extend every RLS, HTTP and browser matrix before connecting a provider.
 
 ## Publication boundary
 

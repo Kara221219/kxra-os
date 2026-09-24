@@ -153,6 +153,27 @@ test("AT-24 owner Work Log and redacted Admin are real, linked and bounded", asy
   await expect(page.getByText(/Generic secret editing/)).toBeVisible();
 });
 
+test("AT-14 owner routine registry exposes typed disabled contracts", async ({
+  page,
+}) => {
+  await fixtureLogin(page, "owner");
+  await navigate(page, "Routines");
+  await expect(
+    page.getByRole("heading", { name: "Routine Registry" }),
+  ).toBeVisible();
+  await expect(page.locator("article.panel")).toHaveCount(9);
+  await expect(page.getByText("DRAFT", { exact: true })).toHaveCount(9);
+  await expect(
+    page.locator("article.panel > p .badge").filter({ hasText: /^DISABLED$/ }),
+  ).toHaveCount(9);
+  await expect(
+    page.getByText(/Trigger.dev and notification delivery/),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Approve exact local contract", { exact: true }),
+  ).toHaveCount(9);
+});
+
 test("AT-22 partner Idea access and owner control routes fail closed", async ({
   page,
 }) => {
@@ -160,7 +181,13 @@ test("AT-22 partner Idea access and owner control routes fail closed", async ({
   await expect(
     page.getByRole("heading", { name: "Your project workspace" }),
   ).toBeVisible();
-  for (const ownerLink of ["Dashboard", "Portfolio", "Work Log", "Admin"])
+  for (const ownerLink of [
+    "Dashboard",
+    "Portfolio",
+    "Routines",
+    "Work Log",
+    "Admin",
+  ])
     await expect(
       page.getByRole("link", { name: ownerLink, exact: true }),
     ).toHaveCount(0);
@@ -204,6 +231,8 @@ test("Milestone 2 control surfaces reflow at frozen widths and 200%", async ({
     await page.goto("/os/portfolio");
     await expectNoDocumentOverflow(page);
     await page.goto("/os/ideas");
+    await expectNoDocumentOverflow(page);
+    await page.goto("/os/routines");
     await expectNoDocumentOverflow(page);
   }
   await page.setViewportSize({ width: 640, height: 900 });

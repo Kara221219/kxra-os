@@ -500,7 +500,7 @@ export async function ownerDashboard(a: Actor) {
         count: tasks + gates,
         breakdown: { tasks, next_gates: gates },
         items: todayItems,
-        note: "Routine schedules are disabled in this environment; only persisted tasks and reviewed next gates appear.",
+        note: "Routine manifests are governed locally; Trigger.dev and external notifications remain disconnected.",
       } satisfies DashboardSection,
       needs_your_decision: {
         count: approvals + decisions,
@@ -712,7 +712,7 @@ export async function adminSnapshot(a: Actor) {
         whatsapp: Boolean(env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_APP_SECRET),
       },
       controls: {
-        routines: "DISABLED",
+        routines: "LOCAL_GOVERNED_DISABLED_BY_DEFAULT",
         external_messages: "DISABLED",
         production_deployment: "DISABLED",
         backups: "EVIDENCE_NOT_CONNECTED",

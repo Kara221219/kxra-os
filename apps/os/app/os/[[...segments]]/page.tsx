@@ -25,6 +25,9 @@ import {
 import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
 import { CustomProjectRequestForm } from "../../../components/CommercialForms";
 import BrandStudio from "../../../components/BrandStudio";
+import RoutineRegistry, {
+  type RoutineRow,
+} from "../../../components/RoutineRegistry";
 import {
   AgentRegistryView,
   AgentRunHistoryView,
@@ -694,6 +697,46 @@ export default async function Workspace({
           <SkillLibraryView skills={skills} />
         </>
       );
+    } else if (section === "routines") {
+      owner(a);
+      const routines = await query<RoutineRow>(
+        a,
+        `select manifest.id,manifest.code,manifest.name,manifest.enabled,
+          version.id as version_id,version.version,version.status,version.version_sha256,
+          version.trigger_type,version.trigger_config,version.timezone,version.calendar_code,
+          version.action_graph,version.scope_mode,version.maximum_attempts,version.lease_seconds,
+          version.notification_policy,coalesce(scopes.projects,'[]'::jsonb) as project_scopes,
+          coalesce(runs.run_count,0)::integer as run_count,last_run.state as last_run_state,
+          last_run.created_at as last_run_at
+         from kxra.routine_manifests manifest
+         join kxra.routine_manifest_versions version
+          on version.routine_id=manifest.id and version.version=manifest.current_version
+         left join lateral(
+          select jsonb_agg(jsonb_build_object('id',project.id,'code',project.code,'name',project.name)
+           order by project.code) as projects
+          from kxra.routine_version_projects scope
+          join kxra.projects project on project.id=scope.project_id
+          where scope.routine_version_id=version.id
+         ) scopes on true
+         left join lateral(
+          select count(*)::integer as run_count from kxra.routine_runs run
+          where run.routine_id=manifest.id
+         ) runs on true
+         left join lateral(
+          select run.state,run.created_at from kxra.routine_runs run
+          where run.routine_id=manifest.id order by run.created_at desc,run.id desc limit 1
+         ) last_run on true
+         order by manifest.code`,
+      );
+      content = (
+        <>
+          <Heading
+            title="Routine Registry"
+            sub="Versioned triggers, scopes, leases, checkpoints and disabled notification intents."
+          />
+          <RoutineRegistry routines={routines} />
+        </>
+      );
     } else if (section === "runs") {
       owner(a);
       const runs = await query<
@@ -737,7 +780,7 @@ export default async function Workspace({
       );
     } else if (modules[section]) {
       const [title, kind] = modules[section];
-      if (["finance", "routines"].includes(section)) owner(a);
+      if (section === "finance") owner(a);
       const rows = await listRecords(a, kind, filter);
       const cash = section === "finance" ? await totals(a) : [];
       content = (
@@ -745,11 +788,9 @@ export default async function Workspace({
           <Heading
             title={title}
             sub={
-              section === "routines"
-                ? "Definitions are saved. Scheduled execution is disabled."
-                : section === "runs"
-                  ? "Only recorded runs appear here. No agents are running."
-                  : undefined
+              section === "runs"
+                ? "Only recorded runs appear here. No agents are running."
+                : undefined
             }
           />
           {section === "finance" && (

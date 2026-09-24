@@ -53,4 +53,4 @@ The browser cannot write AI tables, select a role or invoke worker functions. Th
 - Raw generated output is not durably retained. This reduces leakage but means production support may need an approved encrypted retention policy and explicit customer-facing history design.
 - The Astra escalation rule exists in PostgreSQL, but no approved Astra policy, budget or capability grant is seeded.
 - Agent handoff tables exist for future evidence; no handoff mutation function or autonomous delegation workflow is enabled.
-- Routines remain definitions only. No scheduler can start a run.
+- Routine execution is a separate exact-version engine. An AI run cannot approve or enable a routine, select its scope, mint its service identity or deliver its disabled notification intent.

@@ -760,6 +760,272 @@ export async function importSeeds(db, bundle, { failAfter = Infinity } = {}) {
   if (askAgentId !== stableId("agent-manifest:AGT-ASK"))
     throw Error("Ask agent identity mismatch");
 
+  const routineService = {
+    code: "SVC-ROUTINE-LOCAL",
+    name: "KXRA local routine worker",
+    capabilities: [
+      "records.read",
+      "paper.market.read",
+      "backup.manifest.read",
+      "routine.checkpoint",
+      "notification.intent",
+    ],
+  };
+  const routineServiceId = stableId(`routine-service:${routineService.code}`);
+  await db.query(
+    `insert into kxra.routine_service_identities(
+      id,org_id,code,name,state,allowed_capabilities
+     ) values($1,$2,$3,$4,'ACTIVE',$5)
+     on conflict(org_id,code) do nothing`,
+    [
+      routineServiceId,
+      org,
+      routineService.code,
+      routineService.name,
+      routineService.capabilities,
+    ],
+  );
+
+  const routineContracts = {
+    "RTN-001": {
+      trigger_type: "LOCAL_SCHEDULE",
+      trigger_config: {
+        hour: 8,
+        minute: 0,
+        weekdays: ["MON", "TUE", "WED", "THU", "FRI"],
+      },
+      calendar_code: null,
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "records.read",
+      action: "read.owner_changed_records",
+    },
+    "RTN-002": {
+      trigger_type: "LOCAL_SCHEDULE",
+      trigger_config: { hour: 16, minute: 0, weekdays: ["FRI"] },
+      calendar_code: null,
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "records.read",
+      action: "read.portfolio_committee_packet",
+    },
+    "RTN-003": {
+      trigger_type: "LOCAL_SCHEDULE",
+      trigger_config: { hour: 10, minute: 0, weekdays: ["MON"] },
+      calendar_code: null,
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "records.read",
+      action: "read.policy_sources_due",
+    },
+    "RTN-004": {
+      trigger_type: "EVENT",
+      trigger_config: { event_code: "record.changed" },
+      calendar_code: null,
+      scope_mode: "PROJECT",
+      projects: [
+        "PROJECT-001",
+        "PROJECT-002",
+        "PROJECT-003",
+        "PROJECT-004",
+        "PROJECT-005",
+        "PROJECT-006",
+        "PROJECT-007",
+      ],
+      capability: "records.read",
+      action: "read.project_blocker_health",
+    },
+    "RTN-005": {
+      trigger_type: "EXCHANGE_CALENDAR",
+      trigger_config: {
+        hour: 9,
+        minute: 0,
+        weekdays: ["MON", "TUE", "WED", "THU", "FRI"],
+        day_rule: "ANY_OPEN_DAY",
+      },
+      calendar_code: "XNYS",
+      scope_mode: "PROJECT",
+      projects: ["PROJECT-004"],
+      capability: "paper.market.read",
+      action: "read.paper_market_checks",
+    },
+    "RTN-006": {
+      trigger_type: "LOCAL_SCHEDULE",
+      trigger_config: { hour: 11, minute: 0, weekdays: ["TUE"] },
+      calendar_code: null,
+      scope_mode: "PROJECT",
+      projects: ["PROJECT-005"],
+      capability: "records.read",
+      action: "read.digital_demand_evidence",
+    },
+    "RTN-007": {
+      trigger_type: "BUSINESS_CALENDAR",
+      trigger_config: {
+        hour: 8,
+        minute: 0,
+        day_rule: "FIRST_OPEN_DAY",
+      },
+      calendar_code: "UK-BUSINESS",
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "backup.manifest.read",
+      action: "read.restore_drill_evidence",
+    },
+    "RTN-008": {
+      trigger_type: "BUSINESS_CALENDAR",
+      trigger_config: {
+        hour: 9,
+        minute: 0,
+        day_rule: "FIRST_OPEN_DAY",
+      },
+      calendar_code: "UK-BUSINESS",
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "records.read",
+      action: "read.investment_committee_packet",
+    },
+    "RTN-009": {
+      trigger_type: "LOCAL_SCHEDULE",
+      trigger_config: { hour: 3, minute: 0 },
+      calendar_code: null,
+      scope_mode: "ORGANISATION",
+      projects: [],
+      capability: "backup.manifest.read",
+      action: "read.backup_verification_evidence",
+    },
+  };
+
+  for (const row of bundle.routines) {
+    const configured = routineContracts[row.id];
+    if (!configured) throw Error(`Missing typed routine contract: ${row.id}`);
+    const routineId = stableId(`routine-manifest:${row.id}`);
+    const versionId = stableId(`routine-manifest:${row.id}:v1`);
+    const sourceHash = await digest(row);
+    const actionGraph = [
+      {
+        code: configured.action,
+        capability: configured.capability,
+        side_effect: "NONE",
+      },
+      {
+        code: "write.durable_checkpoint",
+        capability: "routine.checkpoint",
+        side_effect: "INTERNAL_WRITE",
+      },
+    ];
+    const contract = {
+      trigger_type: configured.trigger_type,
+      trigger_config: configured.trigger_config,
+      timezone: row.timezone,
+      calendar_code: configured.calendar_code,
+      action_graph: actionGraph,
+      service_identity: routineService.code,
+      scope_mode: configured.scope_mode,
+      projects: configured.projects,
+      budget_cap_minor: 0,
+      concurrency_key: `${row.id}:v1:scope:slot`,
+      maximum_attempts: 3,
+      retry_backoff_seconds: [60, 300, 900],
+      lease_seconds: 60,
+      checkpoint_policy: {
+        required_after_each_step: true,
+        resume_from_latest: true,
+      },
+      notification_policy: {
+        adapter: "DISABLED",
+        quiet_when_unchanged: true,
+        notify_on: ["FAILURE", "COMPLETION_REVIEW", "ACTION_REQUIRED"],
+      },
+      approval_requirements: {
+        owner_approval: true,
+        exact_version_hash: true,
+      },
+      side_effect_class: "INTERNAL_WRITE",
+      status: "DRAFT",
+    };
+    const versionHash = await digest({ source: row, contract });
+    await db.query(
+      `insert into kxra.routine_manifests(
+        id,org_id,code,name,current_version,enabled,classification,source_hash
+       ) values($1,$2,$3,$4,1,false,$5,$6)
+       on conflict(org_id,code) do nothing`,
+      [
+        routineId,
+        org,
+        row.id,
+        row.name,
+        row.classification || "DECISION",
+        sourceHash,
+      ],
+    );
+    await db.query(
+      `insert into kxra.routine_manifest_versions(
+        id,org_id,routine_id,version,trigger_type,trigger_config,timezone,
+        calendar_code,action_graph,service_identity_id,scope_mode,budget_cap_minor,
+        concurrency_key,maximum_attempts,retry_backoff_seconds,lease_seconds,
+        checkpoint_policy,notification_policy,approval_requirements,side_effect_class,
+        status,version_sha256
+       ) values(
+        $1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10,0,$11,$12,$13,$14,$15,$16,$17,$18,'DRAFT',$19
+       ) on conflict(routine_id,version) do nothing`,
+      [
+        versionId,
+        org,
+        routineId,
+        contract.trigger_type,
+        contract.trigger_config,
+        contract.timezone,
+        contract.calendar_code,
+        JSON.stringify(contract.action_graph),
+        routineServiceId,
+        contract.scope_mode,
+        contract.concurrency_key,
+        contract.maximum_attempts,
+        contract.retry_backoff_seconds,
+        contract.lease_seconds,
+        contract.checkpoint_policy,
+        contract.notification_policy,
+        contract.approval_requirements,
+        contract.side_effect_class,
+        versionHash,
+      ],
+    );
+    for (const code of configured.projects)
+      await db.query(
+        `insert into kxra.routine_version_projects(
+          id,org_id,routine_version_id,project_id
+         ) values($1,$2,$3,$4) on conflict(routine_version_id,project_id) do nothing`,
+        [
+          stableId(`routine-project:${row.id}:v1:${code}`),
+          org,
+          versionId,
+          projectId(code),
+        ],
+      );
+    const saved = (
+      await db.query(
+        `select manifest.id,manifest.enabled,manifest.source_hash,
+          version.id as version_id,version.status,version.version_sha256
+         from kxra.routine_manifests manifest
+         join kxra.routine_manifest_versions version
+          on version.routine_id=manifest.id and version.version=manifest.current_version
+         where manifest.org_id=$1 and manifest.code=$2`,
+        [org, row.id],
+      )
+    ).rows[0];
+    if (
+      saved?.id !== routineId ||
+      saved?.version_id !== versionId ||
+      saved?.enabled !== false ||
+      saved?.status !== "DRAFT" ||
+      saved?.source_hash !== sourceHash ||
+      saved?.version_sha256 !== versionHash
+    )
+      throw Error(
+        `Routine manifest provenance mismatch; review required: ${row.id}`,
+      );
+  }
+
   const brandTool = {
     tool_key: "brand-studio",
     name: "KXRA Brand Studio",

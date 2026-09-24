@@ -297,6 +297,22 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
     assert.equal(
       (
         await db.query(
+          `select count(*)::int as n from kxra.routine_manifests manifest
+           join kxra.routine_manifest_versions version
+            on version.routine_id=manifest.id and version.version=manifest.current_version
+           where not manifest.enabled and version.status='DRAFT'
+            and version.notification_policy->>'adapter'='DISABLED'`,
+        )
+      ).rows[0].n,
+      9,
+    );
+    assert.equal(
+      (await db.query("select * from kxra.routine_version_projects")).rowCount,
+      9,
+    );
+    assert.equal(
+      (
+        await db.query(
           "select count(*)::int as n from kxra.records where source_code in ('DEC-001','DEC-002','DEC-003','DEC-004','DEC-005') and status='accepted' and provenance->>'authority'='owner_directive'",
         )
       ).rows[0].n,

@@ -61,6 +61,12 @@ npm run worker:files:reconcile
 
 These commands use the fixture scanner/extractor only inside guarded local mode. The adapter deliberately refuses production/Vercel execution. It recognizes a bounded test set and does not replace a production malware service or extraction sandbox.
 
+## Routine evidence
+
+The owner **Routines** screen displays the nine typed manifests. They are imported as draft and disabled. Exact owner approval is required before enablement; the local UI can then plan one reviewed schedule date. Planning writes an authoritative queued run but does not start an always-on worker, Trigger.dev task or external delivery.
+
+Routine worker contracts are exercised by `tests/routines.test.ts` under the dedicated `kxra_routine_worker` role. Do not use the application login or a browser session to claim, checkpoint, complete, recover or requeue runs. Notification records are intents only and remain `DISABLED` / `NOT_SENT`.
+
 ## Environment boundary
 
 `.env.example` lists hosted target variables with placeholders only. `npm run dev` creates guarded local configuration. Fixture mode rejects production, Vercel, non-loopback, hosted Supabase/database combinations and weak/missing generated secrets. Default production package conditions resolve local Auth/UI modules to stubs; hosted Auth must be configured for real use. Hosted file processing additionally needs a private Storage bucket, a server-only Storage secret, a restricted worker database connection, a trusted scanner and a disposable no-network extractor. None is connected by local setup.

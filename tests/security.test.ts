@@ -1209,7 +1209,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 135);
+    assert.equal(tables.length, 143);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1260,7 +1260,7 @@ test("AT-01 anonymous can execute only the two bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 112);
+    assert.equal(functions.length, 118);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)

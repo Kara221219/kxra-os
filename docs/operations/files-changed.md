@@ -2,6 +2,47 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 24 September Phase 2 Slice 6
+
+Governed Routine Registry and recovery implementation:
+
+- `scripts/seed.mjs`
+- `supabase/migrations/0052_governed_routine_schema.sql`
+- `supabase/migrations/0053_governed_routine_contracts.sql`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `apps/os/components/RoutineRegistry.tsx`
+- `apps/os/lib/control-plane.ts`
+
+Acceptance and regression coverage:
+
+- `tests/routines.test.ts`
+- `tests/routines-http.test.ts`
+- `tests/access-matrix.test.ts`
+- `tests/control-plane-http.test.ts`
+- `tests/e2e/control-plane.spec.ts`
+- `tests/security.test.ts`
+- `tests/seed.test.ts`
+
+Architecture, security and operating evidence:
+
+- `README.md`
+- `docs/architecture/system.md`
+- `docs/architecture/whatsapp-and-jobs.md`
+- `docs/decisions/0013-governed-routine-engine.md`
+- `docs/security/access-control.md`
+- `docs/security/ai-execution-threat-model.md`
+- `docs/security/routine-engine-threat-model.md`
+- `docs/playbooks/routine-approval-and-recovery.md`
+- `docs/operations/acceptance-evidence.md`
+- `docs/operations/files-changed.md`
+- `docs/operations/handover.md`
+- `docs/operations/local-development.md`
+- `docs/operations/progress.md`
+- `docs/operations/work-log.md`
+
+The slice adds no Trigger.dev registration, always-on scheduler, hosted worker, notification delivery, real credential, external send, deployment or publication.
+
 ## 24 September Phase 2 Slice 5
 
 Projects 006/007 portfolio and governed pipeline implementation:

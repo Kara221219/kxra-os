@@ -756,6 +756,155 @@ async function handle(req: Request, ctx: Context) {
       }
       throw new HttpError(404, "Not found");
     }
+    if (p[0] === "routines") {
+      owner(a);
+      if (method === "GET" && !p[1]) {
+        return json(
+          await query(
+            a,
+            `select manifest.id,manifest.code,manifest.name,manifest.enabled,
+              version.id as version_id,version.version,version.status,
+              version.version_sha256,version.trigger_type,version.trigger_config,
+              version.timezone,version.calendar_code,version.action_graph,
+              version.scope_mode,version.maximum_attempts,version.lease_seconds,
+              version.notification_policy
+             from kxra.routine_manifests manifest
+             join kxra.routine_manifest_versions version
+              on version.routine_id=manifest.id and version.version=manifest.current_version
+             order by manifest.code`,
+          ),
+        );
+      }
+      if (
+        method === "POST" &&
+        p[1] === "versions" &&
+        p[2] &&
+        p[3] === "approve"
+      ) {
+        recentOwnerMfa(a);
+        const versionId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            expected_sha256: sha256,
+            note: z.string().trim().min(3).max(3000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.approve_routine_version($1,$2,$3,$4) result",
+          [versionId, input.expected_sha256, input.note, input.request_id],
+        );
+        return json(rows[0]);
+      }
+      if (
+        method === "POST" &&
+        p[1] === "versions" &&
+        p[2] &&
+        p[3] === "state"
+      ) {
+        recentOwnerMfa(a);
+        const versionId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            expected_sha256: sha256,
+            enabled: z.boolean(),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.set_routine_enabled($1,$2,$3,$4) result",
+          [versionId, input.expected_sha256, input.enabled, input.request_id],
+        );
+        return json(rows[0]);
+      }
+      if (
+        method === "POST" &&
+        p[1] === "versions" &&
+        p[2] &&
+        p[3] === "slots"
+      ) {
+        const versionId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            local_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            project_id: uuid.nullable(),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.plan_routine_slot($1,$2,$3,$4)",
+          [versionId, input.local_date, input.project_id, input.request_id],
+        );
+        return json(rows[0]);
+      }
+      if (
+        method === "POST" &&
+        p[1] === "versions" &&
+        p[2] &&
+        p[3] === "events"
+      ) {
+        const versionId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            event_code: z.string().regex(/^[a-z][a-z0-9._-]{2,119}$/),
+            event_id: z.string().regex(/^[A-Za-z0-9._:-]{3,240}$/),
+            project_id: uuid.nullable(),
+            payload_sha256: sha256,
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.enqueue_routine_event($1,$2,$3,$4,$5,$6) result",
+          [
+            versionId,
+            input.event_code,
+            input.event_id,
+            input.project_id,
+            input.payload_sha256,
+            input.request_id,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (method === "POST" && p[1] === "calendars" && !p[2]) {
+        recentOwnerMfa(a);
+        const input = z
+          .object({
+            calendar_code: z.string().regex(/^[A-Z0-9_-]{2,40}$/),
+            local_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            is_open: z.boolean(),
+            session_label: z.string().trim().min(1).max(80),
+            source_reference: z.string().trim().min(3).max(500),
+            source_sha256: sha256,
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.record_routine_calendar_day($1,$2,$3,$4,$5,$6,$7) result",
+          [
+            input.calendar_code,
+            input.local_date,
+            input.is_open,
+            input.session_label,
+            input.source_reference,
+            input.source_sha256,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "brand-studio") {
       if (method === "GET" && !p[1]) return json(await loadBrandStudio(a));
       if (method === "POST" && p[1] === "sources" && !p[2]) {
