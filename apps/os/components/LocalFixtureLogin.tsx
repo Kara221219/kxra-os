@@ -7,7 +7,7 @@ export default function LocalFixtureLogin({ enabled }: { enabled: boolean }) {
         <label>
           Synthetic identity
           <select name="fixture">
-            <option value="owner">Owner — all five projects</option>
+            <option value="owner">Owner — all seven projects</option>
             <option value="partner">Partner — seat covers only</option>
             <option value="viewer">Viewer — property only</option>
             <option value="revoked">Revoked account — access denied</option>

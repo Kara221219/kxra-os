@@ -30,7 +30,9 @@ export type WorkspaceModule = {
     | "VEHICLE_COMPATIBILITY"
     | "PROPERTY_ASSETS"
     | "P001_REVISIT"
-    | "DIGITAL_OPPORTUNITIES";
+    | "DIGITAL_OPPORTUNITIES"
+    | "YOUTUBE_PIPELINE"
+    | "REPOSITORY_PIPELINE";
   entry_type: WorkspaceEntryType | null;
   position: number;
   description: string;
@@ -78,7 +80,9 @@ export type GatePolicy = {
     | "P002_LISTING"
     | "P003_FAITHFUL_DELIVERY"
     | "P004_PAPER_READINESS"
-    | "P005_LOCAL_PROTOTYPE";
+    | "P005_LOCAL_PROTOTYPE"
+    | "P006_PUBLICATION_PACKAGE"
+    | "P007_ADOPTION";
   policy_version: number;
   requirements: string[];
   threshold_state: string;
@@ -153,6 +157,172 @@ export type DigitalOpportunity = {
   updated_at: string;
 };
 
+export type YoutubeChannelBinding = {
+  id: string;
+  expected_channel_url: string;
+  expected_handle: string;
+  provider_channel_id: string | null;
+  state: "UNVERIFIED" | "VERIFIED" | "DISCONNECTED";
+  version: number;
+  verified_at: string | null;
+};
+
+export type YoutubeContentPackage = {
+  id: string;
+  topic: string;
+  state: "DRAFT" | "APPROVED" | "CHANGES_REQUIRED";
+  current_version: number;
+  approved_version: number | null;
+  version_id: string;
+  version_status: "DRAFT" | "APPROVED" | "REJECTED" | "SUPERSEDED";
+  content_sha256: string;
+  source_pack: Record<string, unknown>[];
+  claim_ledger: Record<string, unknown>[];
+  script: string;
+  red_team: Record<string, unknown>;
+  storyboard: Record<string, unknown>;
+  rights_review: Record<string, unknown>;
+  voice_provenance: Record<string, unknown>;
+  render_manifest: Record<string, unknown>;
+  qa_review: Record<string, unknown>;
+  publication_metadata: Record<string, unknown>;
+  creator_name: string;
+  created_at: string;
+};
+
+export type YoutubeContentReview = {
+  id: string;
+  package_id: string;
+  package_version_id: string;
+  package_version: number;
+  content_sha256: string;
+  checks: Record<string, boolean>;
+  decision: string;
+  note: string;
+  reviewer_name: string;
+  created_at: string;
+};
+
+export type YoutubeUploadIntent = {
+  id: string;
+  package_id: string;
+  package_version_id: string;
+  package_version: number;
+  content_sha256: string;
+  intent_sha256: string;
+  state: "READY" | "WITHDRAWN";
+  adapter: "DISABLED";
+  delivery_state: "NOT_SENT";
+  created_at: string;
+};
+
+export type RepositoryCandidate = {
+  id: string;
+  repository_owner: string;
+  repository_name: string;
+  source_url: string;
+  default_branch: string | null;
+  commit_sha: string;
+  tree_sha: string | null;
+  fetched_at: string;
+  source_classification: string;
+  intake_source: string;
+  state: "REFERENCE_ONLY" | "METADATA_ONLY";
+  licence_observation: string;
+  adoption_recommendation: string;
+  created_at: string;
+};
+
+export type RepositoryQuarantine = {
+  id: string;
+  candidate_id: string;
+  commit_sha: string;
+  tree_sha: string;
+  archive_sha256: string;
+  manifest_sha256: string;
+  archive_size_bytes: string;
+  controls: Record<string, boolean>;
+  policy_version: string;
+  result: "ACCEPTED" | "REJECTED";
+  reason: string;
+  created_at: string;
+};
+
+export type RepositoryAssessment = {
+  id: string;
+  candidate_id: string;
+  quarantine_id: string;
+  toolchain: Record<string, string>;
+  findings: Record<string, unknown>[];
+  licence_state: string;
+  provenance_state: string;
+  secret_state: string;
+  malware_state: string;
+  dependency_state: string;
+  sast_state: string;
+  workflow_state: string;
+  binary_state: string;
+  critical_count: number;
+  high_count: number;
+  bounded_conclusion: string;
+  residual_risk: string;
+  disposition: "PASS" | "BLOCKED";
+  created_at: string;
+};
+
+export type RepositoryProposal = {
+  id: string;
+  candidate_id: string;
+  state: "DRAFT" | "APPROVED" | "CHANGES_REQUIRED";
+  current_version: number;
+  approved_version: number | null;
+  version_id: string;
+  assessment_id: string;
+  need_statement: string;
+  exact_scope: string[];
+  licence_obligations: string;
+  architecture_changes: string;
+  threat_model: string;
+  test_plan: string;
+  rollback_plan: string;
+  proposal_sha256: string;
+  version_status: "DRAFT" | "APPROVED" | "REJECTED" | "SUPERSEDED";
+  creator_name: string;
+  created_at: string;
+};
+
+export type RepositoryAdoptionReview = {
+  id: string;
+  proposal_id: string;
+  proposal_version_id: string;
+  proposal_version: number;
+  proposal_sha256: string;
+  checks: Record<string, boolean>;
+  decision: string;
+  note: string;
+  reviewer_name: string;
+  created_at: string;
+};
+
+export type RepositoryImplementationIntent = {
+  id: string;
+  candidate_id: string;
+  assessment_id: string;
+  proposal_id: string;
+  proposal_version_id: string;
+  review_id: string;
+  commit_sha: string;
+  proposal_sha256: string;
+  branch_name: string;
+  intent_sha256: string;
+  state: "AUTHORIZED";
+  git_execution_state: "NOT_STARTED";
+  merge_enabled: false;
+  release_enabled: false;
+  deploy_enabled: false;
+  created_at: string;
+};
+
 export type WorkspaceFile = {
   id: string;
   filename: string;
@@ -216,6 +386,16 @@ export type ProjectWorkspace = {
   propertyAssets: PropertyAsset[];
   clprReviews: ClprRevisitReview[];
   digitalOpportunities: DigitalOpportunity[];
+  youtubeChannelBindings: YoutubeChannelBinding[];
+  youtubePackages: YoutubeContentPackage[];
+  youtubeReviews: YoutubeContentReview[];
+  youtubeUploadIntents: YoutubeUploadIntent[];
+  repositoryCandidates: RepositoryCandidate[];
+  repositoryQuarantines: RepositoryQuarantine[];
+  repositoryAssessments: RepositoryAssessment[];
+  repositoryProposals: RepositoryProposal[];
+  repositoryReviews: RepositoryAdoptionReview[];
+  repositoryImplementationIntents: RepositoryImplementationIntent[];
   gatePolicies: GatePolicy[];
   gateAuthorizations: GateAuthorization[];
   acceptedEvidence: RecordRow[];
@@ -296,6 +476,16 @@ export async function loadProjectWorkspace(
     propertyAssets: [],
     clprReviews: [],
     digitalOpportunities: [],
+    youtubeChannelBindings: [],
+    youtubePackages: [],
+    youtubeReviews: [],
+    youtubeUploadIntents: [],
+    repositoryCandidates: [],
+    repositoryQuarantines: [],
+    repositoryAssessments: [],
+    repositoryProposals: [],
+    repositoryReviews: [],
+    repositoryImplementationIntents: [],
     gatePolicies: [],
     gateAuthorizations: [],
     acceptedEvidence: [],
@@ -442,6 +632,124 @@ export async function loadProjectWorkspace(
        from kxra.digital_opportunities where project_id=$1 order by updated_at desc,id`,
       [projectId],
     );
+  } else if (module.source_kind === "YOUTUBE_PIPELINE") {
+    const [bindings, packages, reviews, intents] = await Promise.all([
+      query<YoutubeChannelBinding>(
+        a,
+        `select id,expected_channel_url,expected_handle,provider_channel_id,
+          state,version,verified_at
+         from kxra.youtube_channel_bindings where project_id=$1`,
+        [projectId],
+      ),
+      query<YoutubeContentPackage>(
+        a,
+        `select p.id,p.topic,p.state,p.current_version,p.approved_version,
+          v.id as version_id,v.status as version_status,v.content_sha256,
+          v.source_pack,v.claim_ledger,v.script,v.red_team,v.storyboard,
+          v.rights_review,v.voice_provenance,v.render_manifest,v.qa_review,
+          v.publication_metadata,m.display_name as creator_name,p.created_at
+         from kxra.youtube_content_packages p
+         join kxra.youtube_content_package_versions v
+          on v.package_id=p.id and v.version=p.current_version
+         join kxra.members m on m.id=p.created_by and m.org_id=p.org_id
+         where p.project_id=$1 order by p.updated_at desc,p.id`,
+        [projectId],
+      ),
+      query<YoutubeContentReview>(
+        a,
+        `select r.id,r.package_id,r.package_version_id,r.package_version,
+          r.content_sha256,r.checks,r.decision,r.note,
+          m.display_name as reviewer_name,r.created_at
+         from kxra.youtube_content_reviews r
+         join kxra.members m on m.id=r.reviewed_by and m.org_id=r.org_id
+         where r.project_id=$1 order by r.created_at desc,r.id`,
+        [projectId],
+      ),
+      query<YoutubeUploadIntent>(
+        a,
+        `select id,package_id,package_version_id,package_version,content_sha256,
+          intent_sha256,state,adapter,delivery_state,created_at
+         from kxra.youtube_upload_intents where project_id=$1
+         order by created_at desc,id`,
+        [projectId],
+      ),
+    ]);
+    result.youtubeChannelBindings = bindings;
+    result.youtubePackages = packages;
+    result.youtubeReviews = reviews;
+    result.youtubeUploadIntents = intents;
+  } else if (module.source_kind === "REPOSITORY_PIPELINE") {
+    const [candidates, quarantines, assessments, proposals, reviews, intents] =
+      await Promise.all([
+        query<RepositoryCandidate>(
+          a,
+          `select id,repository_owner,repository_name,source_url,default_branch,
+            commit_sha,tree_sha,fetched_at,source_classification,intake_source,
+            state,licence_observation,adoption_recommendation,created_at
+           from kxra.repository_candidates where project_id=$1
+           order by created_at desc,id`,
+          [projectId],
+        ),
+        query<RepositoryQuarantine>(
+          a,
+          `select id,candidate_id,commit_sha,tree_sha,archive_sha256,
+            manifest_sha256,archive_size_bytes::text,controls,policy_version,
+            result,reason,created_at
+           from kxra.repository_quarantine_records where project_id=$1
+           order by created_at desc,id`,
+          [projectId],
+        ),
+        query<RepositoryAssessment>(
+          a,
+          `select id,candidate_id,quarantine_id,toolchain,findings,licence_state,
+            provenance_state,secret_state,malware_state,dependency_state,
+            sast_state,workflow_state,binary_state,critical_count,high_count,
+            bounded_conclusion,residual_risk,disposition,created_at
+           from kxra.repository_assessments where project_id=$1
+           order by created_at desc,id`,
+          [projectId],
+        ),
+        query<RepositoryProposal>(
+          a,
+          `select p.id,p.candidate_id,p.state,p.current_version,p.approved_version,
+            v.id as version_id,v.assessment_id,v.need_statement,v.exact_scope,
+            v.licence_obligations,v.architecture_changes,v.threat_model,
+            v.test_plan,v.rollback_plan,v.proposal_sha256,
+            v.status as version_status,m.display_name as creator_name,p.created_at
+           from kxra.repository_adoption_proposals p
+           join kxra.repository_adoption_proposal_versions v
+            on v.proposal_id=p.id and v.version=p.current_version
+           join kxra.members m on m.id=p.created_by and m.org_id=p.org_id
+           where p.project_id=$1 order by p.updated_at desc,p.id`,
+          [projectId],
+        ),
+        query<RepositoryAdoptionReview>(
+          a,
+          `select r.id,r.proposal_id,r.proposal_version_id,r.proposal_version,
+            r.proposal_sha256,r.checks,r.decision,r.note,
+            m.display_name as reviewer_name,r.created_at
+           from kxra.repository_adoption_reviews r
+           join kxra.members m on m.id=r.reviewed_by and m.org_id=r.org_id
+           where r.project_id=$1 order by r.created_at desc,r.id`,
+          [projectId],
+        ),
+        query<RepositoryImplementationIntent>(
+          a,
+          `select id,candidate_id,assessment_id,proposal_id,proposal_version_id,
+            review_id,commit_sha,proposal_sha256,branch_name,intent_sha256,
+            state,git_execution_state,merge_enabled,release_enabled,
+            deploy_enabled,created_at
+           from kxra.repository_implementation_intents where project_id=$1
+           order by created_at desc,id`,
+          [projectId],
+        ),
+      ]);
+    result.repositoryCandidates = candidates;
+    result.repositoryQuarantines = quarantines;
+    result.repositoryAssessments = assessments;
+    result.repositoryProposals = proposals;
+    result.repositoryReviews = reviews;
+    result.repositoryImplementationIntents = intents;
   }
   return result;
 }

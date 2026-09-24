@@ -6,6 +6,8 @@ const projects = {
   p3: "30000000-0000-4000-8000-000000000003",
   p4: "30000000-0000-4000-8000-000000000004",
   p5: "30000000-0000-4000-8000-000000000005",
+  p6: "30000000-0000-4000-8000-000000000006",
+  p7: "30000000-0000-4000-8000-000000000007",
 };
 
 async function fixtureLogin(page: Page, fixture: string) {
@@ -84,6 +86,22 @@ test("AT-23 owner receives the exact common and specialist workspace contracts",
       gate: "P005 LOCAL PROTOTYPE",
       module: "opportunity-backlog",
       moduleName: "Opportunity Backlog",
+    },
+    {
+      id: projects.p6,
+      name: "Finance Unfolded YouTube Content Engine",
+      specialistCount: 18,
+      gate: "P006 PUBLICATION PACKAGE",
+      module: "source-packs",
+      moduleName: "Source Packs",
+    },
+    {
+      id: projects.p7,
+      name: "GitHub Repository Intelligence & Secure Reuse",
+      specialistCount: 18,
+      gate: "P007 ADOPTION",
+      module: "candidate-intake",
+      moduleName: "Candidate Intake",
     },
   ];
 
@@ -192,6 +210,31 @@ test("AT-23 specialist UIs expose evidence states and preserve hard stops", asyn
   await expect(
     page.getByRole("button", { name: /publish|create product/i }),
   ).toHaveCount(0);
+
+  await page.goto(`/os/projects/${projects.p6}/source-packs`);
+  await expect(
+    page.getByText("Pre-publication only.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/No upload, schedule or publication executor exists/),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Create exact local content package", { exact: true }),
+  ).toBeVisible();
+
+  await page.goto(`/os/projects/${projects.p7}/candidate-intake`);
+  await expect(
+    page.getByText("Untrusted repositories remain data.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("worldflowai/everything-claude-code", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("msitarzewski/agency-agents", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Add metadata-only repository candidate", { exact: true }),
+  ).toBeVisible();
 });
 
 test("AT-23 partner project navigation remains exact and server-scoped", async ({

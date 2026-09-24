@@ -98,7 +98,7 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
 
   await navigate(page, "Portfolio");
   await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
-  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(5);
+  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(7);
   await expect(
     page.getByText("NOT ASSESSED", { exact: true }).first(),
   ).toBeVisible();
@@ -107,7 +107,7 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
     .locator('select[name="stage"]')
     .selectOption("VALIDATION");
   await portfolioFilter.getByRole("button", { name: "Apply" }).click();
-  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(3);
+  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(4);
 
   await navigate(page, "Idea Inbox");
   await expect(page.getByRole("heading", { name: "Idea Inbox" })).toBeVisible();

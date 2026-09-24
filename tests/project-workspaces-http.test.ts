@@ -13,6 +13,8 @@ const projects = {
   p3: "30000000-0000-4000-8000-000000000003",
   p4: "30000000-0000-4000-8000-000000000004",
   p5: "30000000-0000-4000-8000-000000000005",
+  p6: "30000000-0000-4000-8000-000000000006",
+  p7: "30000000-0000-4000-8000-000000000007",
 };
 
 async function login(fixture: string) {
@@ -89,6 +91,8 @@ test("AT-23 HTTP returns every exact module, gate, empty and denied state", asyn
     [projects.p3, "PROJECT-003", 30, "P003_FAITHFUL_DELIVERY"],
     [projects.p4, "PROJECT-004", 31, "P004_PAPER_READINESS"],
     [projects.p5, "PROJECT-005", 34, "P005_LOCAL_PROTOTYPE"],
+    [projects.p6, "PROJECT-006", 36, "P006_PUBLICATION_PACKAGE"],
+    [projects.p7, "PROJECT-007", 36, "P007_ADOPTION"],
   ] as const;
   for (const [id, code, moduleCount, gate] of expected) {
     const response = await req(`project-workspaces/${id}`, owner);

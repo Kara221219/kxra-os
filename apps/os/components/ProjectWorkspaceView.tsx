@@ -15,6 +15,17 @@ import {
   WorkspaceEntryForm,
   WorkspaceReviewButton,
 } from "./ProjectWorkspaceForms";
+import {
+  RepositoryAssessmentForm,
+  RepositoryCandidateForm,
+  RepositoryIntentForm,
+  RepositoryProposalForm,
+  RepositoryQuarantineForm,
+  RepositoryReviewForm,
+  YoutubeIntentForm,
+  YoutubePackageForm,
+  YoutubeReviewForm,
+} from "./Phase2ProjectForms";
 import type {
   GatePolicy,
   ProjectWorkspace,
@@ -38,6 +49,15 @@ function Boundary({ children }: { children: React.ReactNode }) {
       <p>{children}</p>
     </div>
   );
+}
+
+type GenericGate = Exclude<
+  GatePolicy["gate_code"],
+  "P006_PUBLICATION_PACKAGE" | "P007_ADOPTION"
+>;
+
+function isGenericGate(gate: GatePolicy["gate_code"]): gate is GenericGate {
+  return gate !== "P006_PUBLICATION_PACKAGE" && gate !== "P007_ADOPTION";
 }
 
 function WorkspaceNavigation({
@@ -130,7 +150,7 @@ function GatePanel({
       ) : (
         <p className="notice">No current local gate authorization.</p>
       )}
-      {owner && (
+      {owner && isGenericGate(policy.gate_code) && (
         <GateEvidenceForm
           projectId={projectId}
           gate={policy.gate_code}
@@ -533,6 +553,296 @@ function SpecialistData({
   return null;
 }
 
+function YoutubePipeline({
+  workspace,
+  owner,
+}: {
+  workspace: ProjectWorkspace;
+  owner: boolean;
+}) {
+  const binding = workspace.youtubeChannelBindings[0];
+  const moduleKey = workspace.module.module_key;
+  return (
+    <>
+      <section className="panel">
+        <div className="record-top">
+          <div>
+            <p className="eyebrow">Channel authority</p>
+            <h3>
+              {binding?.expected_handle || "Expected channel unavailable"}
+            </h3>
+          </div>
+          <span
+            className={`badge ${binding?.state === "VERIFIED" ? "green" : "amber"}`}
+          >
+            {binding?.state || "UNAVAILABLE"}
+          </span>
+        </div>
+        {binding && (
+          <>
+            <p>{binding.expected_channel_url}</p>
+            <p className="subtle">
+              Binding v{binding.version}. A public channel URL is not OAuth
+              authority. Provider upload and publication are absent.
+            </p>
+          </>
+        )}
+      </section>
+      <div className="record-list">
+        {workspace.youtubePackages.map((item) => {
+          const review = workspace.youtubeReviews.find(
+            (candidate) =>
+              candidate.package_version_id === item.version_id &&
+              candidate.decision === "APPROVE_UPLOAD_INTENT",
+          );
+          const intent = workspace.youtubeUploadIntents.find(
+            (candidate) => candidate.package_version_id === item.version_id,
+          );
+          return (
+            <article className="record" key={item.id}>
+              <div className="record-top">
+                <div>
+                  <p className="eyebrow">Package v{item.current_version}</p>
+                  <h3>{item.topic}</h3>
+                </div>
+                <span className="badge">{item.state}</span>
+              </div>
+              <p>
+                {item.source_pack.length} source
+                {item.source_pack.length === 1 ? "" : "s"} ·{" "}
+                {item.claim_ledger.length} claim
+                {item.claim_ledger.length === 1 ? "" : "s"} ·{" "}
+                {item.creator_name}
+              </p>
+              <dl className="workspace-data-list">
+                <div>
+                  <dt>Version status</dt>
+                  <dd>{item.version_status}</dd>
+                </div>
+                <div>
+                  <dt>Content hash</dt>
+                  <dd>{item.content_sha256}</dd>
+                </div>
+                <div>
+                  <dt>Visibility</dt>
+                  <dd>{String(item.publication_metadata.visibility)}</dd>
+                </div>
+                <div>
+                  <dt>Review</dt>
+                  <dd>{review?.decision || "Not approved"}</dd>
+                </div>
+                <div>
+                  <dt>Upload intent</dt>
+                  <dd>
+                    {intent
+                      ? `${intent.state} / ${intent.delivery_state}`
+                      : "Absent"}
+                  </dd>
+                </div>
+              </dl>
+              {moduleKey === "publication-approvals" &&
+                owner &&
+                item.version_status === "DRAFT" && (
+                  <YoutubeReviewForm
+                    projectId={workspace.project.id}
+                    item={item}
+                  />
+                )}
+              {moduleKey === "youtube-uploads" &&
+                owner &&
+                item.state === "APPROVED" &&
+                review &&
+                !intent &&
+                binding?.state === "VERIFIED" && (
+                  <YoutubeIntentForm
+                    projectId={workspace.project.id}
+                    item={item}
+                    review={review}
+                  />
+                )}
+            </article>
+          );
+        })}
+      </div>
+      {!workspace.youtubePackages.length && (
+        <Empty>No governed video content package has been created.</Empty>
+      )}
+      {moduleKey === "source-packs" && workspace.projectWritable && (
+        <YoutubePackageForm projectId={workspace.project.id} />
+      )}
+      {moduleKey === "youtube-uploads" && binding?.state !== "VERIFIED" && (
+        <p className="notice">
+          Upload intent creation is blocked until a provider adapter proves the
+          exact OAuth channel binding.
+        </p>
+      )}
+    </>
+  );
+}
+
+function RepositoryPipeline({
+  workspace,
+  owner,
+}: {
+  workspace: ProjectWorkspace;
+  owner: boolean;
+}) {
+  const moduleKey = workspace.module.module_key;
+  return (
+    <>
+      <div className="record-list">
+        {workspace.repositoryCandidates.map((candidate) => {
+          const quarantine = workspace.repositoryQuarantines.find(
+            (item) => item.candidate_id === candidate.id,
+          );
+          const assessment = workspace.repositoryAssessments.find(
+            (item) => item.candidate_id === candidate.id,
+          );
+          const proposals = workspace.repositoryProposals.filter(
+            (item) => item.candidate_id === candidate.id,
+          );
+          return (
+            <article className="record" key={candidate.id}>
+              <div className="record-top">
+                <div>
+                  <p className="eyebrow">
+                    {candidate.state.replaceAll("_", " ")}
+                  </p>
+                  <h3>
+                    {candidate.repository_owner}/{candidate.repository_name}
+                  </h3>
+                </div>
+                <span className="badge">
+                  {assessment?.disposition || "NOT ASSESSED"}
+                </span>
+              </div>
+              <p>{candidate.adoption_recommendation}</p>
+              <dl className="workspace-data-list">
+                <div>
+                  <dt>Pinned commit</dt>
+                  <dd>{candidate.commit_sha}</dd>
+                </div>
+                <div>
+                  <dt>Tree</dt>
+                  <dd>{candidate.tree_sha || "Unresolved"}</dd>
+                </div>
+                <div>
+                  <dt>Licence</dt>
+                  <dd>
+                    {assessment?.licence_state || candidate.licence_observation}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Quarantine</dt>
+                  <dd>{quarantine?.result || "Absent"}</dd>
+                </div>
+                <div>
+                  <dt>Security conclusion</dt>
+                  <dd>{assessment?.bounded_conclusion || "Not assessed"}</dd>
+                </div>
+              </dl>
+              {moduleKey === "quarantine" && owner && !quarantine && (
+                <RepositoryQuarantineForm
+                  projectId={workspace.project.id}
+                  candidate={candidate}
+                />
+              )}
+              {[
+                "licence-review",
+                "malware-secret-scan",
+                "dependency-sbom-review",
+                "codeql-sast-findings",
+                "workflow-hook-review",
+                "red-team",
+              ].includes(moduleKey) &&
+                owner &&
+                quarantine?.result === "ACCEPTED" &&
+                !assessment && (
+                  <RepositoryAssessmentForm
+                    projectId={workspace.project.id}
+                    candidate={candidate}
+                    quarantine={quarantine}
+                  />
+                )}
+              {moduleKey === "adoption-proposals" &&
+                workspace.projectWritable &&
+                assessment?.disposition === "PASS" &&
+                !proposals.length && (
+                  <RepositoryProposalForm
+                    projectId={workspace.project.id}
+                    candidate={candidate}
+                    assessment={assessment}
+                  />
+                )}
+            </article>
+          );
+        })}
+      </div>
+      {!workspace.repositoryCandidates.length && (
+        <Empty>No metadata-only repository candidate has been recorded.</Empty>
+      )}
+      {moduleKey === "candidate-intake" && workspace.projectWritable && (
+        <RepositoryCandidateForm projectId={workspace.project.id} />
+      )}
+      {workspace.repositoryProposals.map((proposal) => {
+        const review = workspace.repositoryReviews.find(
+          (item) => item.proposal_version_id === proposal.version_id,
+        );
+        const intent = workspace.repositoryImplementationIntents.find(
+          (item) => item.proposal_version_id === proposal.version_id,
+        );
+        if (
+          !["adoption-proposals", "implementation-branches-prs"].includes(
+            moduleKey,
+          )
+        )
+          return null;
+        return (
+          <section className="panel" key={proposal.id}>
+            <div className="record-top">
+              <div>
+                <p className="eyebrow">
+                  Adoption proposal v{proposal.current_version}
+                </p>
+                <h3>{proposal.need_statement}</h3>
+              </div>
+              <span className="badge">{proposal.state}</span>
+            </div>
+            <p>Exact scope: {proposal.exact_scope.join("; ")}</p>
+            <p className="subtle">Proposal hash: {proposal.proposal_sha256}</p>
+            {moduleKey === "adoption-proposals" &&
+              owner &&
+              proposal.version_status === "DRAFT" && (
+                <RepositoryReviewForm
+                  projectId={workspace.project.id}
+                  proposal={proposal}
+                />
+              )}
+            {moduleKey === "implementation-branches-prs" &&
+              owner &&
+              proposal.state === "APPROVED" &&
+              review?.decision === "APPROVE_IMPLEMENTATION_INTENT" &&
+              !intent && (
+                <RepositoryIntentForm
+                  projectId={workspace.project.id}
+                  proposal={proposal}
+                  reviewId={review.id}
+                />
+              )}
+            {intent && (
+              <p className="notice">
+                {intent.branch_name}: {intent.state}, Git{" "}
+                {intent.git_execution_state}; merge, release and deploy
+                disabled.
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
 function ModuleBody({
   workspace,
   owner,
@@ -694,6 +1004,10 @@ function ModuleBody({
         </div>
       </div>
     );
+  if (source === "YOUTUBE_PIPELINE")
+    return <YoutubePipeline workspace={workspace} owner={owner} />;
+  if (source === "REPOSITORY_PIPELINE")
+    return <RepositoryPipeline workspace={workspace} owner={owner} />;
   return <SpecialistData workspace={workspace} owner={owner} />;
 }
 
@@ -718,6 +1032,20 @@ export default function ProjectWorkspaceView({
         <div className="hard-stop-banner">
           <strong>Demand first.</strong> Product creation and publication remain
           disabled; local prototype authority is evidence-bound and separate.
+        </div>
+      )}
+      {workspace.project.code === "PROJECT-006" && (
+        <div className="hard-stop-banner">
+          <strong>Pre-publication only.</strong> Packages require exact
+          evidence, independent review and verified channel binding. No upload,
+          schedule or publication executor exists.
+        </div>
+      )}
+      {workspace.project.code === "PROJECT-007" && (
+        <div className="hard-stop-banner">
+          <strong>Untrusted repositories remain data.</strong> No host
+          execution, dependency installation, Git write, merge, release or
+          deployment executor exists.
         </div>
       )}
       <WorkspaceNavigation

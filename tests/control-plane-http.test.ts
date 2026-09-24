@@ -107,7 +107,7 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const second = await (
     await api("portfolio?page=2&page_size=2&sort=code&direction=asc", owner)
   ).json();
-  assert.equal(first.total_count, 5);
+  assert.equal(first.total_count, 7);
   assert.equal(first.rows.length, 2);
   assert.deepEqual(
     first.rows.map((row: any) => row.id),
@@ -125,7 +125,7 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
       owner,
     )
   ).json();
-  assert.equal(validation.total_count, 3);
+  assert.equal(validation.total_count, 4);
   assert.ok(
     validation.rows.every((row: any) => row.lifecycle_stage === "VALIDATION"),
   );
@@ -144,8 +144,8 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const adminResponse = await api("admin", owner);
   assert.equal(adminResponse.status, 200, await adminResponse.clone().text());
   const snapshot = await adminResponse.json();
-  assert.equal(snapshot.database.rls_tables, 123);
-  assert.equal(snapshot.database.protected_tables, 123);
+  assert.equal(snapshot.database.rls_tables, 135);
+  assert.equal(snapshot.database.protected_tables, 135);
   assert.ok(
     Object.values(snapshot.integrations).every(
       (value) => typeof value === "boolean",

@@ -2,6 +2,55 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 24 September Phase 2 Slice 5
+
+Projects 006/007 portfolio and governed pipeline implementation:
+
+- `KXRA-GENESIS/registers/projects.json`
+- `scripts/seed.mjs`
+- `supabase/migrations/0049_phase2_project_portfolio.sql`
+- `supabase/migrations/0050_governed_youtube_and_repository_schema.sql`
+- `supabase/migrations/0051_governed_youtube_and_repository_contracts.sql`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/components/LocalFixtureLogin.tsx`
+- `apps/os/components/Phase2ProjectForms.tsx`
+- `apps/os/components/ProjectWorkspaceView.tsx`
+- `apps/os/lib/project-workspaces.ts`
+
+Acceptance and regression coverage:
+
+- `tests/phase2-projects.test.ts`
+- `tests/phase2-projects-http.test.ts`
+- `tests/access-matrix.test.ts`
+- `tests/control-plane-http.test.ts`
+- `tests/e2e/control-plane.spec.ts`
+- `tests/e2e/project-workspaces.spec.ts`
+- `tests/http.test.ts`
+- `tests/project-workspaces-http.test.ts`
+- `tests/project-workspaces.test.ts`
+- `tests/security.test.ts`
+- `tests/seed.test.ts`
+
+Architecture, security and operating evidence:
+
+- `README.md`
+- `docs/architecture/system.md`
+- `docs/decisions/0007-customer-platform-and-new-projects.md`
+- `docs/decisions/0012-governed-youtube-and-repository-pipelines.md`
+- `docs/projects/PROJECT-006.md`
+- `docs/projects/PROJECT-007.md`
+- `docs/security/access-control.md`
+- `docs/security/youtube-and-repository-pipelines-threat-model.md`
+- `docs/playbooks/review-youtube-and-repository-intents.md`
+- `docs/operations/acceptance-evidence.md`
+- `docs/operations/files-changed.md`
+- `docs/operations/handover.md`
+- `docs/operations/local-development.md`
+- `docs/operations/progress.md`
+- `docs/operations/work-log.md`
+
+The slice adds no YouTube credential or send, repository archive/code execution, Git mutation, production scanner, external provider call, deployment or publication.
+
 ## 20 September Phase 2 Slice 2
 
 Secure private-file and knowledge implementation:

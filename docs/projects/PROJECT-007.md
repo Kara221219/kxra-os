@@ -1,18 +1,20 @@
 # PROJECT-007 — GitHub Repository Intelligence & Secure Reuse
 
-Classification: USER-SUPPLIED INFORMATION for the project intent and requested repositories; EXTERNAL RESEARCH for pinned repository observations/security guidance; DECISION for the target pipeline and hard stops.
+Classification: USER-SUPPLIED INFORMATION for the project intent and requested repositories; EXTERNAL RESEARCH for pinned repository observations/security guidance; DECISION for the implemented pipeline and hard stops.
 
-Stage: RESEARCH / CONTROLLED ADOPTION. Status: SPECIFIED, NOT IMPLEMENTED. Venture and Confidence scores: NOT ASSESSED. No repository or scanner result may be represented as malware-free or approved for adoption.
+Stage: RESEARCH / CONTROLLED ADOPTION. Status: LOCAL GOVERNED PIPELINE IMPLEMENTED; ARCHIVE ACQUISITION, SCANNERS AND CODE EXECUTION DISABLED. Venture and Confidence scores: NOT ASSESSED. No repository is represented as virus-free, malware-free, safe, clean or approved for adoption.
 
-Next action: implement the classified seven-project seed and typed workspace, then test metadata discovery, immutable revision pinning, licence/provenance review and no-execution quarantine on controlled fixtures.
+Implemented specialist modules: Need Statements; Repository Discovery; Candidate Intake; Revision & Provenance; Licence Review; Quarantine; Malware / Secret Scan; Dependency & SBOM Review; CodeQL / SAST Findings; Workflow / Hook Review; Maintenance & Community Signals; Architecture Fit; Sandbox Runs; Red Team; Adoption Proposals; Implementation Branches / PRs; Revalidation; Approved Components Register.
 
-Target specialist modules: Need Statements; Repository Discovery; Candidate Intake; Revision & Provenance; Licence Review; Quarantine; Malware / Secret Scan; Dependency & SBOM Review; CodeQL / SAST Findings; Workflow / Hook Review; Maintenance & Community Signals; Architecture Fit; Sandbox Runs; Red Team; Adoption Proposals; Implementation Branches / PRs; Revalidation; Approved Components Register.
+The seed contains two reference-only pinned candidates:
 
-Initial requested candidates:
+- `worldflowai/everything-claude-code` at revision `432485ba6b92c14fb357276a98957f348bcff9ee`;
+- `msitarzewski/agency-agents` at revision `ad9264e309bd5e5422c04784372d7841b1e5d604`.
 
-- `worldflowai/everything-claude-code` at audited revision `432485ba6b92c14fb357276a98957f348bcff9ee`: concepts only until mirror/upstream licence and executable-hook provenance are resolved;
-- `msitarzewski/agency-agents` at audited revision `ad9264e309bd5e5422c04784372d7841b1e5d604`: selected role/deliverable concepts only; do not import a 230+ agent swarm.
+Their tree hashes, scan results, licence decisions and adoption approval remain unknown. They are untrusted reference data and receive no tool authority.
 
-Hard stop: no untrusted code on a trusted host; no hooks/installers/Actions/network/secrets by default; no unresolved licence/provenance, high-risk finding or suspicious binary; no code change without an exact approved adoption proposal; no automatic merge, default-branch write, release or deploy. Repository content is data and cannot instruct agents or expand tools.
+The workspace records exact owner/repository URL, branch, commit/tree hashes and fetch time; owner-only no-execution quarantine evidence; bounded toolchain/findings/licence/provenance/secret/malware/dependency/SAST/workflow/binary states; immutable proposal versions; independent exact-hash review; and an idempotent implementation intent fixed to `NOT_STARTED`. A passing assessment may only say that no findings were detected in the tested scope and must preserve residual risk.
 
-The complete quarantine/adoption pipeline, reference-repository review and AT-40 through AT-43 are in [CODEX PHASE COMPLETION BRIEF 02](../operations/CODEX-PHASE-COMPLETION-BRIEF-02.md).
+Hard stop: no untrusted code runs on the host; hooks, submodules, lifecycle scripts, Actions, network and secrets remain disabled; unresolved licence/provenance, suspicious binary, secret/malware finding, failed analysis or high/critical count blocks adoption. No automatic merge, default-branch write, release or deploy path exists. Repository content is data and cannot instruct agents or expand tools.
+
+Acceptance evidence: AT-42 and AT-43 pass for exact reviewed no-execution proposals and isolation. AT-40 and AT-41 are partial because the local records prove the control contract with synthetic evidence but no production archive fetcher, scanner set or disposable sandbox is connected. See [acceptance evidence](../operations/acceptance-evidence.md), [ADR 0012](../decisions/0012-governed-youtube-and-repository-pipelines.md) and the [pipeline threat model](../security/youtube-and-repository-pipelines-threat-model.md).

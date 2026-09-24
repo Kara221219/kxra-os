@@ -82,7 +82,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
     await importSeeds(db, bundle);
     await db.query("commit");
 
-    assert.equal((await db.query("select * from kxra.projects")).rowCount, 5);
+    assert.equal((await db.query("select * from kxra.projects")).rowCount, 7);
     assert.deepEqual(
       (await db.query("select code from kxra.projects order by code")).rows.map(
         (row) => row.code,
@@ -93,6 +93,8 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
         "PROJECT-003",
         "PROJECT-004",
         "PROJECT-005",
+        "PROJECT-006",
+        "PROJECT-007",
       ],
     );
     assert.equal(
@@ -101,7 +103,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           "select count(*)::int as n from kxra.projects where venture_score is null and confidence_score is null and not live_execution_enabled and not product_creation_enabled and source_hash is not null",
         )
       ).rows[0].n,
-      5,
+      7,
     );
     assert.deepEqual(
       (
@@ -141,6 +143,18 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           disposition: "ACTIVE",
           next_gate: "P005_LOCAL_PROTOTYPE",
         },
+        {
+          code: "PROJECT-006",
+          lifecycle_stage: "VALIDATION",
+          disposition: "ACTIVE",
+          next_gate: "P006_PUBLICATION_PACKAGE",
+        },
+        {
+          code: "PROJECT-007",
+          lifecycle_stage: "FEASIBILITY",
+          disposition: "ACTIVE",
+          next_gate: "P007_ADOPTION",
+        },
       ],
     );
     assert.deepEqual(
@@ -160,6 +174,8 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
         { code: "PROJECT-003", common: 18, specialist: 12 },
         { code: "PROJECT-004", common: 18, specialist: 13 },
         { code: "PROJECT-005", common: 18, specialist: 16 },
+        { code: "PROJECT-006", common: 18, specialist: 18 },
+        { code: "PROJECT-007", common: 18, specialist: 18 },
       ],
     );
     assert.equal(
@@ -168,7 +184,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           "select count(*)::int as n from kxra.project_gate_policies",
         )
       ).rows[0].n,
-      5,
+      7,
     );
     assert.equal(
       (
@@ -178,7 +194,46 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
            where v.version=p.governance_version and v.next_gate=p.next_gate`,
         )
       ).rows[0].n,
-      5,
+      7,
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select state,expected_channel_url,expected_handle
+           from kxra.youtube_channel_bindings`,
+        )
+      ).rows,
+      [
+        {
+          state: "UNVERIFIED",
+          expected_channel_url: "https://youtube.com/@finance-unfolded247",
+          expected_handle: "@Finance-Unfolded247",
+        },
+      ],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select repository_owner,repository_name,commit_sha,state,tree_sha
+           from kxra.repository_candidates order by repository_owner`,
+        )
+      ).rows,
+      [
+        {
+          repository_owner: "msitarzewski",
+          repository_name: "agency-agents",
+          commit_sha: "ad9264e309bd5e5422c04784372d7841b1e5d604",
+          state: "REFERENCE_ONLY",
+          tree_sha: null,
+        },
+        {
+          repository_owner: "worldflowai",
+          repository_name: "everything-claude-code",
+          commit_sha: "432485ba6b92c14fb357276a98957f348bcff9ee",
+          state: "REFERENCE_ONLY",
+          tree_sha: null,
+        },
+      ],
     );
     assert.deepEqual(
       (

@@ -82,6 +82,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ path: string[] }> };
 const positiveVersion = z.number().int().positive();
+const sha256 = z.string().regex(/^[a-f0-9]{64}$/);
+const gitSha = z.string().regex(/^[a-f0-9]{40}$/);
+const requestId = uuid;
 const evidenceReference = z
   .object({ record_id: uuid, version: positiveVersion })
   .strict();
@@ -180,6 +183,145 @@ const gateEvidenceInput = z.discriminatedUnion("gate", [
     })
     .strict(),
 ]);
+const youtubeSource = z
+  .object({
+    source_url: z.string().url().startsWith("https://").max(2000),
+    title: z.string().trim().min(3).max(500),
+    published_at: z.string().date(),
+    accessed_at: z.string().date(),
+    source_type: z.enum(["PRIMARY", "OFFICIAL", "SECONDARY"]),
+  })
+  .strict();
+const youtubeClaim = z
+  .object({
+    claim_id: z.string().regex(/^[A-Z0-9][A-Z0-9_-]{0,39}$/),
+    text: z.string().trim().min(3).max(2000),
+    source_url: z.string().url().startsWith("https://").max(2000),
+    classification: z.enum([
+      "FACT",
+      "USER-SUPPLIED INFORMATION",
+      "EXTERNAL RESEARCH",
+      "ASSUMPTION",
+      "HYPOTHESIS",
+      "ESTIMATE",
+      "AI INFERENCE",
+      "UNRESOLVED QUESTION",
+    ]),
+    script_usage: z.string().trim().min(3).max(2000),
+    review_state: z.enum(["SUPPORTED", "UNSUPPORTED", "NEEDS_REVIEW"]),
+  })
+  .strict();
+const youtubePackageFields = {
+  source_pack: z.array(youtubeSource).min(1).max(50),
+  claim_ledger: z.array(youtubeClaim).min(1).max(100),
+  script: z.string().trim().min(100).max(50000),
+  red_team: z
+    .object({
+      financial_promotions_clear: z.boolean(),
+      misinformation_clear: z.boolean(),
+      originality_clear: z.boolean(),
+      advice_language_clear: z.boolean(),
+    })
+    .strict(),
+  storyboard: z
+    .object({
+      scenes: z.array(z.record(z.string(), z.unknown())).min(1).max(100),
+    })
+    .strict(),
+  rights_review: z
+    .object({
+      assets_cleared: z.boolean(),
+      music_cleared: z.boolean(),
+      voice_rights_cleared: z.boolean(),
+    })
+    .strict(),
+  voice_provenance: z
+    .object({
+      voice_type: z.enum(["HUMAN", "SYNTHETIC", "NONE"]),
+      provider: z.string().trim().min(1).max(240),
+      rights_basis: z.string().trim().min(3).max(2000),
+      disclosure_required: z.boolean(),
+      disclosure_present: z.boolean(),
+    })
+    .strict(),
+  render_manifest: z
+    .object({
+      render_sha256: sha256,
+      captions_sha256: sha256,
+      duration_seconds: z.number().positive().max(43200),
+      format: z.enum(["MP4", "WEBM"]),
+      local_only: z.boolean(),
+    })
+    .strict(),
+  qa_review: z
+    .object({
+      technical: z.boolean(),
+      captions: z.boolean(),
+      editorial: z.boolean(),
+      accessibility: z.boolean(),
+    })
+    .strict(),
+  publication_metadata: z
+    .object({
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(5000),
+      thumbnail_sha256: sha256,
+      disclosure_text: z.string().max(2000),
+      visibility: z.enum(["PRIVATE", "UNLISTED"]),
+      deceptive_metadata_clear: z.boolean(),
+    })
+    .strict(),
+};
+const youtubeReviewChecks = z
+  .object({
+    sources: z.boolean(),
+    claims: z.boolean(),
+    originality: z.boolean(),
+    rights: z.boolean(),
+    disclosure: z.boolean(),
+    compliance: z.boolean(),
+    technical_qa: z.boolean(),
+    captions: z.boolean(),
+    metadata: z.boolean(),
+  })
+  .strict();
+const repositoryControls = z
+  .object({
+    hooks_disabled: z.boolean(),
+    submodules_disabled: z.boolean(),
+    lifecycle_scripts_disabled: z.boolean(),
+    actions_disabled: z.boolean(),
+    network_disabled: z.boolean(),
+    secrets_absent: z.boolean(),
+    path_traversal_rejected: z.boolean(),
+    symlink_escape_rejected: z.boolean(),
+    archive_bomb_rejected: z.boolean(),
+    binary_policy_passed: z.boolean(),
+  })
+  .strict();
+const repositoryToolchain = z
+  .object({
+    secret_scanner: z.string().trim().min(1).max(240),
+    malware_scanner: z.string().trim().min(1).max(240),
+    dependency_scanner: z.string().trim().min(1).max(240),
+    sbom_tool: z.string().trim().min(1).max(240),
+    sast_tool: z.string().trim().min(1).max(240),
+    workflow_inspector: z.string().trim().min(1).max(240),
+    signatures_as_of: z.string().trim().min(1).max(240),
+  })
+  .strict();
+const repositoryReviewChecks = z
+  .object({
+    licence: z.boolean(),
+    provenance: z.boolean(),
+    security: z.boolean(),
+    scope: z.boolean(),
+    architecture: z.boolean(),
+    threat_model: z.boolean(),
+    tests: z.boolean(),
+    rollback: z.boolean(),
+  })
+  .strict();
 const json = (data: unknown, status = 200) =>
   NextResponse.json(data, {
     status,
@@ -216,6 +358,22 @@ const projectResourceQueries = {
   propertyAsset: "select project_id from kxra.property_assets where id=$1",
   digitalOpportunity:
     "select project_id from kxra.digital_opportunities where id=$1",
+  youtubePackage:
+    "select project_id from kxra.youtube_content_packages where id=$1",
+  youtubePackageVersion:
+    "select project_id from kxra.youtube_content_package_versions where id=$1",
+  youtubeReview:
+    "select project_id from kxra.youtube_content_reviews where id=$1",
+  repositoryCandidate:
+    "select project_id from kxra.repository_candidates where id=$1",
+  repositoryQuarantine:
+    "select project_id from kxra.repository_quarantine_records where id=$1",
+  repositoryAssessment:
+    "select project_id from kxra.repository_assessments where id=$1",
+  repositoryProposalVersion:
+    "select project_id from kxra.repository_adoption_proposal_versions where id=$1",
+  repositoryReview:
+    "select project_id from kxra.repository_adoption_reviews where id=$1",
 } as const;
 async function requireProjectResource(
   a: Awaited<ReturnType<typeof actor>>,
@@ -1570,6 +1728,449 @@ async function handle(req: Request, ctx: Context) {
           [target, input.version, input.gate_authorization_id],
         );
         return json(rows[0]);
+      }
+      if (p[2] === "youtube-packages" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            topic: z.string().trim().min(3).max(500),
+            ...youtubePackageFields,
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.create_youtube_content_package($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+          [
+            projectId,
+            input.topic,
+            JSON.stringify(input.source_pack),
+            JSON.stringify(input.claim_ledger),
+            input.script,
+            input.red_team,
+            input.storyboard,
+            input.rights_review,
+            input.voice_provenance,
+            input.render_manifest,
+            input.qa_review,
+            input.publication_metadata,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "youtube-packages" &&
+        p[3] &&
+        p[4] === "revise" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        const packageId = uuid.parse(p[3]);
+        await requireProjectResource(a, "youtubePackage", packageId, projectId);
+        const input = z
+          .object({
+            expected_version: positiveVersion,
+            ...youtubePackageFields,
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.revise_youtube_content_package($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+          [
+            packageId,
+            input.expected_version,
+            JSON.stringify(input.source_pack),
+            JSON.stringify(input.claim_ledger),
+            input.script,
+            input.red_team,
+            input.storyboard,
+            input.rights_review,
+            input.voice_provenance,
+            input.render_manifest,
+            input.qa_review,
+            input.publication_metadata,
+            input.request_id,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[2] === "youtube-package-versions" &&
+        p[3] &&
+        p[4] === "review" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const versionId = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "youtubePackageVersion",
+          versionId,
+          projectId,
+        );
+        const input = z
+          .object({
+            expected_version: positiveVersion,
+            content_sha256: sha256,
+            checks: youtubeReviewChecks,
+            decision: z.enum([
+              "APPROVE_UPLOAD_INTENT",
+              "REQUEST_CHANGES",
+              "REJECT",
+            ]),
+            note: z.string().trim().min(3).max(5000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.review_youtube_content_package($1,$2,$3,$4,$5,$6,$7)",
+          [
+            versionId,
+            input.expected_version,
+            input.content_sha256,
+            input.checks,
+            input.decision,
+            input.note,
+            input.request_id,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[2] === "youtube-upload-intents" && !p[3] && method === "POST") {
+        owner(a);
+        const input = z
+          .object({
+            package_version_id: uuid,
+            review_id: uuid,
+            content_sha256: sha256,
+            idempotency_key: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        await requireProjectResource(
+          a,
+          "youtubePackageVersion",
+          input.package_version_id,
+          projectId,
+        );
+        await requireProjectResource(
+          a,
+          "youtubeReview",
+          input.review_id,
+          projectId,
+        );
+        const rows = await query(
+          a,
+          "select result.* from kxra.create_youtube_upload_intent($1,$2,$3,$4,$5) result",
+          [
+            projectId,
+            input.package_version_id,
+            input.review_id,
+            input.content_sha256,
+            input.idempotency_key,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[2] === "repository-candidates" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            repository_owner: z
+              .string()
+              .regex(/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?$/),
+            repository_name: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/),
+            source_url: z
+              .string()
+              .url()
+              .startsWith("https://github.com/")
+              .max(300),
+            default_branch: z.string().regex(/^[A-Za-z0-9._/-]{1,240}$/),
+            commit_sha: gitSha,
+            tree_sha: gitSha,
+            fetched_at: z.string().datetime(),
+            licence_observation: z.string().trim().min(3).max(3000),
+            adoption_recommendation: z.string().trim().min(3).max(3000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.create_repository_candidate($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) result",
+          [
+            projectId,
+            input.repository_owner,
+            input.repository_name,
+            input.source_url,
+            input.default_branch,
+            input.commit_sha,
+            input.tree_sha,
+            input.fetched_at,
+            input.licence_observation,
+            input.adoption_recommendation,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "repository-candidates" &&
+        p[3] &&
+        p[4] === "quarantine" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const candidateId = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "repositoryCandidate",
+          candidateId,
+          projectId,
+        );
+        const input = z
+          .object({
+            commit_sha: gitSha,
+            tree_sha: gitSha,
+            archive_sha256: sha256,
+            manifest_sha256: sha256,
+            archive_size_bytes: z.number().int().positive().max(104857600),
+            controls: repositoryControls,
+            policy_version: z.string().trim().min(1).max(80),
+            reason: z.string().trim().min(3).max(3000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.record_repository_quarantine($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) result",
+          [
+            candidateId,
+            input.commit_sha,
+            input.tree_sha,
+            input.archive_sha256,
+            input.manifest_sha256,
+            input.archive_size_bytes,
+            input.controls,
+            input.policy_version,
+            input.reason,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "repository-candidates" &&
+        p[3] &&
+        p[4] === "assessments" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const candidateId = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "repositoryCandidate",
+          candidateId,
+          projectId,
+        );
+        const input = z
+          .object({
+            quarantine_id: uuid,
+            toolchain: repositoryToolchain,
+            findings: z.array(z.record(z.string(), z.unknown())).max(1000),
+            licence_state: z.enum(["CLEAR", "AMBIGUOUS", "BLOCKED"]),
+            provenance_state: z.enum(["CLEAR", "UNRESOLVED", "BLOCKED"]),
+            secret_state: z.enum(["NO_FINDING", "FINDING"]),
+            malware_state: z.enum(["NO_FINDING", "FINDING"]),
+            dependency_state: z.enum(["PASS", "BLOCKED"]),
+            sast_state: z.enum(["PASS", "BLOCKED"]),
+            workflow_state: z.enum(["PASS", "BLOCKED"]),
+            binary_state: z.enum(["PASS", "BLOCKED"]),
+            critical_count: z.number().int().min(0).max(100000),
+            high_count: z.number().int().min(0).max(100000),
+            bounded_conclusion: z.string().trim().min(20).max(3000),
+            residual_risk: z.string().trim().min(3).max(5000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        await requireProjectResource(
+          a,
+          "repositoryQuarantine",
+          input.quarantine_id,
+          projectId,
+        );
+        const rows = await query(
+          a,
+          "select result.* from kxra.record_repository_assessment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) result",
+          [
+            candidateId,
+            input.quarantine_id,
+            input.toolchain,
+            JSON.stringify(input.findings),
+            input.licence_state,
+            input.provenance_state,
+            input.secret_state,
+            input.malware_state,
+            input.dependency_state,
+            input.sast_state,
+            input.workflow_state,
+            input.binary_state,
+            input.critical_count,
+            input.high_count,
+            input.bounded_conclusion,
+            input.residual_risk,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[2] === "repository-proposals" && !p[3] && method === "POST") {
+        const input = z
+          .object({
+            candidate_id: uuid,
+            assessment_id: uuid,
+            need_statement: z.string().trim().min(3).max(5000),
+            exact_scope: z
+              .array(z.string().trim().min(3).max(500))
+              .min(1)
+              .max(100),
+            licence_obligations: z.string().trim().min(3).max(5000),
+            architecture_changes: z.string().trim().min(3).max(10000),
+            threat_model: z.string().trim().min(3).max(10000),
+            test_plan: z.string().trim().min(3).max(10000),
+            rollback_plan: z.string().trim().min(3).max(10000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        await requireProjectResource(
+          a,
+          "repositoryCandidate",
+          input.candidate_id,
+          projectId,
+        );
+        await requireProjectResource(
+          a,
+          "repositoryAssessment",
+          input.assessment_id,
+          projectId,
+        );
+        const rows = await query(
+          a,
+          "select * from kxra.create_repository_adoption_proposal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+          [
+            input.candidate_id,
+            input.assessment_id,
+            input.need_statement,
+            JSON.stringify(input.exact_scope),
+            input.licence_obligations,
+            input.architecture_changes,
+            input.threat_model,
+            input.test_plan,
+            input.rollback_plan,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[2] === "repository-proposal-versions" &&
+        p[3] &&
+        p[4] === "review" &&
+        !p[5] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const versionId = uuid.parse(p[3]);
+        await requireProjectResource(
+          a,
+          "repositoryProposalVersion",
+          versionId,
+          projectId,
+        );
+        const input = z
+          .object({
+            expected_version: positiveVersion,
+            proposal_sha256: sha256,
+            checks: repositoryReviewChecks,
+            decision: z.enum([
+              "APPROVE_IMPLEMENTATION_INTENT",
+              "REQUEST_CHANGES",
+              "REJECT",
+            ]),
+            note: z.string().trim().min(3).max(5000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select result.* from kxra.review_repository_adoption_proposal($1,$2,$3,$4,$5,$6,$7) result",
+          [
+            versionId,
+            input.expected_version,
+            input.proposal_sha256,
+            input.checks,
+            input.decision,
+            input.note,
+            input.request_id,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[2] === "repository-implementation-intents" &&
+        !p[3] &&
+        method === "POST"
+      ) {
+        owner(a);
+        const input = z
+          .object({
+            proposal_version_id: uuid,
+            review_id: uuid,
+            proposal_sha256: sha256,
+            branch_name: z
+              .string()
+              .regex(/^codex\/[a-z0-9]+(?:-[a-z0-9]+)*$/)
+              .max(120),
+            idempotency_key: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        await requireProjectResource(
+          a,
+          "repositoryProposalVersion",
+          input.proposal_version_id,
+          projectId,
+        );
+        await requireProjectResource(
+          a,
+          "repositoryReview",
+          input.review_id,
+          projectId,
+        );
+        const rows = await query(
+          a,
+          "select result.* from kxra.create_repository_implementation_intent($1,$2,$3,$4,$5,$6) result",
+          [
+            projectId,
+            input.proposal_version_id,
+            input.review_id,
+            input.proposal_sha256,
+            input.branch_name,
+            input.idempotency_key,
+          ],
+        );
+        return json(rows[0], 201);
       }
       throw new HttpError(404, "Not found");
     }

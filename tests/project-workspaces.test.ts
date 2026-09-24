@@ -24,6 +24,8 @@ const projects = {
   p3: "30000000-0000-4000-8000-000000000003",
   p4: "30000000-0000-4000-8000-000000000004",
   p5: "30000000-0000-4000-8000-000000000005",
+  p6: "30000000-0000-4000-8000-000000000006",
+  p7: "30000000-0000-4000-8000-000000000007",
 };
 
 after(() => admin.end());
@@ -96,6 +98,8 @@ test("AT-23 every project exposes the exact common and specialist module contrac
       { code: "PROJECT-003", common: 18, specialist: 12 },
       { code: "PROJECT-004", common: 18, specialist: 13 },
       { code: "PROJECT-005", common: 18, specialist: 16 },
+      { code: "PROJECT-006", common: 18, specialist: 18 },
+      { code: "PROJECT-007", common: 18, specialist: 18 },
     ]);
     assert.deepEqual(
       (
@@ -132,7 +136,7 @@ test("AT-23 every project exposes the exact common and specialist module contrac
           "select count(*)::int as n from kxra.project_gate_policies",
         )
       ).rows[0].n,
-      5,
+      7,
     );
 
     await as(db, "partner");

@@ -36,7 +36,7 @@ export function loadSeeds(root) {
   );
 }
 export function projectId(code) {
-  if (!/^PROJECT-00[1-5]$/.test(code)) throw Error("Unknown project code");
+  if (!/^PROJECT-00[1-7]$/.test(code)) throw Error("Unknown project code");
   return "30000000-0000-4000-8000-00000000000" + code.slice(-1);
 }
 export function stableId(code) {
@@ -60,13 +60,15 @@ export function validateSeeds(bundle) {
     "PROJECT-003",
     "PROJECT-004",
     "PROJECT-005",
+    "PROJECT-006",
+    "PROJECT-007",
   ];
   if (
-    codes.length !== 5 ||
-    new Set(codes).size !== 5 ||
+    codes.length !== 7 ||
+    new Set(codes).size !== 7 ||
     expected.some((x) => !codes.includes(x))
   )
-    throw Error("Exactly PROJECT-001 through PROJECT-005 required");
+    throw Error("Exactly PROJECT-001 through PROJECT-007 required");
   codes.forEach(projectId);
   const all = [
     ...bundle.projects,

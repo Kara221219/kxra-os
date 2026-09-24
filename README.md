@@ -1,8 +1,8 @@
 # KXRA OS
 
-KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 4: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, five original venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, and the first complete local KXRA Brand Studio workflow.
+KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 5: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, the local KXRA Brand Studio workflow, and governed YouTube-content and repository-adoption pipelines.
 
-It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation, WhatsApp, Projects 006/007 and the independent public site remain incomplete. Brand Studio works locally with a deterministic, no-network text adapter; website fetching and publication are deliberately disabled.
+It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation, WhatsApp and the independent public site remain incomplete. Brand Studio works locally with a deterministic, no-network text adapter. Project 006 ends at a reviewed, disabled YouTube upload intent; Project 007 ends at a reviewed, no-execution implementation intent. Website fetching, provider upload, candidate-code execution, merge, release and deployment are deliberately disabled.
 
 The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. Original source documents, full private Genesis research and unrelated parent-repository applications remain outside the public repository. Checked-in Genesis registers contain only classified records required to initialize the platform.
 
@@ -27,17 +27,19 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 48 migrations, then runs formatting/type checks, 104 database/domain/HTTP tests, a 123-table RLS audit, 38 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
+`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 51 migrations, then runs formatting/type checks, 109 database/domain/HTTP tests, a 135-table RLS audit, 38 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
 
 ## Implemented locally
 
 - Global account identities with many-to-many organization memberships and roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
 - Explicit organization selection for dual-membership users. The browser cookie only proposes context; PostgreSQL verifies the live membership and selected tenant on every request.
-- Transaction-scoped PostgreSQL RLS across all 123 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
+- Transaction-scoped PostgreSQL RLS across all 135 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
 - Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
 - First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
 - Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.
-- Five original venture workspaces with exact common/specialist modules and hard stops. Project 004 remains paper only; Project 005 remains demand gated.
+- Seven venture workspaces with exact common/specialist modules and hard stops. Project 004 remains paper only; Project 005 remains demand gated.
+- Project 006 immutable content packages, exact source/claim/rights/compliance/technical checks, independent review, synthetic channel verification evidence and idempotent disabled upload intents. No upload or schedule executor exists.
+- Project 007 pinned repository candidates, no-execution quarantine evidence, bounded security/licence assessment, independently reviewed adoption proposals and no-execution implementation intents. No candidate runner, Git writer, merge, release or deployment path exists.
 - One-project Ask KXRA authorization and RLS-scoped record/indexed-chunk evidence. Query attempts and exact source versions are retained without raw questions; authority and citations are rechecked before delivery. Zero evidence returns exactly `INSUFFICIENT KXRA EVIDENCE.`. A deterministic local structured adapter exercises the complete run contract; external model dispatch is disabled.
 - Deterministic plans, plan versions/features, normalized billing state, entitlements, usage reservations/events/aggregates and owner free grants.
 - Stripe-style local HMAC verification and replay/out-of-order event reconciliation. No live webhook or Stripe credential is configured.
@@ -71,4 +73,4 @@ Legal placeholders, local fake events and synthetic accounts are test data only.
 | `docs`                   | Architecture, security, decisions, operations, projects and playbooks     |
 | `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                     |
 
-Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md), [security](docs/security/access-control.md) and [ADR 0011](docs/decisions/0011-kxra-brand-studio-local-product.md).
+Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md), [security](docs/security/access-control.md) and [ADR 0012](docs/decisions/0012-governed-youtube-and-repository-pipelines.md).
