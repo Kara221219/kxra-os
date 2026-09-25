@@ -174,6 +174,26 @@ test("AT-14 owner routine registry exposes typed disabled contracts", async ({
   ).toHaveCount(9);
 });
 
+test("AT-15/16 WhatsApp gateway exposes governed disabled foundations", async ({
+  page,
+}) => {
+  await fixtureLogin(page, "partner");
+  await navigate(page, "WhatsApp Connection");
+  await expect(
+    page.getByRole("heading", { name: "WhatsApp Connection" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Transport disabled", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Governed gateway contract" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Phone numbers are stored only as digests/),
+  ).toBeVisible();
+  await expect(page.getByText(/No inbound webhook/)).toBeVisible();
+});
+
 test("AT-22 partner Idea access and owner control routes fail closed", async ({
   page,
 }) => {

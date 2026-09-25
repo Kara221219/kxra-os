@@ -11,7 +11,11 @@ import {
   verifySession,
   fixtureUsers,
 } from "../packages/authz/session";
-import { verifyWebhook } from "../packages/integrations/whatsapp";
+import {
+  normalizeWhatsAppPhone,
+  verifyWebhook,
+  whatsappPhoneDigest,
+} from "../packages/integrations/whatsapp";
 import { localModeConfiguration } from "../packages/authz/local-guard";
 import { evidenceAnswer, INSUFFICIENT_EVIDENCE } from "../packages/ai";
 import crypto from "node:crypto";
@@ -116,6 +120,12 @@ test("WhatsApp signature validates raw bytes and rejects altered payload", () =>
   assert.equal(verifyWebhook(raw, sig, secret), true);
   assert.equal(verifyWebhook(Buffer.from("{}"), sig, secret), false);
   assert.equal(verifyWebhook(raw, null, secret), false);
+});
+test("WhatsApp phone identity is strict E.164 and stored only as a digest", () => {
+  assert.equal(normalizeWhatsAppPhone(" +447700900001 "), "+447700900001");
+  assert.match(whatsappPhoneDigest("+447700900001"), /^[a-f0-9]{64}$/);
+  assert.throws(() => normalizeWhatsAppPhone("07700 900001"));
+  assert.throws(() => normalizeWhatsAppPhone("+01234567890"));
 });
 import {
   scoreVenture,

@@ -72,6 +72,10 @@ import {
 } from "../../../../../packages/storage";
 import { renderEmail } from "../../../../../packages/integrations/email";
 import {
+  pairingChallenge,
+  whatsappPhoneDigest,
+} from "../../../../../packages/integrations/whatsapp";
+import {
   fakeAuthProvider,
   fakeEmailTransport,
   issueLocalProviderSession,
@@ -3432,8 +3436,119 @@ async function handle(req: Request, ctx: Context) {
       }
       throw new HttpError(404, "Not found");
     }
-    if (p[0] === "whatsapp")
-      throw new HttpError(503, "WhatsApp gateway is disabled");
+    if (p[0] === "whatsapp") {
+      if (method === "GET" && !p[1]) {
+        const [pairings, selections, messages, intents] = await Promise.all([
+          query(
+            a,
+            `select id,state,version,verified_at,revoked_at,created_at
+             from kxra.whatsapp_gateway_pairings order by created_at desc limit 20`,
+          ),
+          query(
+            a,
+            `select selection.id,selection.pairing_id,selection.project_id,
+              project.code,project.name,selection.state,selection.selected_at
+             from kxra.whatsapp_project_selections selection
+             join kxra.projects project on project.id=selection.project_id
+             order by selection.selected_at desc limit 50`,
+          ),
+          query(
+            a,
+            `select id,project_id,intent_type,state,created_at
+             from kxra.whatsapp_messages order by created_at desc limit 50`,
+          ),
+          query(
+            a,
+            `select id,message_id,project_id,adapter,state,delivery_state,
+              cancellation_code,created_at
+             from kxra.whatsapp_outbound_intents order by created_at desc limit 50`,
+          ),
+        ]);
+        return json({
+          provider: "META_WHATSAPP_CLOUD",
+          transport: "DISABLED",
+          pairings,
+          selections,
+          messages,
+          outbound_intents: intents,
+        });
+      }
+      if (method === "POST" && p[1] === "pairing-challenges") {
+        const input = z
+          .object({
+            phone_e164: z.string().trim().min(8).max(16),
+            waba_id: z.string().trim().min(1).max(120),
+            phone_number_id: z.string().trim().min(1).max(120),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        const challenge = pairingChallenge();
+        const rows = await query<{ id: string }>(
+          a,
+          `select kxra.create_whatsapp_pairing_challenge(
+            $1,$2,$3,$4,$5,$6
+           ) id`,
+          [
+            whatsappPhoneDigest(input.phone_e164),
+            input.waba_id,
+            input.phone_number_id,
+            challenge.hash,
+            input.request_id,
+            challenge.expires_at,
+          ],
+        );
+        return json(
+          {
+            challenge_id: rows[0].id,
+            pairing_code: challenge.token,
+            expires_at: challenge.expires_at,
+            transport: "DISABLED",
+          },
+          201,
+        );
+      }
+      if (
+        method === "POST" &&
+        p[1] === "pairings" &&
+        p[2] &&
+        p[3] === "project"
+      ) {
+        const pairingId = uuid.parse(p[2]);
+        const input = z
+          .object({ project_id: uuid, request_id: requestId })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.select_whatsapp_project($1,$2,$3) id",
+          [pairingId, input.project_id, input.request_id],
+        );
+        return json({ selection_id: rows[0].id });
+      }
+      if (
+        method === "POST" &&
+        p[1] === "pairings" &&
+        p[2] &&
+        p[3] === "revoke"
+      ) {
+        const pairingId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            reason: z.string().trim().min(3).max(1000),
+            request_id: requestId,
+          })
+          .strict()
+          .parse(await body(req));
+        await query(a, "select kxra.revoke_whatsapp_pairing($1,$2,$3)", [
+          pairingId,
+          input.reason,
+          input.request_id,
+        ]);
+        return json({ ok: true });
+      }
+      throw new HttpError(404, "Not found");
+    }
     throw new HttpError(404, "Not found");
   } catch (e) {
     if (e instanceof HttpError)

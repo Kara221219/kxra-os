@@ -1,35 +1,34 @@
 # KXRA OS implementation progress
 
-Updated: 24 September 2026. Status: **Phase 2 Slice 6 is implemented with deterministic local evidence. The system is not deployed or production ready.**
+Updated: 25 September 2026. Status: **Phase 2 Slice 7 is implemented and verified with deterministic local evidence. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 6 started from pushed Slice 5 commit `b39f9006183f2c49b27c15408f8ea23edea9cf72`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 7 started from pushed Slice 6 commit `7fc2a34d01d42fa078a15d8ef526d428a4dde717`, which passed GitHub Actions run `36058846131` and descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in Slice 6
+## Completed in Slice 7
 
-- Imported all nine Genesis routine definitions into typed, immutable manifests with stable identities, exact hashes, action graphs, trigger/timezone/calendar configuration, service identity, project scope, budgets, concurrency, leases, retry and notification policy.
-- Kept every imported version `DRAFT`, every manifest disabled and every notification adapter disabled. Exact-hash owner approval is required before enablement.
-- Added authoritative schedule/event slots, explicit business/exchange-calendar facts, bounded worker claims, leases, append-only checkpoints, completion/failure, expired-lease recovery and reauthorization before retry.
-- Enforced one run per logical slot/event, Europe/London DST conversion, explicit XNYS open-day evidence, checkpoint-preserving recovery and cancellation when the routine/service/version is revoked.
-- Added owner-only Routine Registry and strict HTTP routes for approval, state, calendar, local slot and event controls. Partner, anonymous, crafted-scope and direct-DML paths fail closed.
-- Added disabled append-only notification intents. Unchanged success is quiet; a changed review outcome or terminal actionable failure can create one idempotent `DISABLED` / `NOT_SENT` intent.
-- Added ADR 0013, a routine threat model and approval/recovery playbook.
+- Added one-use WhatsApp pairing challenges bound to the authenticated account, exact membership version, phone digest, WABA id and phone-number id with expiry, replay and attempt limits.
+- Added explicit active project selection and private worker-only ingress. Provider event/message ids deduplicate; account, legal, pairing and project authority are rechecked before project context is recorded.
+- Added the closed supported-intent set, media quarantine states, voice-transcription consent, human takeover and revocation-aware disabled outbound intents.
+- Stored no raw phone number or pairing code. Browser roles cannot write messages, media, ingress or outbound state or call worker functions.
+- Added authenticated redacted status/challenge/project/revoke APIs and owner/partner UI that labels Meta transport disabled.
+- Added ADR 0014, the WhatsApp threat model and staging activation playbook.
 
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 53 ordered additive migrations, 143 RLS-protected tables with explicit policies and 118 audited public functions.
-- 114 database/domain/HTTP tests and 40 desktop/mobile browser scenarios in the clean disposable contract: 36 applicable passes and four intentional device-specific skips.
-- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 230-file publication/secret scan pass.
+- 55 ordered additive migrations, 151 RLS-protected tables with explicit policies and 121 audited public functions.
+- 119 database/domain/HTTP tests and 42 desktop/mobile browser scenarios in the clean disposable contract: 38 applicable passes and four intentional device-specific skips.
+- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 237-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
 
 ## Acceptance status for this slice
 
-- **AT-14 PASS locally:** fake-clock schedule/event idempotency, Europe/London DST, XNYS calendar facts, lease/checkpoint recovery, revocation before retry, quiet unchanged completion and disabled actionable-failure intent all pass. Trigger.dev and external delivery remain disconnected.
-- **AT-24 regression PASS locally:** routine approval, state and run outcomes project typed audit/Work Log events.
+- **AT-15 PASS locally:** exact one-use challenge, wrong binding, attempt, replay, account/membership and RLS cases pass.
+- **AT-16 PARTIAL / local authority PASS:** three ingress copies create one message; cross-project scope, media consent, revocation and disabled outbound reconciliation pass. Real Meta webhook/media/send behavior remains absent.
 
 ## Remaining work
 
@@ -42,10 +41,10 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - AI/files: external OpenAI dispatch, production Storage/scanning/extraction, paid budgets and distributed recovery remain incomplete.
 - Projects 006/007: provider/scanner adapters remain intentionally disabled.
 - Routines: no always-on scheduler, Trigger.dev task, hosted worker or notification delivery adapter is connected.
+- WhatsApp: no registered Meta webhook, credential/token custody, provider media fetch, production scan/transcription, model call or outbound send is connected.
 
 ### Missing
 
-- WhatsApp identity pairing, durable ingress/outbound delivery and authorized escalation.
 - Independent public/private/customer builds, layered industry marketing site and public forms.
 - Connected staging providers, telemetry, backup/restore evidence, production release evidence and first-customer rehearsal.
 
@@ -62,7 +61,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Implement the WhatsApp identity-pairing and durable ingress/outbound-intent foundation with provider transport disabled. Verify signature/deduplication, explicit project selection, authorization before retrieval and again before delivery, media quarantine/transcription consent, revocation and complete audit evidence. Then continue provider-neutral staging slices, hosted Auth/Storage and legal activation prerequisites. Preserve the public/private boundary and extend every RLS, HTTP and browser matrix before connecting a provider.
+After the final Slice 7 rerun/commit, build the independent public marketing application and approved-publication snapshot boundary: original layered industry storytelling, required public routes/forms, reduced-motion/mobile behavior and strict exclusion of private fixtures/content. Keep publication disabled, then continue hosted Auth/Storage and legal activation prerequisites.
 
 ## Publication boundary
 

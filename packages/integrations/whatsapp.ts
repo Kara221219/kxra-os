@@ -20,3 +20,17 @@ export function pairingChallenge() {
     expires_at: new Date(Date.now() + 600000).toISOString(),
   };
 }
+
+export function normalizeWhatsAppPhone(value: string) {
+  const phone = value.trim();
+  if (!/^\+[1-9][0-9]{7,14}$/.test(phone))
+    throw Error("WHATSAPP_PHONE_INVALID");
+  return phone;
+}
+
+export function whatsappPhoneDigest(value: string) {
+  return crypto
+    .createHash("sha256")
+    .update(normalizeWhatsAppPhone(value))
+    .digest("hex");
+}

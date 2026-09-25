@@ -2,6 +2,27 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 25 September Phase 2 Slice 7
+
+- `supabase/migrations/0054_whatsapp_gateway_schema.sql`
+- `supabase/migrations/0055_whatsapp_gateway_contracts.sql`
+- `packages/integrations/whatsapp.ts`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `tests/whatsapp-gateway.test.ts`
+- `tests/whatsapp-gateway-http.test.ts`
+- `tests/domain.test.ts`
+- `tests/access-matrix.test.ts`
+- `tests/security.test.ts`
+- `tests/control-plane-http.test.ts`
+- `tests/e2e/control-plane.spec.ts`
+- `docs/decisions/0014-whatsapp-gateway-authority.md`
+- `docs/security/whatsapp-gateway-threat-model.md`
+- `docs/playbooks/whatsapp-staging-activation.md`
+- architecture and operating evidence documents listed in this inventory
+
+No Meta credential, webhook registration, provider media fetch, transcription, model call, external send, deployment or publication is added.
+
 ## 24 September Phase 2 Slice 6
 
 Governed Routine Registry and recovery implementation:

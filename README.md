@@ -1,8 +1,8 @@
 # KXRA OS
 
-KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 6: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, the local KXRA Brand Studio workflow, governed YouTube-content and repository-adoption pipelines, and a disabled-by-default governed routine engine.
+KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 7: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, the local KXRA Brand Studio workflow, governed YouTube-content and repository-adoption pipelines, a disabled-by-default governed routine engine, and a transport-disabled WhatsApp gateway contract.
 
-It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation, WhatsApp and the independent public site remain incomplete. Brand Studio works locally with a deterministic, no-network text adapter. Project 006 ends at a reviewed, disabled YouTube upload intent; Project 007 ends at a reviewed, no-execution implementation intent. Routine definitions require exact owner approval before local planning and retain authoritative slots, leases, checkpoints and outcomes in PostgreSQL; Trigger.dev and notification delivery remain disconnected. Website fetching, provider upload, candidate-code execution, merge, release and deployment are deliberately disabled.
+It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation, Meta transport and the independent public site remain incomplete. Brand Studio works locally with a deterministic, no-network text adapter. Project 006 ends at a reviewed, disabled YouTube upload intent; Project 007 ends at a reviewed, no-execution implementation intent. Routine definitions require exact owner approval before local planning and retain authoritative slots, leases, checkpoints and outcomes in PostgreSQL. WhatsApp pairing, ingress, project scope, media consent and outbound intents are enforced locally, while webhook/media/model/send adapters remain disconnected. Website fetching, provider upload, candidate-code execution, merge, release and deployment are deliberately disabled.
 
 The current [Phase Completion Brief 02](docs/operations/CODEX-PHASE-COMPLETION-BRIEF-02.md) is the self-contained audit and completion contract. Original source documents, full private Genesis research and unrelated parent-repository applications remain outside the public repository. Checked-in Genesis registers contain only classified records required to initialize the platform.
 
@@ -27,13 +27,13 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 53 migrations, then runs formatting/type checks, 114 database/domain/HTTP tests, a 143-table RLS audit, 40 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
+`npm run test:ci` creates a fresh random-port PostgreSQL/application runtime, applies and seeds 55 migrations, then runs formatting/type checks, 119 database/domain/HTTP tests, a 151-table RLS audit, 42 desktop/mobile browser scenarios, database/object restart persistence, an optimized clean production build, fixture-artifact exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
 
 ## Implemented locally
 
 - Global account identities with many-to-many organization memberships and roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
 - Explicit organization selection for dual-membership users. The browser cookie only proposes context; PostgreSQL verifies the live membership and selected tenant on every request.
-- Transaction-scoped PostgreSQL RLS across all 143 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
+- Transaction-scoped PostgreSQL RLS across all 151 private tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
 - Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
 - First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
 - Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.
@@ -49,6 +49,7 @@ git diff --check
 - Typed, versioned agents, skills, tools, model policies, run attempts, budget reservations, QA and delivery evidence. Genesis definitions remain non-executable drafts except for the narrowly approved local Ask contract.
 - KXRA Brand Studio source snapshots, correctable/versioned profiles, exact profile and campaign approval, metered deterministic generation, variant lineage, five-part review, and private text/Markdown/JSON export. Current authorization and entitlement are rechecked before every download; there is no publication executor.
 - Nine typed routine manifests with exact version hashes, schedule/event/business/exchange-calendar triggers, project scopes, service identities, idempotent logical slots, worker leases, checkpoints, bounded retries and disabled notification intents. Every imported routine remains draft and disabled until exact owner approval; no external scheduler or sender is connected.
+- One-use WhatsApp pairing challenges bound to the current account, phone digest and exact Meta number identity; explicit current project selection; signed-worker ingress deduplication; bounded intent records; media quarantine and voice consent; takeover/revocation checks; and disabled outbound intents. No webhook, provider media fetch, transcription, model call or Meta send is connected.
 - Entitlement-aware Business Tools navigation and a customer journey verified in desktop and mobile browsers.
 
 ## Security boundary

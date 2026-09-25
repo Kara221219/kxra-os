@@ -67,6 +67,10 @@ The owner **Routines** screen displays the nine typed manifests. They are import
 
 Routine worker contracts are exercised by `tests/routines.test.ts` under the dedicated `kxra_routine_worker` role. Do not use the application login or a browser session to claim, checkpoint, complete, recover or requeue runs. Notification records are intents only and remain `DISABLED` / `NOT_SENT`.
 
+## WhatsApp evidence
+
+The owner/partner WhatsApp screen is a redacted status surface. Authenticated challenge creation returns a synthetic one-use code, but provider completion/ingress functions are executable only under `kxra_whatsapp_worker`. Local SQL and HTTP tests exercise exact pairing, project scope, deduplication, media consent, revocation and disabled outbound intents. There is no local Meta webhook or sender, and no real phone, token or message should be used.
+
 ## Environment boundary
 
 `.env.example` lists hosted target variables with placeholders only. `npm run dev` creates guarded local configuration. Fixture mode rejects production, Vercel, non-loopback, hosted Supabase/database combinations and weak/missing generated secrets. Default production package conditions resolve local Auth/UI modules to stubs; hosted Auth must be configured for real use. Hosted file processing additionally needs a private Storage bucket, a server-only Storage secret, a restricted worker database connection, a trusted scanner and a disposable no-network extractor. None is connected by local setup.

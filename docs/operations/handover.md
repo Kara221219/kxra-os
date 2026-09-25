@@ -1,10 +1,10 @@
 # Engineering handover
 
-Updated: 24 September 2026.
+Updated: 25 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed Slice 5 baseline is `b39f9006183f2c49b27c15408f8ea23edea9cf72`; use branch HEAD for the Slice 6 governed routine implementation.
+Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed, GitHub-green Slice 6 baseline is `7fc2a34d01d42fa078a15d8ef526d428a4dde717`; the working tree contains Slice 7's transport-disabled WhatsApp implementation.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -12,23 +12,22 @@ Read, in order:
 
 1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md);
 2. [acceptance evidence](acceptance-evidence.md) and [progress](progress.md);
-3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0013](../decisions/0013-governed-routine-engine.md) and the [routine threat model](../security/routine-engine-threat-model.md);
+3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0014](../decisions/0014-whatsapp-gateway-authority.md) and the [WhatsApp threat model](../security/whatsapp-gateway-threat-model.md);
 4. ADRs 0008–0011 and their threat models;
 5. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved requirements.
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–6 work in the deterministic local environment. Migrations `0001`–`0053` are ordered and applied; do not rewrite one after this slice is committed. The schema has 143 RLS-protected tables and 118 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–6 are committed and green. Slice 7 migrations `0054`–`0055` are additive; after final verification the schema has 151 RLS-protected tables and 121 audited public functions.
 
-Slice 6 added:
+Slice 7 adds:
 
-- eight RLS tables for routine service identities, manifests, immutable versions, project scopes, calendar facts, runs, checkpoints and notification intents;
-- nine exact typed Genesis manifests, all draft/disabled, with schedule/event/business/exchange-calendar triggers, action graphs, scope, budgets, attempts/backoff and leases;
-- owner-only exact-hash approval, enablement, calendar, local-slot and event controls;
-- private `kxra_routine_worker` claim/checkpoint/completion/failure/recovery/requeue contracts;
-- one logical run per slot/event, Europe/London DST and explicit XNYS calendar behavior, checkpoint-preserving lease recovery and revocation-aware retry;
-- quiet unchanged completion and one append-only disabled notification intent for actionable terminal outcomes;
-- SQL/domain, HTTP and browser tests, ADR 0013, threat model and approval/recovery playbook.
+- eight RLS tables for pairing challenges/pairings, project selections, ingress/messages/media, takeovers and outbound intents;
+- account/membership-version/phone-digest/WABA-number-bound one-use pairing;
+- worker-only idempotent ingress, explicit current project scope and closed intents;
+- media quarantine and voice consent before any future transcription;
+- delivery-time pairing/project/takeover reauthorization with adapter fixed disabled;
+- bounded APIs, redacted UI, SQL/domain/HTTP/browser tests, ADR 0014, threat model and staging playbook.
 
 No Trigger.dev task, always-on scheduler, hosted worker or notification sender exists. No YouTube token, upload/schedule executor, repository archive fetcher, candidate process runner, Git writer, merge/release/deploy route or production scanner exists. Synthetic local evidence proves the contracts only.
 
@@ -47,21 +46,19 @@ npm run test:ci
 git diff --check
 ```
 
-The clean contract creates and destroys a disposable runtime. It runs lint/typecheck/format, 114 database/domain/HTTP tests, the 53-migration/143-table RLS audit, 40 desktop/mobile scenarios (36 passes and four intentional device-specific skips), database/private-object restart persistence, an optimized production build, 16-marker fixture-artifact exclusion and a 230-file publication/secret scan.
+The final Slice 7 clean contract passes 119 database/domain/HTTP tests, the 55-migration/151-table RLS audit and 42 desktop/mobile scenarios (38 applicable plus four intentional device-specific skips), database/private-object restart persistence, optimized build, 16-marker artifact exclusion and the 237-file publication/secret scan.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, Cloudflare, production repository scanners/sandboxing or backup behavior.
 
 ## Next implementation slice
 
-Implement the disabled-provider WhatsApp foundation before external delivery:
+Build the independent public application without publishing it:
 
-1. create cryptographic pairing challenges bound to one verified account and expire/replay them safely;
-2. model durable signed ingress, deduplication, explicit project selection and bounded message/media states;
-3. authorize current pairing, tenant and project before retrieval and reauthorize before outbound intent;
-4. quarantine documents/images/voice notes and require transcription consent before any derived context;
-5. create outbound intents with provider transport fixed disabled; no Meta send or model provider call;
-6. expose owner/partner pairing and conversation evidence without cross-project disclosure;
-7. add SQL, HTTP and browser evidence for signature failure, replay, ambiguous project, revoked pairing/assignment, crafted IDs and cross-project retrieval/delivery.
+1. create a separate public build and approved-publication snapshot source;
+2. implement original layered industry storytelling with reduced-motion/mobile fallbacks;
+3. add required public routes and bounded contact/discovery forms with no private data imports;
+4. prove public artifacts exclude fixture/private markers and build independently;
+5. keep deployment/publication disabled until copy, legal and owner approval.
 
 ## Security invariants
 
@@ -79,7 +76,7 @@ Implement the disabled-provider WhatsApp foundation before external delivery:
 
 ## Owner/provider connection order
 
-No credential is needed for the next local WhatsApp-contract slice. Before staging can become customer-ready, the owner will need to complete these bounded steps when requested:
+No credential is needed for the next local public-build slice. Before staging can become customer-ready, the owner will need to complete these bounded steps when requested:
 
 1. obtain solicitor-approved legal documents and release versions;
 2. provide a hosted Supabase project and configure Auth redirect/MFA policies through provider secret stores;

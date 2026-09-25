@@ -1301,6 +1301,24 @@ export default async function Workspace({
         </>
       );
     } else if (section === "whatsapp") {
+      const [pairings, selections, messages, intents] = await Promise.all([
+        query<{ state: string }>(
+          a,
+          "select state from kxra.whatsapp_gateway_pairings order by created_at desc limit 20",
+        ),
+        query<{ state: string }>(
+          a,
+          "select state from kxra.whatsapp_project_selections order by selected_at desc limit 50",
+        ),
+        query<{ state: string }>(
+          a,
+          "select state from kxra.whatsapp_messages order by created_at desc limit 50",
+        ),
+        query<{ state: string; delivery_state: string }>(
+          a,
+          "select state,delivery_state from kxra.whatsapp_outbound_intents order by created_at desc limit 50",
+        ),
+      ]);
       content = (
         <>
           <Heading
@@ -1308,15 +1326,37 @@ export default async function Workspace({
               a.role === "owner" ? "WhatsApp Gateway" : "WhatsApp Connection"
             }
           />
+          <div className="notice warning">
+            Meta transport is disabled. No inbound webhook, media fetch,
+            transcription, model call or outbound send is connected.
+          </div>
+          <div className="metric-grid">
+            {[
+              ["Pairings", pairings.length],
+              ["Project selections", selections.length],
+              ["Inbound messages", messages.length],
+              ["Outbound intents", intents.length],
+            ].map(([label, value]) => (
+              <div className="metric" key={String(label)}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
           <div className="panel">
-            <span className="badge amber">Not connected</span>
-            <h2 style={{ marginTop: 20 }}>Pairing is not enabled.</h2>
+            <span className="badge amber">Transport disabled</span>
+            <h2 style={{ marginTop: 20 }}>Governed gateway contract</h2>
             <p>
-              Signature verification, challenge generation and private pairing
-              tables are implemented. Provider setup, identity-pairing workflow
-              and message delivery still require implementation and testing.
+              One-use account pairing, explicit project selection, signed-event
+              deduplication, supported intent records, media quarantine and
+              consent, revocation, takeover and disabled outbound intents are
+              enforced in PostgreSQL. Phone numbers are stored only as digests.
             </p>
-            <p>Continue project conversations through Ask KXRA.</p>
+            <p>
+              Meta application identifiers, webhook registration, token custody
+              and provider delivery require a controlled staging connection.
+              Continue project conversations through Ask KXRA until then.
+            </p>
             <Link href="/os/ask">Open Ask KXRA ↗</Link>
           </div>
         </>
