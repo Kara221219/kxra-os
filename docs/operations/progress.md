@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 25 September 2026. Status: **Phase 2 Slice 8 is implemented and verified with deterministic local evidence. The system is not deployed or production ready.**
+Updated: 25 September 2026. Status: **Phase 2 Slice 9 safe-telemetry and empty-target recovery foundations pass the complete local contract. The system is not deployed or production ready.**
 
 Current branch: `codex/phase-2-completion`. Slice 8 starts from pushed Slice 7 commit `4d7c1679ecb3296247e2f637cccf8e61d9c77649`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
@@ -19,8 +19,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
-- 122 database/domain/HTTP tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 10 public-site browser scenarios.
-- Database/private-object restart persistence, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 279-file publication/secret scan pass.
+- 124 database/domain/HTTP tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 10 public-site browser scenarios.
+- Database/private-object restart and empty-target recovery, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 284-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -47,7 +47,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ### Missing
 
-- Connected staging providers, telemetry, backup/restore evidence, production performance/accessibility evidence, approved public/legal content, release evidence and first-customer rehearsal.
+- Connected staging providers, hosted telemetry/backup evidence, production performance/accessibility evidence, approved public/legal content, release evidence and first-customer rehearsal.
 
 ## Active owner and external inputs
 
@@ -62,7 +62,13 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 8, confirm GitHub Actions, then begin Final Milestone 10 production quality: safe telemetry adapters, CSP/rate-limit hardening, empty-target backup/restore evidence, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
+Commit/push Slice 9 and confirm GitHub evidence, then continue CSP/rate-limit hardening, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
+
+## Slice 9 local evidence
+
+- A closed, bounded telemetry envelope rejects non-allowlisted, identity, content, secret, nested and unbounded data before a sink can receive it. Provider capture remains disabled.
+- npm run test:restore dumps the synthetic database and private objects, restores into an empty isolated target, verifies all table counts, migration/RLS/policy and critical state plus object hashes, records RPO/RTO/discrepancies, and destroys the target.
+- The clean hermetic proof restored 153 tables, 2,461 synthetic rows and 15 private objects with zero discrepancies in 2 seconds.
 
 ## Publication boundary
 

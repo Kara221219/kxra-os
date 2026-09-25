@@ -4,7 +4,7 @@ Updated: 25 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed Slice 7 baseline is `4d7c1679ecb3296247e2f637cccf8e61d9c77649`; the working tree contains the verified Slice 8 independent public application.
+Work from /Users/kara/Desktop/P1/The KXRA Group on codex/phase-2-completion. The pushed Slice 8 head is 05b5471b4e6152b4590e35055a51188476cc7a53; the working tree contains the in-progress Slice 9 production-quality changes.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -47,18 +47,18 @@ npm run test:ci
 git diff --check
 ```
 
-The final Slice 8 clean contract passes 122 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart persistence, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 279-file publication/secret scan.
+The current clean contract passes 124 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 284-file publication/secret scan.
 
-Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, Cloudflare, production repository scanners/sandboxing or backup behavior.
+Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
 ## Next implementation slice
 
 Begin Final Milestone 10 production quality without deploying:
 
-1. add allowlisted no-content telemetry envelopes and local capture tests;
+1. connect the allowlisted no-content telemetry envelope to staging PostHog/Sentry only after capture review;
 2. harden CSP toward production nonces/hashes and add edge/distributed rate-limit seams;
 3. add dependency/SAST/license gates and fail-closed CI evidence;
-4. implement encrypted database/private-object backup manifests and an empty-target restore test;
+4. repeat the passing database/private-object empty-target restore against authorized staging with encrypted provider backups;
 5. add production-like Lighthouse/Web Vitals, representative screen-reader and failure/load evidence;
 6. keep deployment/publication disabled until legal, public-copy, provider and owner approval.
 

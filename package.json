@@ -29,6 +29,7 @@
     "test:publication": "node scripts/verify-publication-snapshot.mjs",
     "test:marketing-boundary": "node scripts/verify-marketing-boundary.mjs",
     "test:restart": "node scripts/verify-persistence.mjs",
+    "test:restore": "node scripts/verify-backup-restore.mjs",
     "worker:files": "tsx scripts/file-worker.ts --once",
     "worker:files:watch": "tsx scripts/file-worker.ts --watch",
     "worker:files:reconcile": "tsx scripts/file-worker.ts --reconcile",

@@ -138,6 +138,7 @@ try {
   run("npm", ["run", "test:e2e"], environment);
   run("npm", ["run", "test:marketing"], environment);
   run("npm", ["run", "test:restart"], environment);
+  run("npm", ["run", "test:restore"], environment);
 
   const productionEnvironment = { ...environment, NODE_ENV: "production" };
   delete productionEnvironment.KXRA_AUTH_MODE;
