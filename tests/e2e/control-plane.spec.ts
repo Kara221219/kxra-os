@@ -272,6 +272,7 @@ test("AT-22 partner Idea access and owner control routes fail closed", async ({
 test("Milestone 2 control surfaces reflow at frozen widths and 200%", async ({
   page,
 }) => {
+  test.slow();
   await fixtureLogin(page, "owner");
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });

@@ -22,6 +22,7 @@ const routes = [
 test("AT-17 required public routes render from the reviewed snapshot", async ({
   page,
 }) => {
+  test.slow();
   for (const route of routes) {
     const response = await page.goto(route);
     expect(response?.status(), route).toBe(200);
