@@ -55,11 +55,13 @@ async function waitForServer(origin, child) {
 fs.rmSync(runtime, { recursive: true, force: true });
 fs.mkdirSync(runtime, { recursive: true, mode: 0o700 });
 
-const [postgresPort, applicationPort] = await Promise.all([
+const [postgresPort, applicationPort, marketingPort] = await Promise.all([
+  availablePort(),
   availablePort(),
   availablePort(),
 ]);
 const origin = `http://127.0.0.1:${applicationPort}`;
+const marketingOrigin = `http://127.0.0.1:${marketingPort}`;
 const environment = { ...process.env };
 for (const key of [
   "DATABASE_URL",
@@ -72,6 +74,9 @@ Object.assign(environment, {
   NODE_ENV: "development",
   KXRA_AUTH_MODE: "fixture",
   KXRA_ORIGIN: origin,
+  KXRA_MARKETING_ORIGIN: marketingOrigin,
+  KXRA_PRIVATE_APP_URL: `${origin}/login`,
+  KXRA_PUBLIC_INGRESS_SECRET: crypto.randomBytes(48).toString("hex"),
   KXRA_RUNTIME: runtime,
   KXRA_PG_PORT: String(postgresPort),
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
@@ -83,7 +88,9 @@ fs.writeFileSync(
 );
 
 let application;
+let marketing;
 let logHandle;
+let marketingLogHandle;
 try {
   run(process.execPath, ["scripts/database.mjs", "start"], environment);
   logHandle = fs.openSync(path.join(runtime, "application.log"), "w");
@@ -104,11 +111,32 @@ try {
     },
   );
   await waitForServer(origin, application);
+  marketingLogHandle = fs.openSync(path.join(runtime, "marketing.log"), "w");
+  marketing = spawn(
+    process.execPath,
+    [
+      path.join(root, "node_modules", "next", "dist", "bin", "next"),
+      "dev",
+      "--hostname",
+      "127.0.0.1",
+      "--port",
+      String(marketingPort),
+    ],
+    {
+      cwd: path.join(root, "apps", "marketing"),
+      env: environment,
+      stdio: ["ignore", marketingLogHandle, marketingLogHandle],
+    },
+  );
+  await waitForServer(marketingOrigin, marketing);
 
   run("npm", ["run", "lint"], environment);
   run("npm", ["test"], environment);
   run("npm", ["run", "test:migrations"], environment);
+  run("npm", ["run", "test:publication"], environment);
+  run("npm", ["run", "test:marketing-boundary"], environment);
   run("npm", ["run", "test:e2e"], environment);
+  run("npm", ["run", "test:marketing"], environment);
   run("npm", ["run", "test:restart"], environment);
 
   const productionEnvironment = { ...environment, NODE_ENV: "production" };
@@ -136,7 +164,21 @@ try {
       });
     });
   }
+  if (marketing && marketing.exitCode === null) {
+    marketing.kill("SIGTERM");
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        if (marketing.exitCode === null) marketing.kill("SIGKILL");
+        resolve();
+      }, 5000);
+      marketing.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
   if (logHandle !== undefined) fs.closeSync(logHandle);
+  if (marketingLogHandle !== undefined) fs.closeSync(marketingLogHandle);
   const stopped = spawnSync(
     process.execPath,
     ["scripts/database.mjs", "stop"],

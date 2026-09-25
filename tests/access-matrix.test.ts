@@ -1613,6 +1613,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "project_proposal_acceptances",
       "project_proposals",
       "provider_usage_events",
+      "public_enquiry_rate_windows",
+      "public_enquiry_submissions",
       "release_manifests",
       "repository_adoption_proposal_versions",
       "repository_adoption_proposals",

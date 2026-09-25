@@ -4,7 +4,7 @@ Updated: 25 September 2026.
 
 ## Current checkpoint
 
-Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed, GitHub-green Slice 6 baseline is `7fc2a34d01d42fa078a15d8ef526d428a4dde717`; the working tree contains Slice 7's transport-disabled WhatsApp implementation.
+Work from `/Users/kara/Desktop/P1/The KXRA Group` on `codex/phase-2-completion`. The pushed Slice 7 baseline is `4d7c1679ecb3296247e2f637cccf8e61d9c77649`; the working tree contains the verified Slice 8 independent public application.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -12,22 +12,23 @@ Read, in order:
 
 1. [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md);
 2. [acceptance evidence](acceptance-evidence.md) and [progress](progress.md);
-3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0014](../decisions/0014-whatsapp-gateway-authority.md) and the [WhatsApp threat model](../security/whatsapp-gateway-threat-model.md);
+3. [architecture](../architecture/system.md), [security](../security/access-control.md), [ADR 0015](../decisions/0015-independent-public-marketing-boundary.md) and the [public marketing threat model](../security/public-marketing-threat-model.md);
 4. ADRs 0008–0011 and their threat models;
 5. the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md) and root [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) for preserved requirements.
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–6 are committed and green. Slice 7 migrations `0054`–`0055` are additive; after final verification the schema has 151 RLS-protected tables and 121 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–7 are committed. Slice 8 migrations `0056`–`0057` are additive; the verified schema has 153 RLS-protected tables and 122 audited public functions.
 
-Slice 7 adds:
+Slice 8 adds:
 
-- eight RLS tables for pairing challenges/pairings, project selections, ingress/messages/media, takeovers and outbound intents;
-- account/membership-version/phone-digest/WABA-number-bound one-use pairing;
-- worker-only idempotent ingress, explicit current project scope and closed intents;
-- media quarantine and voice consent before any future transcription;
-- delivery-time pairing/project/takeover reauthorization with adapter fixed disabled;
-- bounded APIs, redacted UI, SQL/domain/HTTP/browser tests, ADR 0014, threat model and staging playbook.
+- separate `apps/marketing` source, runtime and optimized build;
+- a hash-bound disabled publication snapshot and all required current/preserved routes;
+- original layered industry storytelling with reduced-motion/mobile/no-JavaScript treatment;
+- three accessible public forms using one origin-bound, HMAC-digested, idempotent, rate-limited write RPC;
+- two new RLS tables, one owner-only unverified private inbox and an audit event per accepted submission;
+- exact snapshot, source-boundary, artifact/private-marker, SQL/HTTP and 10-scenario public browser evidence;
+- ADR 0015, a threat model and a staging/release playbook.
 
 No Trigger.dev task, always-on scheduler, hosted worker or notification sender exists. No YouTube token, upload/schedule executor, repository archive fetcher, candidate process runner, Git writer, merge/release/deploy route or production scanner exists. Synthetic local evidence proves the contracts only.
 
@@ -46,19 +47,20 @@ npm run test:ci
 git diff --check
 ```
 
-The final Slice 7 clean contract passes 119 database/domain/HTTP tests, the 55-migration/151-table RLS audit and 42 desktop/mobile scenarios (38 applicable plus four intentional device-specific skips), database/private-object restart persistence, optimized build, 16-marker artifact exclusion and the 237-file publication/secret scan.
+The final Slice 8 clean contract passes 122 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart persistence, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 279-file publication/secret scan.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, telemetry, Vercel, Cloudflare, production repository scanners/sandboxing or backup behavior.
 
 ## Next implementation slice
 
-Build the independent public application without publishing it:
+Begin Final Milestone 10 production quality without deploying:
 
-1. create a separate public build and approved-publication snapshot source;
-2. implement original layered industry storytelling with reduced-motion/mobile fallbacks;
-3. add required public routes and bounded contact/discovery forms with no private data imports;
-4. prove public artifacts exclude fixture/private markers and build independently;
-5. keep deployment/publication disabled until copy, legal and owner approval.
+1. add allowlisted no-content telemetry envelopes and local capture tests;
+2. harden CSP toward production nonces/hashes and add edge/distributed rate-limit seams;
+3. add dependency/SAST/license gates and fail-closed CI evidence;
+4. implement encrypted database/private-object backup manifests and an empty-target restore test;
+5. add production-like Lighthouse/Web Vitals, representative screen-reader and failure/load evidence;
+6. keep deployment/publication disabled until legal, public-copy, provider and owner approval.
 
 ## Security invariants
 
@@ -76,7 +78,7 @@ Build the independent public application without publishing it:
 
 ## Owner/provider connection order
 
-No credential is needed for the next local public-build slice. Before staging can become customer-ready, the owner will need to complete these bounded steps when requested:
+No credential is needed for the next local production-quality slice. Before staging can become customer-ready, the owner will need to complete these bounded steps when requested:
 
 1. obtain solicitor-approved legal documents and release versions;
 2. provide a hosted Supabase project and configure Auth redirect/MFA policies through provider secret stores;

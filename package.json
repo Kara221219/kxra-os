@@ -17,11 +17,17 @@
   "scripts": {
     "dev": "node scripts/local.mjs",
     "dev:os": "npm run dev -w @kxra/os",
-    "build": "npm run build -w @kxra/os",
+    "dev:marketing": "npm run dev -w @kxra/marketing",
+    "build": "npm run build:os && npm run build:marketing",
+    "build:os": "npm run build -w @kxra/os",
+    "build:marketing": "npm run build -w @kxra/marketing",
     "start": "npm run start -w @kxra/os",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:artifact": "node scripts/verify-production-artifact.mjs",
+    "test:marketing": "playwright test -c playwright.marketing.config.ts",
+    "test:publication": "node scripts/verify-publication-snapshot.mjs",
+    "test:marketing-boundary": "node scripts/verify-marketing-boundary.mjs",
     "test:restart": "node scripts/verify-persistence.mjs",
     "worker:files": "tsx scripts/file-worker.ts --once",
     "worker:files:watch": "tsx scripts/file-worker.ts --watch",
@@ -34,8 +40,8 @@
     "test:secrets": "node scripts/verify-secrets.mjs",
     "test:ci": "node scripts/ci.mjs",
     "lint": "npm run typecheck && npm run format:check",
-    "check": "npm run lint && npm test && npm run test:migrations && npm run build && npm run test:artifact && npm run test:secrets",
-    "format:check": "prettier --check \"apps/os/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\""
+    "check": "npm run lint && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:artifact && npm run test:secrets",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\""
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

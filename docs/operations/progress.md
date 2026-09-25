@@ -1,34 +1,36 @@
 # KXRA OS implementation progress
 
-Updated: 25 September 2026. Status: **Phase 2 Slice 7 is implemented and verified with deterministic local evidence. The system is not deployed or production ready.**
+Updated: 25 September 2026. Status: **Phase 2 Slice 8 is implemented and verified with deterministic local evidence. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 7 started from pushed Slice 6 commit `7fc2a34d01d42fa078a15d8ef526d428a4dde717`, which passed GitHub Actions run `36058846131` and descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 8 starts from pushed Slice 7 commit `4d7c1679ecb3296247e2f637cccf8e61d9c77649`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
-## Completed in Slice 7
+## Completed in Slice 8
 
-- Added one-use WhatsApp pairing challenges bound to the authenticated account, exact membership version, phone digest, WABA id and phone-number id with expiry, replay and attempt limits.
-- Added explicit active project selection and private worker-only ingress. Provider event/message ids deduplicate; account, legal, pairing and project authority are rechecked before project context is recorded.
-- Added the closed supported-intent set, media quarantine states, voice-transcription consent, human takeover and revocation-aware disabled outbound intents.
-- Stored no raw phone number or pairing code. Browser roles cannot write messages, media, ingress or outbound state or call worker functions.
-- Added authenticated redacted status/challenge/project/revoke APIs and owner/partner UI that labels Meta transport disabled.
-- Added ADR 0014, the WhatsApp threat model and staging activation playbook.
+- Added independent `apps/marketing` and separate production build with every current and preserved public route.
+- Added an exact SHA-256-bound `REVIEW_REQUIRED` public snapshot. Publication, indexing and legal activation remain disabled.
+- Added original semantic layered storytelling with desktop depth, mobile recomposition, reduced-motion, 320 px, 200% text and no-JavaScript fallbacks.
+- Added contact, enquiry and custom-project forms with exact-origin/schema/body checks, honeypot discard, HMAC request digests, idempotency, daily duplicate suppression and transactional hourly rate limiting.
+- Added owner-only `UNVERIFIED` public enquiry records, audit events and a private Idea Inbox view. Anonymous and partner reads remain empty under RLS.
+- Added public/private source and artifact scanners, ADR 0015, a public-site threat model and staging/release playbook.
 
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 55 ordered additive migrations, 151 RLS-protected tables with explicit policies and 121 audited public functions.
-- 119 database/domain/HTTP tests and 42 desktop/mobile browser scenarios in the clean disposable contract: 38 applicable passes and four intentional device-specific skips.
-- Database/private-object restart persistence, optimized production build, 16-marker fixture-artifact exclusion and a 237-file publication/secret scan pass.
+- 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
+- 122 database/domain/HTTP tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 10 public-site browser scenarios.
+- Database/private-object restart persistence, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 279-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
 
 ## Acceptance status for this slice
 
-- **AT-15 PASS locally:** exact one-use challenge, wrong binding, attempt, replay, account/membership and RLS cases pass.
-- **AT-16 PARTIAL / local authority PASS:** three ingress copies create one message; cross-project scope, media consent, revocation and disabled outbound reconciliation pass. Real Meta webhook/media/send behavior remains absent.
+- **AT-17 PASS locally:** applications build independently; required routes use one exact snapshot; private-source/marker scans pass; publication remains disabled.
+- **AT-26 PASS locally:** all three forms validate, bot-check, deduplicate, rate-limit and store one owner-only unverified audited row; `/login` targets the private app.
+- **AT-44 PASS locally:** desktop/mobile, reduced motion, 320 px, 200% text, keyboard and no-JavaScript scenarios pass. Production-like Lighthouse/Web Vitals and representative screen-reader review remain release checks.
+- **AT-45 PARTIAL / local boundary PASS:** source and both build artifacts exclude planted private markers. Hosted RSC/prefetch/cache/error isolation remains unverified.
 
 ## Remaining work
 
@@ -45,8 +47,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ### Missing
 
-- Independent public/private/customer builds, layered industry marketing site and public forms.
-- Connected staging providers, telemetry, backup/restore evidence, production release evidence and first-customer rehearsal.
+- Connected staging providers, telemetry, backup/restore evidence, production performance/accessibility evidence, approved public/legal content, release evidence and first-customer rehearsal.
 
 ## Active owner and external inputs
 
@@ -61,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-After the final Slice 7 rerun/commit, build the independent public marketing application and approved-publication snapshot boundary: original layered industry storytelling, required public routes/forms, reduced-motion/mobile behavior and strict exclusion of private fixtures/content. Keep publication disabled, then continue hosted Auth/Storage and legal activation prerequisites.
+Commit and push Slice 8, confirm GitHub Actions, then begin Final Milestone 10 production quality: safe telemetry adapters, CSP/rate-limit hardening, empty-target backup/restore evidence, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
 
 ## Publication boundary
 

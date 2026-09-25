@@ -13,6 +13,14 @@ npm run dev
 
 Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations, imports the seven projects plus classified required registers and runs the deterministic private-file worker beside Next.js. Existing runtime data is preserved. Local fixture accounts, Auth state, private objects, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
 
+The independent public application runs separately:
+
+```sh
+npm run dev:marketing
+```
+
+Open `http://127.0.0.1:3220`. To exercise form storage outside the hermetic test runner, set the exact `KXRA_MARKETING_ORIGIN`, a generated 64-plus-character `KXRA_PUBLIC_INGRESS_SECRET`, `KXRA_PRIVATE_APP_URL` and a dedicated least-privilege `KXRA_PUBLIC_DATABASE_URL`. Never reuse the private OS connection. `npm run test:ci` supplies an isolated local equivalent automatically.
+
 Database binaries default to Homebrew PostgreSQL 14. Set `KXRA_PG_BIN` to the directory containing `initdb` and `pg_ctl` elsewhere. Filesystem access to the cluster is equivalent to local administration; never put real credentials or production data in it.
 
 ## Account workflow
@@ -33,7 +41,7 @@ npm run test:e2e
 git diff --check
 ```
 
-`npm run check` performs TypeScript checking, all database/domain/HTTP tests, a production Next.js build and `npm run test:artifact`. The artifact scan rejects 16 known fixture identity, selector, state and secret markers. A clean optimized build is required; do not treat a development bundle as the production artifact.
+`npm run check` performs TypeScript checking, all database/domain/HTTP tests, exact public snapshot/source checks, both production Next.js builds and artifact/secret scans. The artifact scan rejects 21 known fixture, private-source, customer, state and secret markers. A clean optimized build is required; do not treat a development bundle as the production artifact.
 
 Install the browser once with:
 

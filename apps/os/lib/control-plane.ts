@@ -86,6 +86,31 @@ export type IdeaFilters = {
   pageSize?: number;
 };
 
+export type PublicEnquiryRow = {
+  id: string;
+  form_kind: "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
+  status: "UNVERIFIED" | "REVIEWING" | "SPAM" | "CLOSED";
+  name: string;
+  email: string;
+  company: string;
+  message: string;
+  source_path: string;
+  consent_recorded_at: string;
+  received_at: string;
+};
+
+export async function listPublicEnquiries(a: Actor) {
+  owner(a);
+  return query<PublicEnquiryRow>(
+    a,
+    `select id,form_kind,status,name,email,company,message,source_path,
+      consent_recorded_at,received_at
+     from kxra.public_enquiry_submissions
+     where org_id=$1 order by received_at desc,id limit 50`,
+    [a.org_id],
+  );
+}
+
 export async function listIdeas(a: Actor, filters: IdeaFilters = {}) {
   const page = Math.max(1, filters.page || 1);
   const pageSize = Math.min(100, Math.max(1, filters.pageSize || 25));

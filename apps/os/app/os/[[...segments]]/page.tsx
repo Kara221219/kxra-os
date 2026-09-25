@@ -19,6 +19,7 @@ import {
   AdminView,
   DashboardSectionView,
   IdeaInboxView,
+  PublicEnquiryInbox,
   PortfolioView,
   WorkLogView,
 } from "../../../components/ControlPlaneViews";
@@ -48,6 +49,7 @@ import {
   adminSnapshot,
   ideaStates,
   listIdeas,
+  listPublicEnquiries,
   listPortfolio,
   listWorkLog,
   ownerDashboard,
@@ -422,6 +424,8 @@ export default async function Workspace({
         page,
         pageSize: 25,
       });
+      const publicEnquiries =
+        a.role === "owner" ? await listPublicEnquiries(a) : [];
       const partnerRows =
         a.role === "owner"
           ? await query<{
@@ -454,6 +458,7 @@ export default async function Workspace({
                 : "Your submissions and ideas explicitly shared with you."
             }
           />
+          {a.role === "owner" && <PublicEnquiryInbox rows={publicEnquiries} />}
           <IdeaInboxView
             result={result}
             filters={{ project: filter, state }}

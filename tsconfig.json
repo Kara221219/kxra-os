@@ -26,6 +26,8 @@
     "node_modules",
     "KXRA-GENESIS",
     "apps/os/.next",
-    "apps/os/.next-dev"
+    "apps/os/.next-dev",
+    "apps/marketing/.next",
+    "apps/marketing/.next-dev"
   ]
 }

@@ -1,0 +1,44 @@
+{
+  "snapshotId": "KXRA-PUBLIC-LOCAL-001",
+  "status": "REVIEW_REQUIRED",
+  "publicationEnabled": false,
+  "reviewedAt": "2026-09-25",
+  "brand": {
+    "name": "KXRA Group",
+    "email": "info@kxra-group.com",
+    "strapline": "Useful AI, governed for real business.",
+    "summary": "KXRA is building a controlled operating platform that helps businesses turn ideas, evidence and brand knowledge into useful work."
+  },
+  "capabilities": [
+    {
+      "name": "KXRA Brand Studio",
+      "status": "Private preview",
+      "description": "Turn reviewed brand evidence into editable campaign concepts and export-ready copy."
+    },
+    {
+      "name": "Ask KXRA",
+      "status": "Private preview",
+      "description": "Search authorised project evidence and receive answers scoped to the project you can access."
+    },
+    {
+      "name": "Custom projects",
+      "status": "Discovery open",
+      "description": "Submit a business need for separate scoping, evidence review and commercial proposal."
+    }
+  ],
+  "industries": [
+    "Professional services",
+    "Retail and e-commerce",
+    "Property",
+    "Mobility",
+    "Media and content",
+    "Technology"
+  ],
+  "principles": [
+    "Context before output",
+    "Permissions before retrieval",
+    "Evidence before claims",
+    "Human approval before consequential action"
+  ],
+  "legalStatus": "Public legal wording is a review placeholder and is not an activated customer agreement."
+}

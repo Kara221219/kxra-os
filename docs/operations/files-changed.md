@@ -2,6 +2,28 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 25 September Phase 2 Slice 8
+
+- `apps/marketing/**` — independent public application, exact disabled snapshot, routes, layered presentation and accessible forms
+- `supabase/migrations/0056_public_marketing_ingress.sql`
+- `supabase/migrations/0057_public_ingress_read_surface.sql`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `apps/os/components/ControlPlaneViews.tsx`
+- `apps/os/lib/control-plane.ts`
+- `scripts/build-marketing.mjs`
+- `scripts/verify-marketing-boundary.mjs`
+- `scripts/verify-publication-snapshot.mjs`
+- `scripts/verify-production-artifact.mjs`
+- `scripts/ci.mjs`
+- `playwright.marketing.config.ts`
+- `tests/public-marketing.test.ts`
+- `tests/marketing-e2e/marketing.spec.ts`
+- access-matrix, security, control-plane count and runtime helpers
+- root workspace/package/environment/build configuration
+- ADR 0015, public marketing threat model, staging/release playbook and current operating evidence
+
+No real enquiry, legal approval, credential, Vercel project, DNS change, external send, deployment, indexing or publication is added.
+
 ## 25 September Phase 2 Slice 7
 
 - `supabase/migrations/0054_whatsapp_gateway_schema.sql`

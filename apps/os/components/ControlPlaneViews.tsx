@@ -4,6 +4,7 @@ import type {
   DashboardSection,
   IdeaRow,
   PortfolioRow,
+  PublicEnquiryRow,
   WorkLogRow,
 } from "../lib/control-plane";
 import {
@@ -13,6 +14,53 @@ import {
 } from "./ControlPlaneForms";
 
 type Member = { id: string; display_name: string; role?: string };
+
+export function PublicEnquiryInbox({ rows }: { rows: PublicEnquiryRow[] }) {
+  return (
+    <section className="panel">
+      <div className="record-top">
+        <div>
+          <p className="eyebrow">Public website inbox</p>
+          <h2>Unverified enquiries</h2>
+        </div>
+        <span className="badge">Owner only · {rows.length}</span>
+      </div>
+      <p>
+        Website submissions are unverified input. Review identity and scope
+        before moving anything into a project or sending a response.
+      </p>
+      <div className="record-list">
+        {rows.map((row) => (
+          <article className="record" key={row.id}>
+            <div className="record-top">
+              <div>
+                <small>{label(row.form_kind)}</small>
+                <h3>{row.name}</h3>
+              </div>
+              <span className="badge amber">{row.status}</span>
+            </div>
+            <p>{row.message}</p>
+            <dl className="definition">
+              <dt>Business</dt>
+              <dd>{row.company || "Not supplied"}</dd>
+              <dt>Email</dt>
+              <dd>
+                <a href={`mailto:${row.email}`}>{row.email}</a>
+              </dd>
+              <dt>Source</dt>
+              <dd>{row.source_path}</dd>
+              <dt>Received</dt>
+              <dd>{date(row.received_at)}</dd>
+              <dt>Response consent</dt>
+              <dd>{date(row.consent_recorded_at)}</dd>
+            </dl>
+          </article>
+        ))}
+        {!rows.length && <p className="empty">No public enquiries received.</p>}
+      </div>
+    </section>
+  );
+}
 
 function label(value: string) {
   return value.replaceAll("_", " ");

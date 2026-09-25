@@ -6,7 +6,7 @@ Phase 2 Slices 1–4 add normalized many-to-many identity, explicit tenant selec
 
 ## Enforced controls
 
-- All 151 private tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
+- All 153 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
 - The application login is non-superuser, `NOINHERIT` and `NOBYPASSRLS`. Each request enters a transaction, sets `ROLE authenticated`, verified subject claims and one server-derived `request.kxra.org_id`, then resets the pooled connection.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
@@ -29,6 +29,9 @@ Phase 2 Slices 1–4 add normalized many-to-many identity, explicit tenant selec
 - Routine manifests are owner-readable and change only through typed functions. Exact-hash approval precedes enablement; direct browser DML cannot create, claim, checkpoint, complete, retry or recover runs.
 - Routine slots/events are unique and authoritative in PostgreSQL. Calendar facts are explicit, leases expire, checkpoints append, and retry reauthorizes the current manifest version, service identity and scope before protected work.
 - `kxra_routine_worker` has only bounded worker function execution. It cannot approve/enable manifests or deliver a notification. Notification intents remain append-only with their adapter disabled.
+- The marketing workspace cannot import private OS or shared private runtime modules. Public content comes from one exact hash-bound disabled snapshot; source and both production artifacts are scanned for fixture, customer and Genesis markers.
+- Public form callers cannot insert or read inbox tables directly. One security-definer function with an empty search path, closed inputs and explicit execute grants performs idempotent/rate-limited writes. Only current KXRA owners can read submissions, which remain visibly `UNVERIFIED`.
+- The public route checks exact origin, JSON/body limits and the form/path relation before storage. Request identity is HMAC-digested; raw IP is not stored. Browser input never creates project, customer, pricing or response authority.
 
 ## Legal gate
 
@@ -53,15 +56,15 @@ Phase 2 Slices 1–4 add normalized many-to-many identity, explicit tenant selec
 
 Raw invitation, verification and reset tokens are generated once and stored only as digests. Passwords never enter KXRA tables. Invitation URLs use fragments; the client removes the token before exchange. A bounded AES-256-GCM HttpOnly join-intent cookie binds the locked email and invitation version. Redemption rechecks current digest, verified email, expiry, revocation and replay.
 
-Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an unprivileged port, no Vercel/production/hosted Auth/database combination and a generated secret. Production imports resolve fail-closed stubs. The production artifact scan rejects 16 fixture identity/state/secret markers.
+Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an unprivileged port, no Vercel/production/hosted Auth/database combination and a generated secret. Production imports resolve fail-closed stubs. The production artifact scan rejects 21 fixture, private-source, customer and secret markers across both applications.
 
 ## Tested attack paths
 
-The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 151 tables and audits all 121 exposed functions.
+The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 153 tables and audits all 122 exposed functions.
 
 SQL/HTTP/browser tests cover crafted tenant/project IDs, forged headers/body/JWT metadata, immediate membership revocation, cross-tenant projects/commercial state, direct API access, files, indexed chunks, search, Ask, nested workspace resources, exact legal presentation/acceptance and typed gate errors. File tests cover EICAR, executables, macros, active PDF, archive policy, MIME deception, extraction failure, idempotent retry, forged worker calls, cross-project discovery, revocation between authorization and delivery, stale query evidence, object mismatch/orphan reconciliation and restart hashes. AI tests cover draft/approved manifest boundaries, exact run scope, prompt/tool injection, worker grants, invalid output, timeout/provider failure, retry, concurrent budget reservation, unknown model substitution and revocation before claim and after synthesis. Routine tests cover exact disabled imports, owner/partner/anonymous access, direct DML denial, duplicate logical slots, Europe/London DST, missing/closed exchange calendars, lease expiry, checkpoint-preserving recovery, revocation before retry, quiet unchanged completion and one disabled notification intent for terminal actionable failure. Brand Studio tests cover hostile locators, anonymous/crafted/viewer denial, project isolation, source/profile/brief versions, exact decisions, quota accounting, immutable lineage, incomplete review, export authorization, entitlement revocation and desktop/mobile completion. Billing tests cover signature tamper/expiry, event replay/order, concurrent usage and free-grant revocation. Custom-project tests cover customer self-pricing denial, stale/hash mismatch, payment gating and cross-tenant isolation.
 
-Account, owner-control, project-workspace, finance, approval and browser-responsive suites remain part of the same clean disposable contract. These tests use synthetic local administration to create adversarial fixtures, then execute application behavior under the non-bypass roles. They are not a hosted Supabase or provider penetration test.
+Public-boundary tests cover exact snapshot hash, private-module import denial, owner/partner/anonymous inbox visibility, origin/schema/type-path validation, bot discard, duplicate/idempotent submission, transactional rate limiting, private-app redirect, all required routes, desktop/mobile, reduced motion, 320 px, 200% text, keyboard focus and no-JavaScript fallback. Account, owner-control, project-workspace, finance, approval and browser-responsive suites remain part of the same clean disposable contract. These tests use synthetic local administration to create adversarial fixtures, then execute application behavior under the non-bypass roles. They are not a hosted Supabase or provider penetration test.
 
 ## Existing hard stops
 
@@ -69,6 +72,6 @@ No external model synthesis, general agent/job executor, provider message, live 
 
 ## Hosted checks deferred
 
-Still blocked: real owner bootstrap; Supabase registration/email/MFA/recovery/refresh/session behavior; hosted pooler RLS; private Storage bucket/policies, trusted malware engine and isolated extractor; approved legal content; Stripe checkout/webhook/portal/tax/refund/cancellation; Resend acceptance/bounce/retry; Trigger.dev workers; external model retention/region/rate/spend and crash-recovery controls; a production-safe website fetch service; Meta/YouTube/GitHub provider grants; telemetry redaction; CSP/edge controls; secret rotation; database-plus-object empty-target restore; and delivery-time revocation across distributed jobs.
+Still blocked: real owner bootstrap; Supabase registration/email/MFA/recovery/refresh/session behavior; hosted pooler RLS and a dedicated public-ingress login; private Storage bucket/policies, trusted malware engine and isolated extractor; approved legal/public content; Stripe checkout/webhook/portal/tax/refund/cancellation; Resend acceptance/bounce/retry; Trigger.dev workers; external model retention/region/rate/spend and crash-recovery controls; a production-safe website fetch service; Meta/YouTube/GitHub provider grants; telemetry redaction; production nonce CSP/edge/WAF controls; secret rotation; database-plus-object empty-target restore; and delivery-time revocation across distributed jobs.
 
 No real credential, production data, external send, paid call, deployment or customer onboarding was used in this evidence.

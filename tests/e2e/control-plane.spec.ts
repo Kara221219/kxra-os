@@ -79,7 +79,29 @@ async function expectNoDocumentOverflow(page: Page) {
 
 test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
   page,
+  request,
 }) => {
+  const marketingOrigin =
+    process.env.KXRA_MARKETING_ORIGIN || "http://127.0.0.1:3220";
+  const publicMarker = `Public browser enquiry ${crypto.randomUUID()}`;
+  const submitted = await request.post(`${marketingOrigin}/api/enquiries`, {
+    headers: {
+      origin: marketingOrigin,
+      "idempotency-key": crypto.randomUUID(),
+      "x-forwarded-for": `browser-${crypto.randomUUID()}`,
+    },
+    data: {
+      kind: "CONTACT",
+      name: "Public browser lead",
+      email: `lead-${crypto.randomUUID()}@example.invalid`,
+      company: "Synthetic business",
+      message: publicMarker,
+      sourcePath: "/contact",
+      consent: true,
+      website: "",
+    },
+  });
+  expect(submitted.status()).toBe(202);
   await fixtureLogin(page, "owner");
   await expect(
     page.getByRole("heading", { name: "Your operating overview" }),
@@ -113,6 +135,13 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
   await expect(page.getByRole("heading", { name: "Idea Inbox" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Submit an idea" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Unverified enquiries" }),
+  ).toBeVisible();
+  await expect(page.getByText(publicMarker, { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("UNVERIFIED", { exact: true }).first(),
   ).toBeVisible();
   await expect(page.locator(".idea-card").first()).toBeVisible();
   await expect(
