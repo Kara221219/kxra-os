@@ -20,7 +20,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
 - 124 database/domain/HTTP tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 10 public-site browser scenarios.
-- Database/private-object restart and empty-target recovery, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 284-file publication/secret scan pass.
+- Database/private-object restart and empty-target recovery, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 286-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -69,6 +69,7 @@ Commit/push Slice 9 and confirm GitHub evidence, then continue CSP/rate-limit ha
 - A closed, bounded telemetry envelope rejects non-allowlisted, identity, content, secret, nested and unbounded data before a sink can receive it. Provider capture remains disabled.
 - npm run test:restore dumps the synthetic database and private objects, restores into an empty isolated target, verifies all table counts, migration/RLS/policy and critical state plus object hashes, records RPO/RTO/discrepancies, and destroys the target.
 - The clean hermetic proof restored 153 tables, 2,461 synthetic rows and 15 private objects with zero discrepancies in 2 seconds.
+- CI readiness is bound to a fresh opaque run ID; a decoy stale service must fail before either application starts.
 
 ## Publication boundary
 

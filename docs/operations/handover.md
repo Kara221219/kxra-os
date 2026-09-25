@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The current clean contract passes 124 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 284-file publication/secret scan.
+The current clean contract passes 124 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 286-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

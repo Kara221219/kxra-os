@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 
@@ -33,17 +34,17 @@ function run(command, args, environment) {
     throw Error(`${command} ${args.join(" ")} failed with ${result.status}`);
 }
 
-async function waitForServer(origin, child) {
-  const deadline = Date.now() + 90_000;
+async function waitForServer(origin, child, runId, timeout = 90_000) {
+  const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (child.exitCode !== null)
       throw Error(`Application exited before readiness (${child.exitCode})`);
     try {
-      const response = await fetch(`${origin}/login`, {
+      const response = await fetch(`${origin}/api/health`, {
         signal: AbortSignal.timeout(1500),
       });
-      const body = await response.text();
-      if (response.ok && body.includes("KXRA")) return;
+      const body = await response.json();
+      if (response.ok && body.run_id === runId) return;
     } catch {
       // Readiness is bounded by the deadline below.
     }
@@ -62,6 +63,7 @@ const [postgresPort, applicationPort, marketingPort] = await Promise.all([
 ]);
 const origin = `http://127.0.0.1:${applicationPort}`;
 const marketingOrigin = `http://127.0.0.1:${marketingPort}`;
+const runId = crypto.randomUUID();
 const environment = { ...process.env };
 for (const key of [
   "DATABASE_URL",
@@ -80,6 +82,7 @@ Object.assign(environment, {
   KXRA_RUNTIME: runtime,
   KXRA_PG_PORT: String(postgresPort),
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
+  KXRA_CI_RUN_ID: runId,
 });
 fs.writeFileSync(
   path.join(runtime, "session-key"),
@@ -92,6 +95,30 @@ let marketing;
 let logHandle;
 let marketingLogHandle;
 try {
+  const stalePort = await availablePort();
+  const stale = http.createServer((_request, response) => {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ service: "kxra-os", run_id: "stale-run" }));
+  });
+  await new Promise((resolve, reject) => {
+    stale.once("error", reject);
+    stale.listen(stalePort, "127.0.0.1", resolve);
+  });
+  let staleRejected = false;
+  try {
+    await waitForServer(
+      `http://127.0.0.1:${stalePort}`,
+      { exitCode: null },
+      runId,
+      900,
+    );
+  } catch {
+    staleRejected = true;
+  } finally {
+    await new Promise((resolve) => stale.close(resolve));
+  }
+  if (!staleRejected) throw Error("Stale service passed CI readiness");
+
   run(process.execPath, ["scripts/database.mjs", "start"], environment);
   logHandle = fs.openSync(path.join(runtime, "application.log"), "w");
   application = spawn(
@@ -110,7 +137,7 @@ try {
       stdio: ["ignore", logHandle, logHandle],
     },
   );
-  await waitForServer(origin, application);
+  await waitForServer(origin, application, runId);
   marketingLogHandle = fs.openSync(path.join(runtime, "marketing.log"), "w");
   marketing = spawn(
     process.execPath,
@@ -128,7 +155,7 @@ try {
       stdio: ["ignore", marketingLogHandle, marketingLogHandle],
     },
   );
-  await waitForServer(marketingOrigin, marketing);
+  await waitForServer(marketingOrigin, marketing, runId);
 
   run("npm", ["run", "lint"], environment);
   run("npm", ["test"], environment);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { BrandStudioSnapshot } from "../lib/brand-studio";
 
 type Project = { id: string; code: string; name: string };
@@ -118,6 +118,12 @@ async function request(url: string, payload: unknown) {
   return result;
 }
 
+function useHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  return hydrated;
+}
+
 function Usage({
   label,
   decision,
@@ -177,7 +183,11 @@ function SourceAndProfileForm({ projects }: { projects: Project[] }) {
     }
   }
   return (
-    <form className="panel form-grid brand-form" onSubmit={submit}>
+    <form
+      method="post"
+      className="panel form-grid brand-form"
+      onSubmit={submit}
+    >
       <h2>Create a source-linked profile</h2>
       <p>
         Website fetching is disabled. Supply a public HTTPS address and paste
@@ -344,7 +354,11 @@ function ProfileCard({
       )}
       <details>
         <summary>Edit as a new version</summary>
-        <form className="form-grid compact-form" onSubmit={revise}>
+        <form
+          method="post"
+          className="form-grid compact-form"
+          onSubmit={revise}
+        >
           <label>
             Evidence source
             <select name="source_version_id" required>
@@ -422,6 +436,7 @@ function CampaignForm({ profiles }: { profiles: Profile[] }) {
   const approved = profiles.filter((profile) => profile.approved_version);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const hydrated = useHydrated();
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -453,7 +468,11 @@ function CampaignForm({ profiles }: { profiles: Profile[] }) {
     }
   }
   return (
-    <form className="panel form-grid brand-form" onSubmit={submit}>
+    <form
+      method="post"
+      className="panel form-grid brand-form"
+      onSubmit={submit}
+    >
       <h2>Create a campaign brief</h2>
       <label>
         Approved brand profile
@@ -511,7 +530,7 @@ function CampaignForm({ profiles }: { profiles: Profile[] }) {
         Success measure
         <textarea name="success_measure" required rows={3} />
       </label>
-      <button disabled={busy || !approved.length}>
+      <button disabled={!hydrated || busy || !approved.length}>
         {busy ? "Creating…" : "Create draft brief"}
       </button>
       {!approved.length && (
@@ -583,6 +602,7 @@ function GenerateForm({
   );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const hydrated = useHydrated();
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -612,7 +632,11 @@ function GenerateForm({
     }
   }
   return (
-    <form className="panel form-grid brand-form" onSubmit={submit}>
+    <form
+      method="post"
+      className="panel form-grid brand-form"
+      onSubmit={submit}
+    >
       <h2>Generate review drafts</h2>
       <p>
         The local deterministic adapter creates one text draft per approved
@@ -629,7 +653,9 @@ function GenerateForm({
           ))}
         </select>
       </label>
-      <button disabled={busy || !enabled || !approvedCampaigns.length}>
+      <button
+        disabled={!hydrated || busy || !enabled || !approvedCampaigns.length}
+      >
         {busy ? "Generating…" : "Reserve usage and generate"}
       </button>
       {!enabled && (
@@ -734,7 +760,7 @@ function VariantCard({ variant }: { variant: Variant }) {
       </footer>
       <details>
         <summary>Edit as a new variant</summary>
-        <form className="form-grid compact-form" onSubmit={edit}>
+        <form method="post" className="form-grid compact-form" onSubmit={edit}>
           <label>
             Headline
             <input
@@ -783,7 +809,11 @@ function VariantCard({ variant }: { variant: Variant }) {
       {!variant.export_id && (
         <details open={variant.state === "REVIEW_REQUIRED"}>
           <summary>Review for export</summary>
-          <form className="form-grid compact-form" onSubmit={review}>
+          <form
+            method="post"
+            className="form-grid compact-form"
+            onSubmit={review}
+          >
             <div className="check-grid">
               {[
                 ["brand", "Matches the approved brand profile"],
