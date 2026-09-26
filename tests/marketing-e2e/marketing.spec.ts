@@ -127,3 +127,44 @@ test("AT-44 content and contact fallback work without JavaScript", async ({
   ).toHaveAttribute("href", "mailto:info@kxra-group.com");
   await context.close();
 });
+
+test("AT-44 representative accessibility tree exposes landmarks and labelled controls", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/contact");
+  const session = await context.newCDPSession(page);
+  const tree = await session.send("Accessibility.getFullAXTree");
+  const nodes = tree.nodes.filter((node) => !node.ignored);
+  const values = (role: string) =>
+    nodes
+      .filter((node) => node.role?.value === role)
+      .map((node) => String(node.name?.value || ""));
+
+  expect(values("banner").length).toBe(1);
+  expect(values("navigation")).toContain("Primary navigation");
+  expect(values("main").length).toBe(1);
+  expect(values("contentinfo").length).toBe(1);
+  expect(values("heading")).toContain("Start a conversation with KXRA.");
+  expect(values("textbox")).toEqual(
+    expect.arrayContaining([
+      "Name",
+      "Work email",
+      "Business or organisation",
+      "How can KXRA help?",
+    ]),
+  );
+  expect(values("checkbox")).toContain(
+    "I agree that KXRA may use this information to review and respond to my request.",
+  );
+  expect(values("button")).toContain("Send to KXRA");
+
+  const duplicateIds = await page.locator("[id]").evaluateAll((elements) => {
+    const counts = new Map<string, number>();
+    for (const element of elements)
+      counts.set(element.id, (counts.get(element.id) || 0) + 1);
+    return [...counts.entries()].filter(([, count]) => count > 1);
+  });
+  expect(duplicateIds).toEqual([]);
+  await session.detach();
+});

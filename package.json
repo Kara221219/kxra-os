@@ -40,9 +40,10 @@
     "test:migrations": "node scripts/verify-migrations.mjs",
     "test:secrets": "node scripts/verify-secrets.mjs",
     "test:dependencies": "node scripts/verify-dependencies.mjs",
+    "test:build-budgets": "node scripts/verify-build-budgets.mjs",
     "test:ci": "node scripts/ci.mjs",
     "lint": "npm run typecheck && npm run format:check",
-    "check": "npm run lint && npm run test:dependencies && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:artifact && npm run test:secrets",
+    "check": "npm run lint && npm run test:dependencies && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:build-budgets && npm run test:artifact && npm run test:secrets",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\""
   },
   "dependencies": {

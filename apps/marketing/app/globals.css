@@ -465,7 +465,9 @@ footer p {
 }
 @media (max-width: 560px) {
   .site-header nav {
-    display: none;
+    gap: 0.9rem;
+    white-space: nowrap;
+    scrollbar-width: thin;
   }
   .card-grid {
     grid-template-columns: 1fr;

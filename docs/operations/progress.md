@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 25 September 2026. Status: **Phase 2 Slice 9 safe-telemetry and empty-target recovery foundations pass the complete local contract. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 12 accessibility and build-budget gates pass the complete local contract. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 8 starts from pushed Slice 7 commit `4d7c1679ecb3296247e2f637cccf8e61d9c77649`, which descends from the reviewed Genesis implementation. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `1b256e050832e15d7019e54ce723d8e6d9331561` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 12 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -19,8 +19,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
-- 124 database/domain/HTTP tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 10 public-site browser scenarios.
-- Database/private-object restart and empty-target recovery, both optimized production builds, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 286-file publication/secret scan pass.
+- 129 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios.
+- Database/private-object restart and empty-target recovery, both optimized production builds, compressed page-asset budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 295-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -29,7 +29,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 - **AT-17 PASS locally:** applications build independently; required routes use one exact snapshot; private-source/marker scans pass; publication remains disabled.
 - **AT-26 PASS locally:** all three forms validate, bot-check, deduplicate, rate-limit and store one owner-only unverified audited row; `/login` targets the private app.
-- **AT-44 PASS locally:** desktop/mobile, reduced motion, 320 px, 200% text, keyboard and no-JavaScript scenarios pass. Production-like Lighthouse/Web Vitals and representative screen-reader review remain release checks.
+- **AT-44 PASS locally:** desktop/mobile, reduced motion, 320 px, 200% text, keyboard, no-JavaScript and representative browser accessibility-tree scenarios pass. Production-like Lighthouse/Web Vitals and human assistive-technology review remain release checks.
 - **AT-45 PARTIAL / local boundary PASS:** source and both build artifacts exclude planted private markers. Hosted RSC/prefetch/cache/error isolation remains unverified.
 
 ## Remaining work
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Confirm Slice 10 GitHub evidence, then finish Slice 11 dependency/CodeQL evidence and continue static marketing CSP research, rate-limit hardening and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
+Commit and push Slice 12, confirm both remote workflows, then continue static marketing CSP research, distributed edge-rate controls and broader failure/load/performance coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -83,7 +83,14 @@ Confirm Slice 10 GitHub evidence, then finish Slice 11 dependency/CodeQL evidenc
 - The lockfile gate requires exact versions, npm-registry HTTPS sources, integrity hashes and one of nine reviewed license expressions for all 118 external packages.
 - Only exact reviewed esbuild and optional fsevents versions may run install scripts; any new script or version fails closed.
 - A separate CodeQL v4.38.2 workflow is pinned to its immutable commit and uses the security-extended JavaScript/TypeScript suite.
-- The complete hermetic contract passes with the dependency gate. Remote CodeQL evidence remains pending until the workflow is pushed.
+- Full GitHub CI run 36251106024 and CodeQL run 36251106098 passed for commit `1b256e0`.
+
+## Slice 12 local accessibility and performance gates
+
+- A representative Chromium accessibility-tree test validates the public banner, named navigation, main/content-info landmarks, page heading and labelled contact controls on desktop and mobile.
+- The first run exposed a mobile breakpoint that removed the primary navigation. The header now keeps the full navigation available in a horizontally scrollable row; focused and full retests pass.
+- A deterministic post-build gate measures the unique JavaScript/CSS required by every page. Marketing pages are limited to 140 KiB gzip and private OS pages to 200 KiB; the clean run measured 107.3 KiB and 157.8 KiB respectively at the largest routes.
+- The complete hermetic contract passes 12 public scenarios and the 295-file publication scan. Production-like Lighthouse/Core Web Vitals and human assistive-technology review still require staging.
 
 ## Publication boundary
 

@@ -174,6 +174,7 @@ try {
   delete productionEnvironment.KXRA_RUNTIME;
   delete productionEnvironment.KXRA_PG_PORT;
   run("npm", ["run", "build"], productionEnvironment);
+  run("npm", ["run", "test:build-budgets"], productionEnvironment);
   run("npm", ["run", "test:artifact"], productionEnvironment);
   run("npm", ["run", "test:secrets"], productionEnvironment);
   console.log(

@@ -12,7 +12,7 @@ Status: local acceptance evidence as of 25 September 2026. No site is published 
 | Spam or replay floods the inbox | Honeypot discard, daily content fingerprint, idempotency key and transactional hourly digest limit | Distributed edge rate limit, CAPTCHA decision and load test |
 | Raw IP becomes durable personal data | API HMAC-digests request address plus user agent with a server-only secret | Retention schedule, key rotation and privacy wording |
 | SQL injection or malicious text executes | Parameterized SQL; React output encoding; values have strict lengths and closed enums | SAST/DAST and operational content handling |
-| JavaScript/CSS motion makes the site unusable | Server-rendered content, no-JS mail fallback, reduced-motion mode, mobile recomposition, 320 px/200% tests | Screen-reader review and production-like Lighthouse/Web Vitals |
+| JavaScript/CSS motion or responsive layout makes the site unusable | Server-rendered content, no-JS mail fallback, reduced-motion mode, mobile recomposition, 320 px/200% tests, desktop/mobile accessibility-tree assertions and compressed page-asset budgets | Human assistive-technology review and production-like Lighthouse/Web Vitals |
 | Login redirect is abused | Server-owned exact target; only HTTP locally and HTTPS in production; request input cannot select destination | Verify final app domain and callback rules |
 | Form storage fails silently | API returns a safe 503 and gives the public contact email | Alerting and provider-failure exercise |
 

@@ -1,10 +1,10 @@
 # Engineering handover
 
-Updated: 25 September 2026.
+Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on codex/phase-2-completion. The pushed Slice 8 head is 05b5471b4e6152b4590e35055a51188476cc7a53; the working tree contains the in-progress Slice 9 production-quality changes.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Pushed commit `1b256e050832e15d7019e54ce723d8e6d9331561` passed full GitHub CI and CodeQL; the working tree contains the locally verified Slice 12 accessibility and build-budget changes.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The current clean contract passes the 118-package dependency policy, 129 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 294-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
+The current clean contract passes the 118-package dependency policy, 129 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 12 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, compressed page-asset budgets, exact public snapshot/source checks, 21-marker artifact exclusion and the 295-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
@@ -55,10 +55,10 @@ Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, Ope
 
 Continue Final Milestone 10 production quality without deploying:
 
-1. confirm the SHA-pinned CodeQL workflow and dependency policy pass remotely;
-2. design a static hash/SRI CSP path for marketing and add edge/distributed rate-limit seams;
+1. design a static hash/SRI CSP path for marketing and add edge/distributed rate-limit seams;
+2. add production-like Lighthouse/Web Vitals, human assistive-technology and representative failure/load evidence;
 3. repeat the passing database/private-object empty-target restore against authorized staging with encrypted provider backups;
-4. add production-like Lighthouse/Web Vitals, representative screen-reader and failure/load evidence;
+4. connect the approved staging provider sequence only as credentials and legal decisions become available;
 5. keep deployment/publication disabled until legal, public-copy, provider and owner approval.
 
 ## Security invariants
