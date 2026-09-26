@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import pg from "pg";
 
@@ -16,6 +17,38 @@ export type PublicEnquiry = {
   idempotencyKey: string;
   botField: string;
 };
+
+export function trustedClientAddress(
+  headers: Headers,
+  environment: Record<string, string | undefined> = process.env,
+) {
+  let value: string | null = null;
+  let allowForwardedChain = false;
+  if (environment.VERCEL === "1") {
+    value = headers.get("x-vercel-forwarded-for");
+  } else if (environment.KXRA_RUNTIME && environment.KXRA_MARKETING_ORIGIN) {
+    try {
+      const origin = new URL(environment.KXRA_MARKETING_ORIGIN);
+      if (
+        origin.protocol === "http:" &&
+        (origin.hostname === "127.0.0.1" || origin.hostname === "localhost")
+      )
+        value = headers.get("x-forwarded-for");
+      allowForwardedChain = true;
+    } catch {
+      return null;
+    }
+  }
+  const address = allowForwardedChain
+    ? value?.split(",")[0]?.trim() || ""
+    : value?.trim() || "";
+  if (
+    (!allowForwardedChain && address.includes(",")) ||
+    net.isIP(address) === 0
+  )
+    return null;
+  return address;
+}
 
 function localConfiguration() {
   const runtime = process.env.KXRA_RUNTIME;

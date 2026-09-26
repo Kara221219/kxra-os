@@ -2,6 +2,15 @@ import { expect, test, type Page } from "@playwright/test";
 
 const projectTwo = "30000000-0000-4000-8000-000000000002";
 
+function syntheticAddress() {
+  const suffix = crypto
+    .randomUUID()
+    .replaceAll("-", "")
+    .slice(0, 16)
+    .match(/.{1,4}/g);
+  return `2001:db8::${suffix?.join(":")}`;
+}
+
 async function fixtureLogin(page: Page, fixture: string) {
   await page.goto("/login");
   await page.getByText("Local fixture identities", { exact: true }).click();
@@ -88,7 +97,7 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
     headers: {
       origin: marketingOrigin,
       "idempotency-key": crypto.randomUUID(),
-      "x-forwarded-for": `browser-${crypto.randomUUID()}`,
+      "x-forwarded-for": syntheticAddress(),
     },
     data: {
       kind: "CONTACT",

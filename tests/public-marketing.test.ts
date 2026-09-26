@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
 import { marketingOrigin, runtimeFile } from "./support/runtime";
+import { trustedClientAddress } from "../apps/marketing/lib/ingress";
 
 const config = JSON.parse(
   fs.readFileSync(runtimeFile("database.json"), "utf8"),
@@ -14,6 +15,52 @@ const org = "10000000-0000-4000-8000-000000000001";
 const owner = "20000000-0000-4000-8000-000000000001";
 const partner = "20000000-0000-4000-8000-000000000002";
 after(() => admin.end());
+
+function syntheticAddress() {
+  const suffix = crypto
+    .randomBytes(8)
+    .toString("hex")
+    .match(/.{1,4}/g);
+  return `2001:db8::${suffix?.join(":")}`;
+}
+
+test("AT-26 public ingress trusts only its configured edge address", () => {
+  const headers = new Headers({
+    "x-forwarded-for": "203.0.113.9",
+    "x-vercel-forwarded-for": "198.51.100.7",
+  });
+  assert.equal(trustedClientAddress(headers, { VERCEL: "1" }), "198.51.100.7");
+  assert.equal(
+    trustedClientAddress(
+      new Headers({ "x-vercel-forwarded-for": "198.51.100.7, 10.0.0.1" }),
+      { VERCEL: "1" },
+    ),
+    null,
+  );
+  assert.equal(trustedClientAddress(new Headers(), { VERCEL: "1" }), null);
+  assert.equal(
+    trustedClientAddress(
+      new Headers({ "x-vercel-forwarded-for": "not-an-address" }),
+      { VERCEL: "1" },
+    ),
+    null,
+  );
+  assert.equal(
+    trustedClientAddress(headers, {
+      KXRA_RUNTIME: "/synthetic",
+      KXRA_MARKETING_ORIGIN: "http://127.0.0.1:3220",
+    }),
+    "203.0.113.9",
+  );
+  assert.equal(
+    trustedClientAddress(headers, {
+      KXRA_RUNTIME: "/synthetic",
+      KXRA_MARKETING_ORIGIN: "https://preview.invalid",
+    }),
+    null,
+  );
+  assert.equal(trustedClientAddress(headers, {}), null);
+});
 
 async function role(db: pg.PoolClient, actor: string | null) {
   await db.query("reset role");
@@ -126,7 +173,7 @@ test("AT-26 HTTP validates origin, shape, deduplicates and rate limits", async (
         origin: marketingOrigin,
         "content-type": "application/json",
         "idempotency-key": idempotency,
-        "x-forwarded-for": crypto.randomUUID(),
+        "x-forwarded-for": syntheticAddress(),
         ...headers,
       },
       body: JSON.stringify(body),
@@ -143,7 +190,7 @@ test("AT-26 HTTP validates origin, shape, deduplicates and rate limits", async (
   assert.equal(replay.status, 202);
   assert.equal((await replay.json()).receipt, receipt);
 
-  const fixedIp = `fixture-${crypto.randomUUID()}`;
+  const fixedIp = syntheticAddress();
   for (let index = 0; index < 5; index += 1) {
     const response = await fetch(marketingOrigin + "/api/enquiries", {
       method: "POST",
@@ -179,7 +226,7 @@ test("AT-26 HTTP validates origin, shape, deduplicates and rate limits", async (
 });
 
 test("AT-26 concurrent public ingress permits exactly one bounded window", async () => {
-  const source = `concurrent-${crypto.randomUUID()}`;
+  const source = syntheticAddress();
   const tag = crypto.randomUUID();
   const responses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>

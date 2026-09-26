@@ -1,7 +1,11 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { digest, storePublicEnquiry } from "../../../lib/ingress";
+import {
+  digest,
+  storePublicEnquiry,
+  trustedClientAddress,
+} from "../../../lib/ingress";
 
 const schema = z.object({
   kind: z.enum(["ENQUIRY", "CUSTOM_PROJECT", "CONTACT"]),
@@ -48,8 +52,9 @@ export async function POST(request: Request) {
   } as const;
   if (routeKind[parsed.sourcePath] !== parsed.kind)
     return NextResponse.json({ message: safeMessage(400) }, { status: 400 });
-  const forwarded =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const clientAddress = trustedClientAddress(request.headers);
+  if (!clientAddress)
+    return NextResponse.json({ message: safeMessage(503) }, { status: 503 });
   const agent = request.headers.get("user-agent")?.slice(0, 160) || "unknown";
   const content = [
     parsed.kind,
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
   try {
     const stored = await storePublicEnquiry({
       ...parsed,
-      requestDigest: digest(secret, `${forwarded}\u001f${agent}`),
+      requestDigest: digest(secret, `${clientAddress}\u001f${agent}`),
       fingerprint: digest(secret, content),
       idempotencyKey: idempotency,
       botField: parsed.website,
