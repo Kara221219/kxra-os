@@ -310,6 +310,94 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
     },
   );
   assert.equal(activated.status, 201, await activated.clone().text());
+  const deliveryProjectId = (await activated.json()).id;
+  const changed = await jsonRequest(
+    jar,
+    `/api/custom-projects/projects/${deliveryProjectId}/changes`,
+    {
+      scope_delta: "Add an HTTP-tested customer handover",
+      price_delta_minor: 2000,
+      currency: "GBP",
+      request_id: crypto.randomUUID(),
+    },
+  );
+  assert.equal(changed.status, 201, await changed.clone().text());
+  const change = await changed.json();
+  const kxraChangeApproval = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/changes/${change.id}/decide`,
+    {
+      change_hash: change.change_hash,
+      decision: "ACCEPTED",
+      note: "KXRA accepts the exact HTTP change",
+    },
+  );
+  assert.equal(kxraChangeApproval.status, 200);
+  assert.equal((await kxraChangeApproval.json()).state, "SUBMITTED");
+  const customerChangeApproval = await jsonRequest(
+    jar,
+    `/api/custom-projects/changes/${change.id}/decide`,
+    {
+      change_hash: change.change_hash,
+      decision: "ACCEPTED",
+      note: "Customer accepts the exact HTTP change",
+    },
+  );
+  assert.equal(customerChangeApproval.status, 200);
+  assert.equal((await customerChangeApproval.json()).state, "ACCEPTED");
+  const delivered = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/projects/${deliveryProjectId}/deliveries`,
+    {
+      milestone_key: "m1",
+      summary: "Synthetic HTTP milestone evidence is ready for review.",
+      evidence: [{ reference: "synthetic://http/m1" }],
+    },
+  );
+  assert.equal(delivered.status, 201, await delivered.clone().text());
+  const delivery = await delivered.json();
+  const milestoneAccepted = await jsonRequest(
+    jar,
+    `/api/custom-projects/deliveries/${delivery.id}/accept`,
+    { delivery_hash: delivery.delivery_hash },
+  );
+  assert.equal(
+    milestoneAccepted.status,
+    200,
+    await milestoneAccepted.clone().text(),
+  );
+  assert.equal(
+    (
+      await jsonRequest(
+        jar,
+        `/api/custom-projects/projects/${deliveryProjectId}/invoices`,
+        {
+          request_id: crypto.randomUUID(),
+          invoice_reference: "INV-FORGED-CUSTOMER",
+          subtotal_minor: 2000,
+          tax_minor: 400,
+          currency: "GBP",
+          due_at: new Date(Date.now() + 86_400_000).toISOString(),
+          evidence_reference: "forged-customer-invoice",
+        },
+      )
+    ).status,
+    409,
+  );
+  const invoiced = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/projects/${deliveryProjectId}/invoices`,
+    {
+      request_id: crypto.randomUUID(),
+      invoice_reference: `HTTP-${crypto.randomUUID().slice(0, 8)}`,
+      subtotal_minor: 2000,
+      tax_minor: 400,
+      currency: "GBP",
+      due_at: new Date(Date.now() + 86_400_000).toISOString(),
+      evidence_reference: "synthetic-http-accounting-reference",
+    },
+  );
+  assert.equal(invoiced.status, 201, await invoiced.clone().text());
 
   await admin.query(
     `update kxra.organisation_memberships

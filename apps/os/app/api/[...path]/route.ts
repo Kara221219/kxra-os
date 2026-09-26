@@ -1651,6 +1651,154 @@ async function handle(req: Request, ctx: Context) {
         );
         return json(rows[0], 201);
       }
+      if (
+        p[1] === "projects" &&
+        p[2] &&
+        p[3] === "changes" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const projectId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            scope_delta: z.string().trim().min(1).max(30000),
+            price_delta_minor: z
+              .number()
+              .int()
+              .min(Number.MIN_SAFE_INTEGER)
+              .max(Number.MAX_SAFE_INTEGER),
+            currency: z.string().regex(/^[A-Z]{3}$/),
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.submit_custom_project_change($1,$2,$3,$4,$5)",
+          [
+            projectId,
+            input.scope_delta,
+            input.price_delta_minor,
+            input.currency,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[1] === "changes" &&
+        p[2] &&
+        p[3] === "decide" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const changeId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            change_hash: z.string().regex(/^[a-f0-9]{64}$/),
+            decision: z.enum(["ACCEPTED", "REJECTED"]),
+            note: z.string().max(5000).default(""),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ state: string }>(
+          a,
+          "select kxra.decide_custom_project_change($1,$2,$3,$4) as state",
+          [changeId, input.change_hash, input.decision, input.note],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[1] === "projects" &&
+        p[2] &&
+        p[3] === "deliveries" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const projectId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            milestone_key: z.string().trim().min(1).max(120),
+            summary: z.string().trim().min(1).max(30000),
+            evidence: z.array(z.record(z.string(), z.unknown())).min(1).max(50),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          "select * from kxra.submit_custom_project_milestone_delivery($1,$2,$3,$4)",
+          [
+            projectId,
+            input.milestone_key,
+            input.summary,
+            JSON.stringify(input.evidence),
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (
+        p[1] === "deliveries" &&
+        p[2] &&
+        p[3] === "accept" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const deliveryId = uuid.parse(p[2]);
+        const input = z
+          .object({ delivery_hash: z.string().regex(/^[a-f0-9]{64}$/) })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.accept_custom_project_milestone($1,$2) as id",
+          [deliveryId, input.delivery_hash],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[1] === "projects" &&
+        p[2] &&
+        p[3] === "invoices" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const projectId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            request_id: uuid,
+            invoice_reference: z.string().trim().min(1).max(120),
+            subtotal_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            tax_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            currency: z.string().regex(/^[A-Z]{3}$/),
+            due_at: z.string().datetime({ offset: true }),
+            evidence_reference: z.string().trim().min(3).max(500),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.issue_custom_project_invoice($1,$2,$3,$4,$5,$6,$7,$8) as id",
+          [
+            projectId,
+            input.request_id,
+            input.invoice_reference,
+            input.subtotal_minor,
+            input.tax_minor,
+            input.currency,
+            input.due_at,
+            input.evidence_reference,
+          ],
+        );
+        return json(rows[0], 201);
+      }
       throw new HttpError(404, "Not found");
     }
     if (p[0] === "summary" && method === "GET") return json(await counts(a));

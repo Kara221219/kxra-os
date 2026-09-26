@@ -28,6 +28,37 @@ type Proposal = {
   accepted: boolean;
   received_minor: number;
   refunded_minor: number;
+  delivery_project_id: string | null;
+  delivery_project_code: string | null;
+  delivery_project_name: string | null;
+  changes: {
+    id: string;
+    version: number;
+    state: string;
+    scope_delta: string;
+    price_delta_minor: number;
+    currency: string;
+    change_hash: string;
+    approvals: { party: "KXRA" | "CUSTOMER"; decision: string }[];
+  }[];
+  deliveries: {
+    id: string;
+    milestone_key: string;
+    version: number;
+    state: string;
+    summary: string;
+    delivery_hash: string;
+  }[];
+  invoices: {
+    id: string;
+    invoice_reference: string;
+    subtotal_minor: number;
+    tax_minor: number;
+    total_minor: number;
+    currency: string;
+    state: string;
+    due_at: string;
+  }[];
 };
 
 export type CustomProjectRequest = {
@@ -458,6 +489,297 @@ function ProposalActions({
   );
 }
 
+function DeliveryLifecycle({
+  proposal,
+  canManage,
+}: {
+  proposal: Proposal;
+  canManage: boolean;
+}) {
+  const hydrated = useHydrated();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const projectId = proposal.delivery_project_id;
+  if (!projectId) return null;
+
+  async function run(path: string, payload: unknown, success: string) {
+    setBusy(true);
+    setMessage("");
+    try {
+      await postJson(path, payload);
+      setMessage(success);
+      window.location.reload();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Action unavailable");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function submitChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      `/api/custom-projects/projects/${projectId}/changes`,
+      {
+        scope_delta: form.get("scope_delta"),
+        price_delta_minor: Number(form.get("price_delta_minor")),
+        currency: proposal.currency,
+        request_id: crypto.randomUUID(),
+      },
+      "Change request submitted for both parties to approve.",
+    );
+  }
+  async function decideChange(
+    changeId: string,
+    changeHash: string,
+    decision: "ACCEPTED" | "REJECTED",
+  ) {
+    await run(
+      `/api/custom-projects/changes/${changeId}/decide`,
+      {
+        change_hash: changeHash,
+        decision,
+        note: "Decision recorded in KXRA OS",
+      },
+      `Change ${decision.toLowerCase()}.`,
+    );
+  }
+  async function submitDelivery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      `/api/custom-projects/projects/${projectId}/deliveries`,
+      {
+        milestone_key: form.get("milestone_key"),
+        summary: form.get("summary"),
+        evidence: [{ reference: form.get("evidence_reference") }],
+      },
+      "Milestone evidence submitted for customer acceptance.",
+    );
+  }
+  async function acceptDelivery(deliveryId: string, deliveryHash: string) {
+    await run(
+      `/api/custom-projects/deliveries/${deliveryId}/accept`,
+      { delivery_hash: deliveryHash },
+      "Exact milestone delivery accepted.",
+    );
+  }
+  async function issueInvoice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      `/api/custom-projects/projects/${projectId}/invoices`,
+      {
+        request_id: crypto.randomUUID(),
+        invoice_reference: form.get("invoice_reference"),
+        subtotal_minor: Number(form.get("subtotal_minor")),
+        tax_minor: Number(form.get("tax_minor")),
+        currency: proposal.currency,
+        due_at: new Date(String(form.get("due_at"))).toISOString(),
+        evidence_reference: form.get("evidence_reference"),
+      },
+      "Invoice record issued. Payment remains separately verified.",
+    );
+  }
+
+  const currentParty = canManage ? "KXRA" : "CUSTOMER";
+  return (
+    <section className="delivery-lifecycle">
+      <h4>
+        Delivery workspace · {proposal.delivery_project_code} ·{" "}
+        {proposal.delivery_project_name}
+      </h4>
+      <p>
+        Scope changes need KXRA and customer approval. Milestone acceptance and
+        invoice records do not create or prove payment.
+      </p>
+      <div className="split-panels">
+        <form
+          method="post"
+          className="form-grid compact-form"
+          onSubmit={submitChange}
+        >
+          <h5>Request a scope change</h5>
+          <label>
+            Exact scope change
+            <textarea name="scope_delta" required maxLength={30000} rows={3} />
+          </label>
+          <label>
+            Price change in minor units
+            <input name="price_delta_minor" type="number" step="1" required />
+          </label>
+          <button disabled={!hydrated || busy}>Submit change request</button>
+        </form>
+        {canManage && (
+          <form
+            method="post"
+            className="form-grid compact-form"
+            onSubmit={submitDelivery}
+          >
+            <h5>Submit milestone delivery</h5>
+            <label>
+              Milestone
+              <select name="milestone_key" required defaultValue="">
+                <option value="" disabled>
+                  Select milestone
+                </option>
+                {proposal.milestones
+                  .filter((milestone) => milestone.key)
+                  .map((milestone, index) => (
+                    <option
+                      key={milestone.key || index}
+                      value={milestone.key || ""}
+                    >
+                      {milestone.title || milestone.key}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Delivery summary
+              <textarea name="summary" required maxLength={30000} rows={3} />
+            </label>
+            <label>
+              Controlled evidence reference
+              <input
+                name="evidence_reference"
+                required
+                minLength={3}
+                maxLength={500}
+              />
+            </label>
+            <button disabled={!hydrated || busy}>
+              Submit delivery evidence
+            </button>
+          </form>
+        )}
+      </div>
+      {proposal.changes.map((change) => {
+        const alreadyDecided = change.approvals.some(
+          (approval) => approval.party === currentParty,
+        );
+        return (
+          <article className="panel" key={change.id}>
+            <div className="record-top">
+              <h5>Change version {change.version}</h5>
+              <span className="badge">{change.state}</span>
+            </div>
+            <p>{change.scope_delta}</p>
+            <p>
+              {money(change.price_delta_minor, change.currency)} price change
+            </p>
+            <small>Exact change {change.change_hash.slice(0, 12)}…</small>
+            {change.state === "SUBMITTED" && !alreadyDecided && (
+              <div className="button-row">
+                <button
+                  type="button"
+                  disabled={!hydrated || busy}
+                  onClick={() =>
+                    decideChange(change.id, change.change_hash, "ACCEPTED")
+                  }
+                >
+                  Accept exact change
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={!hydrated || busy}
+                  onClick={() =>
+                    decideChange(change.id, change.change_hash, "REJECTED")
+                  }
+                >
+                  Reject change
+                </button>
+              </div>
+            )}
+          </article>
+        );
+      })}
+      {proposal.deliveries.map((delivery) => (
+        <article className="panel" key={delivery.id}>
+          <div className="record-top">
+            <h5>
+              {delivery.milestone_key} delivery · version {delivery.version}
+            </h5>
+            <span className="badge">{delivery.state}</span>
+          </div>
+          <p>{delivery.summary}</p>
+          <small>Exact delivery {delivery.delivery_hash.slice(0, 12)}…</small>
+          {!canManage && delivery.state === "SUBMITTED" && (
+            <button
+              type="button"
+              disabled={!hydrated || busy}
+              onClick={() =>
+                acceptDelivery(delivery.id, delivery.delivery_hash)
+              }
+            >
+              Accept exact milestone delivery
+            </button>
+          )}
+        </article>
+      ))}
+      {canManage && (
+        <form
+          method="post"
+          className="panel form-grid compact-form"
+          onSubmit={issueInvoice}
+        >
+          <h5>Issue invoice record</h5>
+          <div className="split-fields">
+            <label>
+              Invoice reference
+              <input name="invoice_reference" required maxLength={120} />
+            </label>
+            <label>
+              Due at
+              <input name="due_at" type="datetime-local" required />
+            </label>
+          </div>
+          <div className="split-fields">
+            <label>
+              Subtotal in minor units
+              <input
+                name="subtotal_minor"
+                type="number"
+                min="0"
+                step="1"
+                required
+              />
+            </label>
+            <label>
+              Tax in minor units
+              <input name="tax_minor" type="number" min="0" step="1" required />
+            </label>
+          </div>
+          <label>
+            Controlled accounting reference
+            <input
+              name="evidence_reference"
+              required
+              minLength={3}
+              maxLength={500}
+            />
+          </label>
+          <button disabled={!hydrated || busy}>Issue invoice record</button>
+        </form>
+      )}
+      {proposal.invoices.map((invoice) => (
+        <article className="panel" key={invoice.id}>
+          <div className="record-top">
+            <h5>{invoice.invoice_reference}</h5>
+            <span className="badge">{invoice.state}</span>
+          </div>
+          <p>{money(invoice.total_minor, invoice.currency)} total</p>
+          <small>
+            Due {new Date(invoice.due_at).toLocaleDateString("en-GB")}
+          </small>
+        </article>
+      ))}
+      {message && <p role="status">{message}</p>}
+    </section>
+  );
+}
+
 export function CustomProjectWorkspace({
   requests,
   canManage,
@@ -554,6 +876,7 @@ export function CustomProjectWorkspace({
                   version {proposal.legal_document_version}
                 </small>
                 <ProposalActions proposal={proposal} canManage={canManage} />
+                <DeliveryLifecycle proposal={proposal} canManage={canManage} />
               </section>
             ))}
             {canManage &&

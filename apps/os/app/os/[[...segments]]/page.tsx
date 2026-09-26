@@ -605,10 +605,39 @@ export default async function Workspace({
             'deposit_minor',proposal.deposit_minor,'proposal_hash',proposal.proposal_hash,
             'valid_until',proposal.valid_until,
             'legal_document_version',proposal.legal_document_version,
+            'delivery_project_id',proposal.delivery_project_id,
+            'delivery_project_code',(select project.code from kxra.projects project
+              where project.id=proposal.delivery_project_id),
+            'delivery_project_name',(select project.name from kxra.projects project
+              where project.id=proposal.delivery_project_id),
             'accepted',exists(select 1 from kxra.project_proposal_acceptances acceptance
               where acceptance.proposal_id=proposal.id),
             'received_minor',coalesce(payment.received_minor,0),
-            'refunded_minor',coalesce(payment.refunded_minor,0)
+            'refunded_minor',coalesce(payment.refunded_minor,0),
+            'changes',coalesce((select jsonb_agg(jsonb_build_object(
+              'id',change.id,'version',change.version,'state',change.state,
+              'scope_delta',change.scope_delta,'price_delta_minor',change.price_delta_minor,
+              'currency',change.currency,'change_hash',change.change_hash,
+              'approvals',coalesce((select jsonb_agg(jsonb_build_object(
+                'party',approval.party,'decision',approval.decision
+              ) order by approval.party) from kxra.custom_project_change_approvals approval
+               where approval.change_request_id=change.id),'[]'::jsonb)
+            ) order by change.version desc) from kxra.custom_project_change_requests change
+             where change.project_id=proposal.delivery_project_id),'[]'::jsonb),
+            'deliveries',coalesce((select jsonb_agg(jsonb_build_object(
+              'id',delivery.id,'milestone_key',delivery.milestone_key,
+              'version',delivery.version,'state',delivery.state,'summary',delivery.summary,
+              'delivery_hash',delivery.delivery_hash
+            ) order by delivery.submitted_at desc)
+             from kxra.custom_project_milestone_deliveries delivery
+             where delivery.project_id=proposal.delivery_project_id),'[]'::jsonb),
+            'invoices',coalesce((select jsonb_agg(jsonb_build_object(
+              'id',invoice.id,'invoice_reference',invoice.invoice_reference,
+              'subtotal_minor',invoice.subtotal_minor,'tax_minor',invoice.tax_minor,
+              'total_minor',invoice.total_minor,'currency',invoice.currency,
+              'state',invoice.state,'due_at',invoice.due_at
+            ) order by invoice.issued_at desc) from kxra.custom_project_invoices invoice
+             where invoice.project_id=proposal.delivery_project_id),'[]'::jsonb)
           ) order by proposal.version) filter(where proposal.id is not null),'[]'::jsonb) as proposals
          from kxra.custom_project_requests request
          left join kxra.project_proposals proposal on proposal.request_id=request.id

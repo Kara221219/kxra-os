@@ -1002,6 +1002,132 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
       1,
     );
 
+    const changeRequestId = crypto.randomUUID();
+    const change = (
+      await db.query(
+        "select * from kxra.submit_custom_project_change($1,$2,$3,$4,$5)",
+        [
+          projectId,
+          "Add one documented customer handover session",
+          15000,
+          "GBP",
+          changeRequestId,
+        ],
+      )
+    ).rows[0];
+    assert.equal(change.version, 1);
+    assert.deepEqual(
+      (
+        await db.query(
+          "select * from kxra.submit_custom_project_change($1,$2,$3,$4,$5)",
+          [
+            projectId,
+            "Add one documented customer handover session",
+            15000,
+            "GBP",
+            changeRequestId,
+          ],
+        )
+      ).rows[0],
+      change,
+    );
+    assert.equal(
+      (
+        await db.query<{ state: string }>(
+          "select kxra.decide_custom_project_change($1,$2,'ACCEPTED','Customer accepts exact change') as state",
+          [change.id, change.change_hash],
+        )
+      ).rows[0].state,
+      "SUBMITTED",
+    );
+    await as(db, ownerId, organisationId);
+    assert.equal(
+      (
+        await db.query<{ state: string }>(
+          "select kxra.decide_custom_project_change($1,$2,'ACCEPTED','KXRA accepts exact change') as state",
+          [change.id, change.change_hash],
+        )
+      ).rows[0].state,
+      "ACCEPTED",
+    );
+
+    const delivery = (
+      await db.query(
+        "select * from kxra.submit_custom_project_milestone_delivery($1,$2,$3,$4)",
+        [
+          projectId,
+          "discovery",
+          "Discovery evidence delivered for customer review.",
+          JSON.stringify([{ reference: "synthetic://delivery/discovery" }]),
+        ],
+      )
+    ).rows[0];
+    await as(db, customerAdmin, organisationId);
+    await denied(db, "select kxra.accept_custom_project_milestone($1,$2)", [
+      delivery.id,
+      "0".repeat(64),
+    ]);
+    assert.ok(
+      (
+        await db.query<{ id: string }>(
+          "select kxra.accept_custom_project_milestone($1,$2) as id",
+          [delivery.id, delivery.delivery_hash],
+        )
+      ).rows[0].id,
+    );
+    await denied(
+      db,
+      "select kxra.issue_custom_project_invoice($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        projectId,
+        crypto.randomUUID(),
+        "INV-CUSTOMER-FORGE",
+        15000,
+        3000,
+        "GBP",
+        new Date(Date.now() + 86_400_000),
+        "forged-customer-invoice",
+      ],
+    );
+    await as(db, ownerId, organisationId);
+    const invoiceId = (
+      await db.query<{ id: string }>(
+        "select kxra.issue_custom_project_invoice($1,$2,$3,$4,$5,$6,$7,$8) as id",
+        [
+          projectId,
+          crypto.randomUUID(),
+          `INV-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+          15000,
+          3000,
+          "GBP",
+          new Date(Date.now() + 86_400_000),
+          "synthetic-accounting-reference",
+        ],
+      )
+    ).rows[0].id;
+    assert.ok(invoiceId);
+    await as(db, customerAdmin, organisationId);
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int as n from kxra.custom_project_invoices where id=$1",
+          [invoiceId],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await as(db, customerMember, organisationId);
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int as n from kxra.custom_project_invoices where id=$1",
+          [invoiceId],
+        )
+      ).rows[0].n,
+      0,
+    );
+
+    await as(db, customerAdmin, organisationId);
     const staleRequest = (
       await db.query<{ id: string }>(
         "select kxra.submit_custom_project_request($1,$2,'',false,$3) as id",

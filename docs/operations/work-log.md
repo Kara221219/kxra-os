@@ -38,6 +38,10 @@ The implementation loop found and fixed a missing policy-helper execution grant,
 
 2026-09-26 — Confirmed Slice 19 implementation commit `3d1bfe2` with successful full GitHub CI run 36263000293 and CodeQL run 36263000298. The branch remains unmerged and undeployed.
 
+2026-09-26 — Implemented Phase 2 Slice 20 locally. Bound each activated delivery project to its accepted proposal; added hash-bound versioned change requests with separate KXRA/customer decisions; added versioned milestone delivery evidence and exact customer acceptance; and added customer-visible integer invoice records that cannot assert payment. Added five bounded APIs and responsive delivery-lifecycle controls. Direct table mutation remains unavailable to application callers.
+
+The clean hermetic run passed 136 database/domain/HTTP/security tests, 59 migrations, 156-table RLS verification, 40 applicable private browser journeys, all public journeys in development and optimized production, 2,544-row/15-object recovery, both builds, CSP/SRI, size/Lighthouse budgets and the 309-file publication scan. No provider payment, accounting mutation, real invoice, customer, credential, external send, deployment or publication occurred.
+
 2026-09-15 — Completed Final Milestones 1 and 2 on `codex/phase-2-completion`: invitation-only account lifecycle and nine-step onboarding, then the owner Dashboard, Portfolio, typed Idea Inbox, complete approval envelopes, real Work Log projections and redacted Admin. Milestone 2 baseline commit: `6a2e76a8fc9081707145d8ea10f9e190694918ef`.
 
 2026-09-16 — Completed Final Milestone 3 locally. Added the exact 18 common project modules and every frozen specialist module, typed workspace entries/evidence, Project 002 fitment/safety state, Project 003 asset provenance, Project 001 five-distinct-source revisit evidence, Project 004 paper-only enforcement and Project 005 demand-gated opportunity state. Expanded the matrix to 44 RLS tables and 61 exposed functions. `npm run check` passed 71 tests plus build/artifact scan; restart persistence, formatting and 25 executed desktop/mobile browser scenarios passed. AT-23 is PASS (local).
