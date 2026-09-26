@@ -164,6 +164,22 @@ Secure private-file and knowledge implementation:
 - `supabase/migrations/0044_file_lifecycle_defaults.sql`
 - `tsconfig.json`
 
+## Phase 2 Slice 22 additions
+
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/app/globals.css`
+- `apps/os/app/os/[[...segments]]/page.tsx`
+- `apps/os/components/BrandStudio.tsx`
+- `apps/os/components/CustomerService.tsx`
+- `apps/os/components/Shell.tsx`
+- `docs/architecture/system.md`
+- `docs/decisions/0025-customer-service-and-privacy-authority.md`
+- `docs/security/access-control.md`
+- `supabase/migrations/0061_customer_service_and_privacy_requests.sql`
+- `tests/customer-service-http.test.ts`
+- `tests/customer-service.test.ts`
+- `tests/e2e/customer-service.spec.ts`
+
 Acceptance and regression coverage:
 
 - `tests/file-knowledge.test.ts`

@@ -4,9 +4,15 @@ KXRA OS treats PostgreSQL as the authorization and state authority. Authenticati
 
 Phase 2 Slices 1–4 add normalized many-to-many identity, explicit tenant selection, an exact first-private-access legal gate, deterministic commercial authority, revocation-safe private file/knowledge and AI lifecycles, and the governed Brand Studio product loop. See [ADR 0008](../decisions/0008-multi-tenant-legal-commercial-foundation.md), [ADR 0009](../decisions/0009-secure-file-and-knowledge-lifecycle.md), [ADR 0010](../decisions/0010-permission-safe-ai-execution.md), [ADR 0011](../decisions/0011-kxra-brand-studio-local-product.md) and the linked threat models.
 
+## Customer service and privacy isolation
+
+Support and subscription cases are visible to their submitter, current organization administrators and explicitly authorized KXRA handlers. Personal-data requests are narrower: another administrator in the same customer organization cannot discover them. Internal handling notes have a separate manager-only RLS policy and are never projected into customer-visible events.
+
+Submission derives account and organization from the verified transaction. Handler transitions require `customer_service.manage`, the immutable request hash, current version and an idempotency key. Exact retries are safe; stale versions, crafted IDs and cross-tenant subscription references fail closed. A cancellation request does not authorize or perform a Stripe cancellation, and a privacy request does not authorize disclosure or deletion.
+
 ## Enforced controls
 
-- All 153 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
+- All 161 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
 - The application login is non-superuser, `NOINHERIT` and `NOBYPASSRLS`. Each request enters a transaction, sets `ROLE authenticated`, verified subject claims and one server-derived `request.kxra.org_id`, then resets the pooled connection.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
@@ -60,7 +66,7 @@ Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an u
 
 ## Tested attack paths
 
-The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 153 tables and audits all 122 exposed functions.
+The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 161 tables and audits all 138 exposed functions.
 
 SQL/HTTP/browser tests cover crafted tenant/project IDs, forged headers/body/JWT metadata, immediate membership revocation, cross-tenant projects/commercial state, direct API access, files, indexed chunks, search, Ask, nested workspace resources, exact legal presentation/acceptance and typed gate errors. File tests cover EICAR, executables, macros, active PDF, archive policy, MIME deception, extraction failure, idempotent retry, forged worker calls, cross-project discovery, revocation between authorization and delivery, stale query evidence, object mismatch/orphan reconciliation and restart hashes. AI tests cover draft/approved manifest boundaries, exact run scope, prompt/tool injection, worker grants, invalid output, timeout/provider failure, retry, concurrent budget reservation, unknown model substitution and revocation before claim and after synthesis. Routine tests cover exact disabled imports, owner/partner/anonymous access, direct DML denial, duplicate logical slots, Europe/London DST, missing/closed exchange calendars, lease expiry, checkpoint-preserving recovery, revocation before retry, quiet unchanged completion and one disabled notification intent for terminal actionable failure. Brand Studio tests cover hostile locators, anonymous/crafted/viewer denial, project isolation, source/profile/brief versions, exact decisions, quota accounting, immutable lineage, incomplete review, export authorization, entitlement revocation and desktop/mobile completion. Billing tests cover signature tamper/expiry, event replay/order, concurrent usage and free-grant revocation. Custom-project tests cover customer self-pricing denial, stale/hash mismatch, payment gating and cross-tenant isolation.
 

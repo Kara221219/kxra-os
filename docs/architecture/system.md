@@ -239,6 +239,14 @@ Every newly generated enabled approval uses the canonical states `DRAFT`, `REQUE
 
 The Work Log is not a free-form register. Triggers project real audit and account-security rows into typed, uniquely sourced entries linked back to records, projects, tasks, approvals, accounts or invitations. Admin is owner-only, logs every view and returns bounded counts, policy state and boolean integration presence; it never returns secret values or a generic database/role editor.
 
+## Customer service and privacy requests
+
+The private OS exposes one tenant-bound request surface for support, subscription cancellation or withdrawal, and personal-data access, erasure or correction. `customer_service_requests` stores immutable intake evidence and controlled state/version fields. `customer_service_events` is the customer-visible timeline; `customer_service_internal_notes` is readable only by an explicit KXRA handler.
+
+Personal-data requests remain visible to their submitter and authorized KXRA handlers. Organization administrators additionally see shared support and subscription cases, but cannot see another account's privacy request. A handler needs `customer_service.manage` in the selected customer tenant; the KXRA platform owner can manage requests only while operating in the KXRA tenant. Every request action runs under the authenticated RLS role and binds the original request hash, current version and an idempotency key.
+
+Subscription requests reference normalized billing state but never update it. Data requests never export, correct or erase data. Provider cancellation, identity verification, statutory assessment and data actions require later controlled integrations and approved policy. See [ADR 0025](../decisions/0025-customer-service-and-privacy-authority.md).
+
 ## Email and external services
 
 The local email adapter renders nine versioned templates: Partner Invitation, Invitation Reminder, Password Reset, Email Verification, Welcome, Security Alert, Project Assignment, Access Removed and Approval Required. The outbox has idempotent operation keys and records pending, sent, failed, cancelled and bounced states. The fake transport sends nothing externally.

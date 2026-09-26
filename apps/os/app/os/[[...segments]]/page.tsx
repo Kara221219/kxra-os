@@ -29,6 +29,9 @@ import {
   type CustomProjectRequest,
 } from "../../../components/CommercialForms";
 import BrandStudio from "../../../components/BrandStudio";
+import CustomerService, {
+  type CustomerServiceRequest,
+} from "../../../components/CustomerService";
 import RoutineRegistry, {
   type RoutineRow,
 } from "../../../components/RoutineRegistry";
@@ -684,6 +687,64 @@ export default async function Workspace({
             requests={requests}
             canManage={authority[0]?.can_manage || false}
             legalDocuments={legalDocuments}
+          />
+        </>
+      );
+    } else if (section === "support") {
+      const [authority, requests, subscriptions] = await Promise.all([
+        query<{ can_manage: boolean }>(
+          a,
+          "select kxra.customer_service_management_status() as can_manage",
+        ),
+        query<CustomerServiceRequest>(
+          a,
+          `select request.id,request.request_type,request.subject,request.description,
+            request.related_subscription_id,request.state,request.request_hash,
+            request.version,request.submitted_at,request.updated_at,request.closed_at,
+            coalesce((select jsonb_agg(jsonb_build_object(
+              'id',event.id,'event_type',event.event_type,
+              'from_state',event.from_state,'to_state',event.to_state,
+              'customer_message',event.customer_message,
+              'request_version',event.request_version,'created_at',event.created_at
+             ) order by event.created_at,event.id)
+             from kxra.customer_service_events event
+             where event.request_id=request.id),'[]'::jsonb) as events,
+            coalesce((select jsonb_agg(jsonb_build_object(
+              'id',note.id,'note',note.note,
+              'evidence_reference',note.evidence_reference,'created_at',note.created_at
+             ) order by note.created_at,note.id)
+             from kxra.customer_service_internal_notes note
+             where note.request_id=request.id),'[]'::jsonb) as internal_notes
+           from kxra.customer_service_requests request
+           order by request.submitted_at desc,request.id`,
+        ),
+        query<{
+          id: string;
+          state: string;
+          plan_name: string;
+          current_period_end: string | null;
+        }>(
+          a,
+          `select subscription.id,subscription.state,plan.name as plan_name,
+            subscription.current_period_end
+           from kxra.billing_subscriptions subscription
+           join kxra.plan_versions version on version.id=subscription.plan_version_id
+           join kxra.plans plan on plan.id=version.plan_id
+           where subscription.state in (
+            'INCOMPLETE','TRIALING','ACTIVE','PAST_DUE','PAUSED','UNPAID'
+           ) order by subscription.created_at desc`,
+        ),
+      ]);
+      content = (
+        <>
+          <Heading
+            title="Support & privacy"
+            sub="Private, auditable support, subscription and personal-data request handling."
+          />
+          <CustomerService
+            requests={requests}
+            subscriptions={subscriptions}
+            canManage={authority[0]?.can_manage || false}
           />
         </>
       );

@@ -146,6 +146,7 @@ function Usage({
 }
 
 function SourceAndProfileForm({ projects }: { projects: Project[] }) {
+  const hydrated = useHydrated();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -252,7 +253,7 @@ function SourceAndProfileForm({ projects }: { projects: Project[] }) {
         Offers
         <textarea name="offers" rows={3} />
       </label>
-      <button type="submit" disabled={busy || !projects.length}>
+      <button type="submit" disabled={!hydrated || busy || !projects.length}>
         {busy ? "Creating…" : "Create draft profile"}
       </button>
       {message && <p role="status">{message}</p>}

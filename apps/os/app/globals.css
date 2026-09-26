@@ -342,6 +342,15 @@ tr:last-child td {
   display: grid;
   gap: 16px;
 }
+.customer-service-list {
+  margin-top: 24px;
+}
+.service-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
 .record {
   background: white;
   border: 1px solid var(--line);

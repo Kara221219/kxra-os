@@ -1880,6 +1880,175 @@ async function handle(req: Request, ctx: Context) {
       }
       throw new HttpError(404, "Not found");
     }
+    if (p[0] === "customer-service") {
+      if (!p[1] && method === "GET") {
+        const rows = await query(
+          a,
+          `select request.id,request.request_type,request.subject,request.description,
+            request.related_subscription_id,request.state,request.request_hash,
+            request.version,request.submitted_at,request.updated_at,request.closed_at,
+            coalesce((select jsonb_agg(jsonb_build_object(
+              'id',event.id,'event_type',event.event_type,
+              'from_state',event.from_state,'to_state',event.to_state,
+              'customer_message',event.customer_message,
+              'request_version',event.request_version,'created_at',event.created_at
+             ) order by event.created_at,event.id)
+             from kxra.customer_service_events event
+             where event.request_id=request.id),'[]'::jsonb) as events,
+            coalesce((select jsonb_agg(jsonb_build_object(
+              'id',note.id,'note',note.note,
+              'evidence_reference',note.evidence_reference,'created_at',note.created_at
+             ) order by note.created_at,note.id)
+             from kxra.customer_service_internal_notes note
+             where note.request_id=request.id),'[]'::jsonb) as internal_notes
+           from kxra.customer_service_requests request
+           order by request.submitted_at desc,request.id`,
+        );
+        return json(rows);
+      }
+      if (!p[1] && method === "POST") {
+        const input = z
+          .object({
+            request_type: z.enum([
+              "SUPPORT",
+              "SUBSCRIPTION_CANCELLATION",
+              "SUBSCRIPTION_WITHDRAWAL",
+              "DATA_ACCESS",
+              "DATA_ERASURE",
+              "DATA_RECTIFICATION",
+            ]),
+            subject: z.string().trim().min(3).max(240),
+            description: z.string().trim().min(3).max(20000),
+            related_subscription_id: uuid.nullable().optional(),
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.submit_customer_service_request($1,$2,$3,$4,$5) as id",
+          [
+            input.request_type,
+            input.subject,
+            input.description,
+            input.related_subscription_id || null,
+            input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[1] === "authority" && !p[2] && method === "GET") {
+        const rows = await query<{ can_manage: boolean }>(
+          a,
+          "select kxra.customer_service_management_status() as can_manage",
+        );
+        return json(rows[0]);
+      }
+      if (p[1] && p[2] === "reply" && !p[3] && method === "POST") {
+        const serviceRequestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            request_hash: sha256,
+            expected_version: positiveVersion,
+            request_id: uuid,
+            message: z.string().trim().min(1).max(10000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ version: number }>(
+          a,
+          "select kxra.reply_customer_service_request($1,$2,$3,$4,$5) as version",
+          [
+            serviceRequestId,
+            input.request_hash,
+            input.expected_version,
+            input.request_id,
+            input.message,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[1] && p[2] === "cancel" && !p[3] && method === "POST") {
+        const serviceRequestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            request_hash: sha256,
+            expected_version: positiveVersion,
+            request_id: uuid,
+            message: z.string().trim().min(1).max(10000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ version: number }>(
+          a,
+          "select kxra.cancel_customer_service_request($1,$2,$3,$4,$5) as version",
+          [
+            serviceRequestId,
+            input.request_hash,
+            input.expected_version,
+            input.request_id,
+            input.message,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[1] && p[2] === "transition" && !p[3] && method === "POST") {
+        const serviceRequestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            request_hash: sha256,
+            expected_version: positiveVersion,
+            request_id: uuid,
+            next_state: z.enum([
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "AWAITING_CUSTOMER",
+              "RESOLVED",
+              "CLOSED",
+              "CANCELLED",
+            ]),
+            message: z.string().trim().min(1).max(10000),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ version: number }>(
+          a,
+          "select kxra.transition_customer_service_request($1,$2,$3,$4,$5,$6) as version",
+          [
+            serviceRequestId,
+            input.request_hash,
+            input.expected_version,
+            input.request_id,
+            input.next_state,
+            input.message,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (p[1] && p[2] === "notes" && !p[3] && method === "POST") {
+        const serviceRequestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            request_id: uuid,
+            note: z.string().trim().min(3).max(20000),
+            evidence_reference: z.string().trim().min(3).max(500).nullable(),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.add_customer_service_internal_note($1,$2,$3,$4) as id",
+          [
+            serviceRequestId,
+            input.request_id,
+            input.note,
+            input.evidence_reference,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "summary" && method === "GET") return json(await counts(a));
     if (p[0] === "finance-totals" && method === "GET") {
       owner(a);
