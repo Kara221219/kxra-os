@@ -178,6 +178,46 @@ test("AT-26 HTTP validates origin, shape, deduplicates and rate limits", async (
   assert.equal(blocked.status, 429);
 });
 
+test("AT-26 concurrent public ingress permits exactly one bounded window", async () => {
+  const source = `concurrent-${crypto.randomUUID()}`;
+  const tag = crypto.randomUUID();
+  const responses = await Promise.all(
+    Array.from({ length: 20 }, (_, index) =>
+      fetch(marketingOrigin + "/api/enquiries", {
+        method: "POST",
+        headers: {
+          origin: marketingOrigin,
+          "content-type": "application/json",
+          "idempotency-key": crypto.randomUUID(),
+          "x-forwarded-for": source,
+        },
+        body: JSON.stringify({
+          kind: "CONTACT",
+          name: "Concurrent Test",
+          email: `concurrent-${tag}-${index}@example.invalid`,
+          company: "Example",
+          message: `Synthetic concurrent request ${index} with sufficient detail.`,
+          sourcePath: "/contact",
+          consent: true,
+          website: "",
+        }),
+      }),
+    ),
+  );
+  const statuses = responses.map((response) => response.status).sort();
+  assert.equal(statuses.filter((status) => status === 202).length, 5);
+  assert.equal(statuses.filter((status) => status === 429).length, 15);
+  assert.equal(
+    statuses.filter((status) => status !== 202 && status !== 429).length,
+    0,
+  );
+  const persisted = await admin.query(
+    "select count(*)::integer as count from kxra.public_enquiry_submissions where email like $1",
+    [`concurrent-${tag}-%`],
+  );
+  assert.equal(persisted.rows[0].count, 5);
+});
+
 test("AT-17 login route redirects only to the configured private application", async () => {
   const response = await fetch(marketingOrigin + "/login", {
     redirect: "manual",

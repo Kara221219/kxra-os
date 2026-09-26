@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 12 accessibility and build-budget gates pass the complete local contract. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 13 concurrent public-ingress evidence passes the complete local contract. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Pushed commit `1b256e050832e15d7019e54ce723d8e6d9331561` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 12 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `ae52e0dde85b415ebea0cb50c0b985ab8d2904cf` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 13 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -19,7 +19,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
-- 129 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios.
+- 130 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios.
 - Database/private-object restart and empty-target recovery, both optimized production builds, compressed page-asset budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 295-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 12, confirm both remote workflows, then continue static marketing CSP research, distributed edge-rate controls and broader failure/load/performance coverage. Keep deployment and publication disabled.
+Commit and push Slice 13, confirm both remote workflows, then continue static marketing CSP research, distributed edge-rate controls and broader provider-failure/performance coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -91,6 +91,14 @@ Commit and push Slice 12, confirm both remote workflows, then continue static ma
 - The first run exposed a mobile breakpoint that removed the primary navigation. The header now keeps the full navigation available in a horizontally scrollable row; focused and full retests pass.
 - A deterministic post-build gate measures the unique JavaScript/CSS required by every page. Marketing pages are limited to 140 KiB gzip and private OS pages to 200 KiB; the clean run measured 107.3 KiB and 157.8 KiB respectively at the largest routes.
 - The complete hermetic contract passes 12 public scenarios and the 295-file publication scan. Production-like Lighthouse/Core Web Vitals and human assistive-technology review still require staging.
+- Full GitHub CI run 36252532435 and CodeQL run 36252532467 passed for Slice 12 commit `ae52e0d`.
+
+## Slice 13 local public-ingress concurrency evidence
+
+- Twenty simultaneous HTTP submissions from one HMAC-digested source exercise separate application database connections against one transactional rate window.
+- Exactly five requests receive `202`, fifteen receive `429`, no unexpected status occurs and exactly five submissions persist.
+- The complete hermetic contract passes 130 tests, 54 browser scenarios, restart and a 2,477-row empty-target restore, both production builds, page-asset budgets and the 295-file publication scan.
+- This proves the PostgreSQL application boundary under the tested local race. Cloudflare/Vercel edge limits, abuse telemetry and a production-like distributed load exercise remain staging work.
 
 ## Publication boundary
 

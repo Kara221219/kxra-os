@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Pushed commit `1b256e050832e15d7019e54ce723d8e6d9331561` passed full GitHub CI and CodeQL; the working tree contains the locally verified Slice 12 accessibility and build-budget changes.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Pushed commit `ae52e0dde85b415ebea0cb50c0b985ab8d2904cf` passed full GitHub CI run 36252532435 and CodeQL run 36252532467. The working tree contains the locally verified concurrent public-ingress test and current documentation.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The current clean contract passes the 118-package dependency policy, 129 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 12 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, compressed page-asset budgets, exact public snapshot/source checks, 21-marker artifact exclusion and the 295-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
+The current clean contract passes the 118-package dependency policy, 130 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 12 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, compressed page-asset budgets, exact public snapshot/source checks, 21-marker artifact exclusion and the 295-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

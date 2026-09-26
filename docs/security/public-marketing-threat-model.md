@@ -9,7 +9,7 @@ Status: local acceptance evidence as of 25 September 2026. No site is published 
 | Anonymous caller reads enquiries | No matching anonymous RLS policy; direct select returns zero; owner policy requires current selected-tenant owner | Hosted Data API and pooler verification |
 | Caller bypasses the form | Closed database function validates all fields, source/type binding, consent, digests and UUID idempotency | Edge/WAF limits and abuse monitoring |
 | CSRF or cross-origin submission | API requires exact configured Origin and JSON | Verify preview/production domains and proxy header behavior |
-| Spam or replay floods the inbox | Honeypot discard, daily content fingerprint, idempotency key and transactional hourly digest limit | Distributed edge rate limit, CAPTCHA decision and load test |
+| Spam or replay floods the inbox | Honeypot discard, daily content fingerprint, idempotency key, transactional hourly digest limit and 20-request concurrent race evidence | Distributed edge rate limit, CAPTCHA decision and production-like load test |
 | Raw IP becomes durable personal data | API HMAC-digests request address plus user agent with a server-only secret | Retention schedule, key rotation and privacy wording |
 | SQL injection or malicious text executes | Parameterized SQL; React output encoding; values have strict lengths and closed enums | SAST/DAST and operational content handling |
 | JavaScript/CSS motion or responsive layout makes the site unusable | Server-rendered content, no-JS mail fallback, reduced-motion mode, mobile recomposition, 320 px/200% tests, desktop/mobile accessibility-tree assertions and compressed page-asset budgets | Human assistive-technology review and production-like Lighthouse/Web Vitals |
