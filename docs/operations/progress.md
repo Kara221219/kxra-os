@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 21 adds immutable invoice void and credit-note authority and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 21 adds immutable invoice void and credit-note authority and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 20 implementation commit `1f37e51b60fc41b3269b5752dbc939b6d809e423` passed full GitHub CI run 36265534409 and CodeQL run 36265534451. Slice 21 is a locally verified candidate pending commit and remote checks. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 21 implementation commit `79c0de68c50d846a712bc390be3593f044012c01` passed full GitHub CI run 36267637479 and CodeQL run 36267637472. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -174,6 +174,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - Two bounded APIs and responsive owner controls expose void and credit actions while customers receive read-only evidence.
 - SQL and HTTP tests cover wrong hashes, customer forgery, idempotent replay, tax/total over-credit, full credit, void-after-credit, credit-after-void and cross-project visibility.
 - The complete local run passed 136 tests, 60 migrations, 158-table RLS verification, 40 applicable private browser journeys with four intentional skips, all 14 public journeys in development and optimized production, 2,553-row/15-object empty-target recovery, both builds, CSP/SRI, budgets and the 311-file publication scan. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 416 ms LCP.
+- Full GitHub CI run 36267637479 and CodeQL run 36267637472 independently passed Slice 21 implementation commit `79c0de6`.
 - ADR 0024 records the immutable adjustment boundary. Connected accounting/payment reconciliation, approved tax policy and approved customer terms remain release work.
 
 ## Publication boundary
