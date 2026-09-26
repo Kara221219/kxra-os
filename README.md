@@ -27,7 +27,7 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime, applies and seeds 57 migrations, then runs formatting/type checks, 122 database/domain/HTTP tests, a 153-table RLS audit, 42 private-OS and 10 public-site desktop/mobile browser scenarios, database/object restart persistence, independent optimized production builds, a public/private source boundary check, exact snapshot verification, fixture/private-marker exclusion and publication/secret scanning. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits.
+`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime, rejects a stale decoy service, applies and seeds 57 migrations, then runs formatting/type and lockfile policy checks, 129 database/domain/HTTP/security tests, a 153-table RLS audit, 42 private-OS and 10 public-site desktop/mobile browser scenarios, database/object restart and empty-target recovery, independent optimized production builds, public/private source and exact snapshot verification, fixture/private-marker exclusion and a 294-file publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
 
 ## Implemented locally
 

@@ -158,6 +158,7 @@ try {
   await waitForServer(marketingOrigin, marketing, runId);
 
   run("npm", ["run", "lint"], environment);
+  run("npm", ["run", "test:dependencies"], environment);
   run("npm", ["test"], environment);
   run("npm", ["run", "test:migrations"], environment);
   run("npm", ["run", "test:publication"], environment);

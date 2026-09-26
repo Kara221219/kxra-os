@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit/push Slice 10 and confirm GitHub evidence, then continue static marketing CSP research, rate-limit hardening, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
+Confirm Slice 10 GitHub evidence, then finish Slice 11 dependency/CodeQL evidence and continue static marketing CSP research, rate-limit hardening and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -76,7 +76,14 @@ Commit/push Slice 10 and confirm GitHub evidence, then continue static marketing
 - Dynamic OS responses now receive a unique nonce CSP with strict-dynamic and no script unsafe-inline. Development-only unsafe-eval remains for framework tooling.
 - A disconnected public-source acquisition contract validates public HTTPS, every DNS answer and redirect, requires address-pinned transport, and bounds timeout, content type and bytes.
 - Five focused security tests and the complete hermetic contract pass. The nonce policy preserves hydration and all tested mutations on desktop/mobile.
-- The cumulative suite now passes 129 database/domain/HTTP/security tests, 38 applicable private browser scenarios, 10 public scenarios, both optimized builds, empty-target recovery and the 291-file publication scan.
+- The cumulative suite now passes 129 database/domain/HTTP/security tests, 38 applicable private browser scenarios, 10 public scenarios, both optimized builds, empty-target recovery and the 294-file publication scan.
+
+## Slice 11 local supply-chain gates
+
+- The lockfile gate requires exact versions, npm-registry HTTPS sources, integrity hashes and one of nine reviewed license expressions for all 118 external packages.
+- Only exact reviewed esbuild and optional fsevents versions may run install scripts; any new script or version fails closed.
+- A separate CodeQL v4.38.2 workflow is pinned to its immutable commit and uses the security-extended JavaScript/TypeScript suite.
+- The complete hermetic contract passes with the dependency gate. Remote CodeQL evidence remains pending until the workflow is pushed.
 
 ## Publication boundary
 
