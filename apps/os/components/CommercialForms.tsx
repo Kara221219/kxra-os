@@ -58,6 +58,19 @@ type Proposal = {
     currency: string;
     state: string;
     due_at: string;
+    invoice_hash: string;
+    void_record: { reason: string; voided_at: string } | null;
+    credit_notes: {
+      id: string;
+      credit_reference: string;
+      subtotal_minor: number;
+      tax_minor: number;
+      total_minor: number;
+      currency: string;
+      reason: string;
+      credit_hash: string;
+      issued_at: string;
+    }[];
   }[];
 };
 
@@ -581,6 +594,43 @@ function DeliveryLifecycle({
       "Invoice record issued. Payment remains separately verified.",
     );
   }
+  async function voidInvoice(
+    event: FormEvent<HTMLFormElement>,
+    invoice: Proposal["invoices"][number],
+  ) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      `/api/custom-projects/invoices/${invoice.id}/void`,
+      {
+        invoice_hash: invoice.invoice_hash,
+        request_id: crypto.randomUUID(),
+        reason: form.get("reason"),
+        evidence_reference: form.get("evidence_reference"),
+      },
+      "Invoice record voided. Payment truth remains separate.",
+    );
+  }
+  async function issueCreditNote(
+    event: FormEvent<HTMLFormElement>,
+    invoice: Proposal["invoices"][number],
+  ) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      `/api/custom-projects/invoices/${invoice.id}/credit-notes`,
+      {
+        invoice_hash: invoice.invoice_hash,
+        request_id: crypto.randomUUID(),
+        credit_reference: form.get("credit_reference"),
+        subtotal_minor: Number(form.get("subtotal_minor")),
+        tax_minor: Number(form.get("tax_minor")),
+        reason: form.get("reason"),
+        evidence_reference: form.get("evidence_reference"),
+      },
+      "Credit note issued against the exact invoice record.",
+    );
+  }
 
   const currentParty = canManage ? "KXRA" : "CUSTOMER";
   return (
@@ -763,18 +813,128 @@ function DeliveryLifecycle({
           <button disabled={!hydrated || busy}>Issue invoice record</button>
         </form>
       )}
-      {proposal.invoices.map((invoice) => (
-        <article className="panel" key={invoice.id}>
-          <div className="record-top">
-            <h5>{invoice.invoice_reference}</h5>
-            <span className="badge">{invoice.state}</span>
-          </div>
-          <p>{money(invoice.total_minor, invoice.currency)} total</p>
-          <small>
-            Due {new Date(invoice.due_at).toLocaleDateString("en-GB")}
-          </small>
-        </article>
-      ))}
+      {proposal.invoices.map((invoice) => {
+        const credited = invoice.credit_notes.reduce(
+          (total, credit) => total + credit.total_minor,
+          0,
+        );
+        return (
+          <article className="panel invoice-record" key={invoice.id}>
+            <div className="record-top">
+              <h5>{invoice.invoice_reference}</h5>
+              <span className="badge">{invoice.state}</span>
+            </div>
+            <p>
+              {money(invoice.total_minor, invoice.currency)} total ·{" "}
+              {money(credited, invoice.currency)} credited
+            </p>
+            <small>
+              Due {new Date(invoice.due_at).toLocaleDateString("en-GB")} · exact
+              invoice {invoice.invoice_hash.slice(0, 12)}…
+            </small>
+            {invoice.void_record && (
+              <p>
+                <strong>Void reason:</strong> {invoice.void_record.reason}
+              </p>
+            )}
+            {invoice.credit_notes.map((credit) => (
+              <div className="credit-note" key={credit.id}>
+                <strong>{credit.credit_reference}</strong> ·{" "}
+                {money(credit.total_minor, credit.currency)}
+                <p>{credit.reason}</p>
+              </div>
+            ))}
+            {canManage && invoice.state === "ISSUED" && (
+              <form
+                method="post"
+                className="form-grid compact-form"
+                onSubmit={(event) => voidInvoice(event, invoice)}
+              >
+                <h6>Void invoice record</h6>
+                <label>
+                  Reason
+                  <textarea
+                    name="reason"
+                    required
+                    minLength={3}
+                    maxLength={5000}
+                  />
+                </label>
+                <label>
+                  Controlled accounting reference
+                  <input
+                    name="evidence_reference"
+                    required
+                    minLength={3}
+                    maxLength={500}
+                  />
+                </label>
+                <button className="secondary" disabled={!hydrated || busy}>
+                  Void exact invoice
+                </button>
+              </form>
+            )}
+            {canManage &&
+              invoice.state !== "VOID" &&
+              invoice.state !== "CREDITED" && (
+                <form
+                  method="post"
+                  className="form-grid compact-form"
+                  onSubmit={(event) => issueCreditNote(event, invoice)}
+                >
+                  <h6>Issue credit note</h6>
+                  <label>
+                    Credit reference
+                    <input name="credit_reference" required maxLength={120} />
+                  </label>
+                  <div className="split-fields">
+                    <label>
+                      Subtotal in minor units
+                      <input
+                        name="subtotal_minor"
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                      />
+                    </label>
+                    <label>
+                      Tax in minor units
+                      <input
+                        name="tax_minor"
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Reason
+                    <textarea
+                      name="reason"
+                      required
+                      minLength={3}
+                      maxLength={5000}
+                    />
+                  </label>
+                  <label>
+                    Controlled accounting reference
+                    <input
+                      name="evidence_reference"
+                      required
+                      minLength={3}
+                      maxLength={500}
+                    />
+                  </label>
+                  <button disabled={!hydrated || busy}>
+                    Issue exact credit note
+                  </button>
+                </form>
+              )}
+          </article>
+        );
+      })}
       {message && <p role="status">{message}</p>}
     </section>
   );

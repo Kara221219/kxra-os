@@ -1582,6 +1582,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "creative_variants",
       "custom_project_change_approvals",
       "custom_project_change_requests",
+      "custom_project_credit_notes",
+      "custom_project_invoice_voids",
       "custom_project_invoices",
       "custom_project_milestone_acceptances",
       "custom_project_milestone_deliveries",

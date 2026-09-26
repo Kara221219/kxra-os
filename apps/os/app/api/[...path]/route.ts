@@ -1799,6 +1799,85 @@ async function handle(req: Request, ctx: Context) {
         );
         return json(rows[0], 201);
       }
+      if (
+        p[1] === "invoices" &&
+        p[2] &&
+        p[3] === "void" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const invoiceId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            invoice_hash: z.string().regex(/^[a-f0-9]{64}$/),
+            request_id: uuid,
+            reason: z.string().trim().min(3).max(5000),
+            evidence_reference: z.string().trim().min(3).max(500),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.void_custom_project_invoice($1,$2,$3,$4,$5) as id",
+          [
+            invoiceId,
+            input.invoice_hash,
+            input.request_id,
+            input.reason,
+            input.evidence_reference,
+          ],
+        );
+        return json(rows[0]);
+      }
+      if (
+        p[1] === "invoices" &&
+        p[2] &&
+        p[3] === "credit-notes" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const invoiceId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            invoice_hash: z.string().regex(/^[a-f0-9]{64}$/),
+            request_id: uuid,
+            credit_reference: z.string().trim().min(1).max(120),
+            subtotal_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            tax_minor: z
+              .number()
+              .int()
+              .nonnegative()
+              .max(Number.MAX_SAFE_INTEGER),
+            reason: z.string().trim().min(3).max(5000),
+            evidence_reference: z.string().trim().min(3).max(500),
+          })
+          .strict()
+          .refine((value) => value.subtotal_minor + value.tax_minor > 0, {
+            message: "Credit note total must be positive",
+          })
+          .parse(await body(req));
+        const rows = await query(
+          a,
+          `select credit_note_id as id,credit_note_hash as credit_hash,
+           resulting_invoice_state as invoice_state
+           from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [
+            invoiceId,
+            input.invoice_hash,
+            input.request_id,
+            input.credit_reference,
+            input.subtotal_minor,
+            input.tax_minor,
+            input.reason,
+            input.evidence_reference,
+          ],
+        );
+        return json(rows[0], 201);
+      }
       throw new HttpError(404, "Not found");
     }
     if (p[0] === "summary" && method === "GET") return json(await counts(a));

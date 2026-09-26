@@ -635,7 +635,20 @@ export default async function Workspace({
               'id',invoice.id,'invoice_reference',invoice.invoice_reference,
               'subtotal_minor',invoice.subtotal_minor,'tax_minor',invoice.tax_minor,
               'total_minor',invoice.total_minor,'currency',invoice.currency,
-              'state',invoice.state,'due_at',invoice.due_at
+              'state',invoice.state,'due_at',invoice.due_at,
+              'invoice_hash',invoice.invoice_hash,
+              'void_record',(select jsonb_build_object(
+                'reason',void.reason,'voided_at',void.voided_at
+               ) from kxra.custom_project_invoice_voids void where void.invoice_id=invoice.id),
+              'credit_notes',coalesce((select jsonb_agg(jsonb_build_object(
+                'id',credit.id,'credit_reference',credit.credit_reference,
+                'subtotal_minor',credit.subtotal_minor,'tax_minor',credit.tax_minor,
+                'total_minor',credit.total_minor,'currency',credit.currency,
+                'reason',credit.reason,'credit_hash',credit.credit_hash,
+                'issued_at',credit.issued_at
+               ) order by credit.issued_at)
+               from kxra.custom_project_credit_notes credit
+               where credit.invoice_id=invoice.id),'[]'::jsonb)
             ) order by invoice.issued_at desc) from kxra.custom_project_invoices invoice
              where invoice.project_id=proposal.delivery_project_id),'[]'::jsonb)
           ) order by proposal.version) filter(where proposal.id is not null),'[]'::jsonb) as proposals

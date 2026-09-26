@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 20 closes the local custom-project change, delivery, acceptance and invoice evidence path and passes the complete local and remote verification contract. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 21 adds immutable invoice void and credit-note authority and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 20 implementation commit `1f37e51b60fc41b3269b5752dbc939b6d809e423` passed full GitHub CI run 36265534409 and CodeQL run 36265534451. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 20 implementation commit `1f37e51b60fc41b3269b5752dbc939b6d809e423` passed full GitHub CI run 36265534409 and CodeQL run 36265534451. Slice 21 is a locally verified candidate pending commit and remote checks. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -18,9 +18,9 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 59 ordered additive migrations, 156 RLS-protected tables with explicit policies and 130 audited public functions.
+- 60 ordered additive migrations, 158 RLS-protected tables with explicit policies and 132 audited public functions.
 - 136 database/domain/HTTP/security tests, 44 private-OS browser scenarios (40 passes/four intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 309-file publication/secret scan pass.
+- Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 311-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -39,7 +39,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 - Brand Studio: remote source refresh, media generation, provider queues, sector claim policies and publication remain absent.
 - Identity/legal: hosted Supabase Auth/MFA/pooler, real owner bootstrap and solicitor-approved legal content remain unverified.
 - Commercial: Stripe products/prices, checkout, webhook, portal and approved billing policies remain disconnected.
-- Custom projects: the local request-to-delivery evidence path now includes bilateral exact change approval, versioned delivery evidence, customer milestone acceptance and invoices separated from payment truth. Approved legal text, connected accounting/payment reconciliation and credit-note/void operations remain incomplete.
+- Custom projects: the local request-to-delivery evidence path includes bilateral exact change approval, versioned delivery evidence, customer milestone acceptance, invoices, immutable voids and component-bounded credit notes. Approved legal text and connected accounting/payment reconciliation remain incomplete.
 - AI/files: external OpenAI dispatch, production Storage/scanning/extraction, paid budgets and distributed recovery remain incomplete.
 - Projects 006/007: provider/scanner adapters remain intentionally disabled.
 - Routines: no always-on scheduler, Trigger.dev task, hosted worker or notification delivery adapter is connected.
@@ -164,6 +164,17 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The complete local run passed 136 tests, 59 migrations, 156-table RLS verification, 40 applicable private browser journeys with four intentional skips, all 14 public journeys in development and optimized production, 2,544-row/15-object empty-target recovery, both builds, CSP/SRI, budgets and the 309-file publication scan. Lighthouse measured mobile 1.00/1.00 with 1,857 ms LCP and desktop 1.00/1.00 with 417 ms LCP.
 - Full GitHub CI run 36265534409 and CodeQL run 36265534451 independently passed Slice 20 implementation commit `1f37e51`.
 - ADR 0023 records the exact bilateral evidence boundary. Accounting-provider reconciliation, invoice void/credit-note operations and approved customer terms remain release work.
+
+## Slice 21 local invoice-adjustment evidence
+
+- Issued invoices now carry an immutable hash over their exact commercial evidence.
+- Owner-only void records preserve the original invoice and require its exact hash, an idempotency key, a reason and a controlled accounting reference. Credited invoices cannot be voided.
+- Immutable credit notes serialize on the invoice and independently bound cumulative subtotal, tax and total. State becomes `PARTIALLY_CREDITED` or `CREDITED` without asserting a provider refund.
+- Customer project members can read the adjustments through current project RLS; customers and unassigned users cannot create or discover them.
+- Two bounded APIs and responsive owner controls expose void and credit actions while customers receive read-only evidence.
+- SQL and HTTP tests cover wrong hashes, customer forgery, idempotent replay, tax/total over-credit, full credit, void-after-credit, credit-after-void and cross-project visibility.
+- The complete local run passed 136 tests, 60 migrations, 158-table RLS verification, 40 applicable private browser journeys with four intentional skips, all 14 public journeys in development and optimized production, 2,553-row/15-object empty-target recovery, both builds, CSP/SRI, budgets and the 311-file publication scan. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 416 ms LCP.
+- ADR 0024 records the immutable adjustment boundary. Connected accounting/payment reconciliation, approved tax policy and approved customer terms remain release work.
 
 ## Publication boundary
 

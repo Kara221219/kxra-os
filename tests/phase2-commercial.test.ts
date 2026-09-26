@@ -1107,6 +1107,199 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
     ).rows[0].id;
     assert.ok(invoiceId);
     await as(db, customerAdmin, organisationId);
+    await denied(
+      db,
+      "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        invoiceId,
+        "0".repeat(64),
+        crypto.randomUUID(),
+        "CN-CUSTOMER-FORGE",
+        1000,
+        200,
+        "Forged customer credit",
+        "forged-customer-credit",
+      ],
+    );
+    await denied(
+      db,
+      "select kxra.void_custom_project_invoice($1,$2,$3,$4,$5)",
+      [
+        invoiceId,
+        "0".repeat(64),
+        crypto.randomUUID(),
+        "Forged customer void",
+        "forged-customer-void",
+      ],
+    );
+    await as(db, ownerId, organisationId);
+    const invoiceHash = (
+      await db.query<{ invoice_hash: string }>(
+        "select invoice_hash from kxra.custom_project_invoices where id=$1",
+        [invoiceId],
+      )
+    ).rows[0].invoice_hash;
+    await denied(
+      db,
+      "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        invoiceId,
+        "0".repeat(64),
+        crypto.randomUUID(),
+        "CN-WRONG-HASH",
+        5000,
+        1000,
+        "Wrong hash attempt",
+        "synthetic-credit-reference",
+      ],
+    );
+    const creditRequest = crypto.randomUUID();
+    const partialCredit = (
+      await db.query(
+        "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+        [
+          invoiceId,
+          invoiceHash,
+          creditRequest,
+          `CN-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+          5000,
+          1000,
+          "Agreed partial service adjustment",
+          "synthetic-credit-reference-1",
+        ],
+      )
+    ).rows[0];
+    assert.equal(partialCredit.resulting_invoice_state, "PARTIALLY_CREDITED");
+    assert.deepEqual(
+      (
+        await db.query(
+          "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+          [
+            invoiceId,
+            invoiceHash,
+            creditRequest,
+            partialCredit.credit_note_id
+              ? (
+                  await db.query<{ credit_reference: string }>(
+                    "select credit_reference from kxra.custom_project_credit_notes where id=$1",
+                    [partialCredit.credit_note_id],
+                  )
+                ).rows[0].credit_reference
+              : "",
+            5000,
+            1000,
+            "Agreed partial service adjustment",
+            "synthetic-credit-reference-1",
+          ],
+        )
+      ).rows[0],
+      partialCredit,
+    );
+    await denied(
+      db,
+      "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        invoiceId,
+        invoiceHash,
+        crypto.randomUUID(),
+        `CN-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        0,
+        2500,
+        "Tax over-credit attempt",
+        "synthetic-credit-reference-over",
+      ],
+    );
+    const fullCredit = (
+      await db.query(
+        "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+        [
+          invoiceId,
+          invoiceHash,
+          crypto.randomUUID(),
+          `CN-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+          10000,
+          2000,
+          "Final agreed service adjustment",
+          "synthetic-credit-reference-2",
+        ],
+      )
+    ).rows[0];
+    assert.equal(fullCredit.resulting_invoice_state, "CREDITED");
+    await denied(
+      db,
+      "select kxra.void_custom_project_invoice($1,$2,$3,$4,$5)",
+      [
+        invoiceId,
+        invoiceHash,
+        crypto.randomUUID(),
+        "Cannot void credited invoice",
+        "synthetic-void-after-credit",
+      ],
+    );
+    const voidInvoiceId = (
+      await db.query<{ id: string }>(
+        "select kxra.issue_custom_project_invoice($1,$2,$3,$4,$5,$6,$7,$8) as id",
+        [
+          projectId,
+          crypto.randomUUID(),
+          `INV-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+          1000,
+          200,
+          "GBP",
+          new Date(Date.now() + 86_400_000),
+          "synthetic-voidable-invoice",
+        ],
+      )
+    ).rows[0].id;
+    const voidInvoiceHash = (
+      await db.query<{ invoice_hash: string }>(
+        "select invoice_hash from kxra.custom_project_invoices where id=$1",
+        [voidInvoiceId],
+      )
+    ).rows[0].invoice_hash;
+    const voidRequest = crypto.randomUUID();
+    const voidId = (
+      await db.query<{ id: string }>(
+        "select kxra.void_custom_project_invoice($1,$2,$3,$4,$5) as id",
+        [
+          voidInvoiceId,
+          voidInvoiceHash,
+          voidRequest,
+          "Invoice issued in error",
+          "synthetic-void-reference",
+        ],
+      )
+    ).rows[0].id;
+    assert.equal(
+      (
+        await db.query<{ id: string }>(
+          "select kxra.void_custom_project_invoice($1,$2,$3,$4,$5) as id",
+          [
+            voidInvoiceId,
+            voidInvoiceHash,
+            voidRequest,
+            "Invoice issued in error",
+            "synthetic-void-reference",
+          ],
+        )
+      ).rows[0].id,
+      voidId,
+    );
+    await denied(
+      db,
+      "select * from kxra.issue_custom_project_credit_note($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        voidInvoiceId,
+        voidInvoiceHash,
+        crypto.randomUUID(),
+        "CN-VOID-INVOICE",
+        1000,
+        200,
+        "Cannot credit void invoice",
+        "synthetic-credit-after-void",
+      ],
+    );
+    await as(db, customerAdmin, organisationId);
     assert.equal(
       (
         await db.query<{ n: number }>(
@@ -1116,11 +1309,38 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
       ).rows[0].n,
       1,
     );
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int as n from kxra.custom_project_credit_notes where invoice_id=$1",
+          [invoiceId],
+        )
+      ).rows[0].n,
+      2,
+    );
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int as n from kxra.custom_project_invoice_voids where invoice_id=$1",
+          [voidInvoiceId],
+        )
+      ).rows[0].n,
+      1,
+    );
     await as(db, customerMember, organisationId);
     assert.equal(
       (
         await db.query<{ n: number }>(
           "select count(*)::int as n from kxra.custom_project_invoices where id=$1",
+          [invoiceId],
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int as n from kxra.custom_project_credit_notes where invoice_id=$1",
           [invoiceId],
         )
       ).rows[0].n,

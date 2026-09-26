@@ -398,6 +398,79 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
     },
   );
   assert.equal(invoiced.status, 201, await invoiced.clone().text());
+  const invoiceId = (await invoiced.json()).id;
+  const invoiceHash = (
+    await admin.query<{ invoice_hash: string }>(
+      "select invoice_hash from kxra.custom_project_invoices where id=$1",
+      [invoiceId],
+    )
+  ).rows[0].invoice_hash;
+  assert.equal(
+    (
+      await jsonRequest(
+        jar,
+        `/api/custom-projects/invoices/${invoiceId}/credit-notes`,
+        {
+          invoice_hash: invoiceHash,
+          request_id: crypto.randomUUID(),
+          credit_reference: "HTTP-CN-FORGED",
+          subtotal_minor: 1000,
+          tax_minor: 200,
+          reason: "Forged customer credit",
+          evidence_reference: "forged-http-credit",
+        },
+      )
+    ).status,
+    409,
+  );
+  const credited = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/invoices/${invoiceId}/credit-notes`,
+    {
+      invoice_hash: invoiceHash,
+      request_id: crypto.randomUUID(),
+      credit_reference: `HTTP-CN-${crypto.randomUUID().slice(0, 8)}`,
+      subtotal_minor: 1000,
+      tax_minor: 200,
+      reason: "Agreed HTTP invoice adjustment",
+      evidence_reference: "synthetic-http-credit-reference",
+    },
+  );
+  assert.equal(credited.status, 201, await credited.clone().text());
+  assert.equal((await credited.json()).invoice_state, "PARTIALLY_CREDITED");
+
+  const voidable = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/projects/${deliveryProjectId}/invoices`,
+    {
+      request_id: crypto.randomUUID(),
+      invoice_reference: `HTTP-VOID-${crypto.randomUUID().slice(0, 8)}`,
+      subtotal_minor: 1000,
+      tax_minor: 200,
+      currency: "GBP",
+      due_at: new Date(Date.now() + 86_400_000).toISOString(),
+      evidence_reference: "synthetic-http-voidable-invoice",
+    },
+  );
+  assert.equal(voidable.status, 201, await voidable.clone().text());
+  const voidableId = (await voidable.json()).id;
+  const voidableHash = (
+    await admin.query<{ invoice_hash: string }>(
+      "select invoice_hash from kxra.custom_project_invoices where id=$1",
+      [voidableId],
+    )
+  ).rows[0].invoice_hash;
+  const voided = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/invoices/${voidableId}/void`,
+    {
+      invoice_hash: voidableHash,
+      request_id: crypto.randomUUID(),
+      reason: "HTTP invoice issued in error",
+      evidence_reference: "synthetic-http-void-reference",
+    },
+  );
+  assert.equal(voided.status, 200, await voided.clone().text());
 
   await admin.query(
     `update kxra.organisation_memberships
