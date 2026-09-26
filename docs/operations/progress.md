@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 16 optimized marketing performance and automated accessibility budgets pass locally. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 17 public loading, failure and retry behavior passes the complete local contract. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Pushed commit `07203603919613e155111d2fcfce05bf3974048f` descends from the reviewed Genesis implementation and passed full GitHub CI run 36255785726 plus CodeQL run 36255785732. Slice 16 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `b222b575cffd4d3a37ec7355654fd33f0a366f76` descends from the reviewed Genesis implementation and passed full GitHub CI run 36257634481 plus CodeQL run 36257634461. Slice 17 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -19,7 +19,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
-- 131 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios under both development and optimized production.
+- 131 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 14 public-site browser scenarios under both development and optimized production.
 - Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 300-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 16, confirm both remote workflows, then prepare the exact Vercel WAF staging rule and broader provider-failure/load coverage. Keep deployment and publication disabled.
+Commit and push Slice 17, confirm both remote workflows, then prepare the exact Vercel WAF staging rule and broader provider-failure/load coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -124,6 +124,14 @@ Commit and push Slice 16, confirm both remote workflows, then prepare the exact 
 - The first audit identified low-contrast text in the dark layered section and a brand-link accessible-name mismatch. Both were corrected before acceptance.
 - The final clean run measured mobile home at performance 1.00, accessibility 1.00, LCP 1,899 ms, CLS 0.000 and TBT 41 ms; desktop contact measured 1.00, 1.00, 427 ms, 0.000 and 0 ms. Laboratory results do not replace field data or human assistive-technology review.
 - The cumulative contract covers 228 locked packages and a 299-file scan before this ADR. The final publication scan covers 300 files.
+- Full GitHub CI run 36257634481 and CodeQL run 36257634461 passed for Slice 16 commit `b222b57`.
+
+## Slice 17 local public failure-state evidence
+
+- A new desktop/mobile journey holds the enquiry response to prove the visible loading message and disabled submit control.
+- A synthetic `503` proves the safe public error, preserved typed input and enabled retry path without creating a misleading success state.
+- Removing the synthetic outage and retrying reaches the real local PostgreSQL ingress, records the enquiry and clears the form only after success.
+- The final complete contract passes all 131 tests, 42 private browser runs and 14 public scenarios in both development and optimized production, plus recovery, builds, CSP/SRI, asset/Lighthouse budgets and the 300-file publication scan.
 
 ## Publication boundary
 

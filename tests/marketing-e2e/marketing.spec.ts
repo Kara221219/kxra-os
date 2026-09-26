@@ -73,6 +73,51 @@ test("AT-26 accessible public contact submission reaches private inbox", async (
   );
 });
 
+test("AT-18 public contact exposes loading, safe failure and retry states", async ({
+  page,
+}) => {
+  let releaseFailure: (() => void) | undefined;
+  const failureGate = new Promise<void>((resolve) => {
+    releaseFailure = resolve;
+  });
+  await page.route("**/api/enquiries", async (route) => {
+    await failureGate;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Request unavailable" }),
+    });
+  });
+  await page.goto("/contact");
+  await page.getByLabel("Name").fill("Failure State Test");
+  await page
+    .getByLabel("Work email")
+    .fill(`failure-${Date.now()}@example.invalid`);
+  await page.getByLabel("Business or organisation").fill("Example");
+  await page
+    .getByLabel("How can KXRA help?")
+    .fill("A synthetic request that proves the safe retry experience.");
+  await page.getByRole("checkbox").check();
+
+  const submit = page.getByRole("button", { name: "Send to KXRA" });
+  await submit.click();
+  await expect(page.getByRole("button", { name: "Sending…" })).toBeDisabled();
+  await expect(page.getByRole("status")).toHaveText("Sending securely…");
+  releaseFailure?.();
+  await expect(page.getByRole("status")).toContainText(
+    "We could not store your request",
+  );
+  await expect(submit).toBeEnabled();
+  await expect(page.getByLabel("Name")).toHaveValue("Failure State Test");
+
+  await page.unroute("**/api/enquiries");
+  await submit.click();
+  await expect(page.getByRole("status")).toContainText(
+    "private KXRA review inbox",
+  );
+  await expect(page.getByLabel("Name")).toHaveValue("");
+});
+
 test("AT-44 reduced motion preserves every layered section and removes sticky movement", async ({
   page,
 }) => {
