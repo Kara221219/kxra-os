@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 15 trusted public-ingress edge passes the complete local contract. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 16 optimized marketing performance and automated accessibility budgets pass locally. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Pushed commit `54af5dc0bf70c23dd7171a0534264211bd27d5fd` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 15 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `07203603919613e155111d2fcfce05bf3974048f` descends from the reviewed Genesis implementation and passed full GitHub CI run 36255785726 plus CodeQL run 36255785732. Slice 16 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -20,7 +20,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
 - 131 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 298-file publication/secret scan pass.
+- Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 300-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -29,7 +29,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 - **AT-17 PASS locally:** applications build independently; required routes use one exact snapshot; private-source/marker scans pass; publication remains disabled.
 - **AT-26 PASS locally:** all three forms validate, bot-check, deduplicate, rate-limit and store one owner-only unverified audited row; `/login` targets the private app.
-- **AT-44 PASS locally:** desktop/mobile, reduced motion, 320 px, 200% text, keyboard, no-JavaScript and representative browser accessibility-tree scenarios pass. Production-like Lighthouse/Web Vitals and human assistive-technology review remain release checks.
+- **AT-44 PASS locally:** desktop/mobile, reduced motion, 320 px, 200% text, keyboard, no-JavaScript, representative browser accessibility-tree and optimized local Lighthouse scenarios pass. Real-user field vitals and human assistive-technology review remain release checks.
 - **AT-45 PARTIAL / local boundary PASS:** source and both build artifacts exclude planted private markers. Hosted RSC/prefetch/cache/error isolation remains unverified.
 
 ## Remaining work
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 15, confirm both remote workflows, then prepare the exact Vercel WAF staging rule and broader provider-failure/performance coverage. Keep deployment and publication disabled.
+Commit and push Slice 16, confirm both remote workflows, then prepare the exact Vercel WAF staging rule and broader provider-failure/load coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -115,6 +115,15 @@ Commit and push Slice 15, confirm both remote workflows, then prepare the exact 
 - Loopback fixtures have an explicit separate path and use valid synthetic network addresses. There is no generic hosted proxy-header fallback.
 - The complete hermetic contract passes 131 tests, including strict edge selection and the 20-request race, 42 private runs, 24 public runs, recovery, builds, CSP/SRI, budgets and the 297-file scan before this ADR. The final publication scan covers 298 files.
 - Vercel WAF rule activation and observed hosted header behavior remain staging gates. Cloudflare stays DNS-only unless Vercel Trusted Proxy is purchased and verified.
+- Full GitHub CI run 36255785726 and CodeQL run 36255785732 passed for Slice 15 commit `0720360`.
+
+## Slice 16 local optimized performance and accessibility evidence
+
+- Exact Lighthouse 13.5.0 is locked as a development-only audit tool. The gate can target only an optimized loopback server and audits mobile home plus desktop contact profiles.
+- Release budgets require performance at least 0.90, accessibility exactly 1.00, LCP no more than 2.5 seconds, CLS no more than 0.1 and TBT no more than 200 ms as the documented laboratory proxy for INP.
+- The first audit identified low-contrast text in the dark layered section and a brand-link accessible-name mismatch. Both were corrected before acceptance.
+- The final clean run measured mobile home at performance 1.00, accessibility 1.00, LCP 1,899 ms, CLS 0.000 and TBT 41 ms; desktop contact measured 1.00, 1.00, 427 ms, 0.000 and 0 ms. Laboratory results do not replace field data or human assistive-technology review.
+- The cumulative contract covers 228 locked packages and a 299-file scan before this ADR. The final publication scan covers 300 files.
 
 ## Publication boundary
 

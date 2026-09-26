@@ -236,6 +236,12 @@ h3 {
   color: white;
   padding: 10vh 0;
 }
+.layers .section-lead > p {
+  color: #bed0c7;
+}
+.layers .section-lead .eyebrow {
+  color: #79c59f;
+}
 .layer-track {
   width: min(var(--max), calc(100% - 2rem));
   margin: auto;

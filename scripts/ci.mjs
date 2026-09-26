@@ -217,6 +217,7 @@ try {
   );
   await waitForServer(productionMarketingOrigin, productionMarketing, runId);
   run("npm", ["run", "test:marketing"], productionTestEnvironment);
+  run("npm", ["run", "test:marketing-performance"], productionTestEnvironment);
   console.log(
     `Hermetic CI PASS using disposable PostgreSQL ${postgresPort} and application ${applicationPort}.`,
   );

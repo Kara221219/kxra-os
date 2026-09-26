@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Pushed commit `54af5dc0bf70c23dd7171a0534264211bd27d5fd` passed full GitHub CI run 36254260566 and CodeQL run 36254260569. The working tree contains the locally verified trusted public-ingress edge slice and current documentation.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Pushed commit `07203603919613e155111d2fcfce05bf3974048f` passed full GitHub CI run 36255785726 and CodeQL run 36255785732. The working tree contains the locally verified optimized marketing performance/accessibility slice and current documentation.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The current clean contract passes the 118-package dependency policy, 131 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS runs (38 applicable plus four intentional device-specific skips) and 12 public-site scenarios under both development and optimized production, database/private-object restart and empty-target recovery, both optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, exact public snapshot/source checks, 21-marker artifact exclusion and the 298-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
+The current clean contract passes the 228-package dependency policy, 131 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS runs (38 applicable plus four intentional device-specific skips) and 12 public-site scenarios under both development and optimized production, database/private-object restart and empty-target recovery, both optimized builds, exact-hash/SRI CSP, compressed page-asset and optimized Lighthouse budgets, exact public snapshot/source checks, 21-marker artifact exclusion and the 300-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
@@ -56,7 +56,7 @@ Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, Ope
 Continue Final Milestone 10 production quality without deploying:
 
 1. configure and evidence the exact Vercel WAF rate rule in authorized staging;
-2. add production-like Lighthouse/Web Vitals, human assistive-technology and broader provider-failure/load evidence;
+2. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
 3. repeat the passing database/private-object empty-target restore against authorized staging with encrypted provider backups;
 4. connect the approved staging provider sequence only as credentials and legal decisions become available;
 5. keep deployment/publication disabled until legal, public-copy, provider and owner approval.

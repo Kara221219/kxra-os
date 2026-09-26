@@ -42,6 +42,7 @@
     "test:dependencies": "node scripts/verify-dependencies.mjs",
     "test:build-budgets": "node scripts/verify-build-budgets.mjs",
     "test:marketing-csp": "node scripts/verify-marketing-csp.mjs",
+    "test:marketing-performance": "node scripts/verify-marketing-performance.mjs",
     "test:ci": "node scripts/ci.mjs",
     "lint": "npm run typecheck && npm run format:check",
     "check": "npm run lint && npm run test:dependencies && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:marketing-csp && npm run test:build-budgets && npm run test:artifact && npm run test:secrets",
@@ -59,6 +60,7 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "lighthouse": "13.5.0",
     "prettier": "^3.9.6",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"

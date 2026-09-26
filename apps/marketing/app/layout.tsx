@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           Skip to content
         </a>
         <header className="site-header">
-          <Link className="mark" href="/" aria-label="KXRA Group home">
+          <Link className="mark" href="/">
             KXRA<span>GROUP</span>
           </Link>
           <nav aria-label="Primary navigation">

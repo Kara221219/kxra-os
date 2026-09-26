@@ -14,10 +14,13 @@ const allowedLicenses = new Set([
   "Apache-2.0 AND LGPL-3.0-or-later",
   "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
   "BSD-3-Clause",
+  "BSD-2-Clause",
   "CC-BY-4.0",
   "ISC",
   "LGPL-3.0-or-later",
   "MIT",
+  "MPL-2.0",
+  "(MIT OR CC0-1.0)",
 ]);
 const allowedInstallScripts = new Map([
   ["node_modules/esbuild", "0.28.2"],
