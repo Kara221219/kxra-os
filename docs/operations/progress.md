@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 25 adds secure transactional-email custody, restricted delivery and provider reconciliation and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 25 adds secure transactional-email custody, restricted delivery and provider reconciliation and passes the complete local and remote contracts. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 25 passes the complete local contract and awaits commit/remote checks. Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3` passed full GitHub CI run 36275125302 and CodeQL run 36275125295. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 25 implementation commit `3f226b9dfacbb7c05cb8496278e75f96c3db72f2` passed full GitHub CI run 36277965380 and CodeQL run 36277965401. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -18,9 +18,9 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 63 ordered additive migrations, 163 RLS-protected tables with explicit policies and 140 audited public functions.
-- 146 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,610-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 327-file publication/secret scan pass.
+- 64 ordered additive migrations, 165 RLS-protected tables with explicit policies and 141 audited public functions.
+- 153 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,633-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 335-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -222,6 +222,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - Resend requests use the immutable outbox operation key for provider idempotency. Retries are bounded; permanent outcomes stop; uncertain transport enters `RECONCILIATION_REQUIRED` without blind resend.
 - Raw-body webhook verification binds event ID, timestamp, signature and bytes before parsing. Provider event IDs replay exactly and provider message IDs are unique; delivery, delay, bounce, complaint, failure and suppression remain durable.
 - The acceptance loop found and fixed a provider-message uniqueness gap, blocked token replacement while delivery is uncertain and removed fixture-detection code from the production webhook artifact. The final clean run passed 153 tests, the 64-migration/165-table audit, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,633-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 335 files.
+- Implementation commit `3f226b9dfacbb7c05cb8496278e75f96c3db72f2` passed GitHub full CI run 36277965380 and SHA-pinned CodeQL run 36277965401.
 - ADR 0028, the threat model and staging playbook retain `KXRA_EMAIL_ENABLED=false`. No provider credential, real recipient, external send, deployment or publication was used.
 
 ## Publication boundary

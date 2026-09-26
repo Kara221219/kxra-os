@@ -1,10 +1,10 @@
 # Engineering handover
 
-Updated: 26 September 2026.
+Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 25 transactional-email custody and Resend transport pass the complete local contract and await commit/remote checks. Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3` passed full GitHub CI run 36275125302 and CodeQL run 36275125295.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 25 implementation commit `3f226b9dfacbb7c05cb8496278e75f96c3db72f2` passed the complete local contract, full GitHub CI run 36277965380 and CodeQL run 36277965401.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–24 are committed remotely. Slice 25 adds migration `0064`; the current schema has 165 RLS-protected tables and 141 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–25 are committed remotely. Slice 25 adds migration `0064`; the current schema has 165 RLS-protected tables and 141 audited public functions.
 
 Slice 8 adds:
 
