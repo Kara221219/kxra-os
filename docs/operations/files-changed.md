@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 26
+
+- migration `0065` for a restricted billing worker, owner-only provider receipts, complete Stripe subscription states and fail-closed entitlement periods
+- strict Stripe event normalization, raw-body webhook route and test-mode reconciliation worker
+- worker-role, signature, replay, ordering, unknown-reference recovery and entitlement-withdrawal tests
+- disabled staging configuration, ADR 0029, Stripe threat model and activation playbook
+- current README, architecture, access-control, acceptance, progress, handover and Work Log evidence
+
+No Stripe credential, provider call, product/price activation, checkout, portal, charge, refund, cancellation, deployment or publication is added.
+
 ## 26 September Phase 2 Slice 25
 
 - migration `0064` for encrypted delivery custody, restricted worker state and provider events

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { z } from "zod";
 
 export type VerifiedBillingWebhook = {
   id: string;
@@ -7,6 +8,130 @@ export type VerifiedBillingWebhook = {
   payload: Record<string, unknown>;
   rawSha256: string;
 };
+
+const subscriptionEventTypes = [
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "customer.subscription.paused",
+  "customer.subscription.resumed",
+] as const;
+
+export const stripeSubscriptionEventTypes = new Set<string>(
+  subscriptionEventTypes,
+);
+
+const stripeId = (prefix: string) =>
+  z.string().regex(new RegExp(`^${prefix}_[A-Za-z0-9]{6,}$`));
+
+const subscriptionObjectSchema = z
+  .object({
+    id: stripeId("sub"),
+    object: z.literal("subscription"),
+    customer: stripeId("cus"),
+    status: z.enum([
+      "incomplete",
+      "incomplete_expired",
+      "trialing",
+      "active",
+      "past_due",
+      "canceled",
+      "unpaid",
+      "paused",
+    ]),
+    current_period_start: z.number().int().positive().nullable().optional(),
+    current_period_end: z.number().int().positive().nullable().optional(),
+    cancel_at_period_end: z.boolean(),
+    items: z.object({
+      data: z
+        .array(
+          z
+            .object({
+              id: stripeId("si"),
+              quantity: z.number().int().positive().max(1_000_000),
+              price: z.object({ id: stripeId("price") }).passthrough(),
+            })
+            .passthrough(),
+        )
+        .length(1),
+    }),
+  })
+  .passthrough();
+
+const subscriptionEventSchema = z
+  .object({
+    id: stripeId("evt"),
+    type: z.enum(subscriptionEventTypes),
+    created: z.number().int().positive(),
+    livemode: z.boolean(),
+    data: z.object({ object: subscriptionObjectSchema }).passthrough(),
+  })
+  .passthrough();
+
+export type NormalizedStripeSubscriptionEvent = {
+  eventId: string;
+  eventType: (typeof subscriptionEventTypes)[number];
+  createdAt: string;
+  livemode: boolean;
+  customerId: string;
+  subscriptionId: string;
+  status:
+    | "incomplete"
+    | "incomplete_expired"
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "unpaid"
+    | "paused";
+  periodStart: string | null;
+  periodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  priceId: string;
+  itemId: string;
+  quantity: number;
+  rawSha256: string;
+};
+
+function timestamp(value: number | null | undefined) {
+  return value ? new Date(value * 1000).toISOString() : null;
+}
+
+export function normalizeStripeSubscriptionEvent(
+  verified: VerifiedBillingWebhook,
+): NormalizedStripeSubscriptionEvent {
+  const event = subscriptionEventSchema.parse(verified.payload);
+  if (event.id !== verified.id || event.type !== verified.type)
+    throw new Error("BILLING_EVENT_IDENTITY_MISMATCH");
+  if (event.created !== verified.created)
+    throw new Error("BILLING_EVENT_CREATED_MISMATCH");
+  if (event.livemode) throw new Error("BILLING_LIVE_EVENT_PROHIBITED");
+  const subscription = event.data.object;
+  const item = subscription.items.data[0];
+  const periodStart = timestamp(subscription.current_period_start);
+  const periodEnd = timestamp(subscription.current_period_end);
+  if (
+    ["active", "trialing"].includes(subscription.status) &&
+    (!periodStart || !periodEnd || periodEnd <= periodStart)
+  )
+    throw new Error("BILLING_PERIOD_INVALID");
+  return {
+    eventId: event.id,
+    eventType: event.type,
+    createdAt: new Date(event.created * 1000).toISOString(),
+    livemode: event.livemode,
+    customerId: subscription.customer,
+    subscriptionId: subscription.id,
+    status: subscription.status,
+    periodStart,
+    periodEnd,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    priceId: item.price.id,
+    itemId: item.id,
+    quantity: item.quantity,
+    rawSha256: verified.rawSha256,
+  };
+}
 
 function signatures(header: string) {
   const entries = header.split(",").map((entry) => entry.trim().split("=", 2));

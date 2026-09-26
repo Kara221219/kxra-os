@@ -1209,7 +1209,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 165);
+    assert.equal(tables.length, 166);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
