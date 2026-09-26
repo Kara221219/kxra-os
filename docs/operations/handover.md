@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 22 customer operations pass the complete local contract and await commit/remote checks. Slice 21 implementation commit `79c0de68c50d846a712bc390be3593f044012c01` passed full GitHub CI run 36267637479 and CodeQL run 36267637472.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 22 implementation commit `154cc33d99903e6c32baa2c1cf0c4eac9c9048e7` passed full GitHub CI run 36270668918 and CodeQL run 36270668932.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–21 are committed remotely. Slice 22 adds migration `0061`; the current local schema has 161 RLS-protected tables and 138 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–22 are committed remotely. Slice 22 adds migration `0061`; the current schema has 161 RLS-protected tables and 138 audited public functions.
 
 Slice 8 adds:
 
