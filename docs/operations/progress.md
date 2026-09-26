@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit/push Slice 9 and confirm GitHub evidence, then continue CSP/rate-limit hardening, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
+Commit/push Slice 10 and confirm GitHub evidence, then continue static marketing CSP research, rate-limit hardening, dependency/SAST gates and broader failure/accessibility/performance coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -70,6 +70,13 @@ Commit/push Slice 9 and confirm GitHub evidence, then continue CSP/rate-limit ha
 - npm run test:restore dumps the synthetic database and private objects, restores into an empty isolated target, verifies all table counts, migration/RLS/policy and critical state plus object hashes, records RPO/RTO/discrepancies, and destroys the target.
 - The clean hermetic proof restored 153 tables, 2,461 synthetic rows and 15 private objects with zero discrepancies in 2 seconds.
 - CI readiness is bound to a fresh opaque run ID; a decoy stale service must fail before either application starts.
+
+## Slice 10 local security hardening
+
+- Dynamic OS responses now receive a unique nonce CSP with strict-dynamic and no script unsafe-inline. Development-only unsafe-eval remains for framework tooling.
+- A disconnected public-source acquisition contract validates public HTTPS, every DNS answer and redirect, requires address-pinned transport, and bounds timeout, content type and bytes.
+- Five focused security tests and the complete hermetic contract pass. The nonce policy preserves hydration and all tested mutations on desktop/mobile.
+- The cumulative suite now passes 129 database/domain/HTTP/security tests, 38 applicable private browser scenarios, 10 public scenarios, both optimized builds, empty-target recovery and the 291-file publication scan.
 
 ## Publication boundary
 

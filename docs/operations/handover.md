@@ -47,20 +47,19 @@ npm run test:ci
 git diff --check
 ```
 
-The current clean contract passes 124 database/domain/HTTP tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 286-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
+The current clean contract passes 129 database/domain/HTTP/security tests, the 57-migration/153-table RLS audit, 42 private-OS scenarios (38 applicable plus four intentional device-specific skips) and 10 public-site scenarios, database/private-object restart and empty-target recovery, both optimized builds, exact public snapshot/source checks, 21-marker artifact exclusion and the 291-file publication/secret scan. CI rejects a stale decoy service using a fresh per-run readiness identity.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
 ## Next implementation slice
 
-Begin Final Milestone 10 production quality without deploying:
+Continue Final Milestone 10 production quality without deploying:
 
-1. connect the allowlisted no-content telemetry envelope to staging PostHog/Sentry only after capture review;
-2. harden CSP toward production nonces/hashes and add edge/distributed rate-limit seams;
-3. add dependency/SAST/license gates and fail-closed CI evidence;
-4. repeat the passing database/private-object empty-target restore against authorized staging with encrypted provider backups;
-5. add production-like Lighthouse/Web Vitals, representative screen-reader and failure/load evidence;
-6. keep deployment/publication disabled until legal, public-copy, provider and owner approval.
+1. design a static hash/SRI CSP path for marketing and add edge/distributed rate-limit seams;
+2. add dependency/SAST/license gates and fail-closed CI evidence;
+3. repeat the passing database/private-object empty-target restore against authorized staging with encrypted provider backups;
+4. add production-like Lighthouse/Web Vitals, representative screen-reader and failure/load evidence;
+5. keep deployment/publication disabled until legal, public-copy, provider and owner approval.
 
 ## Security invariants
 

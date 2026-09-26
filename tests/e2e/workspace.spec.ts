@@ -36,6 +36,12 @@ async function navigate(page: Page, name: string) {
 test("owner sign-in, typed Idea creation and persistence", async ({
   page,
 }, testInfo) => {
+  const loginResponse = await page.goto("/login");
+  const policy = loginResponse?.headers()["content-security-policy"] || "";
+  expect(policy).toContain("script-src 'self' 'nonce-");
+  expect(policy).toContain("'strict-dynamic'");
+  expect(policy).toContain("script-src-attr 'none'");
+  expect(policy.match(/script-src[^;]*/)?.[0]).not.toContain("'unsafe-inline'");
   await fixtureLogin(page, "owner");
   await expect(
     page.getByRole("heading", { name: "Your operating overview" }),
