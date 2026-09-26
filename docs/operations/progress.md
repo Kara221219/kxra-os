@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 17 public loading, failure and retry behavior passes the complete local contract. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 17 public loading, failure and retry behavior passes the complete local and remote contract. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Pushed commit `b222b575cffd4d3a37ec7355654fd33f0a366f76` descends from the reviewed Genesis implementation and passed full GitHub CI run 36257634481 plus CodeQL run 36257634461. Slice 17 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `5fcba2357afb44a30dacae2782100f1af0a4345b` descends from the reviewed Genesis implementation and passed full GitHub CI run 36258437614 plus CodeQL run 36258437518. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 17, confirm both remote workflows, then prepare the exact Vercel WAF staging rule and broader provider-failure/load coverage. Keep deployment and publication disabled.
+Connect a separate Supabase/Vercel staging environment, then configure and evidence the exact Vercel WAF rule, hosted RLS/Auth/Storage and broader provider-failure/load coverage. Keep production deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -132,6 +132,7 @@ Commit and push Slice 17, confirm both remote workflows, then prepare the exact 
 - A synthetic `503` proves the safe public error, preserved typed input and enabled retry path without creating a misleading success state.
 - Removing the synthetic outage and retrying reaches the real local PostgreSQL ingress, records the enquiry and clears the form only after success.
 - The final complete contract passes all 131 tests, 42 private browser runs and 14 public scenarios in both development and optimized production, plus recovery, builds, CSP/SRI, asset/Lighthouse budgets and the 300-file publication scan.
+- Full GitHub CI run 36258437614 and CodeQL run 36258437518 passed for Slice 17 commit `5fcba23`.
 
 ## Publication boundary
 
