@@ -1648,6 +1648,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "skill_manifests",
       "skill_tool_bindings",
       "tax_contexts",
+      "transactional_email_delivery_secrets",
+      "transactional_email_provider_events",
       "tool_catalogue",
       "tool_versions",
       "usage_adjustments",

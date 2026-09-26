@@ -2,6 +2,13 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 26 September Phase 2 Slice 25
+
+- migration `0064` for encrypted delivery custody, restricted worker state and provider events
+- Resend transport, email worker, raw-byte signed webhook route and disabled staging configuration
+- transactional-email role, encryption, idempotency, revocation, retry and reconciliation tests
+- ADR 0028, transactional-email threat model and staging activation playbook
+
 ## 26 September Phase 2 Slice 24
 
 Append-only Brand evidence correction and stale-lineage enforcement:

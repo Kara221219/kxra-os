@@ -7,6 +7,8 @@ const secretNames = [
   "STRIPE_WEBHOOK_SECRET",
   "TRIGGER_SECRET_KEY",
   "RESEND_API_KEY",
+  "RESEND_WEBHOOK_SECRET",
+  "KXRA_EMAIL_SECRET_KEY",
 ];
 const forbiddenFixtureNames = [
   "KXRA_RUNTIME",
@@ -20,6 +22,9 @@ const marketingForbiddenNames = [
   "KXRA_WORKER_DATABASE_URL",
   "KXRA_AI_WORKER_DATABASE_URL",
   "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
+  "KXRA_EMAIL_WORKER_DATABASE_URL",
+  "KXRA_EMAIL_SECRET_KEY",
+  "KXRA_EMAIL_FROM",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_STORAGE_SECRET_KEY",
@@ -28,6 +33,7 @@ const marketingForbiddenNames = [
   "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "TRIGGER_SECRET_KEY",
   "RESEND_API_KEY",
+  "RESEND_WEBHOOK_SECRET",
   "POSTHOG_KEY",
   "SENTRY_DSN",
 ];
@@ -157,6 +163,7 @@ function osConfiguration(environment, findings) {
     "KXRA_WHATSAPP_ENABLED",
     "KXRA_TELEMETRY_ENABLED",
     "KXRA_PUBLIC_WEB_ENABLED",
+    "KXRA_EMAIL_ENABLED",
   ])
     if (environment[name] !== "false")
       findings.push(`${name}: must remain false for core staging`);
@@ -165,11 +172,15 @@ function osConfiguration(environment, findings) {
     "KXRA_WORKER_DATABASE_URL",
     "KXRA_AI_WORKER_DATABASE_URL",
     "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
+    "KXRA_EMAIL_WORKER_DATABASE_URL",
+    "KXRA_EMAIL_SECRET_KEY",
+    "KXRA_EMAIL_FROM",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
     "TRIGGER_SECRET_KEY",
     "RESEND_API_KEY",
+    "RESEND_WEBHOOK_SECRET",
     "POSTHOG_KEY",
     "SENTRY_DSN",
   ])

@@ -144,6 +144,201 @@ export type FakeEmailMessage = RenderedEmail & {
   updatedAt: string;
 };
 
+export type EmailDeliverySecret = {
+  ciphertext: string;
+  nonce: string;
+  authTag: string;
+  secretSha256: string;
+};
+
+function emailSecretKey(value = process.env.KXRA_EMAIL_SECRET_KEY) {
+  if (!value) throw new Error("EMAIL_SECRET_KEY_UNAVAILABLE");
+  const key = Buffer.from(value, "base64url");
+  if (key.length !== 32) throw new Error("EMAIL_SECRET_KEY_INVALID");
+  return key;
+}
+
+export function sealEmailDeliverySecret(
+  secret: string,
+  secretSha256: string,
+  keyValue?: string,
+): EmailDeliverySecret {
+  if (!secret || !/^[a-f0-9]{64}$/.test(secretSha256))
+    throw new Error("EMAIL_SECRET_INVALID");
+  if (digestFull(secret) !== secretSha256)
+    throw new Error("EMAIL_SECRET_DIGEST_MISMATCH");
+  const nonce = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(
+    "aes-256-gcm",
+    emailSecretKey(keyValue),
+    nonce,
+  );
+  cipher.setAAD(Buffer.from(`kxra-email-token-v1:${secretSha256}`, "utf8"));
+  const ciphertext = Buffer.concat([
+    cipher.update(secret, "utf8"),
+    cipher.final(),
+  ]);
+  return {
+    ciphertext: ciphertext.toString("base64url"),
+    nonce: nonce.toString("base64url"),
+    authTag: cipher.getAuthTag().toString("base64url"),
+    secretSha256,
+  };
+}
+
+export function openEmailDeliverySecret(
+  sealed: EmailDeliverySecret,
+  keyValue?: string,
+) {
+  if (!/^[a-f0-9]{64}$/.test(sealed.secretSha256))
+    throw new Error("EMAIL_SECRET_INVALID");
+  try {
+    const decipher = crypto.createDecipheriv(
+      "aes-256-gcm",
+      emailSecretKey(keyValue),
+      Buffer.from(sealed.nonce, "base64url"),
+    );
+    decipher.setAAD(
+      Buffer.from(`kxra-email-token-v1:${sealed.secretSha256}`, "utf8"),
+    );
+    decipher.setAuthTag(Buffer.from(sealed.authTag, "base64url"));
+    const secret = Buffer.concat([
+      decipher.update(Buffer.from(sealed.ciphertext, "base64url")),
+      decipher.final(),
+    ]).toString("utf8");
+    if (digestFull(secret) !== sealed.secretSha256)
+      throw new Error("EMAIL_SECRET_DIGEST_MISMATCH");
+    return secret;
+  } catch (error) {
+    if ((error as Error).message === "EMAIL_SECRET_DIGEST_MISMATCH")
+      throw error;
+    throw new Error("EMAIL_SECRET_DECRYPTION_FAILED");
+  }
+}
+
+export type EmailTransportResult =
+  | { outcome: "ACCEPTED"; providerMessageId: string }
+  | {
+      outcome: "RETRY" | "PERMANENT" | "AMBIGUOUS";
+      errorCode: string;
+      retryAfterSeconds?: number;
+    };
+
+export class ResendEmailTransport {
+  readonly provider = "resend" as const;
+
+  constructor(
+    private readonly config: {
+      apiKey: string;
+      from: string;
+      fetch?: typeof fetch;
+    },
+  ) {
+    if (!/^re_[A-Za-z0-9_-]{8,}$/.test(config.apiKey))
+      throw new Error("RESEND_API_KEY_INVALID");
+    if (!config.from || config.from.length > 320 || /[\r\n]/.test(config.from))
+      throw new Error("RESEND_FROM_INVALID");
+  }
+
+  async deliver(input: {
+    operationKey: string;
+    recipient: string;
+    rendered: RenderedEmail;
+  }): Promise<EmailTransportResult> {
+    if (!input.operationKey || input.operationKey.length > 256)
+      throw new Error("EMAIL_OPERATION_KEY_INVALID");
+    const request = this.config.fetch || fetch;
+    let response: Response;
+    try {
+      response = await request("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.config.apiKey}`,
+          "content-type": "application/json",
+          "idempotency-key": input.operationKey,
+        },
+        body: JSON.stringify({
+          from: this.config.from,
+          to: [input.recipient],
+          subject: input.rendered.subject,
+          html: input.rendered.html,
+          text: input.rendered.text,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      return { outcome: "AMBIGUOUS", errorCode: "RESEND_TRANSPORT_UNKNOWN" };
+    }
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const data = (await response.json().catch(() => ({}))) as {
+      id?: unknown;
+      name?: unknown;
+    };
+    if (response.ok && typeof data.id === "string" && data.id.length <= 240)
+      return { outcome: "ACCEPTED", providerMessageId: data.id };
+    const errorCode =
+      typeof data.name === "string" && /^[a-z][a-z0-9_]{2,79}$/.test(data.name)
+        ? `RESEND_${data.name.toUpperCase()}`
+        : `RESEND_HTTP_${response.status}`;
+    if (response.status === 429 || response.status >= 500)
+      return {
+        outcome: "RETRY",
+        errorCode,
+        retryAfterSeconds:
+          Number.isFinite(retryAfter) && retryAfter > 0
+            ? Math.min(Math.ceil(retryAfter), 3600)
+            : 30,
+      };
+    return { outcome: "PERMANENT", errorCode };
+  }
+}
+
+export function verifyResendWebhook(input: {
+  payload: string;
+  id: string;
+  timestamp: string;
+  signature: string;
+  secret?: string;
+  nowSeconds?: number;
+}) {
+  const secretValue = input.secret || process.env.RESEND_WEBHOOK_SECRET;
+  if (!secretValue?.startsWith("whsec_"))
+    throw new Error("RESEND_WEBHOOK_SECRET_INVALID");
+  if (!input.id || !/^\d{10}$/.test(input.timestamp) || !input.signature)
+    throw new Error("RESEND_WEBHOOK_SIGNATURE_INVALID");
+  const timestamp = Number(input.timestamp);
+  const now = input.nowSeconds ?? Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > 300)
+    throw new Error("RESEND_WEBHOOK_SIGNATURE_EXPIRED");
+  let key: Buffer;
+  try {
+    key = Buffer.from(secretValue.slice(6), "base64");
+  } catch {
+    throw new Error("RESEND_WEBHOOK_SECRET_INVALID");
+  }
+  if (key.length < 16) throw new Error("RESEND_WEBHOOK_SECRET_INVALID");
+  const expected = crypto
+    .createHmac("sha256", key)
+    .update(`${input.id}.${input.timestamp}.${input.payload}`)
+    .digest();
+  const valid = input.signature
+    .split(" ")
+    .map((part) => part.split(","))
+    .filter(([version, value]) => version === "v1" && value)
+    .some(([, value]) => {
+      try {
+        const actual = Buffer.from(value, "base64");
+        return (
+          actual.length === expected.length &&
+          crypto.timingSafeEqual(actual, expected)
+        );
+      } catch {
+        return false;
+      }
+    });
+  if (!valid) throw new Error("RESEND_WEBHOOK_SIGNATURE_INVALID");
+}
+
 type FakeEmailState = { version: 1; messages: FakeEmailMessage[] };
 
 export class FakeEmailTransport {
@@ -259,4 +454,8 @@ export class FakeEmailTransport {
 
 function digestKey(value: string) {
   return crypto.createHash("sha256").update(value).digest("hex").slice(0, 24);
+}
+
+function digestFull(value: string) {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }

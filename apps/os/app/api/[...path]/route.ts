@@ -70,7 +70,10 @@ import {
   privateObjectStore,
   sha256 as objectSha256,
 } from "../../../../../packages/storage";
-import { renderEmail } from "../../../../../packages/integrations/email";
+import {
+  renderEmail,
+  sealEmailDeliverySecret,
+} from "../../../../../packages/integrations/email";
 import {
   pairingChallenge,
   whatsappPhoneDigest,
@@ -2902,6 +2905,10 @@ async function handle(req: Request, ctx: Context) {
           .createHash("sha256")
           .update(token)
           .digest("hex");
+        const sealedDelivery =
+          !localMode() && process.env.KXRA_EMAIL_ENABLED === "true"
+            ? sealEmailDeliverySecret(token, tokenHash)
+            : null;
         const expiry = new Date(Date.now() + input.expires_hours * 3600_000);
         const rows = await query<{
           id: string;
@@ -2918,6 +2925,18 @@ async function handle(req: Request, ctx: Context) {
             expiry,
           ],
         );
+        if (sealedDelivery)
+          await query(
+            a,
+            "select kxra.attach_transactional_email_secret($1,$2,$3,$4,$5)",
+            [
+              rows[0].outbox_id,
+              sealedDelivery.ciphertext,
+              sealedDelivery.nonce,
+              sealedDelivery.authTag,
+              sealedDelivery.secretSha256,
+            ],
+          );
         let deliveryState = "PENDING";
         if (localMode()) {
           try {
@@ -2970,6 +2989,10 @@ async function handle(req: Request, ctx: Context) {
           .createHash("sha256")
           .update(token)
           .digest("hex");
+        const sealedDelivery =
+          !localMode() && process.env.KXRA_EMAIL_ENABLED === "true"
+            ? sealEmailDeliverySecret(token, tokenHash)
+            : null;
         const rows = await query<{
           id: string;
           version: number;
@@ -2977,6 +3000,18 @@ async function handle(req: Request, ctx: Context) {
           outbox_id: string;
           recipient_email: string;
         }>(a, "select * from kxra.resend_invitation($1,$2)", [p[1], tokenHash]);
+        if (sealedDelivery)
+          await query(
+            a,
+            "select kxra.attach_transactional_email_secret($1,$2,$3,$4,$5)",
+            [
+              rows[0].outbox_id,
+              sealedDelivery.ciphertext,
+              sealedDelivery.nonce,
+              sealedDelivery.authTag,
+              sealedDelivery.secretSha256,
+            ],
+          );
         let deliveryState = "PENDING";
         if (localMode()) {
           const grants = await query<{

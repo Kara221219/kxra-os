@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 24 adds append-only Brand evidence correction and stale-lineage enforcement and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 25 adds secure transactional-email custody, restricted delivery and provider reconciliation and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3` passed full GitHub CI run 36275125302 and CodeQL run 36275125295. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 25 passes the complete local contract and awaits commit/remote checks. Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3` passed full GitHub CI run 36275125302 and CodeQL run 36275125295. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -213,6 +213,16 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The complete local run passed 146 tests, 63 migrations, 163-table RLS verification, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,610-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 327 files. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 416 ms LCP.
 - GitHub full CI run 36275125302 and SHA-pinned CodeQL run 36275125295 passed Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3`.
 - ADR 0027 and the updated Brand Studio threat model record the correction and stale-evidence boundary. No external website, credential, model, message, deployment or publication was used.
+
+## Slice 25 local transactional-email evidence
+
+- Production invitation and resend paths seal one-time links with AES-256-GCM under a worker-only key; the database stores ciphertext, nonce, authentication tag and the exact token digest, never the plaintext link.
+- `kxra_email_worker` is no-login, no-inherit and no-bypass. Browser, authenticated and anonymous roles cannot claim, authorize, complete or reconcile email delivery.
+- Claim and final authorization recheck invitation state, expiry, delivery version and digest. Revocation after claim cancels before provider delivery.
+- Resend requests use the immutable outbox operation key for provider idempotency. Retries are bounded; permanent outcomes stop; uncertain transport enters `RECONCILIATION_REQUIRED` without blind resend.
+- Raw-body webhook verification binds event ID, timestamp, signature and bytes before parsing. Provider event IDs replay exactly and provider message IDs are unique; delivery, delay, bounce, complaint, failure and suppression remain durable.
+- The acceptance loop found and fixed a provider-message uniqueness gap, blocked token replacement while delivery is uncertain and removed fixture-detection code from the production webhook artifact. The final clean run passed 153 tests, the 64-migration/165-table audit, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,633-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 335 files.
+- ADR 0028, the threat model and staging playbook retain `KXRA_EMAIL_ENABLED=false`. No provider credential, real recipient, external send, deployment or publication was used.
 
 ## Publication boundary
 
