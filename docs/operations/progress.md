@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 13 concurrent public-ingress evidence passes the complete local contract. The system is not deployed or production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 14 static marketing CSP/SRI passes the complete local contract. The system is not deployed or production ready.**
 
-Current branch: `codex/phase-2-completion`. Pushed commit `ae52e0dde85b415ebea0cb50c0b985ab8d2904cf` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 13 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Pushed commit `a10a4bd93e8849d19f6f4beebe035e86dfcce51a` descends from the reviewed Genesis implementation and passed full GitHub CI plus CodeQL. Slice 14 is the current working change. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -20,7 +20,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 57 ordered additive migrations, 153 RLS-protected tables with explicit policies and 122 audited public functions.
 - 130 database/domain/HTTP/security tests, 42 private-OS browser scenarios (38 passes/four intentional skips) and 12 public-site browser scenarios.
-- Database/private-object restart and empty-target recovery, both optimized production builds, compressed page-asset budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 295-file publication/secret scan pass.
+- Database/private-object restart and empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 297-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -62,7 +62,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Commit and push Slice 13, confirm both remote workflows, then continue static marketing CSP research, distributed edge-rate controls and broader provider-failure/performance coverage. Keep deployment and publication disabled.
+Commit and push Slice 14, confirm both remote workflows, then continue distributed edge-rate controls and broader provider-failure/performance coverage. Keep deployment and publication disabled.
 
 ## Slice 9 local evidence
 
@@ -99,6 +99,14 @@ Commit and push Slice 13, confirm both remote workflows, then continue static ma
 - Exactly five requests receive `202`, fifteen receive `429`, no unexpected status occurs and exactly five submissions persist.
 - The complete hermetic contract passes 130 tests, 54 browser scenarios, restart and a 2,477-row empty-target restore, both production builds, page-asset budgets and the 295-file publication scan.
 - This proves the PostgreSQL application boundary under the tested local race. Cloudflare/Vercel edge limits, abuse telemetry and a production-like distributed load exercise remain staging work.
+- Full GitHub CI run 36253210907 and CodeQL run 36253210903 passed for Slice 13 commit `a10a4bd`.
+
+## Slice 14 local static marketing CSP and SRI
+
+- The two-pass marketing build binds both passes to one opaque build ID, collects every inline script hash, rebuilds with the closed hash policy and fails if the final scripts drift.
+- The final static pages contain 62 exact SHA-256 inline hashes and 122 SRI-protected script references. The 3,609-character CSP removes production script `unsafe-inline`/`unsafe-eval` and disables script attributes.
+- The complete 12-scenario public browser suite runs against development and again against the optimized production server. All 24 executions pass, including hydration-dependent form submission on desktop/mobile.
+- The complete hermetic contract passes 130 tests, 42 private browser runs, 24 public browser runs, recovery, builds, CSP/SRI, page budgets, artifact checks and the 296-file scan before this documentation update. The final publication scan covers 297 files.
 
 ## Publication boundary
 

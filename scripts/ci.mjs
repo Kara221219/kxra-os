@@ -56,13 +56,16 @@ async function waitForServer(origin, child, runId, timeout = 90_000) {
 fs.rmSync(runtime, { recursive: true, force: true });
 fs.mkdirSync(runtime, { recursive: true, mode: 0o700 });
 
-const [postgresPort, applicationPort, marketingPort] = await Promise.all([
-  availablePort(),
-  availablePort(),
-  availablePort(),
-]);
+const [postgresPort, applicationPort, marketingPort, productionMarketingPort] =
+  await Promise.all([
+    availablePort(),
+    availablePort(),
+    availablePort(),
+    availablePort(),
+  ]);
 const origin = `http://127.0.0.1:${applicationPort}`;
 const marketingOrigin = `http://127.0.0.1:${marketingPort}`;
+const productionMarketingOrigin = `http://127.0.0.1:${productionMarketingPort}`;
 const runId = crypto.randomUUID();
 const environment = { ...process.env };
 for (const key of [
@@ -92,8 +95,10 @@ fs.writeFileSync(
 
 let application;
 let marketing;
+let productionMarketing;
 let logHandle;
 let marketingLogHandle;
+let productionMarketingLogHandle;
 try {
   const stalePort = await availablePort();
   const stale = http.createServer((_request, response) => {
@@ -174,9 +179,44 @@ try {
   delete productionEnvironment.KXRA_RUNTIME;
   delete productionEnvironment.KXRA_PG_PORT;
   run("npm", ["run", "build"], productionEnvironment);
+  run("npm", ["run", "test:marketing-csp"], productionEnvironment);
   run("npm", ["run", "test:build-budgets"], productionEnvironment);
   run("npm", ["run", "test:artifact"], productionEnvironment);
   run("npm", ["run", "test:secrets"], productionEnvironment);
+
+  const productionTestEnvironment = {
+    ...productionEnvironment,
+    KXRA_RUNTIME: runtime,
+    KXRA_MARKETING_ORIGIN: productionMarketingOrigin,
+    KXRA_CI_RUN_ID: runId,
+    KXRA_EXPECT_PRODUCTION_CSP: "true",
+  };
+  productionMarketingLogHandle = fs.openSync(
+    path.join(runtime, "marketing-production.log"),
+    "w",
+  );
+  productionMarketing = spawn(
+    process.execPath,
+    [
+      path.join(root, "node_modules", "next", "dist", "bin", "next"),
+      "start",
+      "--hostname",
+      "127.0.0.1",
+      "--port",
+      String(productionMarketingPort),
+    ],
+    {
+      cwd: path.join(root, "apps", "marketing"),
+      env: productionTestEnvironment,
+      stdio: [
+        "ignore",
+        productionMarketingLogHandle,
+        productionMarketingLogHandle,
+      ],
+    },
+  );
+  await waitForServer(productionMarketingOrigin, productionMarketing, runId);
+  run("npm", ["run", "test:marketing"], productionTestEnvironment);
   console.log(
     `Hermetic CI PASS using disposable PostgreSQL ${postgresPort} and application ${applicationPort}.`,
   );
@@ -207,8 +247,24 @@ try {
       });
     });
   }
+  if (productionMarketing && productionMarketing.exitCode === null) {
+    productionMarketing.kill("SIGTERM");
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        if (productionMarketing.exitCode === null)
+          productionMarketing.kill("SIGKILL");
+        resolve();
+      }, 5000);
+      productionMarketing.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
   if (logHandle !== undefined) fs.closeSync(logHandle);
   if (marketingLogHandle !== undefined) fs.closeSync(marketingLogHandle);
+  if (productionMarketingLogHandle !== undefined)
+    fs.closeSync(productionMarketingLogHandle);
   const stopped = spawnSync(
     process.execPath,
     ["scripts/database.mjs", "stop"],

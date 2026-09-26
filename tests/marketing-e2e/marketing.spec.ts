@@ -28,7 +28,16 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
     expect(response?.status(), route).toBe(200);
     await expect(page.locator("h1").first()).toBeVisible();
   }
-  await page.goto("/");
+  const homeResponse = await page.goto("/");
+  const policy = homeResponse?.headers()["content-security-policy"] || "";
+  expect(policy).toContain("script-src");
+  if (process.env.KXRA_EXPECT_PRODUCTION_CSP === "true") {
+    expect(policy.match(/script-src[^;]*/)?.[0]).not.toContain(
+      "'unsafe-inline'",
+    );
+    expect(policy).toContain("'sha256-");
+    expect(policy).toContain("script-src-attr 'none'");
+  }
   await expect(
     page.getByText("Private build preview · publication is disabled"),
   ).toBeVisible();
