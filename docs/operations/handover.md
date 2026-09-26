@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Remote checkpoint `f2474c2d927f15fc64358cfda0283f0a347b4397` records Slice 17. Slice 18's staging preflight and CI isolation pass locally and await commit/push plus remote evidence.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Implementation commit `a69bfa2f17316f60f2de0ea25df9acd6ae669cc2` passed full GitHub CI run 36260468489 and CodeQL run 36260468520. Slice 18's staging preflight and CI isolation are fully recorded.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
