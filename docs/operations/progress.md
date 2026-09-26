@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 23 adds governed Brand Studio website acquisition and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 23 adds governed Brand Studio website acquisition and passes the complete local and remote contracts. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 23 is locally verified and pending commit/remote checks. Slice 22 implementation commit `154cc33d99903e6c32baa2c1cf0c4eac9c9048e7` passed full GitHub CI run 36270668918 and CodeQL run 36270668932. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -200,6 +200,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - Source changes cancel stale jobs. Leases, capped attempts, bounded failure codes and exact completion replay prevent silent duplicate evidence.
 - SQL, HTTP, contract and desktop/mobile browser evidence covers the schedule, isolation, private-DNS denial, streaming limit, extraction and visible queue state. Hosted egress, worker secret custody and real-site behavior remain staging gates.
 - The complete local run passed 144 tests, 62 migrations, 162-table RLS verification, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,600-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 324 files. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 417 ms LCP.
+- GitHub full CI run 36272984825 and SHA-pinned CodeQL run 36272984827 passed Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b`.
 - ADR 0026, a threat model and a staging activation playbook record the boundary. The worker remains disabled and no external website was contacted.
 
 ## Publication boundary
