@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 24 Brand evidence correction passes the complete local contract and awaits commit/remote checks. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–23 are committed remotely. Slice 23 adds migration `0062`; the current schema has 162 RLS-protected tables and 139 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–23 are committed remotely. Slice 24 adds migration `0063`; the current local schema has 163 RLS-protected tables and 140 audited public functions.
 
 Slice 8 adds:
 
@@ -32,7 +32,7 @@ Slice 8 adds:
 
 No Trigger.dev task, always-on scheduler, hosted worker or notification sender exists. No YouTube token, upload/schedule executor, repository archive fetcher, candidate process runner, Git writer, merge/release/deploy route or production scanner exists. Synthetic local evidence proves the contracts only.
 
-Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Local Auth, email, billing, scanner/extractor, model and generation adapters remain guarded test/product scaffolding.
+Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Slice 24 adds append-only human source correction and database-enforced stale-lineage blocking through final export delivery. Local Auth, email, billing, scanner/extractor, model and generation adapters remain guarded test/product scaffolding.
 
 Legal seed records remain `UNAPPROVED_PLACEHOLDER` and inactive. No production legal text, product, price, subscription, customer or credential is seeded.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The Slice 23 local contract passes the 228-package dependency policy, 144 database/domain/HTTP/security tests, the 62-migration/162-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,600-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the final 324-file publication/secret scan.
+The Slice 24 local contract passes the 228-package dependency policy, 146 database/domain/HTTP/security tests, the 63-migration/163-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,610-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the final 327-file publication/secret scan.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

@@ -426,6 +426,19 @@ test("Brand Studio preserves source/profile versions and requires exact review b
       ).rows[0].count,
       1,
     );
+    await db.query("select * from kxra.revise_brand_source($1,1,$2,$3,$4)", [
+      source.source_id,
+      "Northstar corrected its public operating-review evidence.",
+      "Customer correction after the creative export was prepared.",
+      crypto.randomUUID(),
+    ]);
+    const staleEvidence = (
+      await db.query("select * from kxra.authorize_brand_export($1)", [
+        exportId,
+      ])
+    ).rows[0];
+    assert.equal(staleEvidence.allowed, false);
+    assert.equal(staleEvidence.reason_code, "SOURCE_EVIDENCE_CHANGED");
   }));
 
 test("Brand Studio RLS isolates projects and crafted project writes fail before context creation", () =>

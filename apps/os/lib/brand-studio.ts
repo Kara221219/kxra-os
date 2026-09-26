@@ -66,8 +66,10 @@ export async function loadBrandStudio(
       `select source.id,source.project_id,project.code as project_code,
         source.source_type,source.locator,source.rights_basis,source.state,
         source.current_version,version.id as source_version_id,
-        version.content_sha256,version.fetch_state,version.security_result,
+        version.supplied_content,version.content_sha256,version.fetch_state,version.security_result,
         version.source_classification,source.created_at,
+        coalesce(revision.revision_kind,'INITIAL') as revision_kind,
+        revision.revision_reason,
         acquisition.id as latest_acquisition_id,
         acquisition.state as latest_acquisition_state,
         acquisition.failure_code as latest_acquisition_failure,
@@ -82,6 +84,8 @@ export async function loadBrandStudio(
         where item.source_id=source.id
         order by item.created_at desc,item.id desc limit 1
        ) acquisition on true
+       left join kxra.brand_source_revision_metadata revision
+        on revision.source_version_id=version.id
        order by source.created_at desc,source.id desc`,
     ),
     query(
@@ -91,7 +95,14 @@ export async function loadBrandStudio(
         version.id as current_version_id,version.profile_data,version.profile_sha256,
         version.status as current_status,version.classification,version.created_at,
         coalesce((select count(*) from kxra.brand_profile_evidence evidence
-          where evidence.profile_version_id=version.id),0)::integer as evidence_count
+          where evidence.profile_version_id=version.id),0)::integer as evidence_count,
+        coalesce((select count(*) from kxra.brand_profile_evidence evidence
+          join kxra.brand_source_versions source_version
+           on source_version.id=evidence.source_version_id
+          join kxra.brand_sources source on source.id=source_version.source_id
+          where evidence.profile_version_id=version.id
+           and source_version.version<>source.current_version),0)::integer
+          as stale_evidence_count
        from kxra.brand_profiles profile
        join kxra.projects project on project.id=profile.project_id
        join kxra.brand_profile_versions version

@@ -2,6 +2,25 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 26 September Phase 2 Slice 24
+
+Append-only Brand evidence correction and stale-lineage enforcement:
+
+- `supabase/migrations/0063_brand_source_corrections.sql`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/lib/brand-studio.ts`
+- `apps/os/components/BrandStudio.tsx`
+- `tests/brand-source-corrections.test.ts`
+- `tests/brand-studio.test.ts`
+- `tests/brand-studio-http.test.ts`
+- `tests/e2e/brand-studio.spec.ts`
+- access-matrix, schema-count and control-plane count tests
+- `docs/decisions/0027-append-only-brand-evidence-corrections.md`
+- Brand Studio architecture, security, acceptance, progress, handover, work-log and staging records
+- `README.md`
+
+No source content is overwritten. No external website, credential, model call, message, deployment or publication is added.
+
 ## 26 September Phase 2 Slice 23
 
 Governed Brand Studio website-source acquisition:

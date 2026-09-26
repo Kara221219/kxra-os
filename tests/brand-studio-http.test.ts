@@ -100,11 +100,57 @@ test("Brand Studio HTTP completes an exact source-to-export journey without cros
   assert.equal(sourceResponse.status, 201, await sourceResponse.clone().text());
   const source = await sourceResponse.json();
 
+  const correctionRequestId = crypto.randomUUID();
+  const correctedSourceText = `Northstar ${marker} provides structured operating reviews for UK small businesses.`;
+  const correctionResponse = await request(
+    `/sources/${source.source_id}/revise`,
+    partner,
+    {
+      expected_version: 1,
+      source_text: correctedSourceText,
+      revision_reason: "Clarify the offer and intended customer segment.",
+      request_id: correctionRequestId,
+    },
+  );
+  assert.equal(
+    correctionResponse.status,
+    200,
+    await correctionResponse.clone().text(),
+  );
+  const correction = await correctionResponse.json();
+  assert.equal(correction.version, 2);
+  const correctionReplay = await request(
+    `/sources/${source.source_id}/revise`,
+    partner,
+    {
+      expected_version: 1,
+      source_text: correctedSourceText,
+      revision_reason: "Clarify the offer and intended customer segment.",
+      request_id: correctionRequestId,
+    },
+  );
+  assert.equal(correctionReplay.status, 200);
+  assert.equal(
+    (await correctionReplay.json()).source_version_id,
+    correction.source_version_id,
+  );
+  const craftedCorrection = await request(
+    `/sources/${crypto.randomUUID()}/revise`,
+    partner,
+    {
+      expected_version: 1,
+      source_text: "Crafted correction.",
+      revision_reason: "Attempt to alter another source.",
+      request_id: crypto.randomUUID(),
+    },
+  );
+  assert.equal(craftedCorrection.status, 409);
+
   const refreshRequestId = crypto.randomUUID();
   const refreshResponse = await request(
     `/sources/${source.source_id}/refresh`,
     partner,
-    { expected_version: 1, request_id: refreshRequestId },
+    { expected_version: 2, request_id: refreshRequestId },
   );
   assert.equal(
     refreshResponse.status,
@@ -116,7 +162,7 @@ test("Brand Studio HTTP completes an exact source-to-export journey without cros
   const refreshReplay = await request(
     `/sources/${source.source_id}/refresh`,
     partner,
-    { expected_version: 1, request_id: refreshRequestId },
+    { expected_version: 2, request_id: refreshRequestId },
   );
   assert.equal(refreshReplay.status, 202, await refreshReplay.clone().text());
   assert.equal(
@@ -133,7 +179,7 @@ test("Brand Studio HTTP completes an exact source-to-export journey without cros
 
   const profileResponse = await request("/profiles", partner, {
     project_id: projectTwo,
-    source_version_id: source.source_version_id,
+    source_version_id: correction.source_version_id,
     name: `Northstar ${marker}`,
     business_name: `Northstar ${marker}`,
     tone: "clear, credible, practical",

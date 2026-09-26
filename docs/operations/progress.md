@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 26 September 2026. Status: **Phase 2 Slice 23 adds governed Brand Studio website acquisition and passes the complete local and remote contracts. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 26 September 2026. Status: **Phase 2 Slice 24 adds append-only Brand evidence correction and stale-lineage enforcement and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 24 is locally verified and pending commit/remote checks. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -18,9 +18,9 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 62 ordered additive migrations, 162 RLS-protected tables with explicit policies and 139 audited public functions.
-- 144 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,600-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 324-file publication/secret scan pass.
+- 63 ordered additive migrations, 163 RLS-protected tables with explicit policies and 140 audited public functions.
+- 146 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,610-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 327-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -36,7 +36,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ### Partial
 
-- Brand Studio: local address-pinned source refresh is implemented but hosted worker/egress evidence, media generation, sector claim policies and publication remain absent.
+- Brand Studio: local address-pinned source refresh, append-only correction and stale-lineage gates are implemented; hosted worker/egress evidence, media generation, sector claim policies and publication remain absent.
 - Identity/legal: hosted Supabase Auth/MFA/pooler, real owner bootstrap and solicitor-approved legal content remain unverified.
 - Commercial: Stripe products/prices, checkout, webhook, portal and approved billing policies remain disconnected.
 - Customer operations: private support, cancellation/withdrawal and data-request intake/handling works locally; approved response periods, provider cancellation, identity verification, disclosure/erasure and notification delivery remain disconnected.
@@ -90,7 +90,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 
 - A representative Chromium accessibility-tree test validates the public banner, named navigation, main/content-info landmarks, page heading and labelled contact controls on desktop and mobile.
 - The first run exposed a mobile breakpoint that removed the primary navigation. The header now keeps the full navigation available in a horizontally scrollable row; focused and full retests pass.
-- A deterministic post-build gate measures the unique JavaScript/CSS required by every page. Marketing pages are limited to 140 KiB gzip and private OS pages to 200 KiB; the clean run measured 107.3 KiB and 157.8 KiB respectively at the largest routes.
+- A deterministic post-build gate measures the unique JavaScript/CSS required by every page. Marketing pages are limited to 140 KiB gzip and private OS pages to 200 KiB; the current clean run measured 107.3 KiB and 163.6 KiB respectively at the largest routes.
 - The complete hermetic contract passes 12 public scenarios and the 295-file publication scan. Production-like Lighthouse/Core Web Vitals and human assistive-technology review still require staging.
 - Full GitHub CI run 36252532435 and CodeQL run 36252532467 passed for Slice 12 commit `ae52e0d`.
 
@@ -202,6 +202,16 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The complete local run passed 144 tests, 62 migrations, 162-table RLS verification, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,600-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 324 files. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 417 ms LCP.
 - GitHub full CI run 36272984825 and SHA-pinned CodeQL run 36272984827 passed Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b`.
 - ADR 0026, a threat model and a staging activation playbook record the boundary. The worker remains disabled and no external website was contacted.
+
+## Slice 24 local Brand evidence-correction evidence
+
+- Added one project-scoped RLS table that binds every human correction to the new immutable source version, exact predecessor, reason and idempotency key.
+- An exact correction replay returns the same version; a different source, predecessor, reason or content hash conflicts. Viewer, revoked, anonymous and crafted cross-project writes fail.
+- PostgreSQL computes source-lineage freshness. It rejects stale profile approval, campaign creation/approval, generation start/output and export creation without trusting browser or model state.
+- Final download authorization repeats the lineage check. A prepared export is withheld with `SOURCE_EVIDENCE_CHANGED` and no content after its source changes.
+- Desktop and mobile show current evidence text, provenance and correction reason, save corrections as new versions, mark affected profiles and remove stale profiles/campaigns from new consequential controls.
+- The complete local run passed 146 tests, 63 migrations, 163-table RLS verification, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,610-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 327 files. Lighthouse measured mobile 1.00/1.00 with 1,856 ms LCP and desktop 1.00/1.00 with 416 ms LCP.
+- ADR 0027 and the updated Brand Studio threat model record the correction and stale-evidence boundary. No external website, credential, model, message, deployment or publication was used.
 
 ## Publication boundary
 

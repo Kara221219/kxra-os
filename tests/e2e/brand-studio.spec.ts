@@ -240,4 +240,36 @@ test("Brand Studio completes the governed customer journey at desktop and mobile
   const download = await downloadStarted;
   expect(download.suggestedFilename()).toMatch(/\.md$/);
   expect(await download.failure()).toBeNull();
+
+  const currentSourceCard = page.locator("article.record").filter({
+    has: page.getByRole("heading", { name: websiteUrl, exact: true }),
+  });
+  await currentSourceCard
+    .getByText("Review or correct this evidence", { exact: true })
+    .click();
+  await currentSourceCard
+    .getByLabel("Current evidence text")
+    .fill(
+      `${profileName} provides corrected operating-review evidence for UK small businesses.`,
+    );
+  await currentSourceCard
+    .getByLabel("Why is this correction needed?")
+    .fill("Clarify the offer after customer review.");
+  await currentSourceCard
+    .getByRole("button", { name: "Save as new evidence version" })
+    .click();
+  const correctedSourceCard = page.locator("article.record").filter({
+    has: page.getByRole("heading", { name: websiteUrl, exact: true }),
+  });
+  await expect(
+    correctedSourceCard.getByText("v2", { exact: true }),
+  ).toBeVisible();
+  const staleProfile = page.locator("article.record").filter({
+    has: page.getByRole("heading", { name: profileName, exact: true }),
+  });
+  await expect(
+    staleProfile.getByText(
+      /Source evidence changed after this profile version/,
+    ),
+  ).toBeVisible();
 });

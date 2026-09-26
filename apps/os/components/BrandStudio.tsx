@@ -13,9 +13,12 @@ type Source = {
   rights_basis: string;
   current_version: number;
   source_version_id: string;
+  supplied_content: string;
   fetch_state: string;
   security_result: string;
   source_classification: string;
+  revision_kind: string;
+  revision_reason: string | null;
   latest_acquisition_id: string | null;
   latest_acquisition_state: string | null;
   latest_acquisition_failure: string | null;
@@ -46,6 +49,7 @@ type Profile = {
   current_status: string;
   classification: string;
   evidence_count: number;
+  stale_evidence_count: number;
 };
 type Campaign = {
   id: string;
@@ -287,6 +291,27 @@ function SourceCard({ source }: { source: Source }) {
       setBusy(false);
     }
   }
+  async function revise(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    const form = new FormData(event.currentTarget);
+    try {
+      await request(`/api/brand-studio/sources/${source.id}/revise`, {
+        expected_version: source.current_version,
+        source_text: form.get("source_text"),
+        revision_reason: form.get("revision_reason"),
+        request_id: crypto.randomUUID(),
+      });
+      setMessage("Corrected evidence saved as a new immutable version.");
+      window.location.reload();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Correction unavailable",
+      );
+      setBusy(false);
+    }
+  }
   return (
     <article className="record">
       <div className="record-top">
@@ -300,6 +325,43 @@ function SourceCard({ source }: { source: Source }) {
         {source.source_classification} · {source.fetch_state} ·{" "}
         {source.security_result}
       </p>
+      <p className="subtle">
+        {source.revision_kind.replaceAll("_", " ")}
+        {source.revision_reason ? ` · ${source.revision_reason}` : ""}
+      </p>
+      <details>
+        <summary>Review or correct this evidence</summary>
+        <form
+          method="post"
+          className="form-grid compact-form"
+          onSubmit={revise}
+        >
+          <label>
+            Current evidence text
+            <textarea
+              name="source_text"
+              defaultValue={source.supplied_content}
+              rows={8}
+              required
+              maxLength={50000}
+            />
+          </label>
+          <label>
+            Why is this correction needed?
+            <textarea
+              name="revision_reason"
+              rows={3}
+              required
+              minLength={3}
+              maxLength={2000}
+              placeholder="Describe missing, outdated or contradictory information."
+            />
+          </label>
+          <button type="submit" disabled={!hydrated || busy}>
+            {busy ? "Saving…" : "Save as new evidence version"}
+          </button>
+        </form>
+      </details>
       {source.latest_acquisition_state && (
         <p role="status">
           Latest acquisition:{" "}
@@ -394,6 +456,13 @@ function ProfileCard({
         <span className="badge">{profile.current_status}</span>
       </div>
       <p>{profile.profile_data.summary}</p>
+      {profile.stale_evidence_count > 0 && (
+        <p role="status" className="callout warning">
+          Source evidence changed after this profile version was created. Review
+          the latest evidence, revise the profile and approve the replacement
+          before relying on it for a new campaign.
+        </p>
+      )}
       <dl className="definition">
         <dt>Business</dt>
         <dd>{profile.profile_data.business_name}</dd>
@@ -404,7 +473,10 @@ function ProfileCard({
         <dt>Offers</dt>
         <dd>{profile.profile_data.offers.join(", ")}</dd>
         <dt>Evidence</dt>
-        <dd>{profile.evidence_count} source-linked field(s)</dd>
+        <dd>
+          {profile.evidence_count} source-linked field(s) ·{" "}
+          {profile.stale_evidence_count} linked to older source versions
+        </dd>
         <dt>Version</dt>
         <dd>
           current {profile.current_version} · approved{" "}
@@ -502,7 +574,9 @@ function ProfileCard({
 }
 
 function CampaignForm({ profiles }: { profiles: Profile[] }) {
-  const approved = profiles.filter((profile) => profile.approved_version);
+  const approved = profiles.filter(
+    (profile) => profile.approved_version && profile.stale_evidence_count === 0,
+  );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const hydrated = useHydrated();
@@ -667,7 +741,13 @@ function GenerateForm({
   enabled: boolean;
 }) {
   const approvedCampaigns = campaigns.filter(
-    (campaign) => campaign.approved_version,
+    (campaign) =>
+      campaign.approved_version &&
+      profiles.some(
+        (profile) =>
+          profile.id === campaign.profile_id &&
+          profile.stale_evidence_count === 0,
+      ),
   );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);

@@ -975,6 +975,36 @@ async function handle(req: Request, ctx: Context) {
         ]);
         return json(rows[0], 202);
       }
+      if (
+        method === "POST" &&
+        p[1] === "sources" &&
+        p[2] &&
+        p[3] === "revise" &&
+        !p[4]
+      ) {
+        const sourceId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            expected_version: positiveVersion,
+            source_text: z.string().trim().min(1).max(50000),
+            revision_reason: z.string().trim().min(3).max(2000),
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{
+          source_version_id: string;
+          version: number;
+          content_sha256: string;
+        }>(a, "select * from kxra.revise_brand_source($1,$2,$3,$4,$5)", [
+          sourceId,
+          input.expected_version,
+          input.source_text,
+          input.revision_reason,
+          input.request_id,
+        ]);
+        return json(rows[0]);
+      }
       if (method === "POST" && p[1] === "profiles" && !p[2]) {
         const input = z
           .object({
