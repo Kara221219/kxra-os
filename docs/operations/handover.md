@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 26 Stripe test-mode subscription reconciliation passes the complete local contract and awaits commit/remote checks. Slice 25 implementation commit `3f226b9dfacbb7c05cb8496278e75f96c3db72f2` passed full GitHub CI run 36277965380 and CodeQL run 36277965401.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–25 are committed remotely. Slice 26 adds migration `0065`; the current schema has 166 RLS-protected tables and 141 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–26 are committed remotely. Slice 26 adds migration `0065`; the current schema has 166 RLS-protected tables and 141 audited public functions.
 
 Slice 8 adds:
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The Slice 26 local contract passes the 228-package dependency policy, 159 database/domain/HTTP/security tests, the 65-migration/166-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the 342-file publication/secret scan.
+The Slice 26 local and GitHub contract passes the 228-package dependency policy, 159 database/domain/HTTP/security tests, the 65-migration/166-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the 342-file publication/secret scan.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

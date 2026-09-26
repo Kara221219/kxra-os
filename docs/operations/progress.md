@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 26 adds restricted Stripe test-mode subscription reconciliation and passes the complete local contract. Commit and remote evidence are pending; hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 26 adds restricted Stripe test-mode subscription reconciliation and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 26 passes the complete local contract and awaits commit/remote checks. Slice 25 implementation commit `3f226b9dfacbb7c05cb8496278e75f96c3db72f2` passed full GitHub CI run 36277965380 and CodeQL run 36277965401. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
