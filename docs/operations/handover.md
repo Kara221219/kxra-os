@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Remote baseline `fb7571d` records Slice 18's passing GitHub CI and CodeQL evidence. Slice 19 custom-project commercial control passes the complete local contract and awaits its implementation commit and remote checks.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 19 implementation commit `3d1bfe23587a4a068b414313e9b8570e7a902d0e` passed full GitHub CI run 36263000293 and CodeQL run 36263000298. Custom-project commercial control is independently verified.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The Slice 19 local contract passes the 228-package dependency policy, 136 database/domain/HTTP/security tests, the 58-migration/153-table RLS audit, 44 private-OS runs (40 applicable plus four intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,526-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the 307-file publication/secret scan. CI rejects stale readiness state and isolates its Next.js artifacts.
+The Slice 19 contract passes locally and in GitHub CI: the 228-package dependency policy, 136 database/domain/HTTP/security tests, the 58-migration/153-table RLS audit, 44 private-OS runs (40 applicable plus four intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,526-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the 307-file publication/secret scan. CI rejects stale readiness state and isolates its Next.js artifacts.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

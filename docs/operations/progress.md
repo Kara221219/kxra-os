@@ -2,7 +2,7 @@
 
 Updated: 26 September 2026. Status: **Phase 2 Slice 19 closes the local custom-project request-to-activation authority path and passes the complete local contract. Remote evidence is pending; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. The remote baseline is Slice 18 documentation commit `fb7571d`; Slice 19 is a local verified-work candidate until its implementation commit and remote GitHub checks are recorded. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 19 implementation commit `3d1bfe23587a4a068b414313e9b8570e7a902d0e` passed full GitHub CI run 36263000293 and CodeQL run 36263000298. The branch is not merged. No default-branch change, production deployment, provider activation, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -151,6 +151,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The first complete browser run exposed a client event-lifetime error after successful request creation; the form no longer dereferences the submitted event after its asynchronous boundary. A separate HTTP fixture cleanup now revokes temporary management membership even when an earlier assertion fails.
 - Versioned change requests, milestone delivery/acceptance, invoices, approved legal text and connected payment-provider evidence remain outside this slice. ADR 0022 records the commercial authority boundary.
 - The final hermetic run passed 136 tests, 58 migrations, 153-table RLS verification, 40 applicable private browser journeys with four intentional skips, all 14 public journeys in development and optimized production, 2,526-row/15-object empty-target recovery, both builds, CSP/SRI, budgets and the 307-file publication scan. Lighthouse measured mobile 1.00/1.00 with 1,854 ms LCP and desktop 1.00/1.00 with 417 ms LCP.
+- Full GitHub CI run 36263000293 and CodeQL run 36263000298 independently passed Slice 19 implementation commit `3d1bfe2`.
 
 ## Publication boundary
 
