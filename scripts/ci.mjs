@@ -7,6 +7,13 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const runtime = path.join(root, ".runtime", "ci");
+const nextGeneratedConfigurationFiles = ["os", "marketing"].flatMap(
+  (application) =>
+    ["next-env.d.ts", "tsconfig.json"].map((name) => {
+      const file = path.join(root, "apps", application, name);
+      return { file, contents: fs.readFileSync(file) };
+    }),
+);
 
 function availablePort() {
   return new Promise((resolve, reject) => {
@@ -67,6 +74,7 @@ const origin = `http://127.0.0.1:${applicationPort}`;
 const marketingOrigin = `http://127.0.0.1:${marketingPort}`;
 const productionMarketingOrigin = `http://127.0.0.1:${productionMarketingPort}`;
 const runId = crypto.randomUUID();
+const ciDistDir = `.next-ci-${runId}`;
 const environment = { ...process.env };
 for (const key of [
   "DATABASE_URL",
@@ -86,6 +94,7 @@ Object.assign(environment, {
   KXRA_PG_PORT: String(postgresPort),
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
   KXRA_CI_RUN_ID: runId,
+  KXRA_NEXT_DIST_DIR: ciDistDir,
 });
 fs.writeFileSync(
   path.join(runtime, "session-key"),
@@ -178,6 +187,7 @@ try {
   delete productionEnvironment.KXRA_LOCAL_SECRET;
   delete productionEnvironment.KXRA_RUNTIME;
   delete productionEnvironment.KXRA_PG_PORT;
+  delete productionEnvironment.KXRA_NEXT_DIST_DIR;
   run("npm", ["run", "build"], productionEnvironment);
   run("npm", ["run", "test:marketing-csp"], productionEnvironment);
   run("npm", ["run", "test:build-budgets"], productionEnvironment);
@@ -266,6 +276,13 @@ try {
   if (marketingLogHandle !== undefined) fs.closeSync(marketingLogHandle);
   if (productionMarketingLogHandle !== undefined)
     fs.closeSync(productionMarketingLogHandle);
+  for (const applicationDirectory of ["os", "marketing"])
+    fs.rmSync(path.join(root, "apps", applicationDirectory, ciDistDir), {
+      recursive: true,
+      force: true,
+    });
+  for (const { file, contents } of nextGeneratedConfigurationFiles)
+    fs.writeFileSync(file, contents);
   const stopped = spawnSync(
     process.execPath,
     ["scripts/database.mjs", "stop"],

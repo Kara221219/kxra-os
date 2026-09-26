@@ -1,6 +1,6 @@
 # KXRA OS
 
-KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 8: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, the local KXRA Brand Studio workflow, governed YouTube-content and repository-adoption pipelines, a disabled-by-default governed routine engine, a transport-disabled WhatsApp gateway contract, and an independently built public marketing application.
+KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 18: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, separately scoped custom-project intake, a permission-safe private file/knowledge and AI lifecycle, the local KXRA Brand Studio workflow, governed YouTube-content and repository-adoption pipelines, a disabled-by-default governed routine engine, a transport-disabled WhatsApp gateway contract, an independently built public marketing application and a fail-closed separated-staging preflight.
 
 It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation and Meta transport remain incomplete. The public site builds locally from a hash-bound review snapshot, while publication, indexing and production legal copy remain disabled. Brand Studio works locally with a deterministic, no-network text adapter. Project 006 ends at a reviewed, disabled YouTube upload intent; Project 007 ends at a reviewed, no-execution implementation intent. Routine definitions require exact owner approval before local planning and retain authoritative slots, leases, checkpoints and outcomes in PostgreSQL. WhatsApp pairing, ingress, project scope, media consent and outbound intents are enforced locally, while webhook/media/model/send adapters remain disconnected. Website fetching, provider upload, candidate-code execution, merge, release and deployment are deliberately disabled.
 
@@ -27,7 +27,7 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime, rejects a stale decoy service, applies and seeds 57 migrations, then runs formatting/type and 228-package lockfile policy checks, 131 database/domain/HTTP/security tests, a 153-table RLS audit, 42 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a 300-file publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
+`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime with per-run Next.js build directories, rejects a stale decoy service, applies and seeds 57 migrations, then runs formatting/type and 228-package lockfile policy checks, 136 database/domain/HTTP/security tests, a 153-table RLS audit, 42 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a 305-file publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
 
 ## Implemented locally
 
@@ -53,6 +53,7 @@ git diff --check
 - Independent `apps/marketing` public build with the required platform, Brand Studio, custom-project, industry, company, contact and legal-review routes; original layered storytelling; reduced-motion, 320 px, 200% text and no-JavaScript fallbacks; and a private-app login redirect.
 - Accessible public forms validate origin and content, deduplicate, rate-limit and bot-check through one bounded write-only RPC. Accepted rows are owner-only, audited and visibly marked unverified in the private Idea Inbox.
 - Entitlement-aware Business Tools navigation and a customer journey verified in desktop and mobile browsers.
+- Separate OS/marketing staging profiles with a no-value-output preflight that rejects production targets, fixtures, legacy Supabase keys, privileged database users, weak/reused secrets, cross-application credentials and prematurely enabled providers.
 
 ## Security boundary
 
@@ -62,20 +63,20 @@ Legal placeholders, local fake events and synthetic accounts are test data only.
 
 ## Repository map
 
-| Location                 | Responsibility                                                            |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `apps/os`                | Next.js private OS, tenant/legal/customer UI and server APIs              |
-| `apps/marketing`         | Independent public site, reviewed snapshot and bounded public forms       |
-| `packages/db`            | Verified-principal, selected-tenant PostgreSQL transactions               |
-| `packages/domain`        | Validation, state contracts, exact money and score formulas               |
-| `packages/authz`         | Provider contract, local fake, join intent and session controls           |
+| Location                 | Responsibility                                                             |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `apps/os`                | Next.js private OS, tenant/legal/customer UI and server APIs               |
+| `apps/marketing`         | Independent public site, reviewed snapshot and bounded public forms        |
+| `packages/db`            | Verified-principal, selected-tenant PostgreSQL transactions                |
+| `packages/domain`        | Validation, state contracts, exact money and score formulas                |
+| `packages/authz`         | Provider contract, local fake, join intent and session controls            |
 | `packages/ai`            | Authorized evidence envelopes and deterministic local model execution      |
 | `packages/brand-studio`  | Typed profile, campaign, creative and deterministic local export contracts |
-| `packages/storage`       | Private object adapters, bounded local processing and reconciliation      |
-| `packages/integrations`  | Fake email, WhatsApp cryptography and Stripe-style signature foundations  |
-| `supabase/migrations`    | Additive schema, RLS, identity, legal, commercial and workflow migrations |
-| `tests`                  | Database, HTTP, contract, persistence and browser acceptance evidence     |
-| `docs`                   | Architecture, security, decisions, operations, projects and playbooks     |
-| `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                     |
+| `packages/storage`       | Private object adapters, bounded local processing and reconciliation       |
+| `packages/integrations`  | Fake email, WhatsApp cryptography and Stripe-style signature foundations   |
+| `supabase/migrations`    | Additive schema, RLS, identity, legal, commercial and workflow migrations  |
+| `tests`                  | Database, HTTP, contract, persistence and browser acceptance evidence      |
+| `docs`                   | Architecture, security, decisions, operations, projects and playbooks      |
+| `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                      |
 
 Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md), [security](docs/security/access-control.md) and [ADR 0012](docs/decisions/0012-governed-youtube-and-repository-pipelines.md).

@@ -7,7 +7,9 @@ if (productionHashes.some((hash) => !/^[A-Za-z0-9+/]{43}=$/.test(hash)))
   throw new Error("Invalid marketing script hash");
 
 export default {
-  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
+  distDir:
+    process.env.KXRA_NEXT_DIST_DIR ||
+    (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
   outputFileTracingRoot: path.resolve("../.."),
   poweredByHeader: false,
   experimental: { sri: { algorithm: "sha256" } },

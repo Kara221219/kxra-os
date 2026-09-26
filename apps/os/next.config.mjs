@@ -1,6 +1,8 @@
 import path from "node:path";
 export default {
-  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
+  distDir:
+    process.env.KXRA_NEXT_DIST_DIR ||
+    (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
   outputFileTracingRoot: path.resolve("../.."),
   poweredByHeader: false,
   async headers() {

@@ -2,6 +2,8 @@
 
 This playbook prepares a reviewable staging deployment. It does not authorize public release.
 
+Complete the [staging connection and preflight](staging-connection-and-preflight.md) first. Its environment separation and fail-closed build gate are mandatory.
+
 1. Create a separate Vercel project rooted at `apps/marketing`. Do not copy private OS, model, billing, Storage or provider secrets into it.
 2. Create a dedicated PostgreSQL login outside Git. Grant it membership only in the anonymous ingress role and verify it cannot assume `authenticated`, read tables or call another KXRA function. Set its URL as `KXRA_PUBLIC_DATABASE_URL` in marketing staging only.
 3. Generate a unique 64-plus-character `KXRA_PUBLIC_INGRESS_SECRET` in the provider secret store. Do not reuse the OS session/join secret.
