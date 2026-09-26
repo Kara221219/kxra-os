@@ -19,6 +19,7 @@ const marketingForbiddenNames = [
   "KXRA_JOIN_SECRET",
   "KXRA_WORKER_DATABASE_URL",
   "KXRA_AI_WORKER_DATABASE_URL",
+  "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_STORAGE_SECRET_KEY",
@@ -155,6 +156,7 @@ function osConfiguration(environment, findings) {
     "KXRA_BILLING_ENABLED",
     "KXRA_WHATSAPP_ENABLED",
     "KXRA_TELEMETRY_ENABLED",
+    "KXRA_PUBLIC_WEB_ENABLED",
   ])
     if (environment[name] !== "false")
       findings.push(`${name}: must remain false for core staging`);
@@ -162,6 +164,7 @@ function osConfiguration(environment, findings) {
     "SUPABASE_STORAGE_SECRET_KEY",
     "KXRA_WORKER_DATABASE_URL",
     "KXRA_AI_WORKER_DATABASE_URL",
+    "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",

@@ -100,6 +100,37 @@ test("Brand Studio HTTP completes an exact source-to-export journey without cros
   assert.equal(sourceResponse.status, 201, await sourceResponse.clone().text());
   const source = await sourceResponse.json();
 
+  const refreshRequestId = crypto.randomUUID();
+  const refreshResponse = await request(
+    `/sources/${source.source_id}/refresh`,
+    partner,
+    { expected_version: 1, request_id: refreshRequestId },
+  );
+  assert.equal(
+    refreshResponse.status,
+    202,
+    await refreshResponse.clone().text(),
+  );
+  const refresh = await refreshResponse.json();
+  assert.equal(refresh.state, "PENDING");
+  const refreshReplay = await request(
+    `/sources/${source.source_id}/refresh`,
+    partner,
+    { expected_version: 1, request_id: refreshRequestId },
+  );
+  assert.equal(refreshReplay.status, 202, await refreshReplay.clone().text());
+  assert.equal(
+    (await refreshReplay.json()).acquisition_id,
+    refresh.acquisition_id,
+  );
+
+  const craftedRefresh = await request(
+    `/sources/${crypto.randomUUID()}/refresh`,
+    partner,
+    { expected_version: 1, request_id: crypto.randomUUID() },
+  );
+  assert.equal(craftedRefresh.status, 409);
+
   const profileResponse = await request("/profiles", partner, {
     project_id: projectTwo,
     source_version_id: source.source_version_id,

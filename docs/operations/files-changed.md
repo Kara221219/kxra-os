@@ -2,6 +2,40 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 26 September Phase 2 Slice 23
+
+Governed Brand Studio website-source acquisition:
+
+- `supabase/migrations/0062_brand_source_acquisition.sql`
+- `packages/integrations/public-web.ts`
+- `packages/integrations/public-web-worker.ts`
+- `scripts/public-web-worker.ts`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/lib/brand-studio.ts`
+- `apps/os/components/BrandStudio.tsx`
+- `.env.example`, `package.json` and `scripts/staging-config.mjs`
+
+Acceptance and regression coverage:
+
+- `tests/brand-source-acquisition.test.ts`
+- `tests/public-web.test.ts`
+- `tests/brand-studio-http.test.ts`
+- `tests/e2e/brand-studio.spec.ts`
+- access-matrix, schema-count, control-plane and staging configuration tests
+
+Architecture, security and operating evidence:
+
+- `README.md`
+- `docs/architecture/system.md`
+- `docs/decisions/0026-address-pinned-brand-source-acquisition.md`
+- `docs/security/brand-source-acquisition-threat-model.md`
+- `docs/security/access-control.md`
+- `docs/playbooks/brand-source-acquisition-staging.md`
+- `docs/playbooks/staging-connection-and-preflight.md`
+- current acceptance, progress, handover, work-log and file-inventory records
+
+No live website, hosted worker, credential, external model, publication, deployment or production target is added. The worker is disabled by default and its database credential is prohibited in the core OS and marketing environments.
+
 ## 25 September Phase 2 Slice 8
 
 - `apps/marketing/**` — independent public application, exact disabled snapshot, routes, layered presentation and accessible forms
@@ -179,6 +213,29 @@ Secure private-file and knowledge implementation:
 - `tests/customer-service-http.test.ts`
 - `tests/customer-service.test.ts`
 - `tests/e2e/customer-service.spec.ts`
+
+## Phase 2 Slice 23 additions
+
+- `.env.example`
+- `apps/os/app/api/[...path]/route.ts`
+- `apps/os/components/BrandStudio.tsx`
+- `apps/os/lib/brand-studio.ts`
+- `package.json`
+- `packages/integrations/public-web.ts`
+- `packages/integrations/public-web-worker.ts`
+- `scripts/public-web-worker.ts`
+- `scripts/staging-config.mjs`
+- `supabase/migrations/0062_brand_source_acquisition.sql`
+- `tests/brand-source-acquisition.test.ts`
+- `tests/brand-studio-http.test.ts`
+- `tests/e2e/brand-studio.spec.ts`
+- `tests/public-web.test.ts`
+- `tests/staging-config.test.ts`
+- `docs/decisions/0026-address-pinned-brand-source-acquisition.md`
+- `docs/security/brand-source-acquisition-threat-model.md`
+- `docs/playbooks/brand-source-acquisition-staging.md`
+
+The slice adds no real website request, provider credential, hosted worker, external send, publication or deployment.
 
 Acceptance and regression coverage:
 

@@ -38,8 +38,9 @@ The private project may contain only this initial profile:
 | `KXRA_BILLING_ENABLED`                 | `false`                                                                  |
 | `KXRA_WHATSAPP_ENABLED`                | `false`                                                                  |
 | `KXRA_TELEMETRY_ENABLED`               | `false`                                                                  |
+| `KXRA_PUBLIC_WEB_ENABLED`              | `false`                                                                  |
 
-Do not add Storage, worker, OpenAI, Stripe, Trigger.dev, Resend, PostHog, Sentry or WhatsApp credentials during core staging. Do not add legacy Supabase `anon` or `service_role` keys.
+Do not add Storage, worker, Brand-source worker, OpenAI, Stripe, Trigger.dev, Resend, PostHog, Sentry or WhatsApp credentials during core staging. Do not add legacy Supabase `anon` or `service_role` keys.
 
 The public project may contain only:
 
@@ -55,7 +56,7 @@ The public project must not receive Supabase Auth, private OS, model, billing, S
 
 ## 3. Supabase database and Auth boundary
 
-Apply all 61 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role.
+Apply all 62 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role.
 
 Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current Supabase publishable key for the browser. Add a component-specific secret key only when a later Storage worker slice is approved.
 

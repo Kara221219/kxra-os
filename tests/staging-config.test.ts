@@ -24,6 +24,7 @@ const os = {
   KXRA_BILLING_ENABLED: "false",
   KXRA_WHATSAPP_ENABLED: "false",
   KXRA_TELEMETRY_ENABLED: "false",
+  KXRA_PUBLIC_WEB_ENABLED: "false",
 };
 const marketing = {
   ...common,

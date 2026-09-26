@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assertGlobalAddress,
+  extractPublicSourceText,
   fetchPublicSnapshot,
   type PinnedPublicTransport,
 } from "../packages/integrations/public-web";
@@ -34,6 +35,49 @@ test("AT-27 public source fetch pins validated addresses and revalidates redirec
   assert.equal(result.sha256.length, 64);
   assert.deepEqual(calls[0].addresses, ["93.184.216.34"]);
   assert.equal(calls[1].addresses[0].startsWith("2606:"), true);
+});
+
+test("AT-35 public source extraction removes active markup and decodes text", () => {
+  assert.equal(
+    extractPublicSourceText(
+      Buffer.from(
+        "<html><style>hidden</style><script>attack()</script><body><h1>KXRA &amp; Co</h1><p>Useful&nbsp;evidence.</p></body></html>",
+      ),
+      "text/html",
+    ),
+    "KXRA & Co Useful evidence.",
+  );
+  assert.throws(
+    () =>
+      extractPublicSourceText(
+        Buffer.from("<script>only()</script>"),
+        "text/html",
+      ),
+    /PUBLIC_WEB_TEXT_EMPTY/,
+  );
+});
+
+test("AT-35 streaming source bodies stop at the byte limit without content-length", async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      controller.enqueue(new Uint8Array(5));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await assert.rejects(
+    fetchPublicSnapshot({
+      inputUrl: "https://example.com",
+      maximumBytes: 9,
+      resolve: async () => ["93.184.216.34"],
+      transport: async () =>
+        new Response(body, { headers: { "content-type": "text/plain" } }),
+    }),
+    /PUBLIC_WEB_CONTENT_TOO_LARGE/,
+  );
+  assert.equal(cancelled, true);
 });
 
 test("AT-27 public source fetch rejects private DNS and private redirect targets", async () => {

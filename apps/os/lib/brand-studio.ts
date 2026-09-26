@@ -67,11 +67,21 @@ export async function loadBrandStudio(
         source.source_type,source.locator,source.rights_basis,source.state,
         source.current_version,version.id as source_version_id,
         version.content_sha256,version.fetch_state,version.security_result,
-        version.source_classification,source.created_at
+        version.source_classification,source.created_at,
+        acquisition.id as latest_acquisition_id,
+        acquisition.state as latest_acquisition_state,
+        acquisition.failure_code as latest_acquisition_failure,
+        acquisition.created_at as latest_acquisition_at
        from kxra.brand_sources source
        join kxra.projects project on project.id=source.project_id
        join kxra.brand_source_versions version
         on version.source_id=source.id and version.version=source.current_version
+       left join lateral(
+        select item.id,item.state,item.failure_code,item.created_at
+        from kxra.brand_source_acquisitions item
+        where item.source_id=source.id
+        order by item.created_at desc,item.id desc limit 1
+       ) acquisition on true
        order by source.created_at desc,source.id desc`,
     ),
     query(

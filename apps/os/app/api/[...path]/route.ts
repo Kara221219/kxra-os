@@ -949,6 +949,32 @@ async function handle(req: Request, ctx: Context) {
         ]);
         return json(rows[0], 201);
       }
+      if (
+        method === "POST" &&
+        p[1] === "sources" &&
+        p[2] &&
+        p[3] === "refresh" &&
+        !p[4]
+      ) {
+        const sourceId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            expected_version: positiveVersion,
+            request_id: uuid,
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{
+          acquisition_id: string;
+          state: string;
+          input_sha256: string;
+        }>(a, "select * from kxra.request_brand_source_refresh($1,$2,$3)", [
+          sourceId,
+          input.expected_version,
+          input.request_id,
+        ]);
+        return json(rows[0], 202);
+      }
       if (method === "POST" && p[1] === "profiles" && !p[2]) {
         const input = z
           .object({

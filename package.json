@@ -33,6 +33,8 @@
     "worker:files": "tsx scripts/file-worker.ts --once",
     "worker:files:watch": "tsx scripts/file-worker.ts --watch",
     "worker:files:reconcile": "tsx scripts/file-worker.ts --reconcile",
+    "worker:public-web": "tsx scripts/public-web-worker.ts",
+    "worker:public-web:watch": "tsx scripts/public-web-worker.ts --watch",
     "db:start": "node scripts/database.mjs start",
     "db:stop": "node scripts/database.mjs stop",
     "db:reset": "node scripts/database.mjs reset",

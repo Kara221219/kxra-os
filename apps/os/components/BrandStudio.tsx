@@ -11,10 +11,15 @@ type Source = {
   source_type: string;
   locator: string | null;
   rights_basis: string;
+  current_version: number;
   source_version_id: string;
   fetch_state: string;
   security_result: string;
   source_classification: string;
+  latest_acquisition_id: string | null;
+  latest_acquisition_state: string | null;
+  latest_acquisition_failure: string | null;
+  latest_acquisition_at: string | null;
   created_at: string;
 };
 type ProfileData = {
@@ -191,10 +196,10 @@ function SourceAndProfileForm({ projects }: { projects: Project[] }) {
     >
       <h2>Create a source-linked profile</h2>
       <p>
-        Website fetching is disabled. Supply a public HTTPS address and paste
-        the public text you want KXRA to use, or leave the address blank for a
-        manual source. Every inferred field remains a draft until you approve
-        it.
+        Supply a public HTTPS address and paste the public text you want KXRA to
+        use, or leave the address blank for a manual source. A website source
+        can later be refreshed by the separately configured acquisition worker.
+        Every inferred field remains a draft until you approve it.
       </p>
       <label>
         Project
@@ -258,6 +263,69 @@ function SourceAndProfileForm({ projects }: { projects: Project[] }) {
       </button>
       {message && <p role="status">{message}</p>}
     </form>
+  );
+}
+
+function SourceCard({ source }: { source: Source }) {
+  const hydrated = useHydrated();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  async function refresh() {
+    setBusy(true);
+    setMessage("");
+    try {
+      await request(`/api/brand-studio/sources/${source.id}/refresh`, {
+        expected_version: source.current_version,
+        request_id: crypto.randomUUID(),
+      });
+      setMessage("Website refresh queued for secure acquisition.");
+      window.location.reload();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Refresh unavailable",
+      );
+      setBusy(false);
+    }
+  }
+  return (
+    <article className="record">
+      <div className="record-top">
+        <div>
+          <p className="eyebrow">{source.project_code}</p>
+          <h3>{source.locator || "Manual source"}</h3>
+        </div>
+        <span className="badge">v{source.current_version}</span>
+      </div>
+      <p>
+        {source.source_classification} · {source.fetch_state} ·{" "}
+        {source.security_result}
+      </p>
+      {source.latest_acquisition_state && (
+        <p role="status">
+          Latest acquisition:{" "}
+          {source.latest_acquisition_state.replaceAll("_", " ")}
+          {source.latest_acquisition_failure
+            ? ` · ${source.latest_acquisition_failure.replaceAll("_", " ")}`
+            : ""}
+        </p>
+      )}
+      {source.source_type === "WEBSITE" && (
+        <button
+          type="button"
+          disabled={
+            !hydrated ||
+            busy ||
+            ["PENDING", "RUNNING", "RETRY"].includes(
+              source.latest_acquisition_state || "",
+            )
+          }
+          onClick={refresh}
+        >
+          {busy ? "Queueing…" : "Refresh website evidence"}
+        </button>
+      )}
+      {message && <p role="status">{message}</p>}
+    </article>
   );
 }
 
@@ -911,10 +979,22 @@ export default function BrandStudio({
       </div>
       <p className="notice">
         Source snapshots and generated drafts stay inside the selected project.
-        Export requires an exact five-part review. Publication, scheduling,
-        website fetching and external AI generation remain disabled.
+        Export requires an exact five-part review. Publication, scheduling, and
+        external AI generation remain disabled. Website refresh runs only
+        through the separately enabled, address-pinned acquisition worker.
       </p>
       <SourceAndProfileForm projects={accessibleProjects} />
+      <section className="studio-section">
+        <h2>Source evidence</h2>
+        <div className="record-list">
+          {sources.map((source) => (
+            <SourceCard source={source} key={source.id} />
+          ))}
+          {!sources.length && (
+            <div className="empty">No source evidence yet.</div>
+          )}
+        </div>
+      </section>
       <section className="studio-section">
         <h2>Brand profiles</h2>
         <div className="record-list">

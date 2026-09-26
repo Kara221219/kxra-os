@@ -1569,6 +1569,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "brand_profile_evidence",
       "brand_profile_versions",
       "brand_profiles",
+      "brand_source_acquisitions",
       "brand_source_versions",
       "brand_sources",
       "budget_policies",

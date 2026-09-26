@@ -70,6 +70,8 @@ test("Brand Studio completes the governed customer journey at desktop and mobile
       name: "Create a source-linked profile",
     }),
   });
+  const websiteUrl = `https://${marker}.example.test/about`;
+  await profileForm.getByLabel("Public website").fill(websiteUrl);
   await profileForm
     .getByLabel("Supplied source snapshot")
     .fill(`${profileName} helps UK small businesses improve operations.`);
@@ -85,6 +87,22 @@ test("Brand Studio completes the governed customer journey at desktop and mobile
   await profileForm
     .getByRole("button", { name: "Create draft profile" })
     .click();
+
+  const sourceCard = page.locator("article.record").filter({
+    has: page.getByRole("heading", { name: websiteUrl, exact: true }),
+  });
+  await expect(sourceCard).toBeVisible();
+  await sourceCard
+    .getByRole("button", { name: "Refresh website evidence" })
+    .click();
+  await expect(
+    page
+      .locator("article.record")
+      .filter({
+        has: page.getByRole("heading", { name: websiteUrl, exact: true }),
+      })
+      .getByText(/Latest acquisition: PENDING/i),
+  ).toBeVisible();
 
   let profileCard = page.locator("article.record").filter({
     has: page.getByRole("heading", { name: profileName, exact: true }),
