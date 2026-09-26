@@ -90,6 +90,41 @@ test("partner navigation and crafted project URL protect private work", async ({
   ).toBeVisible();
 });
 
+test("customer custom-project intake stays separate from subscription tools", async ({
+  page,
+}) => {
+  await fixtureLogin(page, "partner");
+  await navigate(page, "Custom Projects");
+  await expect(
+    page.getByRole("heading", { name: "Custom projects", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("A subscription does not include custom implementation."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Record KXRA triage", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Issue a separate proposal", { exact: true }),
+  ).toHaveCount(0);
+  const problem = `Browser custom need ${Date.now()}`;
+  await page.getByLabel("Problem or need").fill(problem);
+  await page
+    .getByLabel("Desired outcome")
+    .fill("A separately scoped synthetic browser outcome.");
+  await page
+    .getByLabel("Constraints, systems or deadlines")
+    .fill("No external provider or production delivery.");
+  await page.getByRole("button", { name: "Submit private request" }).click();
+  const requestCard = page
+    .locator("article.record")
+    .filter({ has: page.getByRole("heading", { name: problem, exact: true }) });
+  await expect(requestCard).toBeVisible();
+  await expect(
+    requestCard.getByText("SUBMITTED", { exact: true }),
+  ).toBeVisible();
+});
+
 test("AT-11 Ask requires one project and reports insufficient evidence exactly", async ({
   page,
 }) => {

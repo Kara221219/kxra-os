@@ -757,11 +757,13 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
   tx(async (db) => {
     const organisationId = crypto.randomUUID();
     const customerAdmin = crypto.randomUUID();
+    const customerMember = crypto.randomUUID();
     await db.query(
       "insert into kxra.organisations(id,name,slug) values($1,'Custom project customer',$2)",
       [organisationId, `custom-${crypto.randomUUID().slice(0, 8)}`],
     );
     await addAccount(db, customerAdmin, organisationId, "ORG_ADMIN");
+    await addAccount(db, customerMember, organisationId, "ORG_MEMBER");
     const managerMembership = await addAccount(
       db,
       ownerId,
@@ -800,6 +802,63 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
         ],
       )
     ).rows[0].id;
+    await as(db, customerMember, organisationId);
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int as n from kxra.custom_project_requests",
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (await db.query("select kxra.custom_project_management_status() as ok"))
+        .rows[0].ok,
+      false,
+    );
+    await denied(
+      db,
+      "select * from kxra.triage_custom_project_request($1,$2,$3,$4)",
+      [requestId, "Unauthorized triage", "[]", "TRIAGE"],
+    );
+
+    await as(db, ownerId, organisationId);
+    assert.equal(
+      (await db.query("select kxra.custom_project_management_status() as ok"))
+        .rows[0].ok,
+      true,
+    );
+    const triage = (
+      await db.query(
+        "select * from kxra.triage_custom_project_request($1,$2,$3,$4)",
+        [
+          requestId,
+          "The synthetic request is bounded and ready for a proposal.",
+          JSON.stringify([{ kind: "fixture", reference: "AT-34" }]),
+          "PROPOSAL_PENDING",
+        ],
+      )
+    ).rows[0];
+    assert.equal(triage.version, 1);
+
+    await as(db, customerAdmin, organisationId);
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int as n from kxra.custom_project_triage",
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select state from kxra.custom_project_requests where id=$1",
+          [requestId],
+        )
+      ).rows[0].state,
+      "PROPOSAL_PENDING",
+    );
     await denied(
       db,
       "select * from kxra.create_project_proposal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
@@ -870,17 +929,48 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
       `CP-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       "Synthetic custom project",
     ]);
-    await db.query("reset role");
+    await denied(
+      db,
+      "select kxra.record_custom_project_payment($1,$2,$3,$4,$5)",
+      [proposal.id, 30000, "USD", "RECEIVED", "synthetic-wrong-currency"],
+    );
+    const paymentId = (
+      await db.query<{ id: string }>(
+        "select kxra.record_custom_project_payment($1,$2,$3,$4,$5) as id",
+        [proposal.id, 30000, "GBP", "RECEIVED", "synthetic-deposit"],
+      )
+    ).rows[0].id;
+    assert.equal(
+      (
+        await db.query<{ id: string }>(
+          "select kxra.record_custom_project_payment($1,$2,$3,$4,$5) as id",
+          [proposal.id, 30000, "GBP", "RECEIVED", "synthetic-deposit"],
+        )
+      ).rows[0].id,
+      paymentId,
+    );
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          `select count(*)::int as n from kxra.audit_events
+           where action='custom_project.payment_recorded' and resource_id=$1`,
+          [paymentId],
+        )
+      ).rows[0].n,
+      1,
+    );
     await db.query(
-      `insert into kxra.custom_project_payments(
-        org_id,proposal_id,amount_minor,currency,state,evidence_reference,recorded_by
-       ) values($1,$2,30000,'GBP','RECEIVED',$3,$4)`,
-      [
-        organisationId,
-        proposal.id,
-        `synthetic-payment-${crypto.randomUUID()}`,
-        ownerId,
-      ],
+      "select kxra.record_custom_project_payment($1,$2,$3,$4,$5)",
+      [proposal.id, 10000, "GBP", "REFUNDED", "synthetic-refund"],
+    );
+    await denied(db, "select kxra.activate_custom_project($1,$2,$3)", [
+      proposal.id,
+      `CP-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      "Synthetic custom project",
+    ]);
+    await db.query(
+      "select kxra.record_custom_project_payment($1,$2,$3,$4,$5)",
+      [proposal.id, 10000, "GBP", "RECEIVED", "synthetic-deposit-balance"],
     );
     await as(db, ownerId, organisationId);
     const projectId = (

@@ -1446,6 +1446,13 @@ async function handle(req: Request, ctx: Context) {
       throw new HttpError(404, "Not found");
     }
     if (p[0] === "custom-projects") {
+      if (method === "GET" && p[1] === "authority" && !p[2]) {
+        const rows = await query<{ can_manage: boolean }>(
+          a,
+          "select kxra.custom_project_management_status() as can_manage",
+        );
+        return json(rows[0]);
+      }
       if (method === "GET" && !p[1]) {
         return json(
           await query(
@@ -1482,6 +1489,33 @@ async function handle(req: Request, ctx: Context) {
             input.constraints,
             input.reuse_consent,
             input.request_id,
+          ],
+        );
+        return json(rows[0], 201);
+      }
+      if (p[1] && p[2] === "triage" && !p[3] && method === "POST") {
+        const requestId = uuid.parse(p[1]);
+        const input = z
+          .object({
+            assessment: z.string().trim().min(1).max(20000),
+            evidence: z.array(z.record(z.string(), z.unknown())).max(50),
+            next_state: z.enum([
+              "TRIAGE",
+              "CLARIFICATION",
+              "PROPOSAL_PENDING",
+              "REJECTED",
+            ]),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string; version: number }>(
+          a,
+          "select * from kxra.triage_custom_project_request($1,$2,$3,$4)",
+          [
+            requestId,
+            input.assessment,
+            JSON.stringify(input.evidence),
+            input.next_state,
           ],
         );
         return json(rows[0], 201);
@@ -1560,6 +1594,40 @@ async function handle(req: Request, ctx: Context) {
           [proposalId, input.proposal_hash, input.request_id],
         );
         return json(rows[0]);
+      }
+      if (
+        p[1] === "proposals" &&
+        p[2] &&
+        p[3] === "payments" &&
+        !p[4] &&
+        method === "POST"
+      ) {
+        const proposalId = uuid.parse(p[2]);
+        const input = z
+          .object({
+            amount_minor: z
+              .number()
+              .int()
+              .positive()
+              .max(Number.MAX_SAFE_INTEGER),
+            currency: z.string().regex(/^[A-Z]{3}$/),
+            state: z.enum(["PENDING", "RECEIVED", "REFUNDED", "FAILED"]),
+            evidence_reference: z.string().trim().min(3).max(500),
+          })
+          .strict()
+          .parse(await body(req));
+        const rows = await query<{ id: string }>(
+          a,
+          "select kxra.record_custom_project_payment($1,$2,$3,$4,$5) as id",
+          [
+            proposalId,
+            input.amount_minor,
+            input.currency,
+            input.state,
+            input.evidence_reference,
+          ],
+        );
+        return json(rows[0], 201);
       }
       if (
         p[1] === "proposals" &&

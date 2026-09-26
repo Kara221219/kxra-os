@@ -12,6 +12,7 @@ const config = JSON.parse(
 const admin = new pg.Pool({ ...config, user: os.userInfo().username });
 const base = testOrigin;
 const kxraOrg = "10000000-0000-4000-8000-000000000001";
+const ownerId = "20000000-0000-4000-8000-000000000001";
 const partnerId = "20000000-0000-4000-8000-000000000002";
 const p2 = "30000000-0000-4000-8000-000000000002";
 
@@ -87,10 +88,21 @@ function digest(value: string) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks revocation", async () => {
+test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks revocation", async (t) => {
   const organisationId = crypto.randomUUID();
   const projectId = crypto.randomUUID();
   const slug = `http-tenant-${crypto.randomUUID().slice(0, 8)}`;
+  let managerMembership: string | undefined;
+  t.after(async () => {
+    if (managerMembership) {
+      await admin.query(
+        `update kxra.organisation_memberships
+         set state='REVOKED',revoked_at=coalesce(revoked_at,now()),version=version+1
+         where id=$1 and state='ACTIVE'`,
+        [managerMembership],
+      );
+    }
+  });
   await admin.query(
     "insert into kxra.organisations(id,name,slug) values($1,'HTTP Customer',$2)",
     [organisationId, slug],
@@ -160,7 +172,144 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
     request_id: crypto.randomUUID(),
   });
   assert.equal(submitted.status, 201, await submitted.clone().text());
+  const requestId = (await submitted.json()).id;
   assert.equal((await request(jar, "/api/custom-projects")).status, 200);
+  assert.deepEqual(
+    await (await request(jar, "/api/custom-projects/authority")).json(),
+    { can_manage: false },
+  );
+  assert.equal(
+    (
+      await jsonRequest(jar, `/api/custom-projects/${requestId}/triage`, {
+        assessment: "Customer cannot author internal triage",
+        evidence: [],
+        next_state: "PROPOSAL_PENDING",
+      })
+    ).status,
+    409,
+  );
+
+  managerMembership = (
+    await admin.query<{ id: string }>(
+      `insert into kxra.organisation_memberships(
+        org_id,account_id,security_role,relationship_type,state,display_name,grant_source
+       ) values($1,$2,'ORG_ADMIN','INTERNAL','ACTIVE','HTTP KXRA manager','AT_HTTP')
+       returning id`,
+      [organisationId, ownerId],
+    )
+  ).rows[0].id;
+  await admin.query(
+    `insert into kxra.capability_grants(
+      org_id,membership_id,capability,resource_type,state,issued_by,reason
+     ) values($1,$2,'custom_project.manage','ORGANISATION','ACTIVE',$3,
+      'Synthetic HTTP custom-project authority')`,
+    [organisationId, managerMembership, ownerId],
+  );
+  const legalDocumentId = crypto.randomUUID();
+  const legalContent = "Synthetic HTTP custom-project terms; not legal advice.";
+  const legalHash = digest(legalContent);
+  await admin.query(
+    `insert into kxra.legal_documents(
+      id,org_id,document_type,audience,jurisdiction,version,title,rendered_content,
+      content_sha256,immutable_object_key,status,effective_at,legal_reviewer_reference
+     ) values($1,$2,'CUSTOM_PROJECT','ALL','GB',1,'Synthetic custom terms',$3,$4,$5,
+      'APPROVED',now(),'SYNTHETIC_TEST_REVIEWER_NOT_COUNSEL')`,
+    [
+      legalDocumentId,
+      organisationId,
+      legalContent,
+      legalHash,
+      `synthetic://legal/${legalDocumentId}/1`,
+    ],
+  );
+  const ownerJar = await login("owner");
+  assert.equal(
+    (
+      await jsonRequest(ownerJar, "/api/context", {
+        organisation_id: organisationId,
+      })
+    ).status,
+    200,
+  );
+  assert.deepEqual(
+    await (await request(ownerJar, "/api/custom-projects/authority")).json(),
+    { can_manage: true },
+  );
+  const triaged = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/${requestId}/triage`,
+    {
+      assessment: "Synthetic HTTP request is ready for a bounded proposal.",
+      evidence: [{ reference: "AT-34-HTTP" }],
+      next_state: "PROPOSAL_PENDING",
+    },
+  );
+  assert.equal(triaged.status, 201, await triaged.clone().text());
+  const proposed = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/${requestId}/proposals`,
+    {
+      scope: "Deliver one bounded synthetic customer outcome",
+      exclusions: "No deployment or external send",
+      assumptions: "Customer supplies approved inputs",
+      milestones: [{ key: "m1", title: "Synthetic delivery" }],
+      price_minor: 12000,
+      currency: "GBP",
+      tax_treatment: "Synthetic VAT-exclusive fixture",
+      payment_gate: "DEPOSIT",
+      deposit_minor: 3000,
+      legal_document_id: legalDocumentId,
+      legal_document_version: 1,
+      legal_document_sha256: legalHash,
+      valid_until: new Date(Date.now() + 86_400_000).toISOString(),
+    },
+  );
+  assert.equal(proposed.status, 201, await proposed.clone().text());
+  const proposal = await proposed.json();
+  const accepted = await jsonRequest(
+    jar,
+    `/api/custom-projects/proposals/${proposal.id}/accept`,
+    {
+      proposal_hash: proposal.proposal_hash,
+      request_id: crypto.randomUUID(),
+    },
+  );
+  assert.equal(accepted.status, 200, await accepted.clone().text());
+  assert.equal(
+    (
+      await jsonRequest(
+        jar,
+        `/api/custom-projects/proposals/${proposal.id}/payments`,
+        {
+          amount_minor: 3000,
+          currency: "GBP",
+          state: "RECEIVED",
+          evidence_reference: "forged-customer-payment",
+        },
+      )
+    ).status,
+    409,
+  );
+  const paid = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/proposals/${proposal.id}/payments`,
+    {
+      amount_minor: 3000,
+      currency: "GBP",
+      state: "RECEIVED",
+      evidence_reference: "synthetic-http-deposit",
+    },
+  );
+  assert.equal(paid.status, 201, await paid.clone().text());
+  const activated = await jsonRequest(
+    ownerJar,
+    `/api/custom-projects/proposals/${proposal.id}/activate`,
+    {
+      project_code: `HTTP-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      project_name: "HTTP synthetic delivery project",
+    },
+  );
+  assert.equal(activated.status, 201, await activated.clone().text());
 
   await admin.query(
     `update kxra.organisation_memberships
@@ -184,6 +333,12 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
   assert.deepEqual(
     await (await request(jar, "/api/custom-projects")).json(),
     [],
+  );
+  await admin.query(
+    `update kxra.organisation_memberships
+     set state='REVOKED',revoked_at=now(),version=version+1
+     where id=$1`,
+    [managerMembership],
   );
 });
 

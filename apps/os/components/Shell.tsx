@@ -6,6 +6,7 @@ const ownerNav = [
   ["Idea Inbox", "ideas"],
   ["Projects", "projects"],
   ["Business Tools", "tools"],
+  ["Custom Projects", "custom-projects"],
   ["Brand Studio", "brand-studio"],
   ["Research", "sources"],
   ["Experiments", "experiments"],

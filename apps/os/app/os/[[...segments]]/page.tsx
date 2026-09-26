@@ -24,7 +24,10 @@ import {
   WorkLogView,
 } from "../../../components/ControlPlaneViews";
 import ProjectWorkspaceView from "../../../components/ProjectWorkspaceView";
-import { CustomProjectRequestForm } from "../../../components/CommercialForms";
+import {
+  CustomProjectWorkspace,
+  type CustomProjectRequest,
+} from "../../../components/CommercialForms";
 import BrandStudio from "../../../components/BrandStudio";
 import RoutineRegistry, {
   type RoutineRow,
@@ -585,66 +588,61 @@ export default async function Workspace({
         </>
       );
     } else if (section === "custom-projects") {
-      const requests = await query<{
-        id: string;
-        problem: string;
-        desired_outcome: string;
-        state: string;
-        reuse_consent: boolean;
-        created_at: string;
-        proposals: {
-          id: string;
-          version: number;
-          state: string;
-          price_minor: number;
-          currency: string;
-          valid_until: string;
-        }[];
-      }>(
+      const authority = await query<{ can_manage: boolean }>(
         a,
-        `select request.id,request.problem,request.desired_outcome,request.state,
-          request.reuse_consent,request.created_at,
+        "select kxra.custom_project_management_status() as can_manage",
+      );
+      const requests = await query<CustomProjectRequest>(
+        a,
+        `select request.id,request.problem,request.desired_outcome,request.constraints,
+          request.state,request.reuse_consent,request.created_at,
           coalesce(jsonb_agg(jsonb_build_object(
             'id',proposal.id,'version',proposal.version,'state',proposal.state,
+            'scope',proposal.scope,'exclusions',proposal.exclusions,
+            'assumptions',proposal.assumptions,'milestones',proposal.milestones,
             'price_minor',proposal.price_minor,'currency',proposal.currency,
-            'valid_until',proposal.valid_until
+            'tax_treatment',proposal.tax_treatment,'payment_gate',proposal.payment_gate,
+            'deposit_minor',proposal.deposit_minor,'proposal_hash',proposal.proposal_hash,
+            'valid_until',proposal.valid_until,
+            'legal_document_version',proposal.legal_document_version,
+            'accepted',exists(select 1 from kxra.project_proposal_acceptances acceptance
+              where acceptance.proposal_id=proposal.id),
+            'received_minor',coalesce(payment.received_minor,0),
+            'refunded_minor',coalesce(payment.refunded_minor,0)
           ) order by proposal.version) filter(where proposal.id is not null),'[]'::jsonb) as proposals
          from kxra.custom_project_requests request
          left join kxra.project_proposals proposal on proposal.request_id=request.id
+         left join lateral(
+          select coalesce(sum(amount_minor) filter(where state='RECEIVED'),0)::bigint as received_minor,
+           coalesce(sum(amount_minor) filter(where state='REFUNDED'),0)::bigint as refunded_minor
+          from kxra.custom_project_payments where proposal_id=proposal.id
+         ) payment on true
          group by request.id order by request.created_at desc`,
       );
+      const legalDocuments = authority[0]?.can_manage
+        ? await query<{
+            id: string;
+            version: number;
+            title: string;
+            content_sha256: string;
+          }>(
+            a,
+            `select id,version,title,content_sha256 from kxra.legal_documents
+             where document_type='CUSTOM_PROJECT' and status='APPROVED'
+              and effective_at<=now() order by version desc,title`,
+          )
+        : [];
       content = (
         <>
           <Heading
             title="Custom projects"
             sub="Private requests and separately scoped KXRA proposals."
           />
-          <CustomProjectRequestForm />
-          <div className="record-list">
-            {requests.map((request) => (
-              <article className="record" key={request.id}>
-                <div className="record-top">
-                  <h3>{request.problem}</h3>
-                  <span className="badge">{request.state}</span>
-                </div>
-                <p>{request.desired_outcome}</p>
-                <footer>
-                  <span>{request.proposals.length} proposal version(s)</span>
-                  <span>
-                    {request.reuse_consent
-                      ? "Generalized-learning consent recorded"
-                      : "No reuse consent"}
-                  </span>
-                  <span>
-                    {new Date(request.created_at).toLocaleDateString("en-GB")}
-                  </span>
-                </footer>
-              </article>
-            ))}
-            {!requests.length && (
-              <div className="empty">No custom project requests yet.</div>
-            )}
-          </div>
+          <CustomProjectWorkspace
+            requests={requests}
+            canManage={authority[0]?.can_manage || false}
+            legalDocuments={legalDocuments}
+          />
         </>
       );
     } else if (section === "agents") {
