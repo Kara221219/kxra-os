@@ -4,7 +4,7 @@ Updated: 26 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 24 Brand evidence correction passes the complete local contract and awaits commit/remote checks. Slice 23 implementation commit `650f69b83ffc38ba9102edea4f29b6fd6a66d36b` passed full GitHub CI run 36272984825 and CodeQL run 36272984827.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 24 implementation commit `acad98d6f5015ea1411a83e62196332d8a1ee2e3` passed the complete local contract, full GitHub CI run 36275125302 and CodeQL run 36275125295.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–23 are committed remotely. Slice 24 adds migration `0063`; the current local schema has 163 RLS-protected tables and 140 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–24 are committed remotely. Slice 24 adds migration `0063`; the current schema has 163 RLS-protected tables and 140 audited public functions.
 
 Slice 8 adds:
 
