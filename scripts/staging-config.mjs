@@ -123,7 +123,7 @@ function common(environment, findings) {
       findings.push(`${name}: fixture value prohibited`);
   for (const name of Object.keys(environment))
     if (
-      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION|APP_PASSWORD|PUBLIC_INGRESS_PASSWORD|ROLE_CONFIRMATION)$/.test(
+      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION|APP_PASSWORD|PUBLIC_INGRESS_PASSWORD|ROLE_CONFIRMATION|OWNER_USER_ID|OWNER_EMAIL|OWNER_DISPLAY_NAME|OWNER_CONFIRMATION)$/.test(
         name,
       ) &&
       present(environment, name)

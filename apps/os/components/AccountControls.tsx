@@ -129,7 +129,7 @@ export default function AccountControls({
         preferences={preferences}
         hasActivePairing={hasActivePairing}
       />
-      <SecurityControls profile={profile} source={source} />
+      <SecurityControls profile={profile} source={source} role={role} />
       <section className="panel full-span">
         <h2>Project assignments</h2>
         <p>
@@ -332,19 +332,40 @@ function PreferencesForm({
 function SecurityControls({
   profile,
   source,
+  role,
 }: {
   profile: Profile;
   source?: string;
+  role: string;
 }) {
   const password = useAction();
   const mfa = useAction();
   const sessions = useAction();
   const router = useRouter();
   const localProvider = source === "fake-provider";
+  const hostedProvider = source === "supabase";
+  const providerAvailable = localProvider || hostedProvider;
+  const [enrollment, setEnrollment] = useState<{
+    qr_code: string;
+    secret: string;
+  } | null>(null);
   const proof = () =>
     (document.getElementById("mfa-proof") as HTMLInputElement)?.value;
-  const mfaRequest = (data: Record<string, unknown>) =>
-    request("/api/account/mfa", "POST", data).then(() => router.refresh());
+  const mfaRequest = async (data: Record<string, unknown>) => {
+    const result = (await request("/api/account/mfa", "POST", data)) as {
+      qr_code?: string;
+      secret?: string;
+    };
+    if (result.qr_code && result.secret)
+      setEnrollment({ qr_code: result.qr_code, secret: result.secret });
+    else if (
+      data.action === "begin" ||
+      data.action === "complete" ||
+      data.action === "remove"
+    )
+      setEnrollment(null);
+    router.refresh();
+  };
   return (
     <section className="panel full-span">
       <h2>Security</h2>
@@ -421,10 +442,26 @@ function SecurityControls({
               test evidence, not a production factor.
             </p>
           )}
+          {hostedProvider && enrollment && (
+            <div className="mfa-enrollment">
+              <img
+                src={enrollment.qr_code}
+                alt="KXRA OS authenticator QR code"
+              />
+              <p>
+                Scan this once with your authenticator. Manual key:{" "}
+                <code>{enrollment.secret}</code>
+              </p>
+            </div>
+          )}
           <label>
-            Provider proof
+            {hostedProvider ? "Six-digit authenticator code" : "Provider proof"}
             <input
               id="mfa-proof"
+              inputMode={hostedProvider ? "numeric" : undefined}
+              autoComplete={hostedProvider ? "one-time-code" : undefined}
+              pattern={hostedProvider ? "[0-9]{6}" : undefined}
+              maxLength={hostedProvider ? 6 : 200}
               defaultValue={
                 localProvider
                   ? profile.mfa_state === "RECOVERY_REQUIRED"
@@ -444,24 +481,41 @@ function SecurityControls({
                     "MFA enrollment started.",
                   )
                 }
-                disabled={mfa.busy || !localProvider}
+                disabled={mfa.busy || !providerAvailable}
               >
                 Begin enrollment
               </button>
             )}
             {profile.mfa_state === "ENROLLING" && (
-              <button
-                type="button"
-                onClick={() =>
-                  void mfa.run(
-                    () => mfaRequest({ action: "complete", proof: proof() }),
-                    "MFA enrollment recorded.",
-                  )
-                }
-                disabled={mfa.busy || !localProvider}
-              >
-                Complete enrollment
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void mfa.run(
+                      () => mfaRequest({ action: "complete", proof: proof() }),
+                      "MFA enrollment recorded.",
+                    )
+                  }
+                  disabled={mfa.busy || !providerAvailable}
+                >
+                  Complete enrollment
+                </button>
+                {hostedProvider && !enrollment && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() =>
+                      void mfa.run(
+                        () => mfaRequest({ action: "begin" }),
+                        "MFA enrollment restarted.",
+                      )
+                    }
+                    disabled={mfa.busy}
+                  >
+                    Restart enrollment
+                  </button>
+                )}
+              </>
             )}
             {profile.mfa_state === "ENROLLED" && (
               <>
@@ -473,39 +527,43 @@ function SecurityControls({
                       "Recent AAL2 challenge recorded.",
                     )
                   }
-                  disabled={mfa.busy || !localProvider}
+                  disabled={mfa.busy || !providerAvailable}
                 >
                   Verify now
                 </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() =>
-                    void mfa.run(
-                      () => mfaRequest({ action: "begin_recovery" }),
-                      "MFA recovery state recorded.",
-                    )
-                  }
-                  disabled={mfa.busy || !localProvider}
-                >
-                  Test recovery
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() =>
-                    void mfa.run(
-                      () => mfaRequest({ action: "remove", proof: proof() }),
-                      "MFA removed in the local provider.",
-                    )
-                  }
-                  disabled={mfa.busy || !localProvider}
-                >
-                  Remove
-                </button>
+                {localProvider && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() =>
+                      void mfa.run(
+                        () => mfaRequest({ action: "begin_recovery" }),
+                        "MFA recovery state recorded.",
+                      )
+                    }
+                    disabled={mfa.busy}
+                  >
+                    Test recovery
+                  </button>
+                )}
+                {role !== "KXRA_OWNER" && role !== "owner" && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() =>
+                      void mfa.run(
+                        () => mfaRequest({ action: "remove", proof: proof() }),
+                        "MFA removed.",
+                      )
+                    }
+                    disabled={mfa.busy || !providerAvailable}
+                  >
+                    Remove
+                  </button>
+                )}
               </>
             )}
-            {profile.mfa_state === "RECOVERY_REQUIRED" && (
+            {localProvider && profile.mfa_state === "RECOVERY_REQUIRED" && (
               <button
                 type="button"
                 onClick={() =>

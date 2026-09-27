@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 32
+
+- guarded singleton-owner `plan`/`apply`/`verify` operator with exact Auth, seed, runtime-role, branch and takeover checks
+- hosted Supabase TOTP enrollment, interrupted-factor reconciliation, six-digit verification, AMR-based owner step-up and provider-confirmed global sign-out
+- transient QR/manual-key Profile controls, owner factor-removal block and retired unsafe manual SQL path
+- owner/Auth integration tests, ADR 0035, threat model and complete staging-owner playbook
+- current README, architecture, access-control and operating evidence
+
+No owner identity, credential, factor secret, hosted mutation, provider activation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 31
 
 - guarded exact runtime-role `plan`/`apply`/`verify` operator after canonical-seed verification

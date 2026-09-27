@@ -5,6 +5,7 @@ import {
   owner,
   recentOwnerMfa,
   sameOrigin,
+  supabase,
   HttpError,
 } from "../../../lib/auth";
 import {
@@ -94,6 +95,12 @@ import {
   fakeEmailTransport,
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
+import {
+  prepareHostedTotp,
+  removeHostedTotp,
+  verifyHostedTotp,
+  type HostedMfaApi,
+} from "../../../../../packages/authz/supabase-mfa";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
 export const dynamic = "force-dynamic";
@@ -708,11 +715,6 @@ async function handle(req: Request, ctx: Context) {
         return json({ ok: true });
       }
       if (p[1] === "mfa" && method === "POST") {
-        if (!localMode() || a.source !== "fake-provider")
-          throw new HttpError(
-            503,
-            "MFA provider is unavailable in this environment",
-          );
         const input = z
           .object({
             action: z.enum([
@@ -727,41 +729,126 @@ async function handle(req: Request, ctx: Context) {
           })
           .strict()
           .parse(await body(req));
-        const provider = fakeAuthProvider();
-        const identity =
-          input.action === "begin"
-            ? await provider.beginMfaEnrollment(a.id)
-            : input.action === "complete"
-              ? await provider.completeMfaEnrollment(a.id, input.proof || "")
-              : input.action === "begin_recovery"
-                ? await provider.beginMfaRecovery(a.id)
-                : input.action === "recover"
-                  ? await provider.recoverMfa(a.id, input.proof || "")
-                  : input.action === "challenge"
-                    ? await provider.challengeMfa(a.id, input.proof || "")
-                    : await provider.removeMfa(a.id, input.proof || "");
-        if (input.action !== "challenge")
-          await query(a, "select kxra.record_mfa_state($1,$2)", [
-            identity.mfaState,
-            identity.factorReference || null,
+        if (localMode() && a.source === "fake-provider") {
+          const provider = fakeAuthProvider();
+          const identity =
+            input.action === "begin"
+              ? await provider.beginMfaEnrollment(a.id)
+              : input.action === "complete"
+                ? await provider.completeMfaEnrollment(a.id, input.proof || "")
+                : input.action === "begin_recovery"
+                  ? await provider.beginMfaRecovery(a.id)
+                  : input.action === "recover"
+                    ? await provider.recoverMfa(a.id, input.proof || "")
+                    : input.action === "challenge"
+                      ? await provider.challengeMfa(a.id, input.proof || "")
+                      : await provider.removeMfa(a.id, input.proof || "");
+          if (input.action !== "challenge")
+            await query(a, "select kxra.record_mfa_state($1,$2)", [
+              identity.mfaState,
+              identity.factorReference || null,
+            ]);
+          await issueLocalProviderSession(identity, a.session_version);
+          return json({ state: identity.mfaState, aal: identity.aal });
+        }
+        if (a.source !== "supabase")
+          throw new HttpError(503, "MFA provider is unavailable");
+        if (input.action === "remove" && a.security_role === "KXRA_OWNER")
+          throw new HttpError(
+            409,
+            "Owner MFA removal requires the reviewed recovery process",
+          );
+        if (["begin_recovery", "recover"].includes(input.action))
+          throw new HttpError(
+            400,
+            "Hosted MFA recovery requires a reviewed support process",
+          );
+        const client = await supabase();
+        const api = client.auth.mfa as unknown as HostedMfaApi;
+        if (input.action === "begin") {
+          const current = await query<{
+            provider_factor_ref: string | null;
+            mfa_state: string;
+          }>(
+            a,
+            "select provider_factor_ref,mfa_state from kxra.profiles where user_id=$1",
+            [a.id],
+          );
+          const enrollment = await prepareHostedTotp(
+            api,
+            current[0]?.provider_factor_ref,
+          );
+          if (enrollment.state === "ENROLLED") {
+            if (current[0]?.mfa_state === "NOT_ENROLLED")
+              await query(a, "select kxra.record_mfa_state('ENROLLING',$1)", [
+                enrollment.factorId,
+              ]);
+            await query(a, "select kxra.record_mfa_state('ENROLLED',$1)", [
+              enrollment.factorId,
+            ]);
+            return json({ state: "ENROLLED", aal: "aal1" });
+          }
+          try {
+            await query(a, "select kxra.record_mfa_state('ENROLLING',$1)", [
+              enrollment.factorId,
+            ]);
+          } catch (error) {
+            await api.unenroll({ factorId: enrollment.factorId });
+            throw error;
+          }
+          return json({
+            state: "ENROLLING",
+            factor_id: enrollment.factorId,
+            qr_code: enrollment.qrCode,
+            secret: enrollment.secret,
+          });
+        }
+        const factor = await query<{ provider_factor_ref: string | null }>(
+          a,
+          "select provider_factor_ref from kxra.profiles where user_id=$1",
+          [a.id],
+        );
+        const factorId = factor[0]?.provider_factor_ref;
+        if (!factorId) throw new HttpError(409, "MFA enrollment unavailable");
+        if (input.action === "complete") {
+          await verifyHostedTotp(api, factorId, input.proof || "");
+          await query(a, "select kxra.record_mfa_state('ENROLLED',$1)", [
+            factorId,
           ]);
-        await issueLocalProviderSession(identity, a.session_version);
-        return json({ state: identity.mfaState, aal: identity.aal });
+          return json({ state: "ENROLLED", aal: "aal2" });
+        }
+        if (input.action === "challenge") {
+          await verifyHostedTotp(api, factorId, input.proof || "");
+          return json({ state: "ENROLLED", aal: "aal2" });
+        }
+        await removeHostedTotp(api, factorId, input.proof || "");
+        await query(a, "select kxra.record_mfa_state($1,$2)", [
+          "NOT_ENROLLED",
+          null,
+        ]);
+        return json({ state: "NOT_ENROLLED", aal: "aal1" });
       }
       if (p[1] === "sessions" && method === "POST") {
         z.object({})
           .strict()
           .parse(await body(req));
+        let providerState = "LOCAL_APPLIED";
+        if (localMode() && a.source === "fake-provider")
+          await fakeAuthProvider().signOutAll(a.id);
+        else if (a.source === "supabase") {
+          const result = await (
+            await supabase()
+          ).auth.signOut({
+            scope: "global",
+          });
+          if (result.error) throw Error("SESSION_REVOCATION_FAILED");
+          providerState = "PROVIDER_CONFIRMED";
+        } else throw new HttpError(503, "Session provider is unavailable");
         const rows = await query<{ session_version: number }>(
           a,
           "select kxra.revoke_own_sessions($1,$2) as session_version",
-          [
-            "User requested sign out on all devices",
-            localMode() ? "LOCAL_APPLIED" : "PROVIDER_PENDING",
-          ],
+          ["User requested sign out on all devices", providerState],
         );
-        if (localMode() && a.source === "fake-provider")
-          await fakeAuthProvider().signOutAll(a.id);
         (await cookies()).delete("kxra_local_session");
         return json({ ok: true, session_version: rows[0].session_version });
       }
@@ -4217,6 +4304,18 @@ async function handle(req: Request, ctx: Context) {
         "PASSWORD_CHANGE_UNAVAILABLE",
         "MFA_PROOF_UNAVAILABLE",
         "MFA_UPDATE_UNAVAILABLE",
+        "MFA_PROOF_INVALID",
+        "MFA_ENROLLMENT_FAILED",
+        "MFA_ENROLLMENT_RESPONSE_INVALID",
+        "MFA_VERIFICATION_FAILED",
+        "MFA_VERIFICATION_RESPONSE_INVALID",
+        "MFA_REMOVAL_FAILED",
+        "MFA_REMOVAL_RESPONSE_INVALID",
+        "MFA_FACTOR_LOOKUP_FAILED",
+        "MFA_FACTOR_RESPONSE_INVALID",
+        "MFA_FACTOR_MISMATCH",
+        "MFA_FACTOR_AMBIGUOUS",
+        "SESSION_REVOCATION_FAILED",
       ].includes(e.message)
     )
       return json({ error: "Security action unavailable" }, 400);

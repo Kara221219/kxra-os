@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
 import { localPrincipal } from "#kxra/local-runtime";
+import { hostedTotpTimestamp } from "../../../packages/authz/supabase-mfa";
 
 export const organisationContextCookie = "kxra_organisation";
 
@@ -105,10 +106,7 @@ export async function principal(): Promise<Principal | null> {
   return {
     id: data.user.id,
     aal: claims.claims.aal === "aal2" ? "aal2" : "aal1",
-    auth_time:
-      typeof claims.claims.auth_time === "number"
-        ? claims.claims.auth_time
-        : undefined,
+    auth_time: hostedTotpTimestamp(claims.claims),
     email: data.user.email,
     email_verified: Boolean(data.user.email_confirmed_at),
     source: "supabase",

@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 31 implementation commit `3204078d4dd1d9114e464900c1d4b835866d0c58` passes the complete local contract, full GitHub CI run 36289096748 and SHA-matched CodeQL run 36289096738.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 32 passes the complete local contract and awaits commit-specific GitHub CI/CodeQL evidence. Slice 31 commit `3204078d4dd1d9114e464900c1d4b835866d0c58` remains the latest remotely evidenced baseline.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–31 are committed remotely. Slice 31 adds no managed application-schema object, so the current schema remains at migration `0067` with 168 RLS-protected tables and 144 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–31 are committed remotely. Slice 32 is locally complete. It adds no managed application-schema object, so the current schema remains at migration `0067` with 168 RLS-protected tables and 144 audited public functions.
 
 Slice 8 adds:
 
@@ -32,7 +32,7 @@ Slice 8 adds:
 
 No Trigger.dev task, always-on scheduler, hosted worker or notification sender exists. No YouTube token, upload/schedule executor, repository archive fetcher, candidate process runner, Git writer, merge/release/deploy route or production scanner exists. Synthetic local evidence proves the contracts only.
 
-Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Slice 24 adds append-only human source correction and database-enforced stale-lineage blocking through final export delivery. Slice 25 adds encrypted invitation-link custody, a restricted email worker, idempotent Resend transport and signed provider-state reconciliation. Slice 26 adds a restricted billing worker, raw-body Stripe verification and metadata-independent test subscription reconciliation. Slice 27 adds test-only hosted Checkout/Portal session intents, fixed/bounded provider calls, worker-recorded redirect custody and customer billing controls. Slice 28 adds database-derived, idempotent Stripe test-customer bootstrap and worker-recorded mapping. Slice 29 adds a hash-bound, resumable and environment-guarded staging migration operator. Slice 30 adds a canonical-only staging seed profile and operator that excludes all local executable/fixture authority. Slice 31 adds separate exact non-inheriting runtime logins for the OS and public ingress. Hosted Auth, email, billing, scanner/extractor, model and generation acceptance remains pending.
+Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Slice 24 adds append-only human source correction and database-enforced stale-lineage blocking through final export delivery. Slice 25 adds encrypted invitation-link custody, a restricted email worker, idempotent Resend transport and signed provider-state reconciliation. Slice 26 adds a restricted billing worker, raw-body Stripe verification and metadata-independent test subscription reconciliation. Slice 27 adds test-only hosted Checkout/Portal session intents, fixed/bounded provider calls, worker-recorded redirect custody and customer billing controls. Slice 28 adds database-derived, idempotent Stripe test-customer bootstrap and worker-recorded mapping. Slice 29 adds a hash-bound, resumable and environment-guarded staging migration operator. Slice 30 adds a canonical-only staging seed profile and operator that excludes all local executable/fixture authority. Slice 31 adds separate exact non-inheriting runtime logins for the OS and public ingress. Slice 32 adds guarded singleton-owner preparation, hosted TOTP controls, AMR-based recent step-up and provider-confirmed global sign-out. Hosted execution of these paths and all other provider acceptance remains pending.
 
 Legal seed records remain `UNAPPROVED_PLACEHOLDER` and inactive. No production legal text, product, price, subscription, customer or credential is seeded.
 
@@ -57,13 +57,15 @@ The Slice 30 contract passes the 228-package dependency policy, 172 database/dom
 
 The Slice 31 contract passes the 228-package dependency policy, 175 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 364-file publication/secret scan locally and in GitHub CI run 36289096748. CodeQL run 36289096738 independently passes the exact implementation SHA.
 
+The Slice 32 local contract passes the 228-package dependency policy, 184 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 371-file publication/secret scan. Commit-specific GitHub CI and CodeQL evidence is pending.
+
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
 ## Next implementation slice
 
 Continue Final Milestone 10 production quality without deploying:
 
-1. after the owner creates the separate staging projects, run the guarded database, canonical-seed and restricted-runtime-role plan/apply/verify sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), then configure and evidence the exact Vercel WAF rate rule;
+1. after the owner creates the separate staging projects, run the guarded database, canonical-seed, restricted-runtime-role and owner plan/apply/verify sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), complete hosted TOTP, then configure and evidence the exact Vercel WAF rate rule;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
 3. activate one controlled Resend recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md), then exercise test subscription reconciliation using the [Stripe staging playbook](../playbooks/stripe-billing-staging.md) only after pricing, tax and provider decisions;
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
@@ -86,10 +88,10 @@ Continue Final Milestone 10 production quality without deploying:
 
 ## Owner/provider connection order
 
-No credential is needed for the next local production-quality slice. Before staging can become customer-ready, the owner will need to complete these bounded steps when requested:
+The next material gate is the separately authorized staging connection. Before staging can become customer-ready, the owner will need to complete these bounded steps in order:
 
 1. obtain solicitor-approved legal documents and release versions;
-2. provide a hosted Supabase project and configure Auth redirect/MFA policies through provider secret stores;
+2. create a hosted Supabase staging project, configure exact Auth redirects plus TOTP enrollment/verification, and create the confirmed owner Auth user;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
 5. configure Resend and DNS only after approved sender copy and domains;

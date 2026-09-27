@@ -93,7 +93,38 @@ Generate two different 48–128 character base64url passwords in a password mana
 
 Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current `sb_publishable_…` key for the browser. A Supabase `sb_secret_…` key bypasses RLS and is prohibited from both core staging applications; add one only to a separately reviewed server/worker secret store when a later provider slice explicitly requires it.
 
-Disable open signup. Configure only the exact private staging origin and reviewed Auth callback paths. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user. Hosted MFA and owner bootstrap remain failed acceptance gates until exercised with a real staging owner.
+Disable open signup. Configure only the exact private staging origin and reviewed Auth callback paths. Enable TOTP enrollment and verification. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user.
+
+### First staging owner and TOTP
+
+Perform this only after migrations, canonical seeds and runtime roles verify and the private OS preview is configured. Keep the preview private throughout the short preparation interval.
+
+1. In Supabase Auth, create the intended staging owner with the exact private owner email, confirm that address and copy the generated user UUID into a local password-manager note. Keep public signup disabled.
+2. In a clean, pushed `codex/phase-2-completion` checkout, set the operator-only values below. Do not place them in Vercel, a tracked file, terminal history shared with others or chat.
+3. Run plan, apply and plan. Apply creates the exact owner records but does not claim MFA if no verified factor exists.
+4. Sign in to the private staging OS as that owner. Open **Profile → Security**, begin enrollment, scan the QR code in the owner's authenticator and enter the six-digit code. If the page was refreshed before completion, use **Restart enrollment**.
+5. Run verify immediately. A pass requires the verified Auth factor, exact KXRA factor reference, singleton owner and operator event. Until it passes, the staging identity acceptance test remains failed.
+
+```sh
+export KXRA_ENVIRONMENT=staging
+export KXRA_STAGING_PROJECT_REF='<20-character-project-ref>'
+read -r -s KXRA_STAGING_MIGRATOR_DATABASE_URL
+export KXRA_STAGING_MIGRATOR_DATABASE_URL
+read -r KXRA_STAGING_OWNER_USER_ID
+export KXRA_STAGING_OWNER_USER_ID
+read -r KXRA_STAGING_OWNER_EMAIL
+export KXRA_STAGING_OWNER_EMAIL
+export KXRA_STAGING_OWNER_DISPLAY_NAME='<reviewed display name>'
+npm run staging:owner:plan
+export KXRA_STAGING_OWNER_CONFIRMATION="OWNER:${KXRA_STAGING_PROJECT_REF}:${KXRA_STAGING_OWNER_USER_ID}:codex/phase-2-completion"
+npm run staging:owner:apply
+npm run staging:owner:plan
+# Complete hosted sign-in and TOTP enrollment in the private OS now.
+npm run staging:owner:verify
+unset KXRA_STAGING_MIGRATOR_DATABASE_URL KXRA_STAGING_OWNER_USER_ID KXRA_STAGING_OWNER_EMAIL KXRA_STAGING_OWNER_DISPLAY_NAME KXRA_STAGING_OWNER_CONFIRMATION
+```
+
+Do not remove the owner's factor through ordinary account controls. Supabase does not provide a KXRA-approved recovery-code path in this implementation; a lost factor requires a reviewed support/recovery procedure. Global sign-out is supported, but revoked access tokens can remain valid until their short expiry, so database account/membership revocation remains the immediate authorization control.
 
 ## 4. Pre-deployment gate
 
