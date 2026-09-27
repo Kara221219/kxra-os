@@ -2,7 +2,7 @@
 
 Updated: 27 September 2026. Status: **Phase 2 Slice 36 makes customer release readiness a strict, visible and fail-closed owner gate. The complete local contract passes; hosted staging and production legal/commercial inputs remain absent.**
 
-Current branch: `codex/phase-2-completion`. Slice 36 is locally complete and awaiting its implementation commit and remote CI evidence. Slice 35 implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` passed full GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 36 implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` passed full GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
