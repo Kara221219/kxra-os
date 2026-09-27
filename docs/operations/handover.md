@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 33 passes the complete local contract and is awaiting exact remote CI/CodeQL evidence.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 33 implementation commit `0436c123a482c7363173a733a3acb2b8fe914c5c` passes the complete local contract, full GitHub CI run 36292883782 and SHA-matched CodeQL run 36292883777.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–32 are committed remotely; Slice 33 is locally complete. Slice 33 adds no managed application-schema object, so the current schema remains at migration `0067` with 168 RLS-protected tables and 144 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–33 are committed remotely. Slice 33 adds no managed application-schema object, so the current schema remains at migration `0067` with 168 RLS-protected tables and 144 audited public functions.
 
 Slice 33 adds:
 
@@ -68,7 +68,7 @@ The Slice 31 contract passes the 228-package dependency policy, 175 database/dom
 
 The Slice 32 contract passes the 228-package dependency policy, 184 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 371-file publication/secret scan locally and in GitHub CI run 36291392558. CodeQL run 36291392562 independently passes the exact implementation SHA.
 
-The Slice 33 local contract passes the 228-package dependency policy, 190 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 375-file publication/secret scan. Remote CI and CodeQL evidence is pending the implementation push.
+The Slice 33 contract passes the 228-package dependency policy, 190 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 375-file publication/secret scan locally and in GitHub CI run 36292883782. CodeQL run 36292883777 independently passes the exact implementation SHA.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

@@ -2,7 +2,7 @@
 
 Updated: 27 September 2026. Status: **Phase 2 Slice 33 closes the hosted password-sign-in MFA bypass and completes a subject-bound Supabase password-recovery contract. The complete local contract passes; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 33 passes the complete local contract and is awaiting exact remote CI/CodeQL evidence. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 33 implementation commit `0436c123a482c7363173a733a3acb2b8fe914c5c` passed full GitHub CI run 36292883782 and SHA-matched CodeQL run 36292883777. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
