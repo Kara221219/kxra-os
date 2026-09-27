@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 28
+
+- migration `0067` for organization-bound Stripe test-customer intents and restricted mapping
+- fixed-endpoint Stripe Customer adapter, billing-worker recording and bounded customer API
+- customer-admin Business Tools control with no browser-selected organization, name, email or provider customer
+- bootstrap replay, isolation, worker, provider-response and RLS tests
+- ADR 0031 plus updated Stripe threat model, staging playbook, architecture, security and operating evidence
+
+No real Stripe credential, provider call, customer, charge, subscription, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 27
 
 - migration `0066` for tenant-bound hosted billing intents and bounded Checkout/Portal request functions

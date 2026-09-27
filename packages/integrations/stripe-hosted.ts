@@ -15,6 +15,22 @@ export type BillingSessionIntent = {
   expires_at: string | null;
 };
 
+export type BillingCustomerIntent = {
+  intent_id: string;
+  intent_state: "REQUESTED" | "READY" | "FAILED";
+  organisation_name: string;
+  idempotency_key: string;
+  provider_customer_id: string | null;
+  provider_created_at: string | null;
+};
+
+export type StripeBillingCustomer = {
+  intentId: string;
+  providerCustomerId: string;
+  providerCreatedAt: string;
+  livemode: boolean;
+};
+
 export type StripeHostedSession = {
   intentId: string;
   sessionKind: "CHECKOUT" | "PORTAL";
@@ -52,6 +68,17 @@ const portalResponse = z
   })
   .passthrough();
 
+const customerResponse = z
+  .object({
+    id: stripeId("cus"),
+    object: z.literal("customer"),
+    created: z.number().int().positive(),
+    livemode: z.literal(false),
+    name: z.string().min(1).max(240),
+    metadata: z.object({ kxra_intent_id: z.string().uuid() }).passthrough(),
+  })
+  .passthrough();
+
 function configuration() {
   if (process.env.KXRA_BILLING_ENABLED !== "true")
     throw Error("STRIPE_BILLING_DISABLED");
@@ -72,7 +99,8 @@ function configuration() {
 }
 
 async function stripePost(
-  path: "/v1/checkout/sessions" | "/v1/billing_portal/sessions",
+  path:
+    "/v1/customers" | "/v1/checkout/sessions" | "/v1/billing_portal/sessions",
   values: URLSearchParams,
   idempotencyKey: string,
   transport: StripeTransport,
@@ -114,6 +142,34 @@ async function stripePost(
   } catch {
     throw Error("STRIPE_RESPONSE_INVALID");
   }
+}
+
+export async function createStripeBillingCustomer(
+  intent: BillingCustomerIntent,
+  transport: StripeTransport = fetch,
+): Promise<StripeBillingCustomer> {
+  const response = customerResponse.parse(
+    await stripePost(
+      "/v1/customers",
+      new URLSearchParams({
+        name: intent.organisation_name,
+        "metadata[kxra_intent_id]": intent.intent_id,
+      }),
+      intent.idempotency_key,
+      transport,
+    ),
+  );
+  if (
+    response.name !== intent.organisation_name ||
+    response.metadata.kxra_intent_id !== intent.intent_id
+  )
+    throw Error("STRIPE_CUSTOMER_MISMATCH");
+  return {
+    intentId: intent.intent_id,
+    providerCustomerId: response.id,
+    providerCreatedAt: new Date(response.created * 1000).toISOString(),
+    livemode: response.livemode,
+  };
 }
 
 export async function createStripeCheckoutSession(

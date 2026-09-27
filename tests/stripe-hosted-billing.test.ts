@@ -5,8 +5,10 @@ import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
 import {
+  createStripeBillingCustomer,
   createStripeCheckoutSession,
   createStripePortalSession,
+  type BillingCustomerIntent,
   type BillingSessionIntent,
 } from "../packages/integrations/stripe-hosted";
 import { runtimeFile } from "./support/runtime";
@@ -45,6 +47,7 @@ async function tx(work: (db: pg.PoolClient) => Promise<void>) {
 async function fixture(
   db: pg.PoolClient,
   role: "ORG_ADMIN" | "ORG_MEMBER" = "ORG_ADMIN",
+  createCustomer = true,
 ) {
   const org = crypto.randomUUID();
   const account = crypto.randomUUID();
@@ -85,12 +88,71 @@ async function fixture(
      ) values($1,'STRIPE',$2,'TEST','ACTIVE')`,
     [version, price],
   );
-  await db.query(
-    "insert into kxra.billing_customers(org_id,provider_customer_id) values($1,$2)",
-    [org, customer],
-  );
+  if (createCustomer)
+    await db.query(
+      "insert into kxra.billing_customers(org_id,provider_customer_id) values($1,$2)",
+      [org, customer],
+    );
   return { org, account, version, customer, price };
 }
+
+test("billing customer bootstrap derives organization and records one test customer", () =>
+  tx(async (db) => {
+    const value = await fixture(db, "ORG_ADMIN", false);
+    await as(db, value.account, value.org);
+    const first = (
+      await db.query("select * from kxra.request_billing_customer($1)", [
+        crypto.randomUUID(),
+      ])
+    ).rows[0];
+    const duplicateAttempt = (
+      await db.query("select * from kxra.request_billing_customer($1)", [
+        crypto.randomUUID(),
+      ])
+    ).rows[0];
+    assert.equal(first.organisation_name, "Hosted billing fixture");
+    assert.equal(first.intent_state, "REQUESTED");
+    assert.equal(duplicateAttempt.intent_id, first.intent_id);
+
+    await db.query("reset role");
+    await db.query("set local role kxra_billing_worker");
+    const createdAt = new Date(Date.now() + 1000).toISOString();
+    assert.equal(
+      (
+        await db.query(
+          "select kxra_private.record_stripe_billing_customer($1,$2,$3,false) state",
+          [first.intent_id, value.customer, createdAt],
+        )
+      ).rows[0].state,
+      "READY",
+    );
+    await db.query("reset role");
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from kxra.billing_customers where org_id=$1 and provider_customer_id=$2",
+          [value.org, value.customer],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await as(db, value.account, value.org);
+    const completedReplay = (
+      await db.query("select * from kxra.request_billing_customer($1)", [
+        crypto.randomUUID(),
+      ])
+    ).rows[0];
+    assert.equal(completedReplay.intent_id, first.intent_id);
+    assert.equal(completedReplay.intent_state, "READY");
+    await db.query("reset role");
+    await db.query("set local role kxra_billing_worker");
+    await assert.rejects(() =>
+      db.query(
+        "select kxra_private.record_stripe_billing_customer($1,$2,$3,false)",
+        [first.intent_id, "cus_changed123", createdAt],
+      ),
+    );
+  }));
 
 test("hosted billing intent derives customer and TEST price and replays exactly", () =>
   tx(async (db) => {
@@ -157,6 +219,15 @@ test("ordinary member, anonymous caller and forged tenant cannot request billing
     await assert.rejects(() =>
       db.query("select * from kxra.request_checkout_session($1,$2)", [
         member.version,
+        crypto.randomUUID(),
+      ]),
+    );
+    await db.query("rollback");
+    await db.query("begin");
+    const unlinkedMember = await fixture(db, "ORG_MEMBER", false);
+    await as(db, unlinkedMember.account, unlinkedMember.org);
+    await assert.rejects(() =>
+      db.query("select * from kxra.request_billing_customer($1)", [
         crypto.randomUUID(),
       ]),
     );
@@ -283,5 +354,56 @@ test("Stripe hosted adapter sends fixed test-mode forms and validates returned a
         expires_at: Math.floor(Date.now() / 1000) + 1800,
       }),
     ),
+  );
+});
+
+test("Stripe customer adapter sends only derived name and correlation metadata", async () => {
+  const intent: BillingCustomerIntent = {
+    intent_id: crypto.randomUUID(),
+    intent_state: "REQUESTED",
+    organisation_name: "KXRA test customer",
+    idempotency_key: `kxra-customer-${crypto.randomUUID()}`,
+    provider_customer_id: null,
+    provider_created_at: null,
+  };
+  let request: { url: string; init?: RequestInit } | undefined;
+  const customer = await createStripeBillingCustomer(
+    intent,
+    async (input, init) => {
+      request = { url: String(input), init };
+      return Response.json({
+        id: "cus_synthetic123",
+        object: "customer",
+        created: Math.floor(Date.now() / 1000),
+        livemode: false,
+        name: intent.organisation_name,
+        metadata: { kxra_intent_id: intent.intent_id },
+      });
+    },
+  );
+  assert.equal(request?.url, "https://api.stripe.com/v1/customers");
+  assert.equal(request?.init?.redirect, "error");
+  assert.equal(
+    new Headers(request?.init?.headers).get("idempotency-key"),
+    intent.idempotency_key,
+  );
+  const values = new URLSearchParams(String(request?.init?.body));
+  assert.equal(values.get("name"), intent.organisation_name);
+  assert.equal(values.get("metadata[kxra_intent_id]"), intent.intent_id);
+  assert.equal(values.get("email"), null);
+  assert.equal(customer.providerCustomerId, "cus_synthetic123");
+
+  await assert.rejects(
+    createStripeBillingCustomer(intent, async () =>
+      Response.json({
+        id: "cus_synthetic123",
+        object: "customer",
+        created: Math.floor(Date.now() / 1000),
+        livemode: false,
+        name: intent.organisation_name,
+        metadata: { kxra_intent_id: crypto.randomUUID() },
+      }),
+    ),
+    /STRIPE_CUSTOMER_MISMATCH/,
   );
 });

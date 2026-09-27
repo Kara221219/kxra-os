@@ -1559,6 +1559,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "agent_runs",
       "agent_tool_calls",
       "billing_customers",
+      "billing_customer_intents",
       "billing_events",
       "billing_provider_events",
       "billing_session_intents",

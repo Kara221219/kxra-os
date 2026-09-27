@@ -12,7 +12,7 @@ Submission derives account and organization from the verified transaction. Handl
 
 ## Enforced controls
 
-- All 167 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
+- All 168 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
 - The application login is non-superuser, `NOINHERIT` and `NOBYPASSRLS`. Each request enters a transaction, sets `ROLE authenticated`, verified subject claims and one server-derived `request.kxra.org_id`, then resets the pooled connection.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
@@ -67,7 +67,7 @@ Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an u
 
 ## Tested attack paths
 
-The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 167 tables and audits all 143 exposed functions.
+The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 168 tables and audits all 144 exposed functions.
 
 Brand website acquisition is asynchronous and project-scoped. The browser may only schedule a refresh for a currently visible writable website source and its exact current version. A dedicated `NOLOGIN`, `NOINHERIT`, `NOBYPASSRLS` worker role can only claim and complete bounded acquisition jobs. Every DNS answer and redirect target must be public, transport connects to a validated pinned address while retaining hostname TLS verification, response type, encoding, bytes, redirects and time are bounded, active markup is removed, and completion creates a new immutable `EXTERNAL RESEARCH` source version. Source changes cancel stale jobs; approved profiles keep their prior exact evidence links. See [the threat model](brand-source-acquisition-threat-model.md).
 

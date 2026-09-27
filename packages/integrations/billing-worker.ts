@@ -1,6 +1,9 @@
 import pg from "pg";
 import type { NormalizedStripeSubscriptionEvent } from "./billing";
-import type { StripeHostedSession } from "./stripe-hosted";
+import type {
+  StripeBillingCustomer,
+  StripeHostedSession,
+} from "./stripe-hosted";
 
 function databaseConfiguration() {
   const connectionString = process.env.KXRA_BILLING_WORKER_DATABASE_URL;
@@ -94,6 +97,26 @@ export async function recordStripeHostedSession(
         session.redirectUrl,
         session.expiresAt,
         session.livemode,
+      ],
+    );
+    return result.rows[0]?.state;
+  }, configuration);
+}
+
+export async function recordStripeBillingCustomer(
+  customer: StripeBillingCustomer,
+  configuration?: pg.ClientConfig,
+) {
+  assertBillingEnabled();
+  if (customer.livemode) throw Error("Live billing is prohibited");
+  return billingTransaction(async (database) => {
+    const result = await database.query<{ state: string }>(
+      `select kxra_private.record_stripe_billing_customer($1,$2,$3,$4) state`,
+      [
+        customer.intentId,
+        customer.providerCustomerId,
+        customer.providerCreatedAt,
+        customer.livemode,
       ],
     );
     return result.rows[0]?.state;

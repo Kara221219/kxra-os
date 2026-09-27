@@ -189,6 +189,16 @@ test("billing worker role is non-login, non-bypass and owns only bounded RPCs", 
     ).rows[0].allowed,
     true,
   );
+  assert.equal(
+    (
+      await admin.query(
+        `select has_function_privilege('kxra_billing_worker',
+          'kxra_private.record_stripe_billing_customer(uuid,text,timestamptz,boolean)',
+          'execute') allowed`,
+      )
+    ).rows[0].allowed,
+    true,
+  );
 });
 
 test("signed Stripe webhook creates one test subscription and exact replay is stable", async () => {

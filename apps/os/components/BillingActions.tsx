@@ -37,6 +37,20 @@ async function createSession(
   window.location.assign(target.href);
 }
 
+async function createCustomer() {
+  const response = await fetch("/api/billing-customers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ request_id: crypto.randomUUID() }),
+  });
+  const result = (await response.json()) as {
+    customer_ready?: boolean;
+    error?: string;
+  };
+  if (!response.ok || !result.customer_ready)
+    throw new Error(result.error || "Billing customer unavailable");
+}
+
 function price(plan: Plan) {
   const minor = BigInt(plan.amount_minor);
   const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€" };
@@ -66,6 +80,21 @@ export default function BillingActions({
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Billing session unavailable",
+      );
+      setBusy(null);
+    }
+  }
+
+  async function connect() {
+    setBusy("customer");
+    setMessage("");
+    try {
+      await createCustomer();
+      setMessage("Secure test billing is connected. Refreshing plans…");
+      window.location.reload();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Billing customer unavailable",
       );
       setBusy(null);
     }
@@ -121,10 +150,21 @@ export default function BillingActions({
         </button>
       </div>
       {!customerReady && (
-        <p className="subtle">
-          Billing becomes available after KXRA links this organization to its
-          test billing customer record.
-        </p>
+        <div className="record-actions" style={{ marginTop: 16 }}>
+          <button
+            type="button"
+            disabled={!hydrated || !enabled || !!busy}
+            onClick={connect}
+          >
+            {busy === "customer"
+              ? "Connecting secure test billing…"
+              : "Connect secure test billing"}
+          </button>
+          <p className="subtle">
+            This creates one test-mode billing record for this organization. It
+            does not charge a card or activate a subscription.
+          </p>
+        </div>
       )}
       {message && <p role="status">{message}</p>}
     </section>

@@ -27,13 +27,13 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime with per-run Next.js build directories, rejects a stale decoy service, applies and seeds 66 migrations, then runs formatting/type and 228-package lockfile policy checks, 162 database/domain/HTTP/security tests, a 167-table RLS audit, 46 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
+`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime with per-run Next.js build directories, rejects a stale decoy service, applies and seeds 67 migrations, then runs formatting/type and 228-package lockfile policy checks, 164 database/domain/HTTP/security tests, a 168-table RLS audit, 46 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
 
 ## Implemented locally
 
 - Global account identities with many-to-many organization memberships and roles `KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN` and `ORG_MEMBER`.
 - Explicit organization selection for dual-membership users. The browser cookie only proposes context; PostgreSQL verifies the live membership and selected tenant on every request.
-- Transaction-scoped PostgreSQL RLS across all 167 tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
+- Transaction-scoped PostgreSQL RLS across all 168 tables. Request bodies, headers, JWT organization metadata and model output cannot assign identity, tenant, role, project or approval authority.
 - Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
 - First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
 - Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.

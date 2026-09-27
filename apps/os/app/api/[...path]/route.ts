@@ -79,11 +79,16 @@ import {
   whatsappPhoneDigest,
 } from "../../../../../packages/integrations/whatsapp";
 import {
+  createStripeBillingCustomer,
   createStripeCheckoutSession,
   createStripePortalSession,
+  type BillingCustomerIntent,
   type BillingSessionIntent,
 } from "../../../../../packages/integrations/stripe-hosted";
-import { recordStripeHostedSession } from "../../../../../packages/integrations/billing-worker";
+import {
+  recordStripeBillingCustomer,
+  recordStripeHostedSession,
+} from "../../../../../packages/integrations/billing-worker";
 import {
   fakeAuthProvider,
   fakeEmailTransport,
@@ -1399,6 +1404,34 @@ async function handle(req: Request, ctx: Context) {
            order by plan.name,version.version`,
         ),
       );
+    }
+    if (p[0] === "billing-customers" && method === "POST" && !p[1]) {
+      if (process.env.KXRA_BILLING_ENABLED !== "true")
+        throw new HttpError(
+          503,
+          "Billing is unavailable in this environment",
+          "BILLING_DISABLED",
+        );
+      const input = z
+        .object({ request_id: requestId })
+        .strict()
+        .parse(await body(req));
+      const intent = (
+        await query<BillingCustomerIntent>(
+          a,
+          "select * from kxra.request_billing_customer($1)",
+          [input.request_id],
+        )
+      )[0];
+      if (!intent) throw new HttpError(409, "Billing customer unavailable");
+      if (intent.intent_state === "READY")
+        return json({ customer_ready: true });
+      if (intent.intent_state !== "REQUESTED")
+        throw new HttpError(409, "Billing customer unavailable");
+      const customer = await createStripeBillingCustomer(intent);
+      if ((await recordStripeBillingCustomer(customer)) !== "READY")
+        throw new HttpError(503, "Billing customer unavailable");
+      return json({ customer_ready: true }, 201);
     }
     if (p[0] === "billing-sessions" && method === "POST" && !p[2]) {
       if (process.env.KXRA_BILLING_ENABLED !== "true")
