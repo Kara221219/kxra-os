@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 29 adds a guarded, resumable staging-schema migration operator and passes the complete local contract. Remote verification is pending this slice's push. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 29 adds a guarded, resumable staging-schema migration operator and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 29 is locally verified and uncommitted at this checkpoint. The preceding Slice 28 implementation commit `4be3b23f9b816f11c52bcd84f83746e1795b7bce` passed full GitHub CI run 36284168922 and SHA-matched CodeQL run 36284168938. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 29 implementation commit `eeb446ad352891a75f32b0cf42511f287fdedcc5` passed full GitHub CI run 36286028336 and SHA-matched CodeQL run 36286028353. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -264,6 +264,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - Apply uses a session advisory lock, recalculates pending work after acquiring it, commits each migration with its tracking row and resumes from the exact recorded prefix. Anonymous and authenticated application roles receive no access to migration history.
 - Verification requires all hashes plus exactly 168 RLS-protected tables with policies and 144 `kxra` functions. Operator-only values are rejected from hosted application profiles.
 - The clean hermetic run passed 168 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 354 files.
+- Implementation commit `eeb446ad352891a75f32b0cf42511f287fdedcc5` passed GitHub full CI run 36286028336 and SHA-matched CodeQL run 36286028353.
 - ADR 0032, a staging-migration threat model and the exact operator playbook record the boundary. No credential was stored and no hosted database, provider, deployment or publication was touched.
 
 ## Publication boundary
