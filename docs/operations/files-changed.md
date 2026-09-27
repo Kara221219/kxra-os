@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 27
+
+- migration `0066` for tenant-bound hosted billing intents and bounded Checkout/Portal request functions
+- fixed-endpoint Stripe hosted-session adapter and restricted worker result recording
+- test-only Checkout/Portal API and customer-facing Business Tools billing controls
+- hosted billing authority, replay, provider-response, RLS and worker tests
+- ADR 0030 plus updated Stripe threat model, staging playbook, architecture, security and operating evidence
+
+No real Stripe credential, provider call, session, charge, refund, cancellation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 26
 
 - migration `0065` for a restricted billing worker, owner-only provider receipts, complete Stripe subscription states and fail-closed entitlement periods

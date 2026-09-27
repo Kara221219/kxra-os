@@ -21,6 +21,10 @@
 | Browser/model applies provider state | One private function is executable only by a no-login/no-bypass worker | Worker login and network egress require staging setup |
 | Provider payload leaks customer data | Persist only bounded IDs, state, periods, quantity and raw-body digest; no raw body or payment data | Provider dashboard remains outside KXRA retention control |
 | Multi-price subscription overgrants features | Strictly require one item/price | Product bundles need a reviewed composition policy before support |
+| Browser chooses tenant, customer, price or amount | PostgreSQL derives tenant, active customer and active TEST price after current legal/admin checks; request schema accepts none of those authority fields | Customer bootstrap remains an operator-controlled staging step |
+| Duplicate clicks create multiple subscriptions | Organization-scoped advisory lock reuses one open intent and one Stripe idempotency key | An unresolved intent older than 23 hours requires reconciliation |
+| Provider redirects leak credentials or send customers to an attacker | Calls use fixed Stripe API URLs with redirects prohibited; returned URLs require exact Stripe hosts and are worker-recorded before delivery | DNS/TLS and Stripe availability remain provider boundaries |
+| Oversized or incompatible provider response exhausts or corrupts the server | Pin API version, stream at most 100 KB and strictly parse test-mode Checkout/Portal objects | API-version upgrades require a reviewed migration and staging run |
 | Public marketing receives billing credentials | Staging preflight rejects worker URL and Stripe secrets in marketing | Hosted project separation needs staging evidence |
 
 ## Hard stops
@@ -30,3 +34,4 @@
 - Live-mode, malformed, unsigned, oversized and altered events perform no write.
 - Unknown references, inactive prices and terminal/non-paying states create no entitlement.
 - Webhook activation does not authorize Checkout, Portal, refunds, cancellations, live charging or customer onboarding.
+- Hosted session activation requires a test secret, reviewed Portal configuration, customer/price mappings and `KXRA_BILLING_ENABLED=true`; live keys and live responses fail closed.

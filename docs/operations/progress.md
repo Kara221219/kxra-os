@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 26 adds restricted Stripe test-mode subscription reconciliation and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 27 adds governed Stripe test-mode Checkout and Customer Portal sessions and passes the complete local contract. Commit and remote evidence are pending; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 27 passes the complete local contract and awaits commit/remote checks. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -18,9 +18,9 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 65 ordered additive migrations, 166 RLS-protected tables with explicit policies and 141 audited public functions.
-- 159 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,697-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 342-file publication/secret scan pass.
+- 66 ordered additive migrations, 167 RLS-protected tables with explicit policies and 143 audited public functions.
+- 162 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,697-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 347-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -38,7 +38,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 - Brand Studio: local address-pinned source refresh, append-only correction and stale-lineage gates are implemented; hosted worker/egress evidence, media generation, sector claim policies and publication remain absent.
 - Identity/legal: hosted Supabase Auth/MFA/pooler, real owner bootstrap and solicitor-approved legal content remain unverified.
-- Commercial: test-mode subscription webhook normalization and reconciliation are staging-ready but disabled; Stripe products/prices, checkout, portal, live mode and approved billing policies remain disconnected.
+- Commercial: test-mode Checkout, Portal and subscription reconciliation are staging-ready but disabled; Stripe products/prices/customer mappings, live mode and approved billing policies remain disconnected.
 - Customer operations: private support, cancellation/withdrawal and data-request intake/handling works locally; approved response periods, provider cancellation, identity verification, disclosure/erasure and notification delivery remain disconnected.
 - Custom projects: the local request-to-delivery evidence path includes bilateral exact change approval, versioned delivery evidence, customer milestone acceptance, invoices, immutable voids and component-bounded credit notes. Approved legal text and connected accounting/payment reconciliation remain incomplete.
 - AI/files: external OpenAI dispatch, production Storage/scanning/extraction, paid budgets and distributed recovery remain incomplete.
@@ -234,6 +234,16 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - Exact replay is stable, changed replay fails, older events are ignored and missing customer/price references fail durably without access. An exact failed event can recover after its missing mapping is reviewed and installed.
 - The acceptance loop found and fixed the administrative protected-table count after migration `0065`. The final clean run passed 159 tests, the 65-migration/166-table audit, 41 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, 2,697-row/15-object recovery, both builds, CSP/SRI and size/Lighthouse budgets; the publication scan covers 342 files.
 - ADR 0029, the Stripe threat model and staging playbook retain `KXRA_BILLING_ENABLED=false`. No Stripe credential, provider call, checkout, portal, charge, refund, cancellation, deployment or publication was used.
+
+## Slice 27 local hosted billing evidence
+
+- Customer administrators can request Stripe-hosted test Checkout and Portal sessions from Business Tools only after current identity, selected-tenant, onboarding, legal and organization-admin checks pass.
+- PostgreSQL derives the existing Stripe customer and active TEST price. Browser/model input cannot choose customer, tenant, amount, currency, redirect URL or entitlement.
+- An organization advisory lock and durable intent reuse one open provider operation and idempotency key. Unresolved requests older than 23 hours require reconciliation.
+- The adapter uses fixed Stripe endpoints, rejects redirects/live keys/live responses, pins API version, streams at most 100 KB and validates exact Checkout/Portal response types and hosts.
+- The restricted billing worker records the session before its short-lived URL is delivered. A Checkout return grants no access; signed subscription reconciliation remains the only paid-entitlement authority.
+- The clean hermetic run passed 162 tests, 66 migrations, the 167-table RLS audit, 41 applicable private browser journeys, all public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets.
+- Billing remains disabled. No real Stripe credential, provider request, session, charge, refund, cancellation, deployment or publication was used.
 
 ## Publication boundary
 

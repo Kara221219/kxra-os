@@ -1561,6 +1561,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "billing_customers",
       "billing_events",
       "billing_provider_events",
+      "billing_session_intents",
       "billing_subscription_items",
       "billing_subscriptions",
       "brand_assets",

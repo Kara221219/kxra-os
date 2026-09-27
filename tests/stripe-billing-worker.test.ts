@@ -149,7 +149,7 @@ test("Stripe subscription normalization binds raw bytes and rejects live or mult
   assert.throws(() => verified(multiple));
 });
 
-test("billing worker role is non-login, non-bypass and owns one bounded RPC", async () => {
+test("billing worker role is non-login, non-bypass and owns only bounded RPCs", async () => {
   const role = (
     await admin.query(
       "select rolcanlogin,rolsuper,rolbypassrls,rolinherit from pg_roles where rolname='kxra_billing_worker'",
@@ -178,6 +178,16 @@ test("billing worker role is non-login, non-bypass and owns one bounded RPC", as
       )
     ).rows[0].allowed,
     false,
+  );
+  assert.equal(
+    (
+      await admin.query(
+        `select has_function_privilege('kxra_billing_worker',
+          'kxra_private.record_stripe_billing_session(uuid,text,text,text,text,timestamptz,boolean)',
+          'execute') allowed`,
+      )
+    ).rows[0].allowed,
+    true,
   );
 });
 

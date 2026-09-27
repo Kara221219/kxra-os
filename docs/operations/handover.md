@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 27 hosted test billing passes the complete local contract and awaits commit/remote checks. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,7 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–26 are committed remotely. Slice 26 adds migration `0065`; the current schema has 166 RLS-protected tables and 141 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–26 are committed remotely. Slice 27 adds migration `0066`; the current schema has 167 RLS-protected tables and 143 audited public functions.
 
 Slice 8 adds:
 
@@ -32,7 +32,7 @@ Slice 8 adds:
 
 No Trigger.dev task, always-on scheduler, hosted worker or notification sender exists. No YouTube token, upload/schedule executor, repository archive fetcher, candidate process runner, Git writer, merge/release/deploy route or production scanner exists. Synthetic local evidence proves the contracts only.
 
-Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Slice 24 adds append-only human source correction and database-enforced stale-lineage blocking through final export delivery. Slice 25 adds encrypted invitation-link custody, a restricted email worker, idempotent Resend transport and signed provider-state reconciliation. Slice 26 adds a restricted billing worker, raw-body Stripe verification and metadata-independent test subscription reconciliation. Hosted Auth, email, billing, scanner/extractor, model and generation acceptance remains pending.
+Preserved earlier slices include normalized global identity, selected tenant, exact legal gate, private file/knowledge lifecycle, permission-safe Ask/AI runs, owner control plane, seven project workspaces and Brand Studio. Slices 19–21 provide the local custom-project path through triage, exact proposal, acceptance, payment gate, activation, bilateral changes, milestone delivery/acceptance, invoices and immutable adjustments. Slice 22 adds exact private support, subscription cancellation/withdrawal and personal-data request workflows with isolated internal handling notes. Slice 23 adds a disabled-by-default, address-pinned website-source worker and immutable refresh evidence. Slice 24 adds append-only human source correction and database-enforced stale-lineage blocking through final export delivery. Slice 25 adds encrypted invitation-link custody, a restricted email worker, idempotent Resend transport and signed provider-state reconciliation. Slice 26 adds a restricted billing worker, raw-body Stripe verification and metadata-independent test subscription reconciliation. Slice 27 adds test-only hosted Checkout/Portal session intents, fixed/bounded provider calls, worker-recorded redirect custody and customer billing controls. Hosted Auth, email, billing, scanner/extractor, model and generation acceptance remains pending.
 
 Legal seed records remain `UNAPPROVED_PLACEHOLDER` and inactive. No production legal text, product, price, subscription, customer or credential is seeded.
 
@@ -47,7 +47,7 @@ npm run test:ci
 git diff --check
 ```
 
-The Slice 26 local and GitHub contract passes the 228-package dependency policy, 159 database/domain/HTTP/security tests, the 65-migration/166-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and the 342-file publication/secret scan.
+The Slice 27 local contract passes the 228-package dependency policy, 162 database/domain/HTTP/security tests, the 66-migration/167-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets and artifact exclusion.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

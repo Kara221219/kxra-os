@@ -32,6 +32,7 @@ import BrandStudio from "../../../components/BrandStudio";
 import CustomerService, {
   type CustomerServiceRequest,
 } from "../../../components/CustomerService";
+import BillingActions from "../../../components/BillingActions";
 import RoutineRegistry, {
   type RoutineRow,
 } from "../../../components/RoutineRegistry";
@@ -506,7 +507,9 @@ export default async function Workspace({
         </>
       );
     } else if (section === "tools") {
-      const [tools, studio] = await Promise.all([
+      const customerAdministrator =
+        a.organisation_kind === "CUSTOMER" && a.security_role === "ORG_ADMIN";
+      const [tools, studio, plans, billingCustomers] = await Promise.all([
         query<{
           tool_key: string;
           name: string;
@@ -521,6 +524,31 @@ export default async function Workspace({
            where tool.state='ACTIVE' order by tool.name`,
         ),
         loadBrandStudio(a),
+        customerAdministrator
+          ? query<{
+              id: string;
+              name: string;
+              amount_minor: string;
+              currency: string;
+              billing_interval: string;
+              commercial_copy: string;
+            }>(
+              a,
+              `select version.id,plan.name,version.amount_minor::text,
+                version.currency,version.billing_interval,
+                coalesce(version.commercial_copy->>'summary',
+                  version.commercial_copy->>'description','') as commercial_copy
+               from kxra.plans plan join kxra.plan_versions version on version.plan_id=plan.id
+               where plan.state='ACTIVE' and version.state='ACTIVE'
+               order by plan.name,version.version`,
+            )
+          : Promise.resolve([]),
+        customerAdministrator
+          ? query<{ id: string }>(
+              a,
+              "select id from kxra.billing_customers where state='ACTIVE' limit 1",
+            )
+          : Promise.resolve([]),
       ]);
       content = (
         <>
@@ -559,6 +587,13 @@ export default async function Workspace({
             })}
             {!tools.length && <div className="empty">No tools are active.</div>}
           </div>
+          {customerAdministrator && (
+            <BillingActions
+              enabled={process.env.KXRA_BILLING_ENABLED === "true"}
+              customerReady={billingCustomers.length > 0}
+              plans={plans}
+            />
+          )}
           <section className="panel" style={{ marginTop: 24 }}>
             <h2>Need something specific?</h2>
             <p>
