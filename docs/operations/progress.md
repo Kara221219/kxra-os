@@ -2,7 +2,7 @@
 
 Updated: 27 September 2026. Status: **Phase 2 Slice 32 adds guarded staging-owner preparation, hosted Supabase TOTP controls and provider-confirmed global sign-out. The complete local contract passes; hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 32 passes the complete local contract and awaits commit-specific GitHub CI/CodeQL evidence. Slice 31 implementation commit `3204078d4dd1d9114e464900c1d4b835866d0c58` remains the latest remotely evidenced baseline. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 32 implementation commit `f55edff5f2f3151f55ebe75d28e9935a5979f5d7` passed full GitHub CI run 36291392558 and SHA-matched CodeQL run 36291392562. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -294,6 +294,7 @@ Connect a separate Supabase/Vercel staging environment, run the guarded schema/s
 - Hosted Profile controls now use Supabase TOTP enrollment, factor listing, challenge-and-verify and unenrollment. Interrupted KXRA factors can be restarted without accumulating stale factors; QR/manual secrets remain transient and owner factor removal is blocked pending a reviewed recovery process.
 - Recent owner authority derives from the signed `aal2` TOTP authentication-method timestamp. Initial password time, absent AMR and malformed provider responses fail closed. Global sign-out must succeed at Supabase before KXRA records provider-confirmed revocation.
 - The clean hermetic run passed 184 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 371 files.
+- Implementation commit `f55edff5f2f3151f55ebe75d28e9935a5979f5d7` passed GitHub full CI run 36291392558 and SHA-matched CodeQL run 36291392562.
 - ADR 0035, the owner/Auth threat model and exact staging playbook record the bounded pre-MFA preparation window and final verification requirement. No real identity, credential, factor, hosted database, deployment or publication was used.
 
 ## Publication boundary
