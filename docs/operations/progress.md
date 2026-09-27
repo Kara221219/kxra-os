@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 27 adds governed Stripe test-mode Checkout and Customer Portal sessions and passes the complete local contract. Commit and remote evidence are pending; hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 27 adds governed Stripe test-mode Checkout and Customer Portal sessions and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 27 passes the complete local contract and awaits commit/remote checks. Slice 26 implementation commit `30bc864797876ca363d38249778f745af87e23c7` passed full GitHub CI run 36280353756 and CodeQL run 36280353758. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 27 implementation commit `dbbe921e87e157cd637edba40089abbdf3fd7e3c` passed full GitHub CI run 36282404005 and SHA-matched CodeQL run 36282404016. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -243,6 +243,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The adapter uses fixed Stripe endpoints, rejects redirects/live keys/live responses, pins API version, streams at most 100 KB and validates exact Checkout/Portal response types and hosts.
 - The restricted billing worker records the session before its short-lived URL is delivered. A Checkout return grants no access; signed subscription reconciliation remains the only paid-entitlement authority.
 - The clean hermetic run passed 162 tests, 66 migrations, the 167-table RLS audit, 41 applicable private browser journeys, all public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets.
+- Implementation commit `dbbe921e87e157cd637edba40089abbdf3fd7e3c` passed GitHub full CI run 36282404005 and SHA-matched CodeQL run 36282404016.
 - Billing remains disabled. No real Stripe credential, provider request, session, charge, refund, cancellation, deployment or publication was used.
 
 ## Publication boundary
