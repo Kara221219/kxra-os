@@ -2,6 +2,12 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 35
+
+- `scripts/staging-acceptance-core.mjs`, `scripts/staging-acceptance.mjs`, `tests/staging-acceptance.test.ts`, `package.json` — clean-pushed-SHA staging target validation, 18 bounded anonymous probes, redacted durable evidence and fail-closed tests.
+- `docs/decisions/0038-hash-bound-staging-acceptance-evidence.md`, `docs/operations/evidence/staging/.gitkeep` — decision and reviewed evidence location.
+- `README.md`, architecture, staging threat model, staging playbook and operating records — exact operator instructions, security boundary and current implementation evidence.
+
 ## 27 September Phase 2 Slice 34
 
 - migration `0068` for evidence-backed score assessments, exact factor evidence, project-derived calculation, approval and superseded history

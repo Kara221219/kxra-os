@@ -141,19 +141,40 @@ Run these checks with synthetic staging identities after owner verification and 
 
 Any private response at AAL1 for an enrolled account, reusable recovery intent, arbitrary callback redirect, factor ID accepted from the browser or stale session that survives database revocation is a hard stop.
 
+### Hash-bound anonymous staging smoke evidence
+
+After both Preview deployments use the exact reviewed branch tip, run the anonymous boundary harness before creating test invitations or enabling another provider. Use the exact deployed origins and commit. If Vercel Deployment Protection is enabled, keep its bypass value only in the operator shell or password manager.
+
+```sh
+export KXRA_ENVIRONMENT=staging
+export KXRA_STAGING_OS_ORIGIN='https://<exact-private-preview-host>'
+export KXRA_STAGING_MARKETING_ORIGIN='https://<exact-marketing-preview-host>'
+export KXRA_STAGING_EXPECTED_COMMIT='<40-character-deployed-git-sha>'
+# Optional; read without echo if deployment protection requires it.
+read -r -s KXRA_STAGING_PROTECTION_BYPASS
+export KXRA_STAGING_PROTECTION_BYPASS
+npm run staging:acceptance:plan
+export KXRA_STAGING_ACCEPTANCE_CONFIRMATION="VERIFY:<private-host>:<marketing-host>:${KXRA_STAGING_EXPECTED_COMMIT}"
+npm run staging:acceptance:run
+unset KXRA_STAGING_OS_ORIGIN KXRA_STAGING_MARKETING_ORIGIN KXRA_STAGING_EXPECTED_COMMIT KXRA_STAGING_PROTECTION_BYPASS KXRA_STAGING_ACCEPTANCE_CONFIRMATION
+```
+
+The run checks 18 anonymous routes for exact public/private separation, secure response headers, private no-store behavior, staging `noindex`, absent permissive CORS and known private/fixture marker leakage. It follows no redirects and retains no response body, cookie, token or credential. Review the generated JSON under `docs/operations/evidence/staging` before committing it. A `FAIL` artifact remains evidence of the failed run and must not be relabelled; fix the environment and run again.
+
 ## 4. Pre-deployment gate
 
 Before either build, the environment preflight must pass inside the target Vercel environment. It inspects names and formats without printing values. Any production target, fixture variable, legacy Supabase key, placeholder/reused secret, public-named secret, privileged database user, missing TLS mode, enabled capability or cross-application credential fails the build.
 
 After deployment, run the full staging acceptance plan before enabling another provider:
 
-1. Prove hosted Auth, owner bootstrap, invitation-only access and exact callback behavior.
-2. Run database and HTTP owner/partner/anonymous/revoked/crafted-ID/cross-project tests against non-bypass roles.
-3. Prove the marketing application cannot retrieve private records, project context, files or Ask KXRA evidence.
-4. Confirm Vercel's observed forwarded-address behavior, then apply and evidence the exact WAF rate rule.
-5. Inspect HTML, RSC, prefetch, scripts, source maps, errors and caches for private markers.
-6. Run hosted accessibility, performance, failure and distributed public-ingress tests with synthetic data.
-7. Perform the encrypted provider backup/empty-target restore drill and record RPO, RTO and discrepancies.
+1. Run the hash-bound anonymous staging smoke harness and retain its reviewed evidence.
+2. Prove hosted Auth, owner bootstrap, invitation-only access and exact callback behavior.
+3. Run database and HTTP owner/partner/anonymous/revoked/crafted-ID/cross-project tests against non-bypass roles.
+4. Prove the marketing application cannot retrieve private records, project context, files or Ask KXRA evidence.
+5. Confirm Vercel's observed forwarded-address behavior, then apply and evidence the exact WAF rate rule.
+6. Inspect HTML, RSC, prefetch, scripts, source maps, errors and caches for private markers.
+7. Run hosted accessibility, performance, failure and distributed public-ingress tests with synthetic data.
+8. Perform the encrypted provider backup/empty-target restore drill and record RPO, RTO and discrepancies.
 
 Failure at any step keeps the environment non-customer and all external capability flags false. Rollback removes the preview deployment and rotates the affected credential; it does not promote another deployment.
 
