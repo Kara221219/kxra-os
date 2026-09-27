@@ -13,7 +13,7 @@ Submission derives account and organization from the verified transaction. Handl
 ## Enforced controls
 
 - All 168 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
-- The application login is non-superuser, `NOINHERIT` and `NOBYPASSRLS`. Each request enters a transaction, sets `ROLE authenticated`, verified subject claims and one server-derived `request.kxra.org_id`, then resets the pooled connection.
+- The application login is non-superuser, non-owning, `NOINHERIT` and `NOBYPASSRLS`, with only `anon`/`authenticated` membership. Each request enters a transaction, sets the bounded role, verified subject claims and one server-derived `request.kxra.org_id`, then commits or rolls back before releasing the pooled connection. The independent marketing login may assume only `anon` and always sets that role locally before public ingress.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
 - Selected-tenant policies prevent role/data union across memberships. Revoking one membership takes effect on the next request without cancelling another valid membership.

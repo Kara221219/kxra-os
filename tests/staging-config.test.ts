@@ -60,6 +60,7 @@ test("OS staging rejects production, fixtures, legacy keys and enabled credentia
     KXRA_STAGING_MIGRATOR_DATABASE_URL:
       "postgresql://postgres:secret@db.example.supabase.co:5432/postgres?sslmode=verify-full",
     KXRA_STAGING_SEED_CONFIRMATION: "SEED:example:branch",
+    KXRA_STAGING_APP_PASSWORD: secret("a"),
   });
   assert.equal(result.ok, false);
   for (const expected of [
@@ -72,6 +73,7 @@ test("OS staging rejects production, fixtures, legacy keys and enabled credentia
     "NEXT_PUBLIC_PRIVATE_TOKEN: server secret may not be public",
     "KXRA_STAGING_MIGRATOR_DATABASE_URL: operator-only value prohibited in hosted application",
     "KXRA_STAGING_SEED_CONFIRMATION: operator-only value prohibited in hosted application",
+    "KXRA_STAGING_APP_PASSWORD: operator-only value prohibited in hosted application",
   ])
     assert.ok(result.findings.includes(expected), expected);
 });
@@ -120,6 +122,30 @@ test("marketing staging rejects private OS credentials and privileged database r
   assert.ok(
     result.findings.includes(
       "KXRA_PUBLIC_DATABASE_URL: sslmode=require or verify-full is required",
+    ),
+  );
+  assert.ok(
+    result.findings.includes(
+      "KXRA_PUBLIC_DATABASE_URL: kxra_public_ingress database user required",
+    ),
+  );
+});
+
+test("staging profiles require the exact bounded runtime login", () => {
+  assert.ok(
+    verifyStagingConfiguration("os", {
+      ...os,
+      DATABASE_URL:
+        "postgresql://ordinary_user:private-password@db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full",
+    }).findings.includes("DATABASE_URL: kxra_app database user required"),
+  );
+  assert.ok(
+    verifyStagingConfiguration("marketing", {
+      ...marketing,
+      KXRA_PUBLIC_DATABASE_URL:
+        "postgresql://ordinary_user:private-password@db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full",
+    }).findings.includes(
+      "KXRA_PUBLIC_DATABASE_URL: kxra_public_ingress database user required",
     ),
   );
 });

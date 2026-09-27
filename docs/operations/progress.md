@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 30 adds a canonical-only, hash-bound staging seed operator and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 31 adds exact restricted staging runtime logins and passes the complete local contract. Remote verification is pending. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 30 implementation commit `12e7704d08cdedd2990efa0112f560e270933b98` passed full GitHub CI run 36287286378 and SHA-matched CodeQL run 36287286351. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 31 is locally verified and awaiting its implementation commit and remote checks. The latest remote evidence remains Slice 30 implementation commit `12e7704d08cdedd2990efa0112f560e270933b98`, full GitHub CI run 36287286378 and SHA-matched CodeQL run 36287286351. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -19,8 +19,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 67 ordered additive migrations, 168 RLS-protected tables with explicit policies and 144 audited public functions.
-- 172 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,697-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 359-file publication/secret scan pass.
+- 175 database/domain/HTTP/security tests, 46 private-OS browser scenarios (41 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,697-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 364-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -276,6 +276,15 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The clean hermetic run passed 172 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 359 files.
 - Implementation commit `12e7704d08cdedd2990efa0112f560e270933b98` passed GitHub full CI run 36287286378 and SHA-matched CodeQL run 36287286351.
 - ADR 0033 and the staging seed threat model preserve owner bootstrap, runtime roles, legal approval, product activation and providers as separate steps. No hosted database or credential was used.
+
+## Slice 31 local restricted-runtime-role evidence
+
+- Added a guarded `KXRA-RUNTIME-ROLES-V1` operator after exact canonical-seed verification. It requires the clean pushed phase branch, exact Supabase target, distinct 48–128-character apply-only secrets and a separate confirmation phrase.
+- `kxra_app` is an exact `LOGIN`, `NOINHERIT`, `NOBYPASSRLS` role with only `anon` and `authenticated` membership and a 20-connection limit. `kxra_public_ingress` has only `anon` membership and a five-connection limit.
+- Apply forces SCRAM-SHA-256 passwords, removes stale bounded memberships before granting them without admin option, clears role settings and refuses takeover if either role owns objects, has direct grants or carries an unknown membership.
+- Hosted application preflight now requires the exact login for each application and rejects every operator-only value. Public ingress explicitly selects `anon` inside every transaction in local and hosted execution.
+- The clean hermetic run passed 175 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 364 files.
+- ADR 0034 and the staging runtime-role threat model record the boundary. No runtime credential was generated, stored or used against a hosted database.
 
 ## Publication boundary
 

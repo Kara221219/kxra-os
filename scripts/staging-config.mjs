@@ -79,7 +79,7 @@ function secret(value, name, findings, prefix) {
     findings.push(`${name}: invalid secret format`);
 }
 
-function databaseUrl(value, name, findings, forbiddenUsers) {
+function databaseUrl(value, name, findings, forbiddenUsers, expectedUser) {
   let url;
   try {
     url = new URL(value);
@@ -91,8 +91,11 @@ function databaseUrl(value, name, findings, forbiddenUsers) {
     findings.push(`${name}: invalid PostgreSQL scheme`);
   if (!url.hostname || !url.username || !url.password)
     findings.push(`${name}: incomplete PostgreSQL authority`);
-  if (forbiddenUsers.has(decodeURIComponent(url.username).split(".")[0]))
+  const baseUser = decodeURIComponent(url.username).split(".")[0];
+  if (forbiddenUsers.has(baseUser))
     findings.push(`${name}: privileged database user prohibited`);
+  if (expectedUser && baseUser !== expectedUser)
+    findings.push(`${name}: ${expectedUser} database user required`);
   if (
     !["require", "verify-full"].includes(url.searchParams.get("sslmode") || "")
   )
@@ -120,7 +123,7 @@ function common(environment, findings) {
       findings.push(`${name}: fixture value prohibited`);
   for (const name of Object.keys(environment))
     if (
-      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION)$/.test(
+      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION|APP_PASSWORD|PUBLIC_INGRESS_PASSWORD|ROLE_CONFIRMATION)$/.test(
         name,
       ) &&
       present(environment, name)
@@ -162,6 +165,7 @@ function osConfiguration(environment, findings) {
     "DATABASE_URL",
     findings,
     new Set(["postgres", "supabase_admin", "service_role"]),
+    "kxra_app",
   );
   const joinSecret = required(environment, "KXRA_JOIN_SECRET", findings);
   if (joinSecret.length < 64 || placeholder.test(joinSecret))
@@ -223,6 +227,7 @@ function marketingConfiguration(environment, findings) {
     "KXRA_PUBLIC_DATABASE_URL",
     findings,
     new Set(["postgres", "supabase_admin", "service_role", "kxra_app"]),
+    "kxra_public_ingress",
   );
   const ingressSecret = required(
     environment,

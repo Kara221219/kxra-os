@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 31
+
+- guarded exact runtime-role `plan`/`apply`/`verify` operator after canonical-seed verification
+- distinct `kxra_app` and `kxra_public_ingress` login contracts, forced SCRAM passwords and exact non-admin memberships
+- exact per-application database-user preflight and unconditional transactional public `anon` selection
+- operator/role security tests, ADR 0034, runtime-role threat model and updated staging playbook
+- current README, architecture, access-control and operating evidence
+
+No credential value, hosted mutation, provider activation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 30
 
 - canonical-only staging seed profile, manifest, `plan`/`apply`/`verify` operator and environment guards

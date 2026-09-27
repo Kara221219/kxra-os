@@ -69,7 +69,7 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
   await client.connect();
   try {
     await client.query("begin");
-    if (local) await client.query("set local role anon");
+    await client.query("set local role anon");
     const result = await client.query(
       `select * from kxra.submit_public_enquiry($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [

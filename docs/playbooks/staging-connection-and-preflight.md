@@ -74,12 +74,22 @@ npm run staging:seed:plan
 export KXRA_STAGING_SEED_CONFIRMATION="SEED:${KXRA_STAGING_PROJECT_REF}:codex/phase-2-completion"
 npm run staging:seed:apply
 npm run staging:seed:verify
-unset KXRA_STAGING_MIGRATOR_DATABASE_URL KXRA_STAGING_MIGRATION_CONFIRMATION KXRA_STAGING_SEED_CONFIRMATION
+npm run staging:roles:plan
+read -r -s KXRA_STAGING_APP_PASSWORD
+export KXRA_STAGING_APP_PASSWORD
+read -r -s KXRA_STAGING_PUBLIC_INGRESS_PASSWORD
+export KXRA_STAGING_PUBLIC_INGRESS_PASSWORD
+export KXRA_STAGING_ROLE_CONFIRMATION="ROLES:${KXRA_STAGING_PROJECT_REF}:codex/phase-2-completion"
+npm run staging:roles:apply
+npm run staging:roles:verify
+unset KXRA_STAGING_MIGRATOR_DATABASE_URL KXRA_STAGING_MIGRATION_CONFIRMATION KXRA_STAGING_SEED_CONFIRMATION KXRA_STAGING_APP_PASSWORD KXRA_STAGING_PUBLIC_INGRESS_PASSWORD KXRA_STAGING_ROLE_CONFIRMATION
 ```
 
 Use the direct connection or **Session pooler** on port 5432 with `sslmode=verify-full`; the transaction pooler on port 6543 is rejected. The workflow never prints the URL, tracks each migration by exact hash/source commit, resumes a clean pending suffix and rejects an existing unmanaged KXRA schema.
 
-The seed workflow runs only after all migration hashes pass. `KXRA-CANONICAL-SEEDS-V1` binds the checked-in project and operating registers and imports exactly the seven source-backed projects plus classified records. It explicitly excludes local fixture identities, local AI/budget approval, legal placeholders, entitlements, active product entries, billing and provider state. Unknown profiles, changed source hashes, unmanaged existing canonical rows or content/provenance drift fail closed. Runtime login credentials and owner bootstrap remain separate reviewed steps.
+The seed workflow runs only after all migration hashes pass. `KXRA-CANONICAL-SEEDS-V1` binds the checked-in project and operating registers and imports exactly the seven source-backed projects plus classified records. It explicitly excludes local fixture identities, local AI/budget approval, legal placeholders, entitlements, active product entries, billing and provider state. Unknown profiles, changed source hashes, unmanaged existing canonical rows or content/provenance drift fail closed. Owner bootstrap remains a separate reviewed step.
+
+Generate two different 48–128 character base64url passwords in a password manager before the role step. The prompts do not echo them. The operator creates or rotates only `kxra_app` and `kxra_public_ingress`, rejects an existing role with unknown memberships, ownership or direct grants, and records no password or password hash. After verification, build `DATABASE_URL` with `kxra_app` and `KXRA_PUBLIC_DATABASE_URL` with `kxra_public_ingress`. For a copied session-pooler connection, use `kxra_app.PROJECT_REF` or `kxra_public_ingress.PROJECT_REF` as the username. Store each URL only in its matching Vercel staging project.
 
 Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current `sb_publishable_…` key for the browser. A Supabase `sb_secret_…` key bypasses RLS and is prohibited from both core staging applications; add one only to a separately reviewed server/worker secret store when a later provider slice explicitly requires it.
 
