@@ -2,13 +2,22 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { localMode, query, type Principal } from "../../../../../packages/db";
 import { renderEmail } from "../../../../../packages/integrations/email";
-import { sameOrigin, supabase } from "../../../lib/auth";
+import {
+  principal as currentPrincipal,
+  sameOrigin,
+  supabase,
+} from "../../../lib/auth";
 import { privateJson, readJson } from "../../../lib/http";
 import {
   fakeAuthProvider,
   fakeEmailTransport,
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
+import { cookies } from "next/headers";
+import {
+  openRecoveryIntent,
+  recoveryIntentCookie,
+} from "../../../../../packages/authz/recovery-intent";
 
 export async function POST(request: Request) {
   try {
@@ -80,21 +89,68 @@ export async function POST(request: Request) {
     const input = z
       .object({
         action: z.literal("confirm"),
-        token: z.string().regex(/^[A-Za-z0-9_-]{32,100}$/),
+        token: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{32,100}$/)
+          .optional(),
         password: z.string().min(12).max(256),
         confirmation: z.string().min(12).max(256),
       })
       .strict()
       .refine((value) => value.password === value.confirmation)
       .parse(raw);
-    if (!localMode())
-      return privateJson(
-        {
-          error:
-            "Hosted reset confirmation requires the provider return session",
-        },
-        503,
+    if (!localMode()) {
+      if (input.token) return privateJson({ error: "Reset unavailable" }, 409);
+      const identity = await currentPrincipal();
+      if (!identity || identity.source !== "supabase")
+        return privateJson({ error: "Reset unavailable" }, 409);
+      const secret = process.env.KXRA_JOIN_SECRET || "";
+      const intent = secret
+        ? openRecoveryIntent(
+            (await cookies()).get(recoveryIntentCookie)?.value,
+            secret,
+          )
+        : null;
+      if (intent?.userId !== identity.id)
+        return privateJson({ error: "Reset unavailable" }, 409);
+      const profile = await query<{ account_state: string }>(
+        identity,
+        "select account_state from kxra.profiles where user_id=$1",
+        [identity.id],
       );
+      if (
+        !profile[0] ||
+        ["SUSPENDED", "REVOKED"].includes(profile[0].account_state)
+      )
+        return privateJson({ error: "Reset unavailable" }, 409);
+      const client = await supabase();
+      const changed = await client.auth.updateUser({
+        password: input.password,
+      });
+      if (changed.error || changed.data.user?.id !== identity.id)
+        return privateJson({ error: "Reset unavailable" }, 409);
+      // The provider change cannot be rolled back. Consume the intent and end
+      // provider sessions even if the local audit write subsequently fails.
+      (await cookies()).delete(recoveryIntentCookie);
+      let auditRecorded = true;
+      try {
+        await query(
+          identity,
+          "select kxra.record_password_event('PASSWORD_CHANGED')",
+          [],
+        );
+      } catch {
+        auditRecorded = false;
+      }
+      const signedOut = await client.auth.signOut({ scope: "global" });
+      if (!auditRecorded || signedOut.error)
+        return privateJson(
+          { error: "Password changed; sign-in is required" },
+          409,
+        );
+      return privateJson({ next: "/login?reset=1" });
+    }
+    if (!input.token) return privateJson({ error: "Reset unavailable" }, 409);
     const identity = await fakeAuthProvider().resetPassword(
       input.token,
       input.password,

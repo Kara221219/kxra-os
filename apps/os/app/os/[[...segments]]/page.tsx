@@ -205,6 +205,8 @@ export default async function Workspace({
     if (e instanceof HttpError && e.status === 401) redirect("/login");
     if (e instanceof HttpError && e.code === "TENANT_SELECTION_REQUIRED")
       redirect("/select-organisation");
+    if (e instanceof HttpError && e.code === "MFA_REQUIRED")
+      redirect("/login/mfa");
     if (e instanceof HttpError && e.code === "AGREEMENT_REQUIRED")
       redirect("/agreements");
     if (e instanceof HttpError && e.code === "ONBOARDING_REQUIRED")

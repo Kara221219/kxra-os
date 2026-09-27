@@ -22,7 +22,16 @@ export type HostedMfaApi = {
   }): Promise<MfaResult>;
   unenroll(input: { factorId: string }): Promise<MfaResult>;
   listFactors(): Promise<MfaResult>;
+  getAuthenticatorAssuranceLevel(): Promise<MfaResult>;
 };
+
+export function requiresHostedMfa(
+  source: string | undefined,
+  mfaState: string | undefined,
+  aal: string | undefined,
+) {
+  return source === "supabase" && mfaState === "ENROLLED" && aal !== "aal2";
+}
 
 export function hostedTotpTimestamp(claims: { aal?: unknown; amr?: unknown }) {
   if (claims.aal !== "aal2" || !Array.isArray(claims.amr)) return undefined;
@@ -84,6 +93,28 @@ function factors(result: MfaResult): HostedFactor[] {
       throw Error("MFA_FACTOR_RESPONSE_INVALID");
   }
   return data.all;
+}
+
+export async function hostedMfaGate(api: HostedMfaApi) {
+  const assurance = providerError(
+    await api.getAuthenticatorAssuranceLevel(),
+    "MFA_ASSURANCE_LOOKUP_FAILED",
+  );
+  const current = assurance.currentLevel;
+  const next = assurance.nextLevel;
+  if (!["aal1", "aal2"].includes(current) || !["aal1", "aal2"].includes(next))
+    throw Error("MFA_ASSURANCE_RESPONSE_INVALID");
+  if (current === "aal2") return { challengeRequired: false as const };
+  if (next === "aal1") return { challengeRequired: false as const };
+  const verified = factors(await api.listFactors()).filter(
+    (factor) => factor.factor_type === "totp" && factor.status === "verified",
+  );
+  const preferred = verified.filter(
+    (factor) => factor.friendly_name === "KXRA OS",
+  );
+  const eligible = preferred.length ? preferred : verified;
+  if (eligible.length !== 1) throw Error("MFA_FACTOR_AMBIGUOUS");
+  return { challengeRequired: true as const, factorId: eligible[0].id };
 }
 
 async function unenrollExact(api: HostedMfaApi, factorId: string) {

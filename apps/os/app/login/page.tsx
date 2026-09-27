@@ -5,9 +5,9 @@ export const dynamic = "force-dynamic";
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; verify?: string }>;
+  searchParams: Promise<{ error?: string; verify?: string; reset?: string }>;
 }) {
-  const { error, verify } = await searchParams;
+  const { error, verify, reset } = await searchParams;
   const local = localMode();
   return (
     <main className="login">
@@ -25,6 +25,11 @@ export default async function Login({
         <p role="status" className="notice">
           Verify your invited email before signing in. Reopen the verification
           message or ask the KXRA owner for help.
+        </p>
+      )}
+      {reset && (
+        <p role="status" className="notice">
+          Password updated. Sign in again with your new password.
         </p>
       )}
       <form action="/api/auth" method="post">

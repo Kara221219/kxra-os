@@ -3,7 +3,9 @@ import { test } from "node:test";
 import {
   beginHostedTotp,
   hostedTotpTimestamp,
+  hostedMfaGate,
   prepareHostedTotp,
+  requiresHostedMfa,
   removeHostedTotp,
   verifyHostedTotp,
   type HostedMfaApi,
@@ -45,6 +47,12 @@ function api(overrides: Partial<HostedMfaApi> = {}): HostedMfaApi {
     async listFactors() {
       return { data: { all: [], totp: [] }, error: null };
     },
+    async getAuthenticatorAssuranceLevel() {
+      return {
+        data: { currentLevel: "aal1", nextLevel: "aal1" },
+        error: null,
+      };
+    },
     ...overrides,
   };
 }
@@ -75,6 +83,91 @@ test("hosted TOTP enrollment accepts only a bounded inline QR response", async (
     ),
     /MFA_ENROLLMENT_RESPONSE_INVALID/,
   );
+});
+
+test("hosted sign-in requires the one verified KXRA TOTP factor", async () => {
+  assert.deepEqual(
+    await hostedMfaGate(
+      api({
+        async getAuthenticatorAssuranceLevel() {
+          return {
+            data: { currentLevel: "aal1", nextLevel: "aal2" },
+            error: null,
+          };
+        },
+        async listFactors() {
+          return {
+            data: {
+              all: [
+                {
+                  id: factorVerified,
+                  factor_type: "totp",
+                  friendly_name: "KXRA OS",
+                  status: "verified",
+                },
+              ],
+              totp: [],
+            },
+            error: null,
+          };
+        },
+      }),
+    ),
+    { challengeRequired: true, factorId: factorVerified },
+  );
+  assert.deepEqual(
+    await hostedMfaGate(
+      api({
+        async getAuthenticatorAssuranceLevel() {
+          return {
+            data: { currentLevel: "aal2", nextLevel: "aal2" },
+            error: null,
+          };
+        },
+      }),
+    ),
+    { challengeRequired: false },
+  );
+});
+
+test("hosted sign-in rejects missing and ambiguous verified factors", async () => {
+  const assurance = async () => ({
+    data: { currentLevel: "aal1", nextLevel: "aal2" },
+    error: null,
+  });
+  await assert.rejects(
+    hostedMfaGate(api({ getAuthenticatorAssuranceLevel: assurance })),
+    /MFA_FACTOR_AMBIGUOUS/,
+  );
+  await assert.rejects(
+    hostedMfaGate(
+      api({
+        getAuthenticatorAssuranceLevel: assurance,
+        async listFactors() {
+          return {
+            data: {
+              all: [factorOne, factorVerified].map((id) => ({
+                id,
+                factor_type: "totp",
+                friendly_name: "KXRA OS",
+                status: "verified",
+              })),
+              totp: [],
+            },
+            error: null,
+          };
+        },
+      }),
+    ),
+    /MFA_FACTOR_AMBIGUOUS/,
+  );
+});
+
+test("only an enrolled hosted AAL1 identity is stopped at the application gate", () => {
+  assert.equal(requiresHostedMfa("supabase", "ENROLLED", "aal1"), true);
+  assert.equal(requiresHostedMfa("supabase", "ENROLLED", "aal2"), false);
+  assert.equal(requiresHostedMfa("supabase", "NOT_ENROLLED", "aal1"), false);
+  assert.equal(requiresHostedMfa("fake-provider", "ENROLLED", "aal1"), false);
 });
 
 test("recent hosted owner proof uses the latest TOTP AMR timestamp", () => {

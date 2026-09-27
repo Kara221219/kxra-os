@@ -52,7 +52,7 @@ export function PasswordResetRequestForm() {
   );
 }
 
-export function PasswordResetConfirmForm({ token }: { token: string }) {
+export function PasswordResetConfirmForm({ token }: { token?: string }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -64,7 +64,7 @@ export function PasswordResetConfirmForm({ token }: { token: string }) {
         try {
           const result = await post({
             action: "confirm",
-            token,
+            ...(token ? { token } : {}),
             password: data.get("password"),
             confirmation: data.get("confirmation"),
           });

@@ -3,7 +3,10 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
 import { localPrincipal } from "#kxra/local-runtime";
-import { hostedTotpTimestamp } from "../../../packages/authz/supabase-mfa";
+import {
+  hostedTotpTimestamp,
+  requiresHostedMfa,
+} from "../../../packages/authz/supabase-mfa";
 
 export const organisationContextCookie = "kxra_organisation";
 
@@ -258,6 +261,8 @@ export async function actor(): Promise<Actor> {
     throw new HttpError(428, "Onboarding required", "ONBOARDING_REQUIRED");
   if (p.account_state !== "ACTIVE")
     throw new HttpError(403, "Access unavailable", "ACCESS_UNAVAILABLE");
+  if (requiresHostedMfa(p.source, p.mfa_state, p.aal))
+    throw new HttpError(428, "MFA challenge required", "MFA_REQUIRED");
   const gate = await query<{
     allowed: boolean;
     code: string;

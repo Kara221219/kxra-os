@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith("/os") ||
     request.nextUrl.pathname.startsWith("/api") ||
-    request.nextUrl.pathname === "/login"
+    request.nextUrl.pathname.startsWith("/login")
   )
     response.headers.set("Cache-Control", "private, no-store");
   return response;

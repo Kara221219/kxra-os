@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 33
+
+- hosted password-sign-in assurance gate, dedicated TOTP challenge route and direct actor-level AAL2 enforcement
+- exact Auth callback destination policy and signed, subject-bound ten-minute recovery intent
+- hosted provider password update, current-account check, intent consumption, explicit partial-failure result and global sign-out
+- MFA/recovery policy and tamper tests, ADR 0036, account threat-model updates and staging acceptance steps
+- current README, architecture, access-control and operating evidence
+
+No password, provider token, factor secret, real identity, hosted mutation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 32
 
 - guarded singleton-owner `plan`/`apply`/`verify` operator with exact Auth, seed, runtime-role, branch and takeover checks

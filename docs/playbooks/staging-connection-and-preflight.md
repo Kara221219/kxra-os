@@ -126,6 +126,21 @@ unset KXRA_STAGING_MIGRATOR_DATABASE_URL KXRA_STAGING_OWNER_USER_ID KXRA_STAGING
 
 Do not remove the owner's factor through ordinary account controls. Supabase does not provide a KXRA-approved recovery-code path in this implementation; a lost factor requires a reviewed support/recovery procedure. Global sign-out is supported, but revoked access tokens can remain valid until their short expiry, so database account/membership revocation remains the immediate authorization control.
 
+### Hosted sign-in and recovery acceptance
+
+Run these checks with synthetic staging identities after owner verification and before enabling any other provider. Retain redacted timestamps and outcomes; never retain passwords, links, codes, cookies or tokens.
+
+1. Sign out globally. Sign in with the enrolled owner's password and confirm the application stops at `/login/mfa` before any private OS page renders.
+2. Enter a wrong code and confirm the generic challenge error. Enter the current code and confirm the JWT reaches `aal2` and the application opens only the authorized organization.
+3. Establish an `aal1` enrolled session and request `/os`, one private API and one crafted project URL directly. Each must stop at the MFA boundary before project or model context retrieval.
+4. Confirm an account without an enrolled factor follows its approved onboarding/enrollment policy. Create an ambiguous-factor condition only in a disposable identity and confirm sign-in fails closed with a support path.
+5. Request a password reset. Confirm the provider email returns only to the exact private HTTPS callback and then `/reset-password`; altered, external or query-extended destinations must resolve to `/os` or fail.
+6. Confirm a normal signed-in session without the recovery intent cannot submit a new password. Confirm a tampered, expired or different-user intent fails with the generic reset response.
+7. Complete one recovery. Confirm the intent is consumed, the old password fails, the new password works, the enrolled account is challenged for TOTP again and prior refresh sessions no longer recover private access.
+8. Simulate the local audit write being unavailable after provider success. Confirm the response says the password changed and requires sign-in, the intent cannot be reused and the incident is reconciled before acceptance.
+
+Any private response at AAL1 for an enrolled account, reusable recovery intent, arbitrary callback redirect, factor ID accepted from the browser or stale session that survives database revocation is a hard stop.
+
 ## 4. Pre-deployment gate
 
 Before either build, the environment preflight must pass inside the target Vercel environment. It inspects names and formats without printing values. Any production target, fixture variable, legacy Supabase key, placeholder/reused secret, public-named secret, privileged database user, missing TLS mode, enabled capability or cross-application credential fails the build.

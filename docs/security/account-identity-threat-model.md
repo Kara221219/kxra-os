@@ -1,6 +1,6 @@
 # Account and invitation threat model
 
-Date: 20 September 2026. Scope: local account, invitation, onboarding, selected-tenant and first-private-access legal paths through Phase 2 Slice 2 on `codex/phase-2-completion`. File processing, delivery and knowledge retrieval threats are detailed in the [file/knowledge threat model](file-knowledge-threat-model.md).
+Date: 27 September 2026. Scope: account, invitation, onboarding, selected-tenant, first-private-access legal, hosted MFA sign-in and password-recovery contracts through Phase 2 Slice 33 on `codex/phase-2-completion`. File processing, delivery and knowledge retrieval threats are detailed in the [file/knowledge threat model](file-knowledge-threat-model.md).
 
 ## Protected assets
 
@@ -31,6 +31,10 @@ The browser is untrusted. Auth verifies identity; it does not decide KXRA author
 | Reuse of another tenant's legal acceptance        | Acceptance binds account, membership, organization, presentation and exact document/wording hashes                           | Verify approved-document import and hosted concurrency             |
 | Stale session after suspension/revocation         | Account/RLS state checked per request; session version increments; outbox is cancelled                                       | Verify Supabase global sign-out/refresh-token invalidation latency |
 | Weak/reused account operation                     | Password policy and one-use reset/verification tokens; durable rate buckets; generic errors                                  | Add distributed edge/provider limits and credential-breach policy  |
+| Password-only entry after TOTP enrollment         | Hosted sign-in derives assurance and the exact verified factor server-side; the actor boundary independently requires AAL2   | Exercise provider refresh, multi-tab and factor-loss behavior      |
+| Forged factor ID or recovery destination          | Browser supplies only a six-digit proof; callbacks use an exact internal allowlist                                            | Inspect deployed proxy, callback and provider logs                 |
+| Existing session abuses password-reset form       | Hosted reset requires a signed HttpOnly ten-minute intent bound to the exact verified recovery subject                       | Prove PKCE email-link behavior and global revocation latency       |
+| Provider password changes before local audit      | Intent is consumed and global sign-out attempted regardless; response explicitly reports the changed-password recovery state | Exercise audit outage and provider timeout in staging              |
 | Fixture exposure in production                    | Conditional production stubs, runtime guards and optimized-artifact marker scan                                              | Repeat against staging and deployed artifacts/metadata             |
 | Concurrent/stale owner mutation                   | Current-state approval digest, recent AAL2, row locks, target/access versions and one-use execution                          | Verify real AAL2/recovery and pooler behavior                      |
 | Legal placeholder misrepresentation               | Active requirements and release manifests reject `UNAPPROVED_PLACEHOLDER`; synthetic approvals exist only in tests           | Counsel/owner supplies and approves exact production documents     |
@@ -42,3 +46,5 @@ KXRA tables store email digests/hints for operational views and provider-safe id
 ## Failure policy
 
 Unknown, malformed, stale, expired, revoked, mismatched or rate-limited account operations return bounded generic errors. A missing provider, account, membership, agreement or project grant denies access. External delivery and hosted mutation remain disabled until their separate acceptance evidence exists.
+
+Hosted sign-in and recovery controls are implemented against the provider contract but remain locally tested only. They do not constitute evidence that Supabase email templates, redirect configuration, refresh behavior or global session invalidation work in the connected staging project.
