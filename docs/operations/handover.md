@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 33 implementation commit `0436c123a482c7363173a733a3acb2b8fe914c5c` passes the complete local contract, full GitHub CI run 36292883782 and SHA-matched CodeQL run 36292883777.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 34 is locally complete and awaiting its implementation commit and remote CI evidence. Slice 33 implementation commit `0436c123a482c7363173a733a3acb2b8fe914c5c` passes full GitHub CI run 36292883782 and SHA-matched CodeQL run 36292883777.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,16 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–33 are committed remotely. Slice 33 adds no managed application-schema object, so the current schema remains at migration `0067` with 168 RLS-protected tables and 144 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–33 are committed remotely. Slice 34 adds migration `0068`; the current schema has 171 RLS-protected tables and 146 audited public functions.
+
+Slice 34 adds:
+
+- exact accepted-evidence versions and rationales for the ten Genesis scoring factors;
+- deterministic coverage and score bounds, with unknown headline scores until evidence is complete;
+- optional complete four-dimensional confidence evidence, explicitly separated from success probability;
+- hash-bound owner approval, recent-AAL2 execution, stale-state/evidence rejection and immutable superseded history;
+- owner assessment/history UI and applied-result visibility limited by active project RLS;
+- SQL, HTTP and browser attack/acceptance coverage documented by ADR 0037.
 
 Slice 33 adds:
 
@@ -69,6 +78,8 @@ The Slice 31 contract passes the 228-package dependency policy, 175 database/dom
 The Slice 32 contract passes the 228-package dependency policy, 184 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 371-file publication/secret scan locally and in GitHub CI run 36291392558. CodeQL run 36291392562 independently passes the exact implementation SHA.
 
 The Slice 33 contract passes the 228-package dependency policy, 190 database/domain/HTTP/security tests, the 67-migration/168-table RLS audit, 46 private-OS runs (41 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,697-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 375-file publication/secret scan locally and in GitHub CI run 36292883782. CodeQL run 36292883777 independently passes the exact implementation SHA.
+
+The Slice 34 local contract passes the 228-package dependency policy, 193 database/domain/HTTP/security tests, the 68-migration/171-table RLS audit, 48 private-OS runs (43 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 380-file publication/secret scan. Remote CI and CodeQL evidence will be added after the implementation commit is pushed.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

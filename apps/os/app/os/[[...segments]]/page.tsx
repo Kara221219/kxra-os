@@ -1278,6 +1278,7 @@ export default async function Workspace({
                   "account.lifecycle",
                   "idea.share",
                   "project.governance",
+                  "project.score",
                 ].includes(r.action) && (
                   <ActionButton
                     url={"/api/approvals/" + r.id + "/execute"}

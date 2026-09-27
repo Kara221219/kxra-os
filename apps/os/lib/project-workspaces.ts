@@ -366,6 +366,35 @@ export type WorkspaceFinance = {
   entry_count: number;
 };
 
+export type ProjectScoreFactor = {
+  factor_key: string;
+  weight: number;
+  rating: string;
+  rationale: string;
+  confidence_quality: string | null;
+  confidence_independence: string | null;
+  confidence_recency: string | null;
+  confidence_directness: string | null;
+  evidence_count: number;
+};
+
+export type ProjectScoreAssessment = {
+  id: string;
+  formula_version: "genesis-1";
+  state: "REQUESTED" | "APPLIED" | "SUPERSEDED";
+  venture_score: string | null;
+  confidence_score: string | null;
+  score_coverage: string;
+  score_lower_bound: string;
+  score_upper_bound: string;
+  reason: string;
+  approval_id: string;
+  approval_state: string;
+  created_at: string;
+  applied_at: string | null;
+  factors: ProjectScoreFactor[];
+};
+
 export type ProjectWorkspace = {
   project: Project;
   modules: WorkspaceModule[];
@@ -382,6 +411,7 @@ export type ProjectWorkspace = {
   approvals: WorkspaceApproval[];
   activity: WorkspaceActivity[];
   finance: WorkspaceFinance[];
+  scoreAssessments: ProjectScoreAssessment[];
   vehicles: VehicleCompatibility[];
   propertyAssets: PropertyAsset[];
   clprReviews: ClprRevisitReview[];
@@ -472,6 +502,7 @@ export async function loadProjectWorkspace(
     approvals: [],
     activity: [],
     finance: [],
+    scoreAssessments: [],
     vehicles: [],
     propertyAssets: [],
     clprReviews: [],
@@ -491,32 +522,62 @@ export async function loadProjectWorkspace(
     acceptedEvidence: [],
   };
 
-  const [policies, authorizations, evidence] = await Promise.all([
-    query<GatePolicy>(
-      a,
-      `select gate_code,policy_version,requirements,threshold_state
+  const [policies, authorizations, evidence, scoreAssessments] =
+    await Promise.all([
+      query<GatePolicy>(
+        a,
+        `select gate_code,policy_version,requirements,threshold_state
        from kxra.project_gate_policies where project_id=$1 order by gate_code`,
-      [projectId],
-    ),
-    query<GateAuthorization>(
-      a,
-      `select id,gate_code,evidence_id,evidence_version,scope,created_at
+        [projectId],
+      ),
+      query<GateAuthorization>(
+        a,
+        `select id,gate_code,evidence_id,evidence_version,scope,created_at
        from kxra.project_gate_authorizations where project_id=$1 order by created_at desc,id`,
-      [projectId],
-    ),
-    a.role === "owner"
-      ? query<RecordRow>(
-          a,
-          `select * from kxra.records where project_id=$1 and status='accepted'
+        [projectId],
+      ),
+      a.role === "owner"
+        ? query<RecordRow>(
+            a,
+            `select * from kxra.records where project_id=$1 and status='accepted'
             and visibility='project_shared' and kind<>'idea'
            order by title,id`,
-          [projectId],
-        )
-      : Promise.resolve([] as RecordRow[]),
-  ]);
+            [projectId],
+          )
+        : Promise.resolve([] as RecordRow[]),
+      query<ProjectScoreAssessment>(
+        a,
+        `select assessment.id,assessment.formula_version,assessment.state,
+          assessment.venture_score::text,assessment.confidence_score::text,
+          assessment.score_coverage::text,assessment.score_lower_bound::text,
+          assessment.score_upper_bound::text,assessment.reason,
+          assessment.approval_id,coalesce(approval.state,assessment.state) as approval_state,
+          assessment.created_at,assessment.applied_at,
+          coalesce((select jsonb_agg(jsonb_build_object(
+            'factor_key',factor.factor_key,'weight',factor.weight,
+            'rating',factor.rating::text,'rationale',factor.rationale,
+            'confidence_quality',factor.confidence_quality::text,
+            'confidence_independence',factor.confidence_independence::text,
+            'confidence_recency',factor.confidence_recency::text,
+            'confidence_directness',factor.confidence_directness::text,
+            'evidence_count',(select count(*)::int
+              from kxra.project_score_factor_evidence evidence
+              where evidence.assessment_id=factor.assessment_id
+               and evidence.factor_key=factor.factor_key)
+          ) order by factor.factor_key)
+          from kxra.project_score_factors factor
+          where factor.assessment_id=assessment.id),'[]'::jsonb) as factors
+         from kxra.project_score_assessments assessment
+         left join kxra.approvals approval on approval.id=assessment.approval_id
+         where assessment.project_id=$1
+         order by assessment.created_at desc,assessment.id desc limit 20`,
+        [projectId],
+      ),
+    ]);
   result.gatePolicies = policies;
   result.gateAuthorizations = authorizations;
   result.acceptedEvidence = evidence;
+  result.scoreAssessments = scoreAssessments;
 
   if (availability === "DENIED") return result;
 

@@ -26,6 +26,7 @@ import {
   YoutubePackageForm,
   YoutubeReviewForm,
 } from "./Phase2ProjectForms";
+import ProjectScoreForm from "./ProjectScoreForm";
 import type {
   GatePolicy,
   ProjectWorkspace,
@@ -40,6 +41,12 @@ function Empty({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
+}
+
+function scoreValue(value: string | number | null) {
+  return value === null
+    ? "Unknown"
+    : Number(value).toFixed(2).replace(/\.00$/, "");
 }
 
 function Boundary({ children }: { children: React.ReactNode }) {
@@ -266,6 +273,23 @@ function ProjectOverview({
           <span>Confidence Score</span>
           <strong>{project.confidence_score ?? "Not Assessed"}</strong>
         </div>
+        <div>
+          <span>Score coverage</span>
+          <strong>
+            {project.score_coverage === null
+              ? "Unknown"
+              : `${Math.round(Number(project.score_coverage) * 100)}%`}
+          </strong>
+        </div>
+        <div>
+          <span>Current score bounds</span>
+          <strong>
+            {project.score_lower_bound === null ||
+            project.score_upper_bound === null
+              ? "Unknown"
+              : `${scoreValue(project.score_lower_bound)}–${scoreValue(project.score_upper_bound)}`}
+          </strong>
+        </div>
       </div>
       <section className="panel">
         <p className="eyebrow">Current next action</p>
@@ -299,7 +323,65 @@ function ProjectOverview({
           projectId={project.id}
         />
       ))}
+      <ScoreAssessmentHistory workspace={workspace} />
+      {owner && (
+        <ProjectScoreForm
+          project={workspace.project}
+          evidence={workspace.acceptedEvidence}
+        />
+      )}
     </>
+  );
+}
+
+function ScoreAssessmentHistory({
+  workspace,
+}: {
+  workspace: ProjectWorkspace;
+}) {
+  if (!workspace.scoreAssessments.length)
+    return (
+      <Empty>
+        No evidence-backed score assessment has been requested. Venture and
+        Confidence Scores remain unknown.
+      </Empty>
+    );
+  return (
+    <section className="panel">
+      <p className="eyebrow">Score assessment history</p>
+      <h2>Evidence, bounds and approval state</h2>
+      {workspace.scoreAssessments.map((assessment) => (
+        <details className="list-item" key={assessment.id}>
+          <summary>
+            {assessment.state} ·{" "}
+            {Math.round(Number(assessment.score_coverage) * 100)}%
+            {" coverage · bounds "}
+            {scoreValue(assessment.score_lower_bound)}–
+            {scoreValue(assessment.score_upper_bound)}
+          </summary>
+          <p>{assessment.reason}</p>
+          <p className="subtle">
+            Formula {assessment.formula_version} · approval{" "}
+            {assessment.approval_state}
+            {" · "}
+            {new Date(assessment.created_at).toLocaleString("en-GB")}
+          </p>
+          <dl className="workspace-data-list">
+            {assessment.factors.map((factor) => (
+              <div key={factor.factor_key}>
+                <dt>{factor.factor_key.replaceAll("_", " ")}</dt>
+                <dd>
+                  {scoreValue(factor.rating)}/5 · weight {factor.weight} ·{" "}
+                  {factor.evidence_count} evidence item
+                  {factor.evidence_count === 1 ? "" : "s"}
+                </dd>
+                <dd className="subtle">{factor.rationale}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      ))}
+    </section>
   );
 }
 
@@ -987,22 +1069,44 @@ function ModuleBody({
     );
   if (source === "PROJECT_SCORES")
     return (
-      <div className="workspace-score-grid">
-        <div>
-          <span>Venture Score</span>
-          <strong>{workspace.project.venture_score ?? "Not Assessed"}</strong>
+      <>
+        <div className="workspace-score-grid">
+          <div>
+            <span>Venture Score</span>
+            <strong>{workspace.project.venture_score ?? "Not Assessed"}</strong>
+          </div>
+          <div>
+            <span>Confidence Score</span>
+            <strong>
+              {workspace.project.confidence_score ?? "Not Assessed"}
+            </strong>
+          </div>
+          <div>
+            <span>Coverage</span>
+            <strong>
+              {workspace.project.score_coverage === null
+                ? "Unknown"
+                : `${Math.round(Number(workspace.project.score_coverage) * 100)}%`}
+            </strong>
+          </div>
+          <div>
+            <span>Bounds</span>
+            <strong>
+              {workspace.project.score_lower_bound === null ||
+              workspace.project.score_upper_bound === null
+                ? "Unknown"
+                : `${scoreValue(workspace.project.score_lower_bound)}–${scoreValue(workspace.project.score_upper_bound)}`}
+            </strong>
+          </div>
         </div>
-        <div>
-          <span>Confidence Score</span>
-          <strong>
-            {workspace.project.confidence_score ?? "Not Assessed"}
-          </strong>
-        </div>
-        <div>
-          <span>Coverage</span>
-          <strong>{workspace.project.score_coverage ?? "Unknown"}</strong>
-        </div>
-      </div>
+        <ScoreAssessmentHistory workspace={workspace} />
+        {owner && (
+          <ProjectScoreForm
+            project={workspace.project}
+            evidence={workspace.acceptedEvidence}
+          />
+        )}
+      </>
     );
   if (source === "YOUTUBE_PIPELINE")
     return <YoutubePipeline workspace={workspace} owner={owner} />;

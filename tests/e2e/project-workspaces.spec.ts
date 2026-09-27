@@ -237,6 +237,40 @@ test("AT-23 specialist UIs expose evidence states and preserve hard stops", asyn
   ).toBeVisible();
 });
 
+test("AT-47 owner requests an evidence-backed partial score without inventing a headline score", async ({
+  page,
+}) => {
+  await fixtureLogin(page, "owner");
+  await page.goto(`/os/projects/${projects.p2}`);
+  await expect(
+    page.getByRole("heading", {
+      name: "Assess Venture and Confidence Scores",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByText("Customer problem · weight 15", { exact: true }).click();
+  await page.locator('[name="customer_problem.rating"]').selectOption("4");
+  await page
+    .locator('[name="customer_problem.evidence"]')
+    .selectOption({ index: 1 });
+  await page
+    .locator('[name="customer_problem.rationale"]')
+    .fill("Accepted project evidence supports this bounded rating.");
+  await page
+    .getByLabel("Assessment reason")
+    .fill("Request exact review while retaining unknown overall scores.");
+  await page.getByRole("button", { name: "Request score approval" }).click();
+  await expect(
+    page.getByText("Score assessment submitted for exact approval.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Not Assessed", { exact: true })).toHaveCount(2);
+  await expect(
+    page.getByText(/15% coverage · bounds 12–97/).first(),
+  ).toBeVisible();
+});
+
 test("AT-23 partner project navigation remains exact and server-scoped", async ({
   page,
 }) => {

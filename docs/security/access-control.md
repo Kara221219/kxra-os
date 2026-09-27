@@ -14,7 +14,7 @@ Submission derives account and organization from the verified transaction. Handl
 
 ## Enforced controls
 
-- All 168 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
+- All 171 tables have RLS and at least one explicit policy. Internal ingress/rate-limit/worker tables use explicit read or deny policies and are mutated only through bounded functions. Tests reject a new table without RLS or a policy.
 - The application login is non-superuser, non-owning, `NOINHERIT` and `NOBYPASSRLS`, with only `anon`/`authenticated` membership. Each request enters a transaction, sets the bounded role, verified subject claims and one server-derived `request.kxra.org_id`, then commits or rolls back before releasing the pooled connection. The independent marketing login may assume only `anon` and always sets that role locally before public ingress.
 - `account_identities` and `organisation_memberships` are authoritative for tenant context. A multi-membership account must explicitly select one organization. The HttpOnly cookie is only a UUID selector; the database verifies a live membership and records the context event.
 - Headers, URL segments, request bodies, JWT organization/role metadata and model output cannot select tenant or elevate role. A forged or revoked selection returns typed `TENANT_ACCESS_DENIED`.
@@ -69,7 +69,7 @@ Fixture mode requires explicit development configuration, HTTP `127.0.0.1`, an u
 
 ## Tested attack paths
 
-The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 168 tables and audits all 144 exposed functions.
+The local matrix covers owner, contributor, viewer, revoked, onboarding, suspended, anonymous, other-organization, customer-admin and dual-membership principals. It reads and attempts unauthorized writes across all 171 tables and audits all 146 exposed functions. Project score requests are owner-only, require exact current accepted evidence and recent-AAL2 approval, and recheck project/evidence state at execution. Assigned partners can read only applied or superseded score evidence for their active project; requested assessments and approval envelopes remain owner-only.
 
 Brand website acquisition is asynchronous and project-scoped. The browser may only schedule a refresh for a currently visible writable website source and its exact current version. A dedicated `NOLOGIN`, `NOINHERIT`, `NOBYPASSRLS` worker role can only claim and complete bounded acquisition jobs. Every DNS answer and redirect target must be public, transport connects to a validated pinned address while retaining hostname TLS verification, response type, encoding, bytes, redirects and time are bounded, active markup is removed, and completion creates a new immutable `EXTERNAL RESEARCH` source version. Source changes cancel stale jobs; approved profiles keep their prior exact evidence links. See [the threat model](brand-source-acquisition-threat-model.md).
 

@@ -114,6 +114,26 @@ const evidenceReference = z
   .object({ record_id: uuid, version: positiveVersion })
   .strict();
 const evidenceList = z.array(evidenceReference).min(1).max(20);
+const scoreFactorKey = z.enum([
+  "customer_problem",
+  "willingness_to_pay",
+  "distribution",
+  "economics",
+  "market",
+  "differentiation",
+  "feasibility",
+  "risk_capital",
+  "team_partner",
+  "scale_reuse",
+]);
+const scoreConfidence = z
+  .object({
+    quality: z.number().min(0).max(1),
+    independence: z.number().min(0).max(1),
+    recency: z.number().min(0).max(1),
+    directness: z.number().min(0).max(1),
+  })
+  .strict();
 const optionalIdeaText = z.string().trim().max(50000).nullable().optional();
 const ideaFields = {
   title: z.string().trim().min(1).max(240),
@@ -3849,6 +3869,38 @@ async function handle(req: Request, ctx: Context) {
                   .strict(),
               })
               .strict(),
+            z
+              .object({
+                action: z.literal("project.score"),
+                project_id: uuid,
+                payload: z
+                  .object({
+                    expected_version: positiveVersion,
+                    reason: z.string().trim().min(1).max(2000),
+                    factors: z
+                      .array(
+                        z
+                          .object({
+                            factor_key: scoreFactorKey,
+                            rating: z.number().min(0).max(5),
+                            rationale: z.string().trim().min(1).max(2000),
+                            confidence: scoreConfidence.nullable(),
+                            evidence: evidenceList,
+                          })
+                          .strict(),
+                      )
+                      .min(1)
+                      .max(10)
+                      .refine(
+                        (factors) =>
+                          new Set(factors.map((factor) => factor.factor_key))
+                            .size === factors.length,
+                        "Duplicate score factor",
+                      ),
+                  })
+                  .strict(),
+              })
+              .strict(),
           ])
           .parse(await body(req));
         if (input.action === "account.lifecycle") {
@@ -3888,6 +3940,20 @@ async function handle(req: Request, ctx: Context) {
           );
           return json(rows[0], 201);
         }
+        if (input.action === "project.score") {
+          await project(a, input.project_id);
+          const rows = await query(
+            a,
+            "select * from kxra.request_project_score_approval($1,$2,$3,$4)",
+            [
+              input.project_id,
+              input.payload.expected_version,
+              JSON.stringify(input.payload.factors),
+              input.payload.reason,
+            ],
+          );
+          return json(rows[0], 201);
+        }
         return json(await approval(a, input), 201);
       }
       if (p[1] && method === "POST") {
@@ -3916,7 +3982,9 @@ async function handle(req: Request, ctx: Context) {
                       ? "change_idea_share"
                       : rows[0].action === "project.governance"
                         ? "change_project_governance"
-                        : null;
+                        : rows[0].action === "project.score"
+                          ? "apply_project_score"
+                          : null;
           if (!fn)
             throw new HttpError(409, "Execution is disabled for this action");
           await query(a, `select kxra.${fn}($1)`, [p[1]]);

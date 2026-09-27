@@ -20,7 +20,7 @@
 | Partial migration becomes invisible                        | Migration and tracking row share one transaction; session advisory lock serializes operators                                     | Provider outage can leave a clean pending suffix that must be resumed                 |
 | Existing manual schema is adopted accidentally             | Existing `kxra` schema without tracked history is rejected                                                                       | Intentional recovery needs a separate reviewed reconciliation procedure               |
 | Credential leaks into application or logs                  | Operator variables are rejected by Vercel preflight; script prints counts only; no URL is written                                | Operator shell/history and password-manager hygiene remain owner responsibilities     |
-| Incomplete RLS surface is treated as ready                 | Verification requires all 67 hashes, 168 protected tables with policies and 144 exposed functions                                | Hosted behavioral access tests still follow schema verification                       |
+| Incomplete RLS surface is treated as ready                 | Verification requires all 68 hashes, 171 protected tables with policies and 146 exposed functions                                | Hosted behavioral access tests still follow schema verification                       |
 
 ## Hard stops
 

@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 34
+
+- migration `0068` for evidence-backed score assessments, exact factor evidence, project-derived calculation, approval and superseded history
+- owner score-assessment form plus project overview/scorecard bounds, coverage and history
+- score request/execution API and owner approval execution route
+- SQL, HTTP, full access-matrix and browser coverage for calculation, isolation, crafted evidence, stale state and unknown-score integrity
+- ADR 0037 plus current README, architecture, access-control and operating evidence
+
+No score is seeded or invented. No credential, hosted mutation, provider activation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 33
 
 - hosted password-sign-in assurance gate, dedicated TOTP challenge route and direct actor-level AAL2 enforcement
