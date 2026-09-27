@@ -49,7 +49,9 @@ test("staging migrator accepts only the declared Supabase direct or session targ
   );
   assert.equal(rejected.ok, false);
   assert.ok(
-    rejected.findings.includes("operator migrations cannot run inside Vercel"),
+    rejected.findings.includes(
+      "staging operator commands cannot run inside Vercel",
+    ),
   );
   assert.ok(
     rejected.findings.includes("migrator URL must not contain a fragment"),

@@ -116,7 +116,11 @@ export function validateSeeds(bundle) {
     }
 }
 // Caller owns the transaction; no commit or rollback occurs inside the importer.
-export async function importSeeds(db, bundle, { failAfter = Infinity } = {}) {
+export async function importSeeds(
+  db,
+  bundle,
+  { failAfter = Infinity, canonicalOnly = false } = {},
+) {
   validateSeeds(bundle);
   let n = 0;
   await db.query(
@@ -298,6 +302,10 @@ export async function importSeeds(db, bundle, { failAfter = Infinity } = {}) {
           ? "accepted"
           : "draft",
       );
+
+  // Hosted bootstrap imports only source-backed portfolio and operating records.
+  // Everything below this boundary is a local executable/test contract.
+  if (canonicalOnly) return;
 
   const classifications = [
     "FACT",

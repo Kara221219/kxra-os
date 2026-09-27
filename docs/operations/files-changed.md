@@ -2,6 +2,16 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 30
+
+- canonical-only staging seed profile, manifest, `plan`/`apply`/`verify` operator and environment guards
+- importer boundary that excludes every local executable/test contract from hosted canonical seeds
+- fresh-database idempotency and fixture-exclusion integration evidence plus operator-state tests
+- ADR 0033, staging seed threat model and updated connection playbook
+- current README, architecture and operating evidence
+
+No fixture identity, legal placeholder, AI approval, entitlement, product activation, credential, hosted mutation, deployment or publication is added.
+
 ## 27 September Phase 2 Slice 29
 
 - guarded `plan`, `apply` and `verify` commands for a separately authorized Supabase staging database

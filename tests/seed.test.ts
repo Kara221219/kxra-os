@@ -74,6 +74,38 @@ async function migrate(db: pg.Client) {
     await db.query(migrationSql(name));
 }
 
+test("staging canonical-only seed excludes every local executable fixture", () =>
+  withDatabase(async (db) => {
+    await migrate(db);
+    const bundle = loadSeeds(root);
+    await db.query("begin");
+    await importSeeds(db, bundle, { canonicalOnly: true });
+    await importSeeds(db, bundle, { canonicalOnly: true });
+    await db.query("commit");
+
+    assert.equal((await db.query("select * from kxra.projects")).rowCount, 7);
+    assert.ok((await db.query("select * from kxra.records")).rows.length > 0);
+    for (const table of [
+      "members",
+      "account_identities",
+      "agreement_documents",
+      "legal_documents",
+      "model_policies",
+      "budget_policies",
+      "agent_manifests",
+      "skill_manifests",
+      "routine_service_identities",
+      "routine_manifests",
+      "tool_catalogue",
+      "entitlement_grants",
+    ])
+      assert.equal(
+        (await db.query(`select count(*)::int n from kxra.${table}`)).rows[0].n,
+        0,
+        `${table} must stay empty in the canonical-only profile`,
+      );
+  }));
+
 test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", () =>
   withDatabase(async (db) => {
     await migrate(db);

@@ -8,37 +8,12 @@ export const expectedStagingDatabase = {
   exposedFunctions: 144,
 };
 
-export function migrationManifest(root) {
-  const directory = path.join(root, "supabase", "migrations");
-  const names = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".sql"))
-    .sort();
-  for (let index = 0; index < names.length; index += 1) {
-    const prefix = `${String(index + 1).padStart(4, "0")}_`;
-    if (!names[index].startsWith(prefix))
-      throw Error(`STAGING_MIGRATION_SEQUENCE_INVALID:${names[index]}`);
-  }
-  return names.map((name) => {
-    const sql = fs.readFileSync(path.join(directory, name), "utf8");
-    return {
-      name,
-      sha256: crypto.createHash("sha256").update(sql).digest("hex"),
-      sql: sql
-        .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
-        .replace(/commit;\s*$/i, ""),
-    };
-  });
-}
-
-export function validateStagingMigrator(environment, command) {
+export function validateStagingTarget(environment) {
   const findings = [];
-  if (!["plan", "apply", "verify"].includes(command))
-    findings.push("command must be plan, apply or verify");
   if (environment.KXRA_ENVIRONMENT !== "staging")
     findings.push("KXRA_ENVIRONMENT must be staging");
   if (environment.VERCEL || environment.VERCEL_ENV)
-    findings.push("operator migrations cannot run inside Vercel");
+    findings.push("staging operator commands cannot run inside Vercel");
   const projectRef = environment.KXRA_STAGING_PROJECT_REF || "";
   if (!/^[a-z0-9]{20}$/.test(projectRef))
     findings.push(
@@ -83,6 +58,37 @@ export function validateStagingMigrator(environment, command) {
         "session-pooler migrator username must be postgres.PROJECT_REF",
       );
   }
+  return findings;
+}
+
+export function migrationManifest(root) {
+  const directory = path.join(root, "supabase", "migrations");
+  const names = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+  for (let index = 0; index < names.length; index += 1) {
+    const prefix = `${String(index + 1).padStart(4, "0")}_`;
+    if (!names[index].startsWith(prefix))
+      throw Error(`STAGING_MIGRATION_SEQUENCE_INVALID:${names[index]}`);
+  }
+  return names.map((name) => {
+    const sql = fs.readFileSync(path.join(directory, name), "utf8");
+    return {
+      name,
+      sha256: crypto.createHash("sha256").update(sql).digest("hex"),
+      sql: sql
+        .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
+        .replace(/commit;\s*$/i, ""),
+    };
+  });
+}
+
+export function validateStagingMigrator(environment, command) {
+  const findings = validateStagingTarget(environment);
+  if (!["plan", "apply", "verify"].includes(command))
+    findings.push("command must be plan, apply or verify");
+  const projectRef = environment.KXRA_STAGING_PROJECT_REF || "";
   if (command === "apply") {
     const expected = `APPLY:${projectRef}:codex/phase-2-completion`;
     if (environment.KXRA_STAGING_MIGRATION_CONFIRMATION !== expected)
