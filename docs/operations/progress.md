@@ -1,8 +1,8 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 28 adds governed Stripe test-customer bootstrap and passes the complete local contract. Commit and remote checks are pending. Hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 28 adds governed Stripe test-customer bootstrap and passes the complete local and remote contract. Hosted staging remains unconnected and the system is not production ready.**
 
-Current branch: `codex/phase-2-completion`. Slice 27 implementation commit `dbbe921e87e157cd637edba40089abbdf3fd7e3c` passed full GitHub CI run 36282404005 and SHA-matched CodeQL run 36282404016. Slice 28 passes locally and is uncommitted pending remote verification. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 28 implementation commit `4be3b23f9b816f11c52bcd84f83746e1795b7bce` passed full GitHub CI run 36284168922 and SHA-matched CodeQL run 36284168938. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -254,6 +254,7 @@ Connect a separate Supabase/Vercel staging environment, then configure and evide
 - The no-login/no-bypass billing worker records the provider ID and unique organization mapping before Checkout is enabled. Ordinary members, anonymous users, another tenant and direct table writes remain denied.
 - Final inspection found and fixed a lost-response replay defect: after the worker records the customer, an exact or new client retry now returns the completed intent instead of reporting a conflicting existing customer.
 - The clean hermetic run passed 164 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 349 files.
+- Implementation commit `4be3b23f9b816f11c52bcd84f83746e1795b7bce` passed GitHub full CI run 36284168922 and SHA-matched CodeQL run 36284168938.
 - Billing remains disabled. No real Stripe credential, provider request, customer, charge, subscription, deployment or publication was used.
 
 ## Publication boundary
