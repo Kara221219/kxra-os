@@ -8,7 +8,7 @@ The owner completes only these account actions:
 
 1. In Supabase, create a new non-production project named clearly as KXRA staging. Record its project reference locally; do not reuse a production project.
 2. In Vercel, connect the `Kara221219/kxra-os` repository and create two projects named clearly as KXRA OS staging and KXRA Marketing staging.
-3. Restrict both projects to `codex/phase-2-completion`. Do not assign the production domains, change the production branch, merge the branch or enable search indexing.
+3. Keep the repository production branch unchanged and use `codex/phase-2-completion` only as a Preview branch (or a matching custom staging environment). Scope all staging variables to that branch/environment. Do not assign production domains, merge the branch or enable search indexing.
 4. If the Vercel plan supports custom environments, create `staging`. Otherwise use branch-specific Preview variables. The preflight accepts only a target of `staging` or `preview` and always rejects `production`.
 5. Enable Vercel system environment variables so `VERCEL`, `VERCEL_ENV` and `VERCEL_TARGET_ENV` reach the build. Add the application variables below as sensitive values where Vercel supports it.
 
@@ -57,9 +57,9 @@ The public project must not receive Supabase Auth, private OS, model, billing, S
 
 ## 3. Supabase database and Auth boundary
 
-Apply all 64 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role.
+Apply all 67 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role. When a custom login uses Supabase's shared pooler, copy the host and port from **Connect** and use the documented `[ROLE].[PROJECT-REF]` username form rather than constructing a pooler address.
 
-Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current Supabase publishable key for the browser. Add a component-specific secret key only when a later Storage worker slice is approved.
+Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current `sb_publishable_…` key for the browser. A Supabase `sb_secret_…` key bypasses RLS and is prohibited from both core staging applications; add one only to a separately reviewed server/worker secret store when a later provider slice explicitly requires it.
 
 Disable open signup. Configure only the exact private staging origin and reviewed Auth callback paths. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user. Hosted MFA and owner bootstrap remain failed acceptance gates until exercised with a real staging owner.
 
