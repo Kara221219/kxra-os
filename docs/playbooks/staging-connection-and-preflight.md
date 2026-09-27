@@ -57,7 +57,7 @@ The public project must not receive Supabase Auth, private OS, model, billing, S
 
 ## 3. Supabase database and Auth boundary
 
-Apply all 68 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role. When a custom login uses Supabase's shared pooler, copy the host and port from **Connect** and use the documented `[ROLE].[PROJECT-REF]` username form rather than constructing a pooler address.
+Apply all 69 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role. When a custom login uses Supabase's shared pooler, copy the host and port from **Connect** and use the documented `[ROLE].[PROJECT-REF]` username form rather than constructing a pooler address.
 
 Use the guarded operator workflow from a clean, pushed `codex/phase-2-completion` checkout. Keep these variables only in the operator shell or password manager; never place them in Vercel or a tracked file:
 

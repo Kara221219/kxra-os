@@ -93,7 +93,13 @@ async function addApprovedLegalDocument(
   db: pg.PoolClient,
   organisationId: string,
   version: number,
-  type: "NDA" | "CUSTOM_PROJECT" = "NDA",
+  type:
+    | "NDA"
+    | "TERMS"
+    | "PRIVACY"
+    | "COOKIE"
+    | "DATA_PROCESSING"
+    | "CUSTOM_PROJECT" = "NDA",
 ) {
   const id = crypto.randomUUID();
   const content = `Synthetic approved ${type} version ${version}; local acceptance fixture only.`;
@@ -1393,7 +1399,7 @@ test("AT-34 custom project intake stays private and only an exact accepted paid 
     ]);
   }));
 
-test("AT-46 an unapproved placeholder or incomplete commercial manifest blocks release", () =>
+test("AT-46 release readiness requires exact legal, commercial, provider and review evidence", () =>
   tx(async (db) => {
     const manifest = crypto.randomUUID();
     const placeholder = "80000000-0000-4000-8000-000000000001";
@@ -1434,19 +1440,93 @@ test("AT-46 an unapproved placeholder or incomplete commercial manifest blocks r
     assert.ok(
       blocked.blockers.includes("LEGAL_DOCUMENT_UNAPPROVED_OR_HASH_MISMATCH"),
     );
+    assert.ok(
+      blocked.blockers.includes("REQUIRED_LEGAL_DOCUMENT_TYPES_MISSING"),
+    );
+    assert.ok(blocked.blockers.includes("COMMERCIAL_CONFIGURATION_INCOMPLETE"));
+    assert.ok(blocked.blockers.includes("PROVIDER_EVIDENCE_INCOMPLETE"));
 
     await db.query("reset role");
-    const approved = await addApprovedLegalDocument(db, kxraOrg, 7001);
+    const requiredTypes = [
+      "NDA",
+      "TERMS",
+      "PRIVACY",
+      "COOKIE",
+      "DATA_PROCESSING",
+      "CUSTOM_PROJECT",
+    ] as const;
+    const approved = [];
+    for (const [index, type] of requiredTypes.entries())
+      approved.push(
+        await addApprovedLegalDocument(db, kxraOrg, 7001 + index, type),
+      );
+    const providerEvidence = [
+      "CORE_STAGING",
+      "AUTH_RLS",
+      "BACKUP_RESTORE",
+      "STRIPE_TEST",
+      "EMAIL_STAGING",
+    ].map((key) => ({
+      key,
+      status: "PASS",
+      reference: `synthetic://${key.toLowerCase()}`,
+      sha256: digest(`synthetic-${key}`),
+    }));
     await db.query(
-      "update kxra.release_manifests set legal_document_refs=$1 where id=$2",
+      `update kxra.release_manifests set legal_document_refs=$1,
+        commercial_configuration=$2,support_channels=$3 where id=$4`,
       [
-        JSON.stringify([
-          {
-            document_id: approved.id,
-            version: approved.version,
-            sha256: approved.hash,
+        JSON.stringify(
+          approved.map((document) => ({
+            document_id: document.id,
+            version: document.version,
+            sha256: document.hash,
+          })),
+        ),
+        {
+          plan_code: "synthetic-monthly",
+          plan_name: "Synthetic monthly plan",
+          price_minor: 3000,
+          currency: "GBP",
+          billing_interval: "MONTH",
+          included_usage: { brand_generations: 20 },
+          custom_projects_separate: true,
+          cancellation_policy: "Synthetic cancellation policy.",
+          refund_policy: "Synthetic refund policy.",
+          grace_policy: "Synthetic grace policy.",
+          tax_treatment: "Synthetic test tax treatment.",
+          retention_policy: {
+            customer_data_days: 365,
+            backup_days: 30,
+            deletion_process: "Synthetic deletion process.",
+            legal_basis: "Synthetic test basis.",
           },
-        ]),
+          subprocessors: [
+            {
+              name: "Synthetic provider",
+              purpose: "Local acceptance testing",
+              location: "GB",
+            },
+          ],
+          public_copy_sha256: digest("synthetic-public-copy"),
+          provider_evidence: providerEvidence,
+          accessibility_review: {
+            status: "PASS",
+            reviewer: "Synthetic accessibility reviewer",
+            reviewed_at: "2026-09-27T00:00:00Z",
+          },
+          security_review: {
+            status: "PASS",
+            reviewer: "Synthetic security reviewer",
+            reviewed_at: "2026-09-27T00:00:00Z",
+          },
+        },
+        {
+          support_email: "support@fixture.invalid",
+          privacy_email: "privacy@fixture.invalid",
+          security_email: "security@fixture.invalid",
+          response_policy: "Synthetic response policy.",
+        },
         manifest,
       ],
     );

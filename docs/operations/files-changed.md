@@ -2,6 +2,13 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 27 September Phase 2 Slice 36
+
+- migration `0069` for exact legal/commercial/provider/review release readiness
+- owner Admin release-gate status and blocker presentation
+- commercial acceptance and staging migration-manifest tests
+- ADR 0039 plus architecture, security, staging and operating evidence updates
+
 ## 27 September Phase 2 Slice 35
 
 - `scripts/staging-acceptance-core.mjs`, `scripts/staging-acceptance.mjs`, `tests/staging-acceptance.test.ts`, `package.json` — clean-pushed-SHA staging target validation, 18 bounded anonymous probes, redacted durable evidence and fail-closed tests.

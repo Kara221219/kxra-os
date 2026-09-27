@@ -668,6 +668,7 @@ export async function adminSnapshot(a: Actor) {
       schemaCounts,
       projectCounts,
       auditCount,
+      releaseGate,
     ] = await Promise.all([
       db.query<CountRow>(
         "select account_state as state,count(*)::text as count from kxra.profiles group by account_state order by account_state",
@@ -697,6 +698,22 @@ export async function adminSnapshot(a: Actor) {
       ),
       db.query<{ count: string }>(
         "select count(*)::text as count from kxra.audit_events",
+      ),
+      db.query<{
+        id: string;
+        release_name: string;
+        release_version: string;
+        state: string;
+        reviewed_at: string | null;
+        ready: boolean;
+        blockers: string[];
+      }>(
+        `select m.id,m.release_name,m.release_version,m.state,m.reviewed_at,
+          checked.ready,checked.blockers
+         from kxra.release_manifests m
+         cross join lateral kxra.release_manifest_check(m.id) checked
+         where m.org_id=$1 order by m.created_at desc,m.id desc limit 1`,
+        [a.org_id],
       ),
     ]);
     const env = process.env;
@@ -742,6 +759,15 @@ export async function adminSnapshot(a: Actor) {
         production_deployment: "DISABLED",
         backups: "EVIDENCE_NOT_CONNECTED",
         retention: "POLICY_NOT_APPROVED",
+      },
+      release_gate: releaseGate.rows[0] || {
+        id: null,
+        release_name: null,
+        release_version: null,
+        state: "MISSING",
+        reviewed_at: null,
+        ready: false,
+        blockers: ["RELEASE_MANIFEST_MISSING"],
       },
     };
   });

@@ -738,6 +738,35 @@ export function AdminView({ snapshot }: { snapshot: any }) {
           )}
         </dl>
       </section>
+      <section className="panel" id="release-gate">
+        <h2>Customer release gate</h2>
+        <p>
+          <span
+            className={`badge ${snapshot.release_gate.ready ? "" : "amber"}`}
+          >
+            {snapshot.release_gate.ready ? "READY" : "BLOCKED"}
+          </span>{" "}
+          {snapshot.release_gate.release_name || "No release manifest"}
+          {snapshot.release_gate.release_version
+            ? ` · ${snapshot.release_gate.release_version}`
+            : ""}
+        </p>
+        {snapshot.release_gate.blockers.length ? (
+          <ul>
+            {snapshot.release_gate.blockers.map((blocker: string) => (
+              <li key={blocker}>{label(blocker)}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>All deterministic manifest checks pass.</p>
+        )}
+        <p className="subtle">
+          Readiness requires six exact approved legal documents, complete plan
+          and policy data, retention and subprocessors, staging provider
+          evidence, public-copy integrity, and accessibility and security
+          reviews. This status cannot deploy or publish anything.
+        </p>
+      </section>
       <section className="panel" id="security-events">
         <h2>Recent account security events</h2>
         {snapshot.security_events.map((event: any) => (

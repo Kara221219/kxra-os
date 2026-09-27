@@ -1,10 +1,18 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 35 adds executable, hash-bound and credential-safe staging boundary evidence. The complete local contract passes; hosted staging remains unconnected and the system is not production ready.**
+Updated: 27 September 2026. Status: **Phase 2 Slice 36 makes customer release readiness a strict, visible and fail-closed owner gate. The complete local contract passes; hosted staging and production legal/commercial inputs remain absent.**
 
-Current branch: `codex/phase-2-completion`. Slice 35 implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` passed full GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Slice 36 is locally complete and awaiting its implementation commit and remote CI evidence. Slice 35 implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` passed full GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
+
+## Completed in Slice 36
+
+- Replaced the permissive release-manifest check with an exact six-document legal set and immutable approved-version/hash verification.
+- Added typed commercial checks for plan/price/usage, separate custom projects, cancellation/refund/grace/tax policies, retention, subprocessors and public-copy integrity.
+- Required five named staging evidence classes plus named human accessibility and security reviews before readiness can pass.
+- Added validated support, privacy and security contacts and exact owner/review requirements.
+- Exposed the latest release state and blocker codes in the owner-only redacted Admin view without adding deployment, publication or provider authority.
 
 ## Completed in Slice 35
 
@@ -42,9 +50,9 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 68 ordered additive migrations, 171 RLS-protected tables with explicit policies and 146 audited public functions.
+- 69 ordered additive migrations, 171 RLS-protected tables with explicit policies and 146 audited public functions.
 - 196 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 385-file publication/secret scan pass.
+- Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 387-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -285,7 +293,7 @@ Connect a separate Supabase/Vercel staging environment, run the guarded schema/s
 ## Slice 29 local staging-migration evidence
 
 - Added `plan`, `apply` and `verify` operator commands for the first separately authorized Supabase staging database. The tool accepts only the declared 20-character project, direct or session-pooler port 5432, the `postgres` operator identity and certificate-verified TLS.
-- Every one of the 68 ordered migrations is SHA-256 bound. Unknown history, a changed historical file, an unmanaged existing `kxra` schema, source-count drift, a dirty/unpushed branch, Vercel execution or the wrong confirmation phrase fails before mutation.
+- Every one of the 69 ordered migrations is SHA-256 bound. Unknown history, a changed historical file, an unmanaged existing `kxra` schema, source-count drift, a dirty/unpushed branch, Vercel execution or the wrong confirmation phrase fails before mutation.
 - Apply uses a session advisory lock, recalculates pending work after acquiring it, commits each migration with its tracking row and resumes from the exact recorded prefix. Anonymous and authenticated application roles receive no access to migration history.
 - Verification requires all hashes plus exactly 171 RLS-protected tables with policies and 146 `kxra` functions. Operator-only values are rejected from hosted application profiles.
 - The clean hermetic run passed 168 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 354 files.

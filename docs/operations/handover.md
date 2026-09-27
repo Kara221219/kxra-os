@@ -4,7 +4,7 @@ Updated: 27 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 35 implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` passes the complete local contract, full GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 36 is locally complete and awaiting its implementation commit and remote CI evidence. Slice 35 implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` passes the complete local contract, full GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -18,7 +18,9 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–35 are committed remotely. Slice 34 adds migration `0068`; the current schema has 171 RLS-protected tables and 146 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–35 are committed remotely. Slice 36 adds migration `0069`; the current schema has 171 RLS-protected tables and 146 audited public functions.
+
+Slice 36 replaces a permissive release-manifest check with an exact fail-closed legal/commercial/provider/review contract. The owner Admin surface now reports the latest manifest and exact blocker codes. It cannot approve evidence, deploy, publish, charge or contact a customer. Production inputs remain absent.
 
 Slice 35 adds a staging acceptance operator that binds both exact HTTPS previews to the clean pushed SHA and an explicit confirmation, then runs 18 no-redirect anonymous boundary probes. It verifies secure headers, private no-store, staging no-index, absent permissive CORS, fixture/private marker exclusion and public/private route separation. Evidence stores hashes/status only; bodies, cookies and credentials are excluded. Hosted evidence remains absent until the staging projects exist.
 
@@ -84,6 +86,8 @@ The Slice 33 contract passes the 228-package dependency policy, 190 database/dom
 The Slice 34 contract passes the 228-package dependency policy, 193 database/domain/HTTP/security tests, the 68-migration/171-table RLS audit, 48 private-OS runs (43 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 380-file publication/secret scan locally and in GitHub CI run 36295329624. CodeQL run 36295329649 independently passes the exact implementation SHA.
 
 The Slice 35 contract passes the 228-package dependency policy, 196 database/domain/HTTP/security tests, the 68-migration/171-table RLS audit, 48 private-OS runs (43 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 385-file publication/secret scan. Implementation commit `8dd54b33f930ace148c914f797c9fe1ed77e40fc` also passes GitHub CI run 36297681105 and SHA-matched CodeQL run 36297681123.
+
+The Slice 36 local contract passes the 228-package dependency policy, 196 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 48 private-OS runs (43 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 387-file publication/secret scan. Remote CI and CodeQL evidence will be added after the implementation commit is pushed.
 
 Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 

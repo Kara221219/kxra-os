@@ -146,6 +146,15 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const snapshot = await adminResponse.json();
   assert.equal(snapshot.database.rls_tables, 171);
   assert.equal(snapshot.database.protected_tables, 171);
+  assert.deepEqual(snapshot.release_gate, {
+    id: null,
+    release_name: null,
+    release_version: null,
+    state: "MISSING",
+    reviewed_at: null,
+    ready: false,
+    blockers: ["RELEASE_MANIFEST_MISSING"],
+  });
   assert.ok(
     Object.values(snapshot.integrations).every(
       (value) => typeof value === "boolean",
