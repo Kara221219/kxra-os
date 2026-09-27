@@ -57,6 +57,8 @@ test("OS staging rejects production, fixtures, legacy keys and enabled credentia
     KXRA_STORAGE_ENABLED: "true",
     SUPABASE_STORAGE_SECRET_KEY: `sb_secret_${secret("s")}`,
     NEXT_PUBLIC_PRIVATE_TOKEN: "leak",
+    KXRA_STAGING_MIGRATOR_DATABASE_URL:
+      "postgresql://postgres:secret@db.example.supabase.co:5432/postgres?sslmode=verify-full",
   });
   assert.equal(result.ok, false);
   for (const expected of [
@@ -67,6 +69,7 @@ test("OS staging rejects production, fixtures, legacy keys and enabled credentia
     "KXRA_STORAGE_ENABLED: must remain false for core staging",
     "SUPABASE_STORAGE_SECRET_KEY: disabled capability credential prohibited",
     "NEXT_PUBLIC_PRIVATE_TOKEN: server secret may not be public",
+    "KXRA_STAGING_MIGRATOR_DATABASE_URL: operator-only value prohibited in hosted application",
   ])
     assert.ok(result.findings.includes(expected), expected);
 });

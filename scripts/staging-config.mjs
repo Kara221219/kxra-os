@@ -120,6 +120,16 @@ function common(environment, findings) {
       findings.push(`${name}: fixture value prohibited`);
   for (const name of Object.keys(environment))
     if (
+      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION)$/.test(
+        name,
+      ) &&
+      present(environment, name)
+    )
+      findings.push(
+        `${name}: operator-only value prohibited in hosted application`,
+      );
+  for (const name of Object.keys(environment))
+    if (
       /^NEXT_PUBLIC_.*(?:SECRET|SERVICE_ROLE|DATABASE|PRIVATE|TOKEN)/.test(name)
     )
       findings.push(`${name}: server secret may not be public`);

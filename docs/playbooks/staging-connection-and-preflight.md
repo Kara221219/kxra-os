@@ -59,6 +59,22 @@ The public project must not receive Supabase Auth, private OS, model, billing, S
 
 Apply all 67 reviewed migrations to the empty staging project in order. Create separate login credentials for `kxra_app` and `kxra_public_ingress`; neither may be `postgres`, `supabase_admin`, `service_role` or a role with `BYPASSRLS`. The public-ingress login may use only the bounded anonymous ingress function and must not read KXRA tables or assume the authenticated role. When a custom login uses Supabase's shared pooler, copy the host and port from **Connect** and use the documented `[ROLE].[PROJECT-REF]` username form rather than constructing a pooler address.
 
+Use the guarded operator workflow from a clean, pushed `codex/phase-2-completion` checkout. Keep these variables only in the operator shell or password manager; never place them in Vercel or a tracked file:
+
+```sh
+export KXRA_ENVIRONMENT=staging
+export KXRA_STAGING_PROJECT_REF='<20-character-project-ref>'
+read -r -s KXRA_STAGING_MIGRATOR_DATABASE_URL
+export KXRA_STAGING_MIGRATOR_DATABASE_URL
+npm run staging:db:plan
+export KXRA_STAGING_MIGRATION_CONFIRMATION="APPLY:${KXRA_STAGING_PROJECT_REF}:codex/phase-2-completion"
+npm run staging:db:apply
+npm run staging:db:verify
+unset KXRA_STAGING_MIGRATOR_DATABASE_URL KXRA_STAGING_MIGRATION_CONFIRMATION
+```
+
+Use the direct connection or **Session pooler** on port 5432 with `sslmode=verify-full`; the transaction pooler on port 6543 is rejected. The workflow never prints the URL, tracks each migration by exact hash/source commit, resumes a clean pending suffix and rejects an existing unmanaged KXRA schema. It applies schema only—required seeds, runtime login credentials and owner bootstrap remain separate reviewed steps.
+
 Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current `sb_publishable_…` key for the browser. A Supabase `sb_secret_…` key bypasses RLS and is prohibited from both core staging applications; add one only to a separately reviewed server/worker secret store when a later provider slice explicitly requires it.
 
 Disable open signup. Configure only the exact private staging origin and reviewed Auth callback paths. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user. Hosted MFA and owner bootstrap remain failed acceptance gates until exercised with a real staging owner.

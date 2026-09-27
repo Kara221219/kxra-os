@@ -1,6 +1,6 @@
 # KXRA OS
 
-KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 27: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, secure test-mode Stripe hosted billing and subscription reconciliation, a governed custom-project proposal, activation, change, delivery and invoice-adjustment journey, private support/subscription/privacy request handling, a permission-safe private file/knowledge and AI lifecycle, KXRA Brand Studio with governed website-source acquisition and append-only evidence correction, governed YouTube-content and repository-adoption pipelines, a disabled-by-default governed routine engine, a transport-disabled WhatsApp gateway contract, an independently built public marketing application and a fail-closed separated-staging preflight.
+KXRA Group's venture and customer operating platform. The repository contains a working local engineering foundation through Phase 2 Slice 29: invitation-only identity, many-to-many organizations, first-private-access legal gating, the owner control plane, seven venture workspaces, deterministic commercial foundations, secure test-mode Stripe hosted billing and subscription reconciliation, a governed custom-project proposal, activation, change, delivery and invoice-adjustment journey, private support/subscription/privacy request handling, a permission-safe private file/knowledge and AI lifecycle, KXRA Brand Studio with governed website-source acquisition and append-only evidence correction, governed YouTube-content and repository-adoption pipelines, a disabled-by-default governed routine engine, a transport-disabled WhatsApp gateway contract, an independently built public marketing application, a fail-closed separated-staging preflight and a hash-bound staging migration operator.
 
 It is not deployed or production ready. Hosted providers, approved legal terms, live billing, production customer onboarding, external AI generation and Meta transport remain incomplete. The public site builds locally from a hash-bound review snapshot, while publication, indexing and production legal copy remain disabled. Brand Studio works locally with a deterministic text adapter and a disabled-by-default, address-pinned website acquisition worker. Project 006 ends at a reviewed, disabled YouTube upload intent; Project 007 ends at a reviewed, no-execution implementation intent. Routine definitions require exact owner approval before local planning and retain authoritative slots, leases, checkpoints and outcomes in PostgreSQL. WhatsApp pairing, ingress, project scope, media consent and outbound intents are enforced locally, while webhook/media/model/send adapters remain disconnected. Provider upload, candidate-code execution, merge, release and deployment are deliberately disabled.
 
@@ -27,7 +27,9 @@ npm run test:ci
 git diff --check
 ```
 
-`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime with per-run Next.js build directories, rejects a stale decoy service, applies and seeds 67 migrations, then runs formatting/type and 228-package lockfile policy checks, 164 database/domain/HTTP/security tests, a 168-table RLS audit, 46 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
+`npm run test:ci` creates a fresh random-port PostgreSQL/two-application runtime with per-run Next.js build directories, rejects a stale decoy service, applies and seeds 67 migrations, then runs formatting/type and 228-package lockfile policy checks, 168 database/domain/HTTP/security tests, a 168-table RLS audit, 46 private-OS browser runs and 14 public-site scenarios in both development and optimized production, database/object restart and empty-target recovery, independent optimized builds, exact-hash/SRI CSP, compressed page-asset budgets, optimized mobile/desktop Lighthouse budgets, public/private source and snapshot verification, fixture/private-marker exclusion and a publication/secret scan. It stops the disposable database even on failure. GitHub Actions runs the same contract and pinned dependency audits; a separate SHA-pinned CodeQL workflow runs security-extended JavaScript/TypeScript analysis.
+
+For the first Supabase staging database, `npm run staging:db:plan`, `staging:db:apply` and `staging:db:verify` provide a production-rejecting, clean-branch, exact-project, hash-bound migration workflow. Follow [the staging connection playbook](docs/playbooks/staging-connection-and-preflight.md); operator credentials must never enter Git or Vercel.
 
 ## Implemented locally
 
@@ -64,20 +66,20 @@ Legal placeholders, local fake events and synthetic accounts are test data only.
 
 ## Repository map
 
-| Location                 | Responsibility                                                             |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `apps/os`                | Next.js private OS, tenant/legal/customer UI and server APIs               |
-| `apps/marketing`         | Independent public site, reviewed snapshot and bounded public forms        |
-| `packages/db`            | Verified-principal, selected-tenant PostgreSQL transactions                |
-| `packages/domain`        | Validation, state contracts, exact money and score formulas                |
-| `packages/authz`         | Provider contract, local fake, join intent and session controls            |
-| `packages/ai`            | Authorized evidence envelopes and deterministic local model execution      |
-| `packages/brand-studio`  | Typed profile, campaign, creative and deterministic local export contracts |
-| `packages/storage`       | Private object adapters, bounded local processing and reconciliation       |
+| Location                 | Responsibility                                                              |
+| ------------------------ | --------------------------------------------------------------------------- |
+| `apps/os`                | Next.js private OS, tenant/legal/customer UI and server APIs                |
+| `apps/marketing`         | Independent public site, reviewed snapshot and bounded public forms         |
+| `packages/db`            | Verified-principal, selected-tenant PostgreSQL transactions                 |
+| `packages/domain`        | Validation, state contracts, exact money and score formulas                 |
+| `packages/authz`         | Provider contract, local fake, join intent and session controls             |
+| `packages/ai`            | Authorized evidence envelopes and deterministic local model execution       |
+| `packages/brand-studio`  | Typed profile, campaign, creative and deterministic local export contracts  |
+| `packages/storage`       | Private object adapters, bounded local processing and reconciliation        |
 | `packages/integrations`  | Disabled provider contracts, public-source worker and signature foundations |
-| `supabase/migrations`    | Additive schema, RLS, identity, legal, commercial and workflow migrations  |
-| `tests`                  | Database, HTTP, contract, persistence and browser acceptance evidence      |
-| `docs`                   | Architecture, security, decisions, operations, projects and playbooks      |
-| `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                      |
+| `supabase/migrations`    | Additive schema, RLS, identity, legal, commercial and workflow migrations   |
+| `tests`                  | Database, HTTP, contract, persistence and browser acceptance evidence       |
+| `docs`                   | Architecture, security, decisions, operations, projects and playbooks       |
+| `KXRA-GENESIS/registers` | Minimum classified seed data required by the platform                       |
 
 Start with [progress](docs/operations/progress.md), [handover](docs/operations/handover.md), [acceptance evidence](docs/operations/acceptance-evidence.md), [architecture](docs/architecture/system.md), [security](docs/security/access-control.md) and [ADR 0012](docs/decisions/0012-governed-youtube-and-repository-pipelines.md).
