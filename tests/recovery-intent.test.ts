@@ -35,6 +35,13 @@ test("hosted recovery accepts only one recent verified recovery method", () => {
       { amr: [{ method: "recovery", timestamp: now - 601 }] },
       now,
     ),
+    true,
+  );
+  assert.equal(
+    recentRecoveryAuthentication(
+      { amr: [{ method: "recovery", timestamp: now - 3_601 }] },
+      now,
+    ),
     false,
   );
   assert.equal(

@@ -13,6 +13,7 @@ export function validSupabaseRefreshTokenShape(token: string) {
 export function recentRecoveryAuthentication(
   claims: unknown,
   nowSeconds = Math.floor(Date.now() / 1000),
+  maxAgeSeconds = 60 * 60,
 ) {
   if (!claims || typeof claims !== "object") return false;
   const methods = (claims as { amr?: unknown }).amr;
@@ -31,5 +32,10 @@ export function recentRecoveryAuthentication(
   const latest = parsed.filter((entry) => entry.timestamp === latestTimestamp);
   if (latest.length !== 1 || latest[0].method !== "recovery") return false;
   const timestamp = latest[0].timestamp;
-  return timestamp >= nowSeconds - 10 * 60 && timestamp <= nowSeconds + 60;
+  // Supabase verifies the signed token and its expiry before this check. The
+  // one-hour bound prevents a normal session from becoming reset authority
+  // while allowing the provider's time-limited recovery flow to complete.
+  return (
+    timestamp >= nowSeconds - maxAgeSeconds && timestamp <= nowSeconds + 60
+  );
 }
