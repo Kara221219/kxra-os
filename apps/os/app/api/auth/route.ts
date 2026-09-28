@@ -12,6 +12,7 @@ import {
   supabase,
 } from "../../../lib/auth";
 import crypto from "node:crypto";
+import { databaseConnectionDiagnostics } from "../../../../../packages/db/ssl";
 import {
   hostedMfaGate,
   verifyHostedTotp,
@@ -167,6 +168,9 @@ export async function POST(req: Request) {
       failure,
       code: detail.code || "UNCLASSIFIED",
       status: detail.status || null,
+      ...(stage === "rate_limit" && detail.code === "SELF_SIGNED_CERT_IN_CHAIN"
+        ? { databaseTls: databaseConnectionDiagnostics() }
+        : {}),
     });
     return redirect(
       req,
