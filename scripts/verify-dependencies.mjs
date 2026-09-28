@@ -30,6 +30,7 @@ const marketingManifest = JSON.parse(
 );
 const requiredWorkspaceBuildDependencies = [
   "@types/node",
+  "@types/pg",
   "@types/react",
   "@types/react-dom",
   "typescript",
