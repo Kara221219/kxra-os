@@ -9,6 +9,7 @@ import {
 type RecoverySession = {
   accessToken: string;
   refreshToken: string;
+  intent: string;
 };
 
 export function HostedPasswordReset() {
@@ -22,17 +23,13 @@ export function HostedPasswordReset() {
     const type = fragment.get("type");
     const accessToken = fragment.get("access_token");
     const refreshToken = fragment.get("refresh_token");
+    const intent = new URLSearchParams(window.location.search).get("intent");
     const providerError = fragment.get("error_description");
-    if (hadFragment) {
-      window.history.replaceState(
-        null,
-        "",
-        `${location.pathname}${location.search}`,
-      );
-    }
+    if (hadFragment || intent)
+      window.history.replaceState(null, "", location.pathname);
     if (providerError) setError("This reset link is invalid or has expired.");
-    else if (type === "recovery" && accessToken && refreshToken)
-      setRecovery({ accessToken, refreshToken });
+    else if (type === "recovery" && accessToken && refreshToken && intent)
+      setRecovery({ accessToken, refreshToken, intent });
     else if (hadFragment)
       setError("This reset link is invalid or has expired.");
     setChecked(true);

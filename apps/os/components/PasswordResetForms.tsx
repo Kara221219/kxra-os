@@ -57,7 +57,11 @@ export function PasswordResetConfirmForm({
   recoverySession,
 }: {
   token?: string;
-  recoverySession?: { accessToken: string; refreshToken: string };
+  recoverySession?: {
+    accessToken: string;
+    refreshToken: string;
+    intent: string;
+  };
 }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);

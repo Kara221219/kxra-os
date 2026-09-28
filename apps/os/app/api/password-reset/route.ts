@@ -11,7 +11,10 @@ import {
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
 import {
-  recentRecoveryAuthentication,
+  hostedRecoveryIntentMatches,
+  openHostedRecoveryIntent,
+  recoveryAuthenticationMatchesIntent,
+  sealHostedRecoveryIntent,
   validSupabaseRefreshTokenShape,
 } from "../../../../../packages/authz/recovery-intent";
 
@@ -87,8 +90,13 @@ export async function POST(request: Request) {
           ).catch(() => undefined);
         }
       } else {
+        const secret = process.env.KXRA_JOIN_SECRET;
+        if (!secret) throw new Error("Hosted authentication unavailable");
+        const intent = sealHostedRecoveryIntent(normalized, secret);
+        const destination = new URL("/reset-password", process.env.KXRA_ORIGIN);
+        destination.searchParams.set("intent", intent);
         await hostedAuthClient().auth.resetPasswordForEmail(normalized, {
-          redirectTo: `${process.env.KXRA_ORIGIN}/reset-password`,
+          redirectTo: destination.toString(),
         });
       }
       return privateJson({ accepted: true }, 202);
@@ -106,6 +114,7 @@ export async function POST(request: Request) {
           .string()
           .refine(validSupabaseRefreshTokenShape)
           .optional(),
+        intent: z.string().min(100).max(1024).optional(),
         password: z.string().min(12).max(256),
         confirmation: z.string().min(12).max(256),
       })
@@ -114,17 +123,24 @@ export async function POST(request: Request) {
       .parse(raw);
     if (!localMode()) {
       if (input.token) return privateJson({ error: "Reset unavailable" }, 409);
-      if (!input.accessToken || !input.refreshToken)
+      if (!input.accessToken || !input.refreshToken || !input.intent)
         return privateJson({ error: "Reset unavailable" }, 409);
       const client = hostedAuthClient();
       const verified = await client.auth.getUser(input.accessToken);
       const claims = await client.auth.getClaims(input.accessToken);
+      const secret = process.env.KXRA_JOIN_SECRET || "";
+      const intent = secret
+        ? openHostedRecoveryIntent(input.intent, secret)
+        : null;
       if (
         verified.error ||
         !verified.data.user ||
         claims.error ||
         claims.data?.claims.sub !== verified.data.user.id ||
-        !recentRecoveryAuthentication(claims.data?.claims)
+        !verified.data.user.email ||
+        !intent ||
+        !hostedRecoveryIntentMatches(intent, verified.data.user.email) ||
+        !recoveryAuthenticationMatchesIntent(claims.data?.claims, intent)
       )
         return privateJson({ error: "Reset unavailable" }, 409);
       const session = await client.auth.setSession({

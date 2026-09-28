@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   authCallbackDestination,
-  recentRecoveryAuthentication,
+  hostedRecoveryIntentMatches,
+  openHostedRecoveryIntent,
+  recoveryAuthenticationMatchesIntent,
+  sealHostedRecoveryIntent,
   validSupabaseRefreshTokenShape,
 } from "../packages/authz/recovery-intent";
 
@@ -14,56 +17,69 @@ test("authentication callbacks allow only exact internal destinations", () => {
   assert.equal(authCallbackDestination(null), "/os");
 });
 
-test("hosted recovery accepts only one recent verified recovery method", () => {
-  const now = 2_000_000;
+test("hosted recovery binds a provider authentication method to a signed email intent", () => {
+  const now = 2_000_000_000_000;
+  const secret = "s".repeat(64);
+  const sealed = sealHostedRecoveryIntent("Owner@Example.com", secret, now);
+  const intent = openHostedRecoveryIntent(sealed, secret, now + 1_000);
+  assert.ok(intent);
+  assert.equal(hostedRecoveryIntentMatches(intent, "owner@example.com"), true);
+  assert.equal(hostedRecoveryIntentMatches(intent, "other@example.com"), false);
+  const issued = Math.floor(now / 1000);
   assert.equal(
-    recentRecoveryAuthentication(
-      { amr: [{ method: "recovery", timestamp: now - 30 }] },
-      now,
+    recoveryAuthenticationMatchesIntent(
+      { amr: [{ method: "otp", timestamp: issued + 30 }] },
+      intent,
     ),
     true,
   );
   assert.equal(
-    recentRecoveryAuthentication(
-      { amr: [{ method: "password", timestamp: now - 30 }] },
-      now,
-    ),
-    false,
-  );
-  assert.equal(
-    recentRecoveryAuthentication(
-      { amr: [{ method: "recovery", timestamp: now - 601 }] },
-      now,
+    recoveryAuthenticationMatchesIntent(
+      { amr: [{ method: "recovery", timestamp: issued + 30 }] },
+      intent,
     ),
     true,
   );
   assert.equal(
-    recentRecoveryAuthentication(
-      { amr: [{ method: "recovery", timestamp: now - 3_601 }] },
-      now,
+    recoveryAuthenticationMatchesIntent(
+      { amr: [{ method: "password", timestamp: issued + 30 }] },
+      intent,
     ),
     false,
   );
   assert.equal(
-    recentRecoveryAuthentication(
-      { amr: [{ method: "recovery", timestamp: now + 61 }] },
-      now,
+    recoveryAuthenticationMatchesIntent(
+      { amr: [{ method: "otp", timestamp: issued - 61 }] },
+      intent,
     ),
     false,
   );
   assert.equal(
-    recentRecoveryAuthentication(
+    recoveryAuthenticationMatchesIntent(
+      { amr: [{ method: "otp", timestamp: issued + 3_661 }] },
+      intent,
+    ),
+    false,
+  );
+  assert.equal(
+    recoveryAuthenticationMatchesIntent(
       {
         amr: [
-          { method: "recovery", timestamp: now - 20 },
-          { method: "password", timestamp: now - 10 },
+          { method: "otp", timestamp: issued + 20 },
+          { method: "password", timestamp: issued + 30 },
         ],
       },
-      now,
+      intent,
     ),
     false,
   );
-  assert.equal(recentRecoveryAuthentication({ amr: ["recovery"] }, now), false);
+  assert.equal(
+    recoveryAuthenticationMatchesIntent({ amr: ["otp"] }, intent),
+    false,
+  );
+  assert.equal(openHostedRecoveryIntent(`${sealed}x`, secret, now), null);
+  assert.equal(openHostedRecoveryIntent(sealed, "t".repeat(64), now), null);
+  assert.equal(openHostedRecoveryIntent(sealed, secret, now + 3_600_001), null);
 });
 
 test("hosted recovery accepts Supabase legacy and signed refresh-token shapes", () => {
