@@ -1,16 +1,17 @@
 # KXRA OS implementation progress
 
-Updated: 28 September 2026. Status: **Phase 2 Slice 36 makes customer release readiness a strict, visible and fail-closed owner gate. The complete local contract passes. A healthy, empty Supabase staging project now exists; Vercel account authentication and the two-project staging boundary remain incomplete. Production legal/commercial inputs remain absent.**
+Updated: 28 September 2026. Status: **Core hosted staging is connected and fail-closed. Supabase contains the reviewed schema, canonical records and restricted application roles; separate protected Vercel Preview deployments for the private OS and public marketing application are Ready at commit `93c116e`. The complete local contract passes. Owner Auth/TOTP bootstrap, hosted acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
 
 ## Hosted staging connection checkpoint
 
-- Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) is active and healthy in `eu-west-2` on PostgreSQL 17. It has no KXRA migrations or public KXRA tables, no development branches and no current security/performance advisor findings. Only provider-managed Storage tables exist.
-- The connected Supabase tooling can read the project URL and current publishable-key metadata. Secret or publishable key values were not copied into source, documentation, chat or command output.
-- The repository remains clean on `codex/phase-2-completion`; local and remote HEAD both resolve to `05dc44f5242d1746ea2cab169a161b71b0d7d7d4`.
-- No local Vercel project link exists and the Vercel CLI/browser session is logged out. The existence and configuration of the required `KXRA OS staging` and `KXRA Marketing staging` projects are therefore unverified.
-- No hosted migration, canonical seed, runtime-role creation, owner bootstrap, deployment, provider activation or production change has occurred. The next owner checkpoint is a Vercel sign-in using the account that owns the GitHub integration; after that, inspect and configure both Preview projects before any database mutation.
+- Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) is active and healthy in `eu-west-2` on PostgreSQL 17. All 69 reviewed migrations verify, including 171 protected tables and 146 KXRA functions. The canonical profile verifies exactly seven projects and 126 classified source records with no local fixture identities, legal activation, product, entitlement, billing or provider state.
+- Exact `LOGIN`, `NOINHERIT`, `NOBYPASSRLS` roles `kxra_app` and `kxra_public_ingress` verify with only their bounded memberships, no object ownership and no direct grants. Distinct generated passwords were written directly to their matching Vercel Preview projects and discarded; no credential entered source, documentation or chat.
+- Vercel projects `kxra-os-staging` (`apps/os`) and `kxra-marketing-staging` (`apps/marketing`) use the exact fail-closed preflight/build command, include required monorepo source and deploy only the phase branch as Preview. Both commit-`93c116e` deployments are Ready behind Vercel deployment protection.
+- Hosted smoke evidence: private `/login` returns 200; anonymous `/api/context` returns 401 with `AUTH_REQUIRED`; marketing `/` returns 200 and contains the approved KXRA identity and public email. The official Supabase CA is transported as Base64, decoded and validated at runtime, and every database connection retains full certificate and hostname verification.
+- Hosted application implementation baseline `93c116e4e2b4c791b80873d46e6a39fb64547319` is synchronized on `codex/phase-2-completion`; this evidence update follows on the same branch. The branch remains unmerged. No production deployment, custom-domain switch, provider activation, external send, charge or customer access occurred.
+- Owner Auth/TOTP bootstrap has not occurred. Hosted owner/partner/RLS acceptance, the exact WAF rule and release evidence remain pending behind that identity gate.
 
-Current branch: `codex/phase-2-completion`. Slice 36 implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` passed full GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Hosted staging implementation commit `93c116e4e2b4c791b80873d46e6a39fb64547319` is deployed to both protected Preview projects. Slice 36 baseline commit `0da4349ae464135d1464d47f784cbab17395d37b` passed GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
 
@@ -59,8 +60,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 69 ordered additive migrations, 171 RLS-protected tables with explicit policies and 146 audited public functions.
-- 196 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 387-file publication/secret scan pass.
+- 197 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,711-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 389-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.
@@ -104,7 +105,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Connect a separate Supabase/Vercel staging environment, run the guarded schema/seed/roles/owner sequence, complete TOTP, then configure and evidence the exact Vercel WAF rule and hosted RLS/Auth behavior. Keep production deployment, customer access and publication disabled.
+Create and confirm the single Supabase owner Auth identity, enroll and verify its KXRA TOTP factor, then run the guarded owner plan/apply/verify and hosted acceptance sequences. After that, configure and evidence the exact Vercel WAF rule and hosted owner/partner/RLS behavior. Keep production deployment, customer access and publication disabled.
 
 ## Slice 9 local evidence
 

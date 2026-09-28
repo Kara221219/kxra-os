@@ -4,13 +4,15 @@ Updated: 28 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 36 implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` passes the complete local contract, full GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted staging implementation commit `93c116e4e2b4c791b80873d46e6a39fb64547319` is deployed to both protected Vercel Preview projects and passes the complete local contract. Slice 36 baseline commit `0da4349ae464135d1464d47f784cbab17395d37b` passed GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314.
 
-Hosted staging discovery on 28 September 2026 found one active, healthy and empty Supabase project: `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2`. It contains no KXRA migration history or application tables, so the guarded 69-migration sequence has not started. Supabase security and performance advisors currently report no findings. The repository is clean and synchronized at `05dc44f5242d1746ea2cab169a161b71b0d7d7d4`.
+Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2` now verifies all 69 migrations, 171 RLS-protected tables, 146 functions, seven canonical projects and 126 classified source records. The seed contains no local fixtures or activated legal/commercial/provider state. Runtime logins `kxra_app` and `kxra_public_ingress` have exact bounded memberships, no bypass, no ownership and no direct grants. Their distinct generated passwords exist only in matching Vercel Preview secrets.
 
-Vercel remains the immediate connection blocker. This workspace has no `.vercel/project.json`, the Vercel CLI is logged out and the browser session requires owner sign-in. After owner authentication, verify or create exactly two non-production Preview projects from `Kara221219/kxra-os`: private root `apps/os` and public root `apps/marketing`, both including source outside the root and both using `npm run preflight:staging && npm run build`. Do not apply migrations or add database URLs until those boundaries and their exact Preview origins are known.
+Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to `Kara221219/kxra-os`, rooted at `apps/os` and `apps/marketing`, include monorepo source and use `npm run preflight:staging && npm run build`. Both Preview deployments for commit `93c116e` are Ready behind deployment protection. The stable phase-branch aliases are `https://kxra-os-staging-git-codex-phas-62bd6c-husainkara-6439s-projects.vercel.app` and `https://kxra-marketing-staging-git-cod-1ab442-husainkara-6439s-projects.vercel.app`. Live probes verify OS login 200, anonymous OS context 401 and marketing home 200.
 
-The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
+The immediate owner checkpoint is Supabase Auth/TOTP bootstrap. No Auth owner has been inserted into KXRA data, no hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run. Use the guarded owner sequence in the staging playbook only after the owner email is confirmed and the single KXRA TOTP factor is verified.
+
+The branch is not merged and nothing is deployed to Production. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
 Read, in order:
 
@@ -26,7 +28,7 @@ Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 3
 
 Slice 36 replaces a permissive release-manifest check with an exact fail-closed legal/commercial/provider/review contract. The owner Admin surface now reports the latest manifest and exact blocker codes. It cannot approve evidence, deploy, publish, charge or contact a customer. Production inputs remain absent.
 
-Slice 35 adds a staging acceptance operator that binds both exact HTTPS previews to the clean pushed SHA and an explicit confirmation, then runs 18 no-redirect anonymous boundary probes. It verifies secure headers, private no-store, staging no-index, absent permissive CORS, fixture/private marker exclusion and public/private route separation. Evidence stores hashes/status only; bodies, cookies and credentials are excluded. Hosted evidence remains absent until the staging projects exist.
+Slice 35 adds a staging acceptance operator that binds both exact HTTPS previews to the clean pushed SHA and an explicit confirmation, then runs 18 no-redirect anonymous boundary probes. It verifies secure headers, private no-store, staging no-index, absent permissive CORS, fixture/private marker exclusion and public/private route separation. Evidence stores hashes/status only; bodies, cookies and credentials are excluded. Basic hosted smoke evidence now exists; the exact 18-probe acceptance run remains pending owner/TOTP bootstrap and the protected-preview acceptance path.
 
 Slice 34 adds:
 
@@ -93,13 +95,15 @@ The Slice 35 contract passes the 228-package dependency policy, 196 database/dom
 
 The Slice 36 contract passes the 228-package dependency policy, 196 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 48 private-OS runs (43 applicable plus five intentional device-specific skips), 14 public-site scenarios under development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, exact CSP/SRI, compressed page-asset and optimized Lighthouse budgets, artifact exclusion and a 387-file publication/secret scan. Implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` also passes GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314.
 
-Local evidence does not prove hosted Supabase, Storage, MFA, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Vercel, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
+The hosted-staging implementation at `93c116e4e2b4c791b80873d46e6a39fb64547319` passes the complete hermetic contract with 197 database/domain/HTTP/security tests, 69 migrations, 171 protected tables, 48 private-OS runs, 14 marketing runs in development and optimized production, a 2,711-row/15-object empty-target restore, both builds, exact CSP/SRI, artifact exclusion and a 389-file publication/secret scan. Optimized Lighthouse scores are 1.00 performance/accessibility for the tested mobile home and desktop contact scenarios. Guarded hosted checks verify the schema, canonical seed, restricted runtime roles, Ready Vercel previews and the anonymous public/private smoke boundary.
+
+This evidence does not yet prove hosted Storage, MFA, owner/partner RLS sessions, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
 ## Next implementation slice
 
 Continue Final Milestone 10 production quality without deploying:
 
-1. after the owner creates the separate staging projects, run the guarded database, canonical-seed, restricted-runtime-role and owner plan/apply/verify sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), complete hosted TOTP, then configure and evidence the exact Vercel WAF rate rule;
+1. create and confirm the single hosted owner Auth identity, enroll and verify its KXRA TOTP factor, then run the guarded owner plan/apply/verify and exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md); configure and evidence the exact Vercel WAF rate rule only after that identity gate passes;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
 3. activate one controlled Resend recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md), then exercise test subscription reconciliation using the [Stripe staging playbook](../playbooks/stripe-billing-staging.md) only after pricing, tax and provider decisions;
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
@@ -122,10 +126,10 @@ Continue Final Milestone 10 production quality without deploying:
 
 ## Owner/provider connection order
 
-The next material gate is the separately authorized staging connection. Before staging can become customer-ready, the owner will need to complete these bounded steps in order:
+The next material gate is the hosted owner identity. Before staging can become customer-ready, the owner will need to complete these bounded steps in order:
 
-1. obtain solicitor-approved legal documents and release versions;
-2. create a hosted Supabase staging project, configure exact Auth redirects plus TOTP enrollment/verification, and create the confirmed owner Auth user;
+1. create and confirm the single Supabase owner Auth user, complete TOTP enrollment/verification, then run the guarded database owner bootstrap and hosted owner/partner isolation acceptance;
+2. obtain solicitor-approved legal documents and release versions before any customer access;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
 5. configure Resend and DNS only after approved sender copy and domains;
