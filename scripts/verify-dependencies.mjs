@@ -8,6 +8,51 @@ const lock = JSON.parse(
 );
 assert.equal(lock.lockfileVersion, 3, "Dependency policy requires lockfile v3");
 
+function sourceFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(target);
+    return /\.(?:mjs|ts|tsx)$/.test(entry.name) ? [target] : [];
+  });
+}
+
+function packageName(specifier) {
+  if (specifier.startsWith("@"))
+    return specifier.split("/").slice(0, 2).join("/");
+  return specifier.split("/")[0];
+}
+
+const osManifest = JSON.parse(
+  fs.readFileSync(path.join(root, "apps", "os", "package.json"), "utf8"),
+);
+const osRuntimeImports = new Set();
+for (const file of [
+  ...sourceFiles(path.join(root, "apps", "os")),
+  ...sourceFiles(path.join(root, "packages")),
+]) {
+  const source = fs.readFileSync(file, "utf8");
+  for (const match of source.matchAll(
+    /(?:from\s+|import\s*\(\s*)["']([^"']+)["']/g,
+  )) {
+    const specifier = match[1];
+    if (
+      specifier.startsWith(".") ||
+      specifier.startsWith("#") ||
+      specifier.startsWith("node:")
+    )
+      continue;
+    osRuntimeImports.add(packageName(specifier));
+  }
+}
+const missingOsDependencies = [...osRuntimeImports]
+  .filter((name) => !Object.hasOwn(osManifest.dependencies || {}, name))
+  .sort();
+assert.deepEqual(
+  missingOsDependencies,
+  [],
+  `OS workspace has undeclared runtime dependencies: ${missingOsDependencies.join(", ")}`,
+);
+
 const allowedLicenses = new Set([
   "0BSD",
   "Apache-2.0",
