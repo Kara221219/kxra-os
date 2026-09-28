@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
+import { databaseSsl } from "../db/ssl";
 import { localMode } from "../db";
 import {
   CapabilityBroker,
@@ -50,10 +51,7 @@ function databaseConfiguration(localFixture: boolean) {
   if (!connectionString) throw Error("AI worker database is not configured");
   return {
     connectionString,
-    ssl:
-      process.env.NODE_ENV === "production"
-        ? ({ rejectUnauthorized: true } as const)
-        : undefined,
+    ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
   };
 }
 

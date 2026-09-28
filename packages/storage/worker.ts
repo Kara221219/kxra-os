@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import pg from "pg";
+import { databaseSsl } from "../db/ssl";
 import {
   extractPrivateObject,
   inspectPrivateObject,
@@ -61,10 +62,7 @@ function databaseConfiguration() {
   if (!connectionString) throw Error("Worker database is not configured");
   return {
     connectionString,
-    ssl:
-      process.env.NODE_ENV === "production"
-        ? ({ rejectUnauthorized: true } as const)
-        : undefined,
+    ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
   };
 }
 

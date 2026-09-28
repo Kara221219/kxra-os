@@ -3,6 +3,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import pg from "pg";
+import { databaseSsl } from "../../../packages/db/ssl";
 
 export type PublicEnquiry = {
   kind: "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
@@ -64,7 +65,7 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
   if (!local && !connectionString)
     throw new Error("Public ingress storage unavailable");
   const client = new pg.Client(
-    local || { connectionString, ssl: { rejectUnauthorized: true } },
+    local || { connectionString, ssl: databaseSsl() },
   );
   await client.connect();
   try {

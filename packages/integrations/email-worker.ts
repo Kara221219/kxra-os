@@ -1,4 +1,5 @@
 import pg from "pg";
+import { databaseSsl } from "../db/ssl";
 import {
   openEmailDeliverySecret,
   renderEmail,
@@ -27,10 +28,7 @@ function databaseConfiguration() {
   if (!connectionString) throw Error("Email worker database is not configured");
   return {
     connectionString,
-    ssl:
-      process.env.NODE_ENV === "production"
-        ? ({ rejectUnauthorized: true } as const)
-        : undefined,
+    ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
   };
 }
 

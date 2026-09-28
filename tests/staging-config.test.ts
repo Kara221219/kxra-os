@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { verifyStagingConfiguration } from "../scripts/staging-config.mjs";
 
 const secret = (character: string) => character.repeat(72);
+const certificate = `-----BEGIN CERTIFICATE-----\n${"A".repeat(64)}\n-----END CERTIFICATE-----\n`;
 const common = {
   KXRA_ENVIRONMENT: "staging",
   NODE_ENV: "production",
@@ -10,6 +11,7 @@ const common = {
   VERCEL_ENV: "preview",
   VERCEL_TARGET_ENV: "staging",
   KXRA_AUTH_MODE: "supabase",
+  KXRA_DATABASE_CA_CERT: certificate,
 };
 const os = {
   ...common,
@@ -32,7 +34,7 @@ const marketing = {
   KXRA_MARKETING_ORIGIN: "https://staging.kxra-group.com",
   KXRA_PRIVATE_APP_URL: "https://app-staging.kxra-group.com/login",
   KXRA_PUBLIC_DATABASE_URL:
-    "postgresql://kxra_public_ingress:private-password@db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=require",
+    "postgresql://kxra_public_ingress:private-password@db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full",
   KXRA_PUBLIC_INGRESS_SECRET: secret("i"),
 };
 
@@ -121,7 +123,7 @@ test("marketing staging rejects private OS credentials and privileged database r
   );
   assert.ok(
     result.findings.includes(
-      "KXRA_PUBLIC_DATABASE_URL: sslmode=require or verify-full is required",
+      "KXRA_PUBLIC_DATABASE_URL: sslmode=verify-full is required",
     ),
   );
   assert.ok(

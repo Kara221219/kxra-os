@@ -1,4 +1,5 @@
 import pg from "pg";
+import { databaseSsl } from "../db/ssl";
 import type { NormalizedStripeSubscriptionEvent } from "./billing";
 import type {
   StripeBillingCustomer,
@@ -11,10 +12,7 @@ function databaseConfiguration() {
     throw Error("Billing worker database is not configured");
   return {
     connectionString,
-    ssl:
-      process.env.NODE_ENV === "production"
-        ? ({ rejectUnauthorized: true } as const)
-        : undefined,
+    ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
   };
 }
 

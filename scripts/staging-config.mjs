@@ -96,10 +96,8 @@ function databaseUrl(value, name, findings, forbiddenUsers, expectedUser) {
     findings.push(`${name}: privileged database user prohibited`);
   if (expectedUser && baseUser !== expectedUser)
     findings.push(`${name}: ${expectedUser} database user required`);
-  if (
-    !["require", "verify-full"].includes(url.searchParams.get("sslmode") || "")
-  )
-    findings.push(`${name}: sslmode=require or verify-full is required`);
+  if (url.searchParams.get("sslmode") !== "verify-full")
+    findings.push(`${name}: sslmode=verify-full is required`);
   return url;
 }
 
@@ -118,6 +116,13 @@ function common(environment, findings) {
     );
   if (environment.KXRA_AUTH_MODE === "fixture")
     findings.push("KXRA_AUTH_MODE: fixture prohibited");
+  const databaseCa = required(environment, "KXRA_DATABASE_CA_CERT", findings);
+  if (
+    !/^-----BEGIN CERTIFICATE-----\n(?:[A-Za-z0-9+/=]+\n)+-----END CERTIFICATE-----\n?$/.test(
+      databaseCa,
+    )
+  )
+    findings.push("KXRA_DATABASE_CA_CERT: valid PEM certificate required");
   for (const name of forbiddenFixtureNames)
     if (present(environment, name))
       findings.push(`${name}: fixture value prohibited`);

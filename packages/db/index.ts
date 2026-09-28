@@ -2,6 +2,7 @@ import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
 import { localModeConfiguration } from "#kxra/local-guard";
+import { databaseSsl } from "./ssl";
 export type Principal = {
   id: string;
   aal: "aal1" | "aal2";
@@ -34,10 +35,7 @@ export function getPool() {
       pool = new pg.Pool({
         connectionString: process.env.DATABASE_URL,
         max: 10,
-        ssl:
-          process.env.NODE_ENV === "production"
-            ? { rejectUnauthorized: true }
-            : undefined,
+        ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
       });
     }
   }
