@@ -66,14 +66,20 @@ export function PasswordResetConfirmForm({
       onSubmit={async (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
+        const password = String(data.get("password") || "");
+        const confirmation = String(data.get("confirmation") || "");
+        if (password !== confirmation) {
+          setMessage("The passwords do not match.");
+          return;
+        }
         setBusy(true);
         try {
           const result = await post({
             action: "confirm",
             ...(token ? { token } : {}),
             ...(recoverySession || {}),
-            password: data.get("password"),
-            confirmation: data.get("confirmation"),
+            password,
+            confirmation,
           });
           window.location.assign(result.next || "/os");
         } catch (error) {
@@ -96,6 +102,7 @@ export function PasswordResetConfirmForm({
           required
         />
       </label>
+      <p className="form-hint">Use 12 to 256 characters.</p>
       <label>
         Confirm new password
         <input

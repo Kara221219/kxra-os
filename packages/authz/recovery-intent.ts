@@ -2,6 +2,14 @@ export function authCallbackDestination(requested: string | null) {
   return requested === "/join/finish" ? requested : "/os";
 }
 
+export function validSupabaseRefreshTokenShape(token: string) {
+  if (token.length < 12 || token.length > 10_000) return false;
+  // Supabase still accepts legacy refresh tokens as 12 lowercase
+  // alphanumeric characters. Longer tokens use its signed token format and
+  // are verified by Auth when the session is established.
+  return token.length !== 12 || /^[a-z0-9]{12}$/.test(token);
+}
+
 export function recentRecoveryAuthentication(
   claims: unknown,
   nowSeconds = Math.floor(Date.now() / 1000),

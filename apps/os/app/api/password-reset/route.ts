@@ -10,7 +10,10 @@ import {
   fakeEmailTransport,
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
-import { recentRecoveryAuthentication } from "../../../../../packages/authz/recovery-intent";
+import {
+  recentRecoveryAuthentication,
+  validSupabaseRefreshTokenShape,
+} from "../../../../../packages/authz/recovery-intent";
 
 function hostedAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -99,7 +102,10 @@ export async function POST(request: Request) {
           .regex(/^[A-Za-z0-9_-]{32,100}$/)
           .optional(),
         accessToken: z.string().min(100).max(10_000).optional(),
-        refreshToken: z.string().min(20).max(10_000).optional(),
+        refreshToken: z
+          .string()
+          .refine(validSupabaseRefreshTokenShape)
+          .optional(),
         password: z.string().min(12).max(256),
         confirmation: z.string().min(12).max(256),
       })

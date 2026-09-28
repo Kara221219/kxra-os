@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   authCallbackDestination,
   recentRecoveryAuthentication,
+  validSupabaseRefreshTokenShape,
 } from "../packages/authz/recovery-intent";
 
 test("authentication callbacks allow only exact internal destinations", () => {
@@ -56,4 +57,12 @@ test("hosted recovery accepts only one recent verified recovery method", () => {
     false,
   );
   assert.equal(recentRecoveryAuthentication({ amr: ["recovery"] }, now), false);
+});
+
+test("hosted recovery accepts Supabase legacy and signed refresh-token shapes", () => {
+  assert.equal(validSupabaseRefreshTokenShape("abc123def456"), true);
+  assert.equal(validSupabaseRefreshTokenShape("ABC123def456"), false);
+  assert.equal(validSupabaseRefreshTokenShape("abc123def45"), false);
+  assert.equal(validSupabaseRefreshTokenShape("signed-token-format"), true);
+  assert.equal(validSupabaseRefreshTokenShape("x".repeat(10_001)), false);
 });
