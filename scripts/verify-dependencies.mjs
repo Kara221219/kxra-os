@@ -25,6 +25,26 @@ function packageName(specifier) {
 const osManifest = JSON.parse(
   fs.readFileSync(path.join(root, "apps", "os", "package.json"), "utf8"),
 );
+const marketingManifest = JSON.parse(
+  fs.readFileSync(path.join(root, "apps", "marketing", "package.json"), "utf8"),
+);
+const requiredWorkspaceBuildDependencies = [
+  "@types/node",
+  "@types/react",
+  "@types/react-dom",
+  "typescript",
+];
+for (const [name, manifest] of [
+  ["OS", osManifest],
+  ["Marketing", marketingManifest],
+])
+  assert.deepEqual(
+    requiredWorkspaceBuildDependencies.filter(
+      (dependency) => !Object.hasOwn(manifest.dependencies || {}, dependency),
+    ),
+    [],
+    `${name} workspace must declare its Vercel build dependencies`,
+  );
 const osRuntimeImports = new Set();
 for (const file of [
   ...sourceFiles(path.join(root, "apps", "os")),
