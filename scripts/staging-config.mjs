@@ -116,13 +116,24 @@ function common(environment, findings) {
     );
   if (environment.KXRA_AUTH_MODE === "fixture")
     findings.push("KXRA_AUTH_MODE: fixture prohibited");
-  const databaseCa = required(environment, "KXRA_DATABASE_CA_CERT", findings);
+  const encodedDatabaseCa = required(
+    environment,
+    "KXRA_DATABASE_CA_CERT_BASE64",
+    findings,
+  );
+  let databaseCa = "";
+  try {
+    databaseCa = Buffer.from(encodedDatabaseCa, "base64").toString("utf8");
+  } catch {}
   if (
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(encodedDatabaseCa) ||
     !/^-----BEGIN CERTIFICATE-----\n(?:[A-Za-z0-9+/=]+\n)+-----END CERTIFICATE-----\n?$/.test(
       databaseCa,
     )
   )
-    findings.push("KXRA_DATABASE_CA_CERT: valid PEM certificate required");
+    findings.push(
+      "KXRA_DATABASE_CA_CERT_BASE64: valid Base64 PEM certificate required",
+    );
   for (const name of forbiddenFixtureNames)
     if (present(environment, name))
       findings.push(`${name}: fixture value prohibited`);

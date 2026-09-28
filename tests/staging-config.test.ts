@@ -11,7 +11,7 @@ const common = {
   VERCEL_ENV: "preview",
   VERCEL_TARGET_ENV: "staging",
   KXRA_AUTH_MODE: "supabase",
-  KXRA_DATABASE_CA_CERT: certificate,
+  KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(certificate).toString("base64"),
 };
 const os = {
   ...common,
