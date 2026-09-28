@@ -25,6 +25,29 @@ function redirect(req: Request, path: string) {
   );
 }
 
+type SignInStage =
+  | "origin"
+  | "input"
+  | "rate_limit"
+  | "local_provider"
+  | "hosted_provider"
+  | "mfa"
+  | "complete";
+
+function signInFailure(stage: SignInStage, error: unknown) {
+  const detail = error as { code?: string; status?: number; message?: string };
+  if (detail.message === "RATE_LIMITED") return "rate_limited";
+  if (stage === "hosted_provider") {
+    if (detail.code === "email_not_confirmed") return "verification";
+    if (
+      detail.code === "invalid_credentials" ||
+      detail.code === "user_not_found"
+    )
+      return "credentials";
+  }
+  return "configuration";
+}
+
 async function rateLimit(operation: string, subject: string) {
   const digest = crypto
     .createHash("sha256")
@@ -40,8 +63,10 @@ async function rateLimit(operation: string, subject: string) {
 
 export async function POST(req: Request) {
   let mfaAttempt = false;
+  let stage: SignInStage = "origin";
   try {
     sameOrigin(req);
+    stage = "input";
     const f = await req.formData();
     if (f.get("logout")) {
       (await cookies()).delete("kxra_local_session");
@@ -51,6 +76,7 @@ export async function POST(req: Request) {
     }
     if (f.get("mfa")) {
       mfaAttempt = true;
+      stage = "mfa";
       if (localMode()) throw Error("MFA_CHALLENGE_HOSTED_ONLY");
       const code = String(f.get("code") || "").trim();
       const client = await supabase();
@@ -73,8 +99,10 @@ export async function POST(req: Request) {
       .toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail) || normalizedEmail.length > 320)
       throw Error("SIGN_IN_INVALID");
+    stage = "rate_limit";
     await rateLimit("sign-in", normalizedEmail);
     if (localMode()) {
+      stage = "local_provider";
       const identity = await fakeAuthProvider().signIn(
         normalizedEmail,
         String(f.get("password") || ""),
@@ -115,20 +143,36 @@ export async function POST(req: Request) {
             : "/os";
       return redirect(req, next);
     } else {
+      stage = "hosted_provider";
       const client = await supabase();
       const { error } = await client.auth.signInWithPassword({
         email: normalizedEmail,
         password: String(f.get("password")),
       });
-      if (error) throw Error();
+      if (error) throw error;
       await clearOrganisationContext();
+      stage = "mfa";
       const gate = await hostedMfaGate(
         client.auth.mfa as unknown as HostedMfaApi,
       );
       if (gate.challengeRequired) return redirect(req, "/login/mfa");
     }
+    stage = "complete";
     return redirect(req, "/os");
-  } catch {
-    return redirect(req, mfaAttempt ? "/login/mfa?error=1" : "/login?error=1");
+  } catch (error) {
+    const failure = signInFailure(stage, error);
+    const detail = error as { code?: string; status?: number };
+    console.warn("KXRA sign-in rejected", {
+      stage,
+      failure,
+      code: detail.code || "UNCLASSIFIED",
+      status: detail.status || null,
+    });
+    return redirect(
+      req,
+      mfaAttempt
+        ? "/login/mfa?error=1"
+        : `/login?error=${encodeURIComponent(failure)}`,
+    );
   }
 }

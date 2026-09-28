@@ -2,6 +2,16 @@ import { localMode } from "../../../../packages/db";
 import Link from "next/link";
 import LocalFixtureLogin from "#kxra/local-fixture-ui";
 export const dynamic = "force-dynamic";
+
+const signInErrors: Record<string, string> = {
+  credentials: "The email address or password was not accepted.",
+  rate_limited:
+    "Too many sign-in attempts. Please wait 15 minutes and try again.",
+  verification: "Verify your email address before signing in.",
+  configuration:
+    "Sign-in is temporarily unavailable because the secure service connection failed.",
+};
+
 export default async function Login({
   searchParams,
 }: {
@@ -18,7 +28,7 @@ export default async function Login({
       <p>Sign in to your project workspace.</p>
       {error && (
         <p role="alert" className="error">
-          Sign-in failed. Check your details or configuration.
+          {signInErrors[error] || "Sign-in failed. Please try again."}
         </p>
       )}
       {verify && (
