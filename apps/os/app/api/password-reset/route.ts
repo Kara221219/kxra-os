@@ -1,23 +1,30 @@
 import crypto from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { localMode, query, type Principal } from "../../../../../packages/db";
 import { renderEmail } from "../../../../../packages/integrations/email";
-import {
-  principal as currentPrincipal,
-  sameOrigin,
-  supabase,
-} from "../../../lib/auth";
+import { sameOrigin } from "../../../lib/auth";
 import { privateJson, readJson } from "../../../lib/http";
 import {
   fakeAuthProvider,
   fakeEmailTransport,
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
-import { cookies } from "next/headers";
-import {
-  openRecoveryIntent,
-  recoveryIntentCookie,
-} from "../../../../../packages/authz/recovery-intent";
+import { recentRecoveryAuthentication } from "../../../../../packages/authz/recovery-intent";
+
+function hostedAuthClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("Hosted authentication unavailable");
+  return createClient(url, key, {
+    auth: {
+      flowType: "implicit",
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -77,10 +84,8 @@ export async function POST(request: Request) {
           ).catch(() => undefined);
         }
       } else {
-        await (
-          await supabase()
-        ).auth.resetPasswordForEmail(normalized, {
-          redirectTo: `${process.env.KXRA_ORIGIN}/auth/callback?next=/reset-password`,
+        await hostedAuthClient().auth.resetPasswordForEmail(normalized, {
+          redirectTo: `${process.env.KXRA_ORIGIN}/reset-password`,
         });
       }
       return privateJson({ accepted: true }, 202);
@@ -93,6 +98,8 @@ export async function POST(request: Request) {
           .string()
           .regex(/^[A-Za-z0-9_-]{32,100}$/)
           .optional(),
+        accessToken: z.string().min(100).max(10_000).optional(),
+        refreshToken: z.string().min(20).max(10_000).optional(),
         password: z.string().min(12).max(256),
         confirmation: z.string().min(12).max(256),
       })
@@ -101,18 +108,33 @@ export async function POST(request: Request) {
       .parse(raw);
     if (!localMode()) {
       if (input.token) return privateJson({ error: "Reset unavailable" }, 409);
-      const identity = await currentPrincipal();
-      if (!identity || identity.source !== "supabase")
+      if (!input.accessToken || !input.refreshToken)
         return privateJson({ error: "Reset unavailable" }, 409);
-      const secret = process.env.KXRA_JOIN_SECRET || "";
-      const intent = secret
-        ? openRecoveryIntent(
-            (await cookies()).get(recoveryIntentCookie)?.value,
-            secret,
-          )
-        : null;
-      if (intent?.userId !== identity.id)
+      const client = hostedAuthClient();
+      const verified = await client.auth.getUser(input.accessToken);
+      const claims = await client.auth.getClaims(input.accessToken);
+      if (
+        verified.error ||
+        !verified.data.user ||
+        claims.error ||
+        claims.data?.claims.sub !== verified.data.user.id ||
+        !recentRecoveryAuthentication(claims.data?.claims)
+      )
         return privateJson({ error: "Reset unavailable" }, 409);
+      const session = await client.auth.setSession({
+        access_token: input.accessToken,
+        refresh_token: input.refreshToken,
+      });
+      if (session.error || session.data.user?.id !== verified.data.user.id)
+        return privateJson({ error: "Reset unavailable" }, 409);
+      const identity: Principal = {
+        id: verified.data.user.id,
+        email: verified.data.user.email,
+        email_verified: Boolean(verified.data.user.email_confirmed_at),
+        aal: "aal1",
+        auth_time: Math.floor(Date.now() / 1000),
+        source: "supabase",
+      };
       const profile = await query<{ account_state: string }>(
         identity,
         "select account_state from kxra.profiles where user_id=$1",
@@ -123,15 +145,13 @@ export async function POST(request: Request) {
         ["SUSPENDED", "REVOKED"].includes(profile[0].account_state)
       )
         return privateJson({ error: "Reset unavailable" }, 409);
-      const client = await supabase();
       const changed = await client.auth.updateUser({
         password: input.password,
       });
       if (changed.error || changed.data.user?.id !== identity.id)
         return privateJson({ error: "Reset unavailable" }, 409);
-      // The provider change cannot be rolled back. Consume the intent and end
-      // provider sessions even if the local audit write subsequently fails.
-      (await cookies()).delete(recoveryIntentCookie);
+      // The provider change cannot be rolled back. End provider sessions even
+      // if the local audit write subsequently fails.
       let auditRecorded = true;
       try {
         await query(
