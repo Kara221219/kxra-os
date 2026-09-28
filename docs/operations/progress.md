@@ -341,6 +341,15 @@ Create and confirm the single Supabase owner Auth identity, enroll and verify it
 - Implementation commit `f55edff5f2f3151f55ebe75d28e9935a5979f5d7` passed GitHub full CI run 36291392558 and SHA-matched CodeQL run 36291392562.
 - ADR 0035, the owner/Auth threat model and exact staging playbook record the bounded pre-MFA preparation window and final verification requirement. No real identity, credential, factor, hosted database, deployment or publication was used.
 
+## Hosted owner preparation and sign-in TLS repair
+
+- The single staging Supabase Auth identity for `husainkara@hotmail.co.uk` is confirmed as UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`. The guarded owner bootstrap prepared the matching active KXRA owner record. TOTP enrollment and final owner verification remain pending.
+- Staging sign-in initially failed before Supabase Auth because the PostgreSQL client parsed `sslmode=require` from `DATABASE_URL` after the explicit TLS options and silently replaced the verified CA configuration.
+- Hosted TLS now removes URL-level SSL controls before constructing the pool and supplies the current Supabase project CA plus Node trust roots with `rejectUnauthorized: true`. Credentials and non-SSL connection options remain unchanged.
+- A regression test proves a connection URL cannot override the verified certificate object. Safe failure diagnostics expose only host, port, certificate size, hash, subject and fingerprint on the exact TLS-chain error; they never expose connection credentials, certificate content or sign-in input.
+- Vercel Preview commit `54168e3` is Ready at the stable phase-branch alias. A disposable invalid identity passed the database rate-limit boundary and reached Supabase Auth, which returned `invalid_credentials`; this proves the previous secure-service failure is repaired without using the owner's password. Commit `4c71384` also makes every invalid-password, suspended and revoked sign-in return the same non-disclosing credentials result.
+- The final clean hermetic run passes all 199 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 43 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, CSP/SRI, build budgets, artifact exclusion, a 389-file publication/secret scan and optimized Lighthouse budgets. A real owner login, TOTP enrollment, guarded final verification and hosted owner/partner isolation acceptance remain the next checkpoint.
+
 ## Publication boundary
 
 Only application code, engineering documentation and minimum classified seed records required by the platform may enter the repository. Original Word/text sources, private Genesis research, the private business pack, archives, `.runtime`, credentials, screenshots, traces, databases/object backups and generated test artifacts remain excluded.
