@@ -1,10 +1,14 @@
 # Engineering handover
 
-Updated: 27 September 2026.
+Updated: 28 September 2026.
 
 ## Current checkpoint
 
 Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Slice 36 implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` passes the complete local contract, full GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314.
+
+Hosted staging discovery on 28 September 2026 found one active, healthy and empty Supabase project: `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2`. It contains no KXRA migration history or application tables, so the guarded 69-migration sequence has not started. Supabase security and performance advisors currently report no findings. The repository is clean and synchronized at `05dc44f5242d1746ea2cab169a161b71b0d7d7d4`.
+
+Vercel remains the immediate connection blocker. This workspace has no `.vercel/project.json`, the Vercel CLI is logged out and the browser session requires owner sign-in. After owner authentication, verify or create exactly two non-production Preview projects from `Kara221219/kxra-os`: private root `apps/os` and public root `apps/marketing`, both including source outside the root and both using `npm run preflight:staging && npm run build`. Do not apply migrations or add database URLs until those boundaries and their exact Preview origins are known.
 
 The branch is not merged and nothing is deployed. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 

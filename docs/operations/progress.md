@@ -1,6 +1,14 @@
 # KXRA OS implementation progress
 
-Updated: 27 September 2026. Status: **Phase 2 Slice 36 makes customer release readiness a strict, visible and fail-closed owner gate. The complete local contract passes; hosted staging and production legal/commercial inputs remain absent.**
+Updated: 28 September 2026. Status: **Phase 2 Slice 36 makes customer release readiness a strict, visible and fail-closed owner gate. The complete local contract passes. A healthy, empty Supabase staging project now exists; Vercel account authentication and the two-project staging boundary remain incomplete. Production legal/commercial inputs remain absent.**
+
+## Hosted staging connection checkpoint
+
+- Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) is active and healthy in `eu-west-2` on PostgreSQL 17. It has no KXRA migrations or public KXRA tables, no development branches and no current security/performance advisor findings. Only provider-managed Storage tables exist.
+- The connected Supabase tooling can read the project URL and current publishable-key metadata. Secret or publishable key values were not copied into source, documentation, chat or command output.
+- The repository remains clean on `codex/phase-2-completion`; local and remote HEAD both resolve to `05dc44f5242d1746ea2cab169a161b71b0d7d7d4`.
+- No local Vercel project link exists and the Vercel CLI/browser session is logged out. The existence and configuration of the required `KXRA OS staging` and `KXRA Marketing staging` projects are therefore unverified.
+- No hosted migration, canonical seed, runtime-role creation, owner bootstrap, deployment, provider activation or production change has occurred. The next owner checkpoint is a Vercel sign-in using the account that owns the GitHub integration; after that, inspect and configure both Preview projects before any database mutation.
 
 Current branch: `codex/phase-2-completion`. Slice 36 implementation commit `0da4349ae464135d1464d47f784cbab17395d37b` passed full GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, hosted database mutation, provider activation, charge, external send, candidate-code execution or publication occurred.
 
