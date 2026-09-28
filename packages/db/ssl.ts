@@ -4,6 +4,24 @@ import { rootCertificates } from "node:tls";
 const certificatePattern =
   /^-----BEGIN CERTIFICATE-----\n(?:[A-Za-z0-9+/=]+\n)+-----END CERTIFICATE-----\n?$/;
 
+const connectionStringSslParameters = [
+  "ssl",
+  "sslmode",
+  "sslcert",
+  "sslkey",
+  "sslrootcert",
+  "sslcrl",
+  "sslnegotiation",
+  "uselibpqcompat",
+];
+
+export function databaseConnectionString(value: string) {
+  const url = new URL(value);
+  for (const parameter of connectionStringSslParameters)
+    url.searchParams.delete(parameter);
+  return url.toString();
+}
+
 export function databaseSsl(
   environment: Record<string, string | undefined> = process.env,
 ) {

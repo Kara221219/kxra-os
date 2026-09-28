@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { rootCertificates } from "node:tls";
-import { databaseConnectionDiagnostics, databaseSsl } from "../packages/db/ssl";
+import pg from "pg";
+import {
+  databaseConnectionDiagnostics,
+  databaseConnectionString,
+  databaseSsl,
+} from "../packages/db/ssl";
 
 const certificate = `-----BEGIN CERTIFICATE-----\n${"A".repeat(64)}\n-----END CERTIFICATE-----\n`;
 
@@ -16,6 +21,30 @@ test("hosted database TLS requires an explicit CA and full verification", () => 
   assert.throws(
     () => databaseSsl({ KXRA_DATABASE_CA_CERT_BASE64: "not-a-certificate" }),
     /CA certificate not configured/,
+  );
+});
+
+test("URL SSL options cannot override the verified certificate configuration", () => {
+  const verifiedSsl = databaseSsl({
+    KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(certificate).toString("base64"),
+  });
+  const connectionString = databaseConnectionString(
+    "postgresql://user:password@db.example.test:5432/postgres?sslmode=require&application_name=kxra",
+  );
+  const client = new pg.Client({ connectionString, ssl: verifiedSsl });
+
+  assert.equal(new URL(connectionString).searchParams.get("sslmode"), null);
+  assert.equal(
+    new URL(connectionString).searchParams.get("application_name"),
+    "kxra",
+  );
+  assert.deepEqual(
+    (
+      client as unknown as {
+        connectionParameters: { ssl: unknown };
+      }
+    ).connectionParameters.ssl,
+    verifiedSsl,
   );
 });
 
