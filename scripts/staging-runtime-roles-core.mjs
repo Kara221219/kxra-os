@@ -142,10 +142,25 @@ export async function applyRuntimeRoles(
         noreplication nobypassrls connection limit 5;
     end if;
   end $$`);
-  await database.query(`alter role kxra_app with login noinherit nosuperuser
-    nocreatedb nocreaterole noreplication nobypassrls connection limit 20`);
-  await database.query(`alter role kxra_public_ingress with login noinherit
-    nosuperuser nocreatedb nocreaterole noreplication nobypassrls connection limit 5`);
+  const privileged = (
+    await database.query(
+      `select rolname from pg_roles
+      where rolname=any($1::text[])
+        and (rolsuper or rolcreatedb or rolcreaterole or rolreplication or rolbypassrls)
+      order by rolname`,
+      [runtimeRoleNames],
+    )
+  ).rows;
+  if (privileged.length)
+    throw Error(
+      `RUNTIME_ROLE_PRIVILEGED_ATTRIBUTE_REJECTED:${privileged[0].rolname}`,
+    );
+  await database.query(
+    `alter role kxra_app with login noinherit connection limit 20`,
+  );
+  await database.query(
+    `alter role kxra_public_ingress with login noinherit connection limit 5`,
+  );
   await database.query("alter role kxra_app reset all");
   await database.query("alter role kxra_public_ingress reset all");
   await database.query("revoke anon,authenticated from kxra_app");

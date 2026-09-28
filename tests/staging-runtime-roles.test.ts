@@ -90,6 +90,11 @@ test("runtime roles are login-only, non-bypass, non-owning and exactly scoped", 
       { rolname: "kxra_app", owned: 0 },
       { rolname: "kxra_public_ingress", owned: 0 },
     ]);
+    await database.query("alter role kxra_app createrole");
+    await assert.rejects(
+      () => applyRuntimeRoles(database, password("a"), password("b")),
+      /RUNTIME_ROLE_PRIVILEGED_ATTRIBUTE_REJECTED:kxra_app/,
+    );
   } finally {
     await database.query("rollback");
     await database.end();
