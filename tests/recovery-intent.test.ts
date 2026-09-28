@@ -2,12 +2,33 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   authCallbackDestination,
+  classifyHostedRecoveryRequestFailure,
   hostedRecoveryIntentMatches,
   openHostedRecoveryIntent,
   recoveryAuthenticationMatchesIntent,
   sealHostedRecoveryIntent,
   validSupabaseRefreshTokenShape,
 } from "../packages/authz/recovery-intent";
+
+test("hosted recovery provider failures do not disclose account or provider detail", () => {
+  const limited = classifyHostedRecoveryRequestFailure({
+    status: 429,
+    code: "over_email_send_rate_limit",
+    message: "email rate limit exceeded for owner@example.com",
+  });
+  const rejected = classifyHostedRecoveryRequestFailure({
+    status: 400,
+    code: "user_not_found",
+    message: "owner@example.com does not exist",
+  });
+  assert.equal(limited.event, "PROVIDER_RATE_LIMITED");
+  assert.equal(rejected.event, "PROVIDER_REJECTED");
+  assert.equal(limited.publicStatus, 503);
+  assert.equal(rejected.publicStatus, 503);
+  assert.equal(limited.publicMessage, rejected.publicMessage);
+  assert.equal(JSON.stringify(limited).includes("owner@example.com"), false);
+  assert.equal(JSON.stringify(rejected).includes("user_not_found"), false);
+});
 
 test("authentication callbacks allow only exact internal destinations", () => {
   assert.equal(authCallbackDestination("/join/finish"), "/join/finish");

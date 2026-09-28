@@ -355,6 +355,9 @@ Create and confirm the single Supabase owner Auth identity, enroll and verify it
 
 ## Hosted owner preparation and sign-in TLS repair
 
+- Hosted recovery now checks the Supabase `resetPasswordForEmail` result instead of treating every provider response as queued. Provider failures return one non-enumerating temporary-unavailability response; server diagnostics retain only a bounded failure class and numeric provider status, never the submitted email or provider message.
+- The staging Supabase allowlist now includes the exact-origin `/reset-password**` pattern required for the signed recovery intent query. A fresh request at 00:49 reached `/recover` and returned the documented project-wide `429: email rate limit exceeded`; the locked built-in provider quota is two authentication emails per hour. No second request was sent after this diagnosis.
+
 - The single staging Supabase Auth identity for `husainkara@hotmail.co.uk` is confirmed as UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`. The guarded owner bootstrap prepared the matching active KXRA owner record. TOTP enrollment and final owner verification remain pending.
 - Staging sign-in initially failed before Supabase Auth because the PostgreSQL client parsed `sslmode=require` from `DATABASE_URL` after the explicit TLS options and silently replaced the verified CA configuration.
 - Hosted TLS now removes URL-level SSL controls before constructing the pool and supplies the current Supabase project CA plus Node trust roots with `rejectUnauthorized: true`. Credentials and non-SSL connection options remain unchanged.

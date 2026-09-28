@@ -106,6 +106,29 @@ export function validSupabaseRefreshTokenShape(token: string) {
   return token.length !== 12 || /^[a-z0-9]{12}$/.test(token);
 }
 
+export function classifyHostedRecoveryRequestFailure(error: unknown) {
+  const detail = error as { code?: unknown; status?: unknown } | null;
+  const providerStatus =
+    typeof detail?.status === "number" && Number.isInteger(detail.status)
+      ? detail.status
+      : null;
+  const providerCode =
+    typeof detail?.code === "string" ? detail.code.toLowerCase() : "";
+  return {
+    event:
+      providerStatus === 429 || providerCode.includes("rate_limit")
+        ? "PROVIDER_RATE_LIMITED"
+        : "PROVIDER_REJECTED",
+    providerStatus,
+    // Keep the client response invariant across provider failures so it does
+    // not become an account-discovery signal. Provider detail stays in
+    // privacy-safe server diagnostics only.
+    publicStatus: 503,
+    publicMessage:
+      "Password reset email is temporarily unavailable. Please try again later.",
+  } as const;
+}
+
 export function recoveryAuthenticationMatchesIntent(
   claims: unknown,
   intent: Pick<HostedRecoveryIntent, "issuedAt" | "expiresAt">,

@@ -11,6 +11,7 @@ import {
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
 import {
+  classifyHostedRecoveryRequestFailure,
   hostedRecoveryIntentMatches,
   openHostedRecoveryIntent,
   recoveryAuthenticationMatchesIntent,
@@ -95,9 +96,23 @@ export async function POST(request: Request) {
         const intent = sealHostedRecoveryIntent(normalized, secret);
         const destination = new URL("/reset-password", process.env.KXRA_ORIGIN);
         destination.searchParams.set("intent", intent);
-        await hostedAuthClient().auth.resetPasswordForEmail(normalized, {
-          redirectTo: destination.toString(),
-        });
+        const requested = await hostedAuthClient().auth.resetPasswordForEmail(
+          normalized,
+          {
+            redirectTo: destination.toString(),
+          },
+        );
+        if (requested.error) {
+          const failure = classifyHostedRecoveryRequestFailure(requested.error);
+          console.warn("KXRA password-reset request rejected", {
+            event: failure.event,
+            providerStatus: failure.providerStatus,
+          });
+          return privateJson(
+            { error: failure.publicMessage },
+            failure.publicStatus,
+          );
+        }
       }
       return privateJson({ accepted: true }, 202);
     }

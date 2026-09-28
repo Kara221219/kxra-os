@@ -28,6 +28,8 @@ Read, in order:
 
 Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 37 recovery code and handover are pushed at `ea3372e` and the private Preview deployment succeeded. The current schema has 171 RLS-protected tables and 146 audited public functions.
 
+The staging recovery redirect allowlist includes the exact-origin `/reset-password**` pattern for the signed intent query. The next post-change recovery request reached Supabase at 00:49 and was rejected by the built-in provider's project-wide two-emails-per-hour quota. Wait for the rolling quota to clear before requesting exactly one new email. The request route now checks provider errors and returns a single non-enumerating temporary-unavailability response while logging only a bounded class and numeric status.
+
 Slice 37 makes recovery independent of the browser that requested the email. The link returns tokens in a client-only fragment; KXRA removes that fragment from history, sends the credentials only with the chosen password, verifies the provider user and signed JWT, requires the newest AMR entry to be a recent `recovery`, validates active KXRA account state, changes the password, records the security event and globally signs out. Ordinary sessions and the general Auth callback cannot grant reset authority.
 
 Slice 36 replaces a permissive release-manifest check with an exact fail-closed legal/commercial/provider/review contract. The owner Admin surface now reports the latest manifest and exact blocker codes. It cannot approve evidence, deploy, publish, charge or contact a customer. Production inputs remain absent.
