@@ -38,6 +38,7 @@ type SignInStage =
 function signInFailure(stage: SignInStage, error: unknown) {
   const detail = error as { code?: string; status?: number; message?: string };
   if (detail.message === "RATE_LIMITED") return "rate_limited";
+  if (stage === "local_provider") return "credentials";
   if (stage === "hosted_provider") {
     if (detail.code === "email_not_confirmed") return "verification";
     if (

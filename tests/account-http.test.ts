@@ -605,7 +605,7 @@ test("AT-21 partner controls and owner account authority take immediate effect",
     (
       await providerLogin(journey.email, journey.password)
     ).location.searchParams.get("error"),
-    "1",
+    "credentials",
   );
   assert.equal(
     (await providerLogin(journey.email, password)).location.pathname,
@@ -836,7 +836,7 @@ test("AT-21 partner controls and owner account authority take immediate effect",
     (await providerLogin(journey.email, password)).location.searchParams.get(
       "error",
     ),
-    "1",
+    "credentials",
   );
   partnerRows = await (await ownerApi(journey.owner, "partners")).json();
   const revoked = partnerRows.find(

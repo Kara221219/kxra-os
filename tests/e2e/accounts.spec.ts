@@ -400,7 +400,7 @@ test("AT-19/20/21 owner invitation, partner account and lifecycle journey", asyn
 
   await page.context().clearCookies();
   await providerLogin(page, email, changedPassword);
-  await expect(page).toHaveURL(/\/login\?error=1/);
+  await expect(page).toHaveURL(/\/login\?error=credentials/);
   await fixtureLogin(page, "owner");
   await approveLifecycle(page, partner!.id, "ACTIVE");
   await page.context().clearCookies();
