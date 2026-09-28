@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 28 September 2026. Status: **Core hosted staging is connected and fail-closed. Supabase contains the reviewed schema, canonical records and restricted application roles; separate protected Vercel Preview deployments for the private OS and public marketing application are Ready at commit `93c116e`. The complete local contract passes. Owner Auth/TOTP bootstrap, hosted acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
+Updated: 28 September 2026. Status: **Core hosted staging is connected and fail-closed. A browser-independent hosted password-recovery repair is committed at `f46d2a3` and passes the complete local contract. Its exact Supabase redirect URL still needs to be saved, the branch pushed and the resulting Preview verified before a fresh owner reset is requested. Owner TOTP completion, hosted acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
 
 ## Hosted staging connection checkpoint
 
@@ -8,14 +8,22 @@ Updated: 28 September 2026. Status: **Core hosted staging is connected and fail-
 - Exact `LOGIN`, `NOINHERIT`, `NOBYPASSRLS` roles `kxra_app` and `kxra_public_ingress` verify with only their bounded memberships, no object ownership and no direct grants. Distinct generated passwords were written directly to their matching Vercel Preview projects and discarded; no credential entered source, documentation or chat.
 - Vercel projects `kxra-os-staging` (`apps/os`) and `kxra-marketing-staging` (`apps/marketing`) use the exact fail-closed preflight/build command, include required monorepo source and deploy only the phase branch as Preview. Both commit-`93c116e` deployments are Ready behind Vercel deployment protection.
 - Hosted smoke evidence: private `/login` returns 200; anonymous `/api/context` returns 401 with `AUTH_REQUIRED`; marketing `/` returns 200 and contains the approved KXRA identity and public email. The official Supabase CA is transported as Base64, decoded and validated at runtime, and every database connection retains full certificate and hostname verification.
-- Supabase Auth now uses the exact private phase-branch origin, allows only the reviewed join-finish and password-reset callbacks, disables public signup, keeps email confirmation on, enables TOTP and limits initial AAL1 sessions to 15 minutes. The Auth user list is still empty; owner creation and TOTP verification require the owner's confirmed private email and locally entered password.
+- Supabase Auth uses the exact private phase-branch origin, disables public signup, keeps email confirmation on, enables TOTP and limits initial AAL1 sessions to 15 minutes. The owner Auth identity and matching guarded KXRA owner record exist. The exact `/reset-password` redirect is prepared in the dashboard but is not yet saved; obsolete callback/verify entries remain until deletion is separately confirmed.
 - The validated Base64 CA secret is now the only database CA setting in either Vercel Preview project. Temporary local setup files were removed after verification.
-- Hosted application implementation baseline `93c116e4e2b4c791b80873d46e6a39fb64547319` is synchronized on `codex/phase-2-completion`; this evidence update follows on the same branch. The branch remains unmerged. No production deployment, custom-domain switch, provider activation, external send, charge or customer access occurred.
-- Owner Auth/TOTP bootstrap has not occurred. Hosted owner/partner/RLS acceptance, the exact WAF rule and release evidence remain pending behind that identity gate.
+- Browser-independent recovery commit `f46d2a3` replaces browser-bound PKCE recovery with an implicit recovery link whose tokens stay in the fragment until an explicit password submission. The server verifies the token, subject and newest recent `recovery` AMR before changing the password, checks KXRA account state, records the event and globally signs out. The general Auth callback can no longer grant reset authority.
+- Owner Auth record bootstrap has occurred, but first successful password establishment and TOTP enrollment have not. Hosted owner/partner/RLS acceptance, the exact WAF rule and release evidence remain pending behind that identity gate.
 
-Current branch: `codex/phase-2-completion`. Hosted staging implementation commit `93c116e4e2b4c791b80873d46e6a39fb64547319` is deployed to both protected Preview projects. Slice 36 baseline commit `0da4349ae464135d1464d47f784cbab17395d37b` passed GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
+Current branch: `codex/phase-2-completion`. Recovery implementation commit `f46d2a3` is local pending documentation commit and push. Hosted staging baseline `d0f0de7` remains deployed on the private Preview. Slice 36 baseline commit `0da4349ae464135d1464d47f784cbab17395d37b` passed GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314. The branch is not merged. No default-branch change, production deployment, provider activation, charge, external send, candidate-code execution or publication occurred.
 
 The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETION-BRIEF-02.md), the earlier [Phase Completion Brief](CODEX-PHASE-COMPLETION-BRIEF.md), the [Final Completion Brief](../../KXRA-FINAL-COMPLETION-BRIEF.md) and the private Genesis source. Later requirements supplement earlier requirements. Executable status is recorded in [acceptance evidence](acceptance-evidence.md).
+
+## Completed in Slice 37
+
+- Reproduced the hosted reset failure and identified the browser-bound PKCE verifier as the reason links opened from email returned to sign-in.
+- Added a browser-independent implicit recovery flow. Recovery credentials remain in the browser fragment, are removed from browser history immediately and are submitted only with the new password over the same-origin private API.
+- Added fail-closed server verification of the Supabase user, signed JWT subject and newest recent `recovery` AMR before KXRA account-state validation and provider password change.
+- Removed password-reset authority from the general Auth callback and retained the exact join-only callback allowlist.
+- Passed 198 database/domain/HTTP/security tests, 69 migrations and 171 protected-table checks, 48 private browser scenarios, both 14-scenario marketing runs, restart/restore, both builds, CSP/SRI, artifact and 390-file secret scans, and optimized Lighthouse budgets in one hermetic run.
 
 ## Completed in Slice 36
 
@@ -62,8 +70,8 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
 - 69 ordered additive migrations, 171 RLS-protected tables with explicit policies and 146 audited public functions.
-- 197 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
-- Database/private-object restart and 2,711-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 389-file publication/secret scan pass.
+- 198 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
+- Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 390-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
 
 Definitions, schemas, disabled controls and local provider doubles are not counted as connected capabilities.

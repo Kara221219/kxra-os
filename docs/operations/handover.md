@@ -4,15 +4,15 @@ Updated: 28 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted OS sign-in repair commits `54168e3` and `4c71384` preserve the verified Supabase CA despite URL-level SSL controls, prove a disposable invalid sign-in reaches Supabase Auth and classify all rejected identities without disclosing account state. The final clean hermetic contract passes locally. Hosted staging implementation commit `93c116e4e2b4c791b80873d46e6a39fb64547319` remains the earlier complete-contract baseline deployed to both protected Vercel Preview projects. Slice 36 baseline commit `0da4349ae464135d1464d47f784cbab17395d37b` passed GitHub CI run 36300068294 and SHA-matched CodeQL run 36300068314.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair is complete. Recovery commit `f46d2a3` fixes the remaining cross-browser reset failure by replacing browser-bound PKCE recovery with a server-verified implicit recovery submission. The complete hermetic contract passes locally. Save the prepared exact Supabase `/reset-password` redirect, push the branch, wait for the private Preview, then request one fresh reset email. Older reset emails must not be used.
 
 Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2` now verifies all 69 migrations, 171 RLS-protected tables, 146 functions, seven canonical projects and 126 classified source records. The seed contains no local fixtures or activated legal/commercial/provider state. Runtime logins `kxra_app` and `kxra_public_ingress` have exact bounded memberships, no bypass, no ownership and no direct grants. Their distinct generated passwords exist only in matching Vercel Preview secrets.
 
 Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to `Kara221219/kxra-os`, rooted at `apps/os` and `apps/marketing`, include monorepo source and use `npm run preflight:staging && npm run build`. Both Preview deployments for commit `93c116e` are Ready behind deployment protection. The stable phase-branch aliases are `https://kxra-os-staging-git-codex-phas-62bd6c-husainkara-6439s-projects.vercel.app` and `https://kxra-marketing-staging-git-cod-1ab442-husainkara-6439s-projects.vercel.app`. Live probes verify OS login 200, anonymous OS context 401 and marketing home 200.
 
-Supabase Auth uses the exact private phase-branch origin and only the reviewed join-finish and password-reset callback URLs. Public signup is disabled, email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The validated Base64 CA secret is the only database CA setting in either Preview project. Hosted code strips URL-level SSL controls before applying the project CA and full certificate verification so `sslmode` cannot override the trusted CA object.
+Supabase Auth uses the exact private phase-branch origin. Public signup is disabled, email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The exact `/reset-password` redirect is entered in the open Supabase dialog but not saved. Existing obsolete reset callback and `/reset-password/verify` entries can be removed only after the new flow is proven. The validated Base64 CA secret is the only database CA setting in either Preview project.
 
-The immediate owner checkpoint is first successful owner sign-in and Supabase TOTP enrollment. The Auth identity and KXRA owner record exist, but final guarded owner verification cannot pass until the single KXRA TOTP factor is verified. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run. The owner must enter the password locally in the staging login; never put it in chat or Git.
+The immediate owner checkpoint is saving the exact redirect, deploying `f46d2a3` plus this documentation, and completing one fresh reset in the browser. The owner must personally choose and submit the new password; never put it in chat or Git. Successful sign-in then continues to Supabase TOTP enrollment. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
 
 The branch is not merged and nothing is deployed to Production. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -26,7 +26,9 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 36 adds migration `0069`; the current schema has 171 RLS-protected tables and 146 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 37 recovery code is committed locally at `f46d2a3` pending the documentation commit and push. The current schema has 171 RLS-protected tables and 146 audited public functions.
+
+Slice 37 makes recovery independent of the browser that requested the email. The link returns tokens in a client-only fragment; KXRA removes that fragment from history, sends the credentials only with the chosen password, verifies the provider user and signed JWT, requires the newest AMR entry to be a recent `recovery`, validates active KXRA account state, changes the password, records the security event and globally signs out. Ordinary sessions and the general Auth callback cannot grant reset authority.
 
 Slice 36 replaces a permissive release-manifest check with an exact fail-closed legal/commercial/provider/review contract. The owner Admin surface now reports the latest manifest and exact blocker codes. It cannot approve evidence, deploy, publish, charge or contact a customer. Production inputs remain absent.
 
@@ -41,13 +43,13 @@ Slice 34 adds:
 - owner assessment/history UI and applied-result visibility limited by active project RLS;
 - SQL, HTTP and browser attack/acceptance coverage documented by ADR 0037.
 
-Slice 33 adds:
+Slice 33 originally added:
 
 - server-derived assurance and factor selection after hosted password sign-in;
 - an independent application-actor AAL2 gate for direct private access by enrolled hosted identities;
 - a dedicated TOTP challenge surface that accepts only a six-digit proof from the browser;
-- an exact callback allowlist and signed HttpOnly ten-minute recovery intent bound to the verified Supabase subject;
-- provider password update, current KXRA account-state verification, intent consumption, explicit partial-failure handling and global sign-out;
+- the initial exact callback allowlist and browser-bound PKCE recovery design, now superseded for password recovery by Slice 37;
+- provider password update, current KXRA account-state verification, explicit partial-failure handling and global sign-out;
 - ADR 0036, account-threat-model additions and a complete hosted sign-in/recovery staging acceptance sequence.
 
 Slice 8 adds:
