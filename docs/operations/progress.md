@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, real owner password sign-in, TOTP enrollment and guarded final owner verification are complete. Supabase Auth contains one verified KXRA TOTP factor, and the database verifier confirms the exact singleton owner, factor reference and operator tracking event. No password, TOTP secret, proof code, provider token or recovery secret was recorded. Hosted owner/partner isolation acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
+Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, real owner password sign-in, TOTP enrollment, guarded owner verification and one controlled transactional-email delivery are complete. The database confirms one Resend-accepted and webhook-reconciled `DELIVERED` PROJECT-002 viewer invitation. No password, TOTP secret, proof code, invitation token, provider token or recovery secret was recorded. Hosted partner redemption/isolation acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
 
 ## Transactional email staging checkpoint
 
@@ -10,7 +10,8 @@ Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-
 - Commit `49ddc9e31ec3671823deffdbb6b87a9093460118` deployed Ready Preview builds for both `kxra-email-worker-staging` and `kxra-os-staging`. The Resend webhook now terminates in the isolated email worker; the OS retains invitation encryption authority but has no Resend sending or webhook credential.
 - Resend webhook `455effca-0df1-444f-aff7-84c164237fb0` is registered for delivered, delayed, bounced, complained, failed and suppressed events. Its signing secret exists only in the worker's branch-scoped Preview environment. The worker-specific Vercel automation bypass permits this third-party callback while Preview protection remains enabled; KXRA's raw-body provider signature verification is still mandatory.
 - Sanitized live probes reached the deployed KXRA worker and failed closed as designed: `GET /api/webhooks/resend` returned `405`, an unsigned webhook `POST` returned `400`, and an unauthenticated bodyless `POST /api/process` returned `401`.
-- No email has been sent. One explicitly authorized controlled delivery, provider-event reconciliation, replay/revocation evidence and post-acceptance secret rotation remain pending.
+- One explicitly authorized controlled PROJECT-002 viewer invitation to `h***@icloud.com` completed through the restricted worker. The first diagnostic calls failed before claim while exposing only bounded codes; the root cause was `pg` allowing URL `sslmode` to override the verified CA object. Commit `7a1ec10` strips connection-string SSL options and retains full CA/hostname verification. The final invocation returned `200` with one `SENT` result; the signed Resend webhook then moved the row to `DELIVERED`. PostgreSQL records exactly one attempt, one provider message identifier, one provider event and no delivery error.
+- Earlier unencrypted pending delivery was cancelled when the owner created delivery version 2. The active version had an encrypted secret, an unexpired invitation, matching delivery versions and a token digest matching the encrypted-secret digest before dispatch. Replay denial, invitation revocation and post-acceptance trigger/key rotation evidence remain pending.
 
 ## Hosted staging connection checkpoint
 
