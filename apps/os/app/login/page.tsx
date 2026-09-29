@@ -10,6 +10,8 @@ const signInErrors: Record<string, string> = {
   verification: "Verify your email address before signing in.",
   configuration:
     "Sign-in is temporarily unavailable because the secure service connection failed.",
+  callback:
+    "Your email is verified. Sign in with the password you created to continue the invitation.",
 };
 
 export default async function Login({

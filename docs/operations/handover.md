@@ -80,6 +80,13 @@ Preserved earlier slices include normalized global identity, selected tenant, ex
 
 Legal seed records remain `UNAPPROVED_PLACEHOLDER` and inactive. No production legal text, product, price, subscription, customer or credential is seeded.
 
+## Current hosted partner handoff
+
+- The `h***@icloud.com` Supabase identity is email-confirmed. The invitation remains `SENT`, unexpired and unredeemed, with one approved PROJECT-002 grant. No KXRA profile, organization membership or project membership exists yet.
+- The mobile callback exposed a hosted-only continuation defect: a verified identity could land at sign-in after a PKCE handoff failure, while hosted password and MFA completion always redirected to `/os` instead of the active invitation.
+- The pending repair resumes the encrypted join intent after hosted password or MFA authentication and from `/join/account` when the verified identity has no profile. After its Preview is Ready, the user should sign in with the newly created iCloud account password in the same browser. Expected result: `/join/finish` atomically creates the bounded account and PROJECT-002 viewer membership, then redirects to onboarding.
+- After onboarding, complete hosted negative-access acceptance before any revocation: only PROJECT-002 visible; crafted IDs, direct APIs, cross-project files, search and Ask KXRA denied; first-private-access legal gate enforced. Production remains untouched.
+
 ## Reproduce the evidence
 
 Requirements: Node.js 22, locked npm dependencies, Chromium for Playwright and local PostgreSQL binaries.

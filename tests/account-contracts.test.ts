@@ -7,6 +7,7 @@ import { FakeAuthProvider } from "../packages/authz/fake-provider";
 import {
   joinIntentCookie,
   openJoinIntent,
+  postAuthenticationDestination,
   sealJoinIntent,
 } from "../packages/authz/join-intent";
 import {
@@ -137,6 +138,11 @@ test("AT-19 join intent is encrypted, bounded, tamper-evident and named consiste
   assert.equal(openJoinIntent(sealed + "x", secret, now + 1_000), null);
   assert.equal(openJoinIntent(sealed, "x".repeat(64), now + 1_000), null);
   assert.equal(openJoinIntent(sealed, secret, now + 30 * 60_000 + 1), null);
+});
+
+test("hosted authentication resumes an active invitation before workspace access", () => {
+  assert.equal(postAuthenticationDestination(true), "/join/finish");
+  assert.equal(postAuthenticationDestination(false), "/os");
 });
 
 test("AT-19/21 fake email renders every required template and preserves delivery outcomes", async () => {

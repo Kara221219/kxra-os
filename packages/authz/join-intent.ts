@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 
 export const joinIntentCookie = "kxra_join_intent";
 
+export function postAuthenticationDestination(hasJoinIntent: boolean) {
+  return hasJoinIntent ? "/join/finish" : "/os";
+}
+
 export type JoinIntent = {
   invitationId: string;
   invitationVersion: number;

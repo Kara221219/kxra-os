@@ -18,6 +18,10 @@ import {
   verifyHostedTotp,
   type HostedMfaApi,
 } from "../../../../../packages/authz/supabase-mfa";
+import {
+  joinIntentCookie,
+  postAuthenticationDestination,
+} from "../../../../../packages/authz/join-intent";
 
 function redirect(req: Request, path: string) {
   return NextResponse.redirect(
@@ -89,7 +93,8 @@ export async function POST(req: Request) {
       const gate = await hostedMfaGate(api);
       if (gate.challengeRequired)
         await verifyHostedTotp(api, gate.factorId, code);
-      return redirect(req, "/os");
+      const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
+      return redirect(req, postAuthenticationDestination(hasJoin));
     }
     const fixture = localMode() ? f.get("fixture") : null;
     if (fixture) {
@@ -133,13 +138,13 @@ export async function POST(req: Request) {
       )
         throw Error();
       await issueLocalProviderSession(identity, profile[0].session_version);
-      const hasJoin = Boolean((await cookies()).get("kxra_join_intent"));
+      const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
       const next = !identity.emailVerified
         ? hasJoin
           ? "/join/account"
           : "/login?verify=1"
         : hasJoin
-          ? "/join/finish"
+          ? postAuthenticationDestination(true)
           : profile[0].account_state === "ONBOARDING"
             ? "/onboarding"
             : "/os";
@@ -158,6 +163,8 @@ export async function POST(req: Request) {
         client.auth.mfa as unknown as HostedMfaApi,
       );
       if (gate.challengeRequired) return redirect(req, "/login/mfa");
+      const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
+      if (hasJoin) return redirect(req, postAuthenticationDestination(hasJoin));
     }
     stage = "complete";
     return redirect(req, "/os");

@@ -92,6 +92,7 @@ export default async function JoinAccount({
       "select account_state from kxra.profiles where user_id=$1",
       [identity.id],
     );
+    if (!profile[0]) redirect("/join/finish");
     if (profile[0]?.account_state === "ONBOARDING") redirect("/onboarding");
     if (profile[0]?.account_state === "ACTIVE") redirect("/os");
   }

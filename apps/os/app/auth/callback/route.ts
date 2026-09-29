@@ -18,5 +18,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(next, origin), 303);
     }
   }
-  return NextResponse.redirect(new URL("/login?error=1", origin), 303);
+  return NextResponse.redirect(
+    new URL(
+      next === "/join/finish" ? "/login?error=callback" : "/login?error=1",
+      origin,
+    ),
+    303,
+  );
 }
