@@ -866,21 +866,21 @@ test("AT-19/20 exact grants, agreement versions and required-policy resume are d
     const currentAgreements = (
       await db.query(
         `select id,version from kxra.agreement_documents
-         where required and status in ('APPROVED','UNAPPROVED_PLACEHOLDER')
+         where required and status='APPROVED'
          order by document_key`,
       )
     ).rows;
-    assert.equal(currentAgreements.length, 2);
+    assert.equal(currentAgreements.length, 0);
     await denied(db, "select kxra.complete_onboarding_step(8,$1)", [
       {
-        agreement_ids: [currentAgreements[0].id],
-        placeholder_acknowledged: true,
+        agreement_ids: [],
+        agreements_reviewed: false,
       },
     ]);
     await db.query("select kxra.complete_onboarding_step(8,$1)", [
       {
-        agreement_ids: currentAgreements.map((entry) => entry.id),
-        placeholder_acknowledged: true,
+        agreement_ids: [],
+        agreements_reviewed: true,
       },
     ]);
     await db.query("select kxra.complete_onboarding_step(9,$1)", [
@@ -896,21 +896,15 @@ test("AT-19/20 exact grants, agreement versions and required-policy resume are d
       ).rows,
       [{ account_state: "ACTIVE", completed: true }],
     );
-    assert.deepEqual(
+    assert.equal(
       (
         await db.query(
-          `select agreement_id,agreement_version,accepted_at is not null as timestamped
-           from kxra.agreement_acceptances where user_id=$1 order by agreement_id`,
+          `select count(*)::int as n from kxra.agreement_acceptances
+           where user_id=$1`,
           [accountId],
         )
-      ).rows,
-      currentAgreements
-        .map((entry) => ({
-          agreement_id: entry.id,
-          agreement_version: entry.version,
-          timestamped: true,
-        }))
-        .sort((a, b) => a.agreement_id.localeCompare(b.agreement_id)),
+      ).rows[0].n,
+      0,
     );
 
     await db.query("reset role");
@@ -921,10 +915,10 @@ test("AT-19/20 exact grants, agreement versions and required-policy resume are d
     );
     await db.query(
       `insert into kxra.agreement_documents(
-        id,org_id,document_key,version,title,body,status,required
-       ) values($1,$2,'terms',2,'Terms placeholder v2 — unapproved',
-        'Synthetic replacement placeholder requiring fresh acknowledgement.',
-        'UNAPPROVED_PLACEHOLDER',true)`,
+       id,org_id,document_key,version,title,body,status,required,effective_at
+       ) values($1,$2,'terms',2,'Approved terms v2',
+        'Synthetic approved replacement requiring fresh acknowledgement.',
+        'APPROVED',true,now())`,
       [newTerms, org],
     );
     await identity(true);
@@ -934,8 +928,11 @@ test("AT-19/20 exact grants, agreement versions and required-policy resume are d
       8,
     );
     assert.equal((await db.query("select id from kxra.projects")).rowCount, 0);
+    await denied(db, "select kxra.complete_onboarding_step(8,$1)", [
+      { agreement_ids: [], agreements_reviewed: true },
+    ]);
     await db.query("select kxra.complete_onboarding_step(8,$1)", [
-      { agreement_ids: [newTerms], placeholder_acknowledged: true },
+      { agreement_ids: [newTerms], agreements_reviewed: true },
     ]);
     await db.query("select kxra.complete_onboarding_step(9,$1)", [
       { complete: true },

@@ -761,10 +761,10 @@ export function AdminView({ snapshot }: { snapshot: any }) {
           <p>All deterministic manifest checks pass.</p>
         )}
         <p className="subtle">
-          Readiness requires six exact approved legal documents, complete plan
-          and policy data, retention and subprocessors, staging provider
-          evidence, public-copy integrity, and accessibility and security
-          reviews. This status cannot deploy or publish anything.
+          Readiness requires the approved legal documents, complete plan and
+          policy data, retention and subprocessors, staging provider evidence,
+          public-copy integrity, and accessibility and security reviews. This
+          status cannot deploy or publish anything.
         </p>
       </section>
       <section className="panel" id="security-events">

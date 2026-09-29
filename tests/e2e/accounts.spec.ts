@@ -248,12 +248,14 @@ async function completeStepsFiveToNine(page: Page) {
   await page.getByLabel("Display density").selectOption("compact");
   await continueStep(page);
   await expect(page.getByText("Step 8 of 9", { exact: true })).toBeVisible();
-  await expect(page.getByText(/UNAPPROVED PLACEHOLDER/).first()).toBeVisible();
-  const agreements = page.locator('input[name="agreement_id"]');
-  expect(await agreements.count()).toBe(2);
-  for (let index = 0; index < 2; index++) await agreements.nth(index).check();
+  await expect(
+    page.getByRole("heading", {
+      name: "No agreement is required at this stage.",
+    }),
+  ).toBeVisible();
+  await expect(page.locator('input[name="agreement_id"]')).toHaveCount(0);
   await page
-    .getByLabel(/I understand that documents marked UNAPPROVED PLACEHOLDER/)
+    .getByLabel("Continue without a mandatory agreement at this stage.")
     .check();
   await continueStep(page);
   await expect(page.getByText("Step 9 of 9", { exact: true })).toBeVisible();

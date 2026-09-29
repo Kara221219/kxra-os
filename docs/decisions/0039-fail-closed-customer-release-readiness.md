@@ -4,7 +4,9 @@ Status: accepted locally; production inputs absent.
 
 ## Decision
 
-Customer readiness is a deterministic database decision over one exact release manifest. A manifest must reference approved, hash-matched NDA, Terms, Privacy, Cookie, Data Processing and Custom Project documents. It must also contain validated plan and price data, included usage, separate custom-project treatment, cancellation/refund/grace/tax policies, retention and subprocessors, exact public-copy integrity, five required staging evidence classes, support/privacy/security contacts, and named human accessibility and security reviews.
+Customer readiness is a deterministic database decision over one exact release manifest. A manifest must reference approved, hash-matched Terms, Privacy, Cookie, Data Processing and Custom Project documents. It must also contain validated plan and price data, included usage, separate custom-project treatment, cancellation/refund/grace/tax policies, retention and subprocessors, exact public-copy integrity, five required staging evidence classes, support/privacy/security contacts, and named human accessibility and security reviews.
+
+ADR 0041 supersedes only this decision's mandatory NDA requirement. The NDA capability and historical evidence remain available, but an NDA is not a current onboarding or release requirement.
 
 The owner Admin view displays the latest manifest and exact blockers. It cannot edit legal content, approve evidence, deploy, publish, charge or contact a customer. Missing or malformed fields remain blocked. Synthetic test evidence proves only the contract and cannot activate production legal documents.
 

@@ -67,12 +67,12 @@ export default async function Onboarding({
         version: number;
         title: string;
         body: string;
-        status: "APPROVED" | "UNAPPROVED_PLACEHOLDER";
+        status: "APPROVED";
       }>(
         a,
         `select id,document_key,version,title,body,status
        from kxra.agreement_documents
-       where required and status in ('APPROVED','UNAPPROVED_PLACEHOLDER')
+       where required and status='APPROVED'
        order by document_key,version`,
       ),
     ]);
@@ -104,7 +104,7 @@ export default async function Onboarding({
             "Working With KXRA",
             "WhatsApp",
             "Preferences",
-            "Agreements",
+            "Access Review",
             "Complete",
           ].map((title, index) => {
             const number = index + 1;

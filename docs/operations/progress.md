@@ -1,13 +1,22 @@
 # KXRA OS implementation progress
 
-Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The current PROJECT-002 invitation reaches the correct mobile account-creation page. Account creation then failed because Supabase public signup was disabled. An invitation-only Auth hook and one-use challenge fix is implemented and locally verified; migration 0070, hosted hook activation and hosted acceptance remain pending. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
+Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The controlled PROJECT-002 invitation has been redeemed with exact project scope and reached onboarding. ADR 0041 parks mandatory NDA acceptance; migration 0073 and the matching Access Review UI pass the complete local contract and await coordinated staging application. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
+
+## Mandatory NDA parked
+
+- The owner decided that signup, onboarding and current private access do not require an NDA. The legal-document and immutable evidence capability remains available for a later approved agreement.
+- Migration `0073_park_mandatory_nda.sql` retires active NDA requirements, makes the legacy NDA optional, ignores unapproved placeholders and permits onboarding when there are zero active approved agreements.
+- The Access Review UI states that no agreement is required. It continues to require exact acceptance if KXRA later activates an approved required agreement.
+- The release manifest now requires approved Terms, Privacy, Cookie, Data Processing and Custom Project documents. NDA is parked rather than deleted.
+- Project membership, PostgreSQL RLS, tenant isolation, MFA and retrieval authorization are unchanged.
+- The clean hermetic contract passes 219 database/domain/HTTP/security tests, 73 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in development and production, restart/restore, all three optimized builds, CSP/SRI, build budgets, artifact exclusion, a 417-file publication/secret scan and optimized Lighthouse budgets.
 
 ## Invited identity continuation recovery
 
 - Added migration `0072_resume_invited_identity.sql` and a `/join/finish` fallback for a verified invited identity whose short browser join intent expires during email verification or password recovery.
 - The fallback requires no existing KXRA profile, exactly one active unredeemed invitation for the verified provider email and a consumed one-use Auth signup challenge for that invitation. It reuses the existing audited profile registration and invitation redemption functions; it cannot select roles or projects and is unavailable to anonymous users.
 - Focused tests prove denial for anonymous, unverified and wrong-email identities, denial on replay, successful recovery after invitation delivery-token rotation, and exact single-project scope. Type checking, migration manifest checks, formatting and the optimized OS build pass. Hosted migration 0072 is hash-bound to commit `8140b70`; its authenticated-only grant and anonymous/public denial verify. The invited staging identity resumed successfully into onboarding with one active PARTNER/ORG_MEMBER organisation membership and exactly PROJECT-002 viewer access.
-- The real onboarding journey reached Step 8 and confirmed that hosted staging contains zero required legal documents. The database correctly refuses completion, but the UI exposed the schema message `Invalid request fields`. The UI now presents a disabled legal hard stop and states that no acceptance was recorded. Solicitor-approved NDA, terms and privacy versions remain required before customer onboarding.
+- The real onboarding journey reached Step 8 and confirmed that hosted staging contains zero approved required agreements. ADR 0041 supersedes the earlier hard stop: after migration 0073, the user may complete Access Review without an NDA.
 
 ## Invitation-only hosted registration repair
 
@@ -60,7 +69,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 
 ## Completed in Slice 36
 
-- Replaced the permissive release-manifest check with an exact six-document legal set and immutable approved-version/hash verification.
+- Replaced the permissive release-manifest check with an exact six-document legal set and immutable approved-version/hash verification. ADR 0041 later reduced the current required set to five by parking NDA.
 - Added typed commercial checks for plan/price/usage, separate custom projects, cancellation/refund/grace/tax policies, retention, subprocessors and public-copy integrity.
 - Required five named staging evidence classes plus named human accessibility and security reviews before readiness can pass.
 - Added validated support, privacy and security contacts and exact owner/review requirements.
@@ -122,7 +131,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 ### Partial
 
 - Brand Studio: local address-pinned source refresh, append-only correction and stale-lineage gates are implemented; hosted worker/egress evidence, media generation, sector claim policies and publication remain absent.
-- Identity/legal: the real Supabase owner recovery, sign-in, TOTP enrollment and guarded database verification pass. Hosted owner/partner isolation acceptance and solicitor-approved legal content remain unverified.
+- Identity/legal: the real Supabase owner recovery, sign-in, TOTP enrollment and guarded database verification pass. Hosted owner/partner isolation acceptance and approved release legal content remain unverified. NDA is not currently mandatory.
 - Commercial: test-mode customer bootstrap, Checkout, Portal and subscription reconciliation are staging-ready but disabled; Stripe products/prices, live mode and approved billing policies remain disconnected.
 - Customer operations: private support, cancellation/withdrawal and data-request intake/handling works locally; approved response periods, provider cancellation, identity verification, disclosure/erasure and notification delivery remain disconnected.
 - Custom projects: the local request-to-delivery evidence path includes bilateral exact change approval, versioned delivery evidence, customer milestone acceptance, invoices, immutable voids and component-bounded credit notes. Approved legal text and connected accounting/payment reconciliation remain incomplete.
@@ -137,7 +146,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ## Active owner and external inputs
 
-- Qualified UK solicitor approval for exact NDA/confidentiality, Terms, Privacy, cookie, AI/data-processing and custom-project documents.
+- Qualified UK legal approval for Terms, Privacy, cookie, AI/data-processing and custom-project documents. NDA/confidentiality is parked for later reconsideration.
 - Customer discovery decisions for initial segment, launch plan, plan limits, the approximately £30 pricing hypothesis, free-partner policy and custom-project terms.
 - Entity/public contact details, retention/recovery targets, support/privacy mailboxes and approved public copy/brand assets.
 - Later staging credentials and budgets through provider secret stores, never chat or Git.
@@ -402,13 +411,13 @@ Run the exact hosted acceptance sequences with the verified AAL2 owner, then cre
 
 ## Hosted legal-gate and connection-pool checkpoint
 
-- The invited PROJECT-002 partner completed onboarding steps 1–7. Step 8 found zero active required legal documents, so PostgreSQL refused completion and recorded no acceptance.
-- The Step 8 UI now removes the placeholder acknowledgement, explains the legal blocker and disables continuation until approved required documents exist. Preview commit `3a2e953` is Ready and the stable branch alias visibly passes this fail-closed state.
+- The invited PROJECT-002 partner completed onboarding steps 1–7. Step 8 found zero active approved agreements and recorded no acceptance. ADR 0041 supersedes the earlier requirement to block in this state.
+- Migration 0073 and the Access Review UI now permit continuation with zero active approved agreements. A future explicitly approved required agreement still closes access until exact-version acceptance.
 - Live verification exposed one transient `EMAXCONNSESSION` failure because the Vercel application was using Supavisor session mode with a 15-client pool while each serverless instance could retain ten clients. The Vercel runtime pool is now bounded to one client with five-second connection and idle limits.
 - Supabase's transaction pooler on port 6543 is the selected serverless runtime endpoint. Operator and migration connections remain on direct/session mode.
 - The branch-scoped OS Preview `DATABASE_URL` now uses the same restricted `kxra_app` role through Supabase's transaction pooler on port 6543 with `sslmode=verify-full`. No Production environment variable was changed.
 - Reviewed commit `4ef52ea447d0ef094cc8942a29cc9efe743549ea` passed GitHub CI run `36633056144` and SHA-matched CodeQL run `36633056141`, then redeployed as Preview deployment `Ba8ijYpKGA2EW3roAGUYYvUstMLk` and reached `Ready`. Three consecutive stable-alias onboarding reloads completed without an application error or `EMAXCONNSESSION`; access remained fail closed because the controlled identity was no longer eligible to repeat onboarding. The deployment log reported zero warning, error or fatal events during the check.
-- Solicitor-approved NDA, terms and privacy versions remain the release blocker. No placeholder may be activated to complete onboarding.
+- Approved release documents and policies remain release blockers, but NDA is not currently required. No placeholder may be activated to complete onboarding or release.
 
 ## Publication boundary
 

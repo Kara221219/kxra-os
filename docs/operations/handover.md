@@ -4,9 +4,9 @@ Updated: 29 September 2026.
 
 ## Current continuation repair
 
-The invited staging identity completed provider password recovery but initially reached `Access unavailable` because its 30-minute browser join intent expired before invitation redemption. Migration 0072 adds a narrow authenticated recovery path tied to the consumed one-use signup challenge and exact verified email, and `/join/finish` uses it only when no valid join intent remains. Local focused security, migration, type, format and optimized-build checks pass. The hash-bound hosted migration and commit `8140b70` deployment are verified; the invited identity resumed into onboarding with one active PARTNER/ORG_MEMBER organisation membership, one redeemed invitation and exactly PROJECT-002 viewer access. Human onboarding and agreement acceptance remain incomplete.
+The invited staging identity completed provider password recovery but initially reached `Access unavailable` because its 30-minute browser join intent expired before invitation redemption. Migration 0072 adds a narrow authenticated recovery path tied to the consumed one-use signup challenge and exact verified email, and `/join/finish` uses it only when no valid join intent remains. The hash-bound hosted migration and commit `8140b70` deployment are verified; the invited identity resumed into onboarding with one active PARTNER/ORG_MEMBER organisation membership, one redeemed invitation and exactly PROJECT-002 viewer access.
 
-The hosted journey completed Steps 1–7 and reached the agreement gate. No required agreement document exists in hosted staging, so the database correctly refused Step 8 and recorded no acceptance. A UI repair replaces the generic validation error with a disabled, explicit legal-document hard stop. Do not create placeholder acceptances or complete customer onboarding until solicitor-approved NDA, terms and privacy versions are loaded and hash/version acceptance is retested.
+ADR 0041 parks mandatory NDA acceptance. Migration 0073 retires active NDA requirements, makes the legacy NDA optional and allows Access Review to complete with zero approved agreements. The legal evidence system remains intact: a future explicitly approved required agreement reopens Step 8 and must be accepted by exact version. The clean hermetic contract passes 219 database/domain/HTTP/security tests, 73 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 14-journey marketing runs, restart/restore, all three builds and the publication, secret, CSP/SRI, size and Lighthouse gates. Migration 0073 and its matching application deployment must be applied together before the invited staging identity continues.
 
 ## Current checkpoint
 
@@ -156,7 +156,7 @@ Continue Final Milestone 10 production quality without deploying:
 - Set `request.kxra.org_id` from verified membership inside each transaction. Never accept tenant/project authority from request, JWT or model fields.
 - Require one authorized project for project-bound retrieval and reauthorize before bytes, model context, export, intent or provider delivery.
 - Treat files, website snapshots, repository content and model output as untrusted evidence without instruction or tool authority.
-- Require an exact approved legal version before private production access; placeholders cannot activate.
+- Require an exact approved legal version only when an approved requirement is active; placeholders cannot activate.
 - Calculate entitlement, usage and money in deterministic database/domain code.
 - Subscription access never authorizes custom implementation.
 - Brand Studio export never authorizes publication.
@@ -169,7 +169,7 @@ Continue Final Milestone 10 production quality without deploying:
 The hosted owner identity gate is complete. Before staging can become customer-ready, complete these bounded steps in order:
 
 1. run hosted owner/partner/revoked/crafted-project isolation acceptance using the verified owner and one bounded staging partner;
-2. obtain solicitor-approved legal documents and release versions before any customer access;
+2. obtain approved Terms, Privacy, Cookie, Data Processing and Custom Project documents before customer release; reconsider an NDA only after qualified advice or demonstrated need;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
 5. configure Resend and DNS only after approved sender copy and domains;

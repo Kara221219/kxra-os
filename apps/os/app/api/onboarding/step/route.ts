@@ -29,8 +29,8 @@ const schemas = [
     .strict(),
   z
     .object({
-      agreement_ids: z.array(uuid).min(1).max(20),
-      placeholder_acknowledged: z.literal(true),
+      agreement_ids: z.array(uuid).max(20),
+      agreements_reviewed: z.literal(true),
     })
     .strict(),
   z.object({ complete: z.literal(true) }).strict(),

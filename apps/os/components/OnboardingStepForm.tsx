@@ -18,7 +18,7 @@ type Agreement = {
   version: number;
   title: string;
   body: string;
-  status: "APPROVED" | "UNAPPROVED_PLACEHOLDER";
+  status: "APPROVED";
 };
 type Profile = {
   first_name: string | null;
@@ -43,7 +43,7 @@ const titles = [
   "Working With KXRA",
   "WhatsApp",
   "Preferences",
-  "Terms, Privacy & Required Agreements",
+  "Access Review",
   "Complete",
 ];
 
@@ -69,7 +69,6 @@ export default function OnboardingStepForm({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
-  const requiredAgreementsUnavailable = step === 8 && agreements.length === 0;
 
   useEffect(() => setReady(true), []);
 
@@ -120,8 +119,7 @@ export default function OnboardingStepForm({
       case 8:
         data = {
           agreement_ids: form.getAll("agreement_id"),
-          placeholder_acknowledged:
-            form.get("placeholder_acknowledged") === "on",
+          agreements_reviewed: form.get("agreements_reviewed") === "on",
         };
         break;
       default:
@@ -346,13 +344,14 @@ export default function OnboardingStepForm({
 
       {step === 8 && (
         <>
-          {requiredAgreementsUnavailable && (
-            <section className="notice" role="alert">
-              <h2>Required legal documents are not configured.</h2>
+          {!agreements.length && (
+            <section className="notice">
+              <h2>No agreement is required at this stage.</h2>
               <p>
-                Onboarding cannot be completed until KXRA loads the required
-                approved agreements. No acceptance has been recorded. Contact
-                the KXRA owner for an update.
+                KXRA has parked mandatory NDA acceptance. You can continue
+                onboarding without signing an NDA. If KXRA introduces an
+                approved agreement later, its exact version will be shown before
+                any acceptance is requested.
               </p>
             </section>
           )}
@@ -360,14 +359,7 @@ export default function OnboardingStepForm({
             <article className="agreement" key={agreement.id}>
               <div className="record-top">
                 <h2>{agreement.title}</h2>
-                <span
-                  className={`badge ${agreement.status === "UNAPPROVED_PLACEHOLDER" ? "amber" : ""}`}
-                >
-                  {agreement.status === "UNAPPROVED_PLACEHOLDER"
-                    ? "UNAPPROVED PLACEHOLDER"
-                    : "APPROVED"}{" "}
-                  · v{agreement.version}
-                </span>
+                <span className="badge">APPROVED · v{agreement.version}</span>
               </div>
               <p>{agreement.body}</p>
               <Check
@@ -377,21 +369,20 @@ export default function OnboardingStepForm({
               />
             </article>
           ))}
-          {!requiredAgreementsUnavailable && (
-            <Check
-              name="placeholder_acknowledged"
-              label="I understand that documents marked UNAPPROVED PLACEHOLDER are not approved legal terms or a privacy notice."
-            />
-          )}
+          <Check
+            name="agreements_reviewed"
+            label={
+              agreements.length
+                ? "I have reviewed and acknowledged every approved agreement shown above."
+                : "Continue without a mandatory agreement at this stage."
+            }
+          />
         </>
       )}
 
       {step === 9 && (
         <>
-          <p>
-            Your profile, project access, preferences and required
-            acknowledgements are ready.
-          </p>
+          <p>Your profile, project access and preferences are ready.</p>
           <ProjectCards projects={projects} compact />
           <Check
             name="complete"
@@ -414,14 +405,12 @@ export default function OnboardingStepForm({
             Back
           </Link>
         )}
-        <button disabled={busy || !ready || requiredAgreementsUnavailable}>
+        <button disabled={busy || !ready}>
           {busy
             ? "Saving…"
-            : requiredAgreementsUnavailable
-              ? "Legal documents required"
-              : step === 9
-                ? "Complete onboarding"
-                : "Save and continue"}
+            : step === 9
+              ? "Complete onboarding"
+              : "Save and continue"}
         </button>
       </div>
       {completedSteps.includes(step) && step < currentStep && (

@@ -67,7 +67,7 @@ Evidence: SQL/HTTP contracts plus complete desktop and mobile browser journeys.
 
 - All nine steps validate required state. Back, forward, refresh and mobile interruption return to the current server-owned step.
 - Project Access shows only assigned projects with read-only role/permission data. WhatsApp skip is optional.
-- Missing required profile, preference or agreement data blocks completion. Acceptances store exact document version/timestamp and placeholders are explicitly unapproved.
+- Missing required profile or preference data blocks completion. When an approved agreement is active, its exact version must also be accepted; zero active approved agreements permits completion. Placeholders are explicitly unapproved and never recorded as acceptances.
 - Completion stores `onboarding_completed_at`, activates the account and enters the OS. A new required agreement returns the user to step 8 without erasing prior history.
 
 ### AT-21 — Partner/owner account controls: PASS (local)
@@ -132,14 +132,14 @@ Evidence: migrations `0031`, `0033`, `0035`, `0036`, `0058`–`0063`; `tests/pha
 - Selection is recorded by the database. Membership expiry/revocation is rechecked on the next request; removing one membership preserves the other.
 - SQL, API and browser tests prove the boundary. No cache, service worker or distributed provider job exists yet, so those future paths must repeat AT-31 before activation.
 
-### AT-32 — First-private-access NDA gate: PASS (local synthetic workflow); production text BLOCKED
+### AT-32 — Optional approved-agreement gate: PASS (local synthetic workflow)
 
 Evidence: migrations `0031`, `0034` and `0035`; agreement route/UI plus SQL, HTTP and browser acceptance tests.
 
-- An active approved synthetic requirement blocks private project, file, search and Ask routes with typed `AGREEMENT_REQUIRED` while context/agreement routes remain reachable.
+- An active approved synthetic requirement blocks private project, file, search and Ask routes with typed `AGREEMENT_REQUIRED` while context/agreement routes remain reachable. With no active approved requirement, the gate is satisfied.
 - Presentation shows and stores the exact rendered content, document version/hash and acceptance wording/version/hash. Acceptance binds account, membership, organization and presentation times in immutable evidence.
 - Refresh/retry is idempotent; another account remains gated; decline remains closed; a new mandatory version reopens access; retirement preserves history.
-- An unapproved placeholder cannot activate. Real NDA/Terms/Privacy and other launch documents remain blocked on qualified UK counsel and owner approval.
+- An unapproved placeholder cannot activate. ADR 0041 parks the NDA requirement; a future agreement must be an explicitly approved exact version before it can activate.
 
 ### AT-33 — Subscription, entitlement, usage and free grants: PARTIAL / local hosted-flow PASS
 
@@ -167,7 +167,7 @@ Evidence: migrations `0032`, `0034`, `0037`, `0038`, `0058`, `0059` and `0060`; 
 
 ### AT-46 — Legal/commercial release gate: BLOCKED; deterministic local gate PASS
 
-Migrations `0061` and `0069`, the customer-service suites and `tests/phase2-commercial.test.ts` prove private support/privacy intake and a strict release gate. `release_manifest_check` requires exact approved/hash-matched NDA, Terms, Privacy, Cookie, Data Processing and Custom Project documents; complete plan/price/usage and cancellation/refund/grace/tax policy; retention and subprocessors; public-copy integrity; five named staging evidence classes; support/privacy/security contacts; and named human accessibility/security reviews. Owner Admin shows exact blockers but gains no deploy or publication capability. A complete synthetic fixture passes; qualified legal documents, approved commercial policy and real staging evidence remain absent.
+Migrations `0061`, `0069` and `0073`, the customer-service suites and `tests/phase2-commercial.test.ts` prove private support/privacy intake and a strict release gate. `release_manifest_check` requires exact approved/hash-matched Terms, Privacy, Cookie, Data Processing and Custom Project documents; complete plan/price/usage and cancellation/refund/grace/tax policy; retention and subprocessors; public-copy integrity; five named staging evidence classes; support/privacy/security contacts; and named human accessibility/security reviews. Owner Admin shows exact blockers but gains no deploy or publication capability. A complete synthetic fixture passes; qualified legal documents, approved commercial policy and real staging evidence remain absent. ADR 0041 parks the NDA requirement.
 
 ## Phase 2 Slice 2 evidence
 

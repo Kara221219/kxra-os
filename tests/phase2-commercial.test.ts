@@ -1448,7 +1448,6 @@ test("AT-46 release readiness requires exact legal, commercial, provider and rev
 
     await db.query("reset role");
     const requiredTypes = [
-      "NDA",
       "TERMS",
       "PRIVACY",
       "COOKIE",

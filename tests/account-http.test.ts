@@ -11,11 +11,6 @@ const projects = {
   p2: "30000000-0000-4000-8000-000000000002",
   p3: "30000000-0000-4000-8000-000000000003",
 };
-const agreements = [
-  "80000000-0000-4000-8000-000000000001",
-  "80000000-0000-4000-8000-000000000002",
-];
-
 type CookieJar = Map<string, string>;
 type FakeMessage = {
   operationKey: string;
@@ -316,7 +311,7 @@ async function onboardPartner() {
   assert.match(startPage, /US Vehicle Seat Covers/);
   assert.match(startPage, /AI Property Fly-Through/);
   assert.doesNotMatch(startPage, /AI Trading Research &amp; Monitoring/);
-  assert.match(startPage, /UNAPPROVED|unapproved/i);
+  assert.doesNotMatch(startPage, /UNAPPROVED PLACEHOLDER/i);
 
   assert.equal(
     (
@@ -352,7 +347,7 @@ async function onboardPartner() {
       whatsapp_notifications: false,
       display_density: "comfortable",
     },
-    { agreement_ids: agreements, placeholder_acknowledged: true },
+    { agreement_ids: [], agreements_reviewed: true },
     { complete: true },
   ];
   for (let index = 0; index < 4; index++) {
@@ -405,12 +400,12 @@ async function onboardPartner() {
       await postJson(jar, "/api/onboarding/step", {
         step: 8,
         data: {
-          agreement_ids: [agreements[0]],
-          placeholder_acknowledged: true,
+          agreement_ids: [],
+          agreements_reviewed: false,
         },
       })
     ).status,
-    409,
+    400,
   );
   for (let index = 7; index < 9; index++) {
     const response = await postJson(jar, "/api/onboarding/step", {
