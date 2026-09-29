@@ -25,7 +25,7 @@ type ClaimedEmail = {
 
 function databaseConfiguration() {
   const connectionString = process.env.KXRA_EMAIL_WORKER_DATABASE_URL;
-  if (!connectionString) throw Error("Email worker database is not configured");
+  if (!connectionString) throw Error("EMAIL_WORKER_DATABASE_NOT_CONFIGURED");
   return {
     connectionString,
     ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
@@ -34,40 +34,73 @@ function databaseConfiguration() {
 
 function assertWorkerEnabled() {
   if (process.env.KXRA_EMAIL_ENABLED !== "true")
-    throw Error("Transactional email is disabled");
+    throw Error("EMAIL_WORKER_DISABLED");
+}
+
+function safeWorkerFailure(error: unknown, fallback: string) {
+  if (error instanceof Error && /^[A-Z][A-Z0-9_]{2,80}$/.test(error.message))
+    return error;
+  return new Error(fallback, { cause: error });
 }
 
 async function workerTransaction<T>(
   work: (database: pg.Client) => Promise<T>,
   configuration?: pg.ClientConfig,
 ) {
-  const database = new pg.Client(configuration || databaseConfiguration());
-  await database.connect();
+  let resolvedConfiguration: pg.ClientConfig;
+  try {
+    resolvedConfiguration = configuration || databaseConfiguration();
+  } catch (error) {
+    throw safeWorkerFailure(error, "EMAIL_WORKER_DATABASE_CONFIG_FAILED");
+  }
+  const database = new pg.Client(resolvedConfiguration);
+  try {
+    await database.connect();
+  } catch (error) {
+    throw safeWorkerFailure(error, "EMAIL_WORKER_DATABASE_CONNECT_FAILED");
+  }
+  let transactionStarted = false;
   try {
     await database.query("begin");
+    transactionStarted = true;
     await database.query("set local statement_timeout='30s'");
     const identity = await database.query("select current_user");
     if (identity.rows[0].current_user !== "kxra_email_worker")
       await database.query("set local role kxra_email_worker");
     const result = await work(database);
     await database.query("commit");
+    transactionStarted = false;
     return result;
   } catch (error) {
-    await database.query("rollback");
-    throw error;
+    if (transactionStarted) {
+      try {
+        await database.query("rollback");
+      } catch {
+        // Preserve the original bounded failure code.
+      }
+    }
+    throw safeWorkerFailure(error, "EMAIL_WORKER_DATABASE_TRANSACTION_FAILED");
   } finally {
-    await database.end();
+    try {
+      await database.end();
+    } catch {
+      // Connection cleanup cannot change the recorded operation outcome.
+    }
   }
 }
 
 async function claim(workerReference: string, configuration?: pg.ClientConfig) {
-  return workerTransaction(async (database) => {
-    const result = await database.query<ClaimedEmail>(
-      "select * from kxra_private.claim_transactional_email($1)",
-      [workerReference],
-    );
-    return result.rows[0] || null;
-  }, configuration);
+  try {
+    return await workerTransaction(async (database) => {
+      const result = await database.query<ClaimedEmail>(
+        "select * from kxra_private.claim_transactional_email($1)",
+        [workerReference],
+      );
+      return result.rows[0] || null;
+    }, configuration);
+  } catch (error) {
+    throw safeWorkerFailure(error, "EMAIL_WORKER_CLAIM_FAILED");
+  }
 }
 
 async function authorize(
