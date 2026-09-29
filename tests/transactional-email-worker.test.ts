@@ -12,7 +12,7 @@ import {
   verifyResendWebhook,
 } from "../packages/integrations/email";
 import { processNextTransactionalEmail } from "../packages/integrations/email-worker";
-import { POST as resendWebhook } from "../apps/os/app/api/webhooks/resend/route";
+import { POST as resendWebhook } from "../apps/email-worker/app/api/webhooks/resend/route";
 import { runtimeFile } from "./support/runtime";
 
 const root = process.cwd();
@@ -320,7 +320,7 @@ test("email worker decrypts once, reauthorizes and records provider acceptance",
     .update(`${eventId}.${timestamp}.${payload}`)
     .digest("base64");
   const request = () =>
-    new Request("http://127.0.0.1:3210/api/webhooks/resend", {
+    new Request("http://127.0.0.1:3230/api/webhooks/resend", {
       method: "POST",
       headers: {
         "svix-id": eventId,

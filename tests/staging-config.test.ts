@@ -49,6 +49,7 @@ const emailWorker = {
   KXRA_EMAIL_WORKER_TRIGGER_SECRET: secret("t"),
   KXRA_EMAIL_FROM: "KXRA Group <notifications@mail.kxra-group.com>",
   RESEND_API_KEY: `re_${secret("r")}`,
+  RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
 };
 
 test("staging preflight accepts the separated disabled core profiles", () => {
@@ -73,14 +74,12 @@ test("transactional-email staging keeps provider and webhook custody separated",
       KXRA_STAGING_CAPABILITY_PROFILE: "transactional-email",
       KXRA_EMAIL_ENABLED: "true",
       KXRA_EMAIL_SECRET_KEY: "e".repeat(43),
-      RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
     }).ok,
     true,
   );
   const worker = verifyStagingConfiguration("email-worker", {
     ...emailWorker,
     DATABASE_URL: os.DATABASE_URL,
-    RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
   });
   assert.equal(worker.ok, false);
   assert.ok(
@@ -88,10 +87,15 @@ test("transactional-email staging keeps provider and webhook custody separated",
       "DATABASE_URL: unrelated credential prohibited in email worker",
     ),
   );
-  assert.ok(
-    worker.findings.includes(
-      "RESEND_WEBHOOK_SECRET: unrelated credential prohibited in email worker",
-    ),
+  assert.equal(
+    verifyStagingConfiguration("os", {
+      ...os,
+      KXRA_STAGING_CAPABILITY_PROFILE: "transactional-email",
+      KXRA_EMAIL_ENABLED: "true",
+      KXRA_EMAIL_SECRET_KEY: "e".repeat(43),
+      RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
+    }).ok,
+    false,
   );
 });
 

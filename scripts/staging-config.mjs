@@ -238,12 +238,10 @@ function osConfiguration(environment, findings) {
     );
     if (!/^[A-Za-z0-9_-]{43}$/.test(emailSecret))
       findings.push("KXRA_EMAIL_SECRET_KEY: 32-byte base64url secret required");
-    secret(
-      required(environment, "RESEND_WEBHOOK_SECRET", findings),
-      "RESEND_WEBHOOK_SECRET",
-      findings,
-      "whsec_",
-    );
+    if (present(environment, "RESEND_WEBHOOK_SECRET"))
+      findings.push(
+        "RESEND_WEBHOOK_SECRET: provider credential prohibited in OS",
+      );
   } else
     for (const name of ["KXRA_EMAIL_SECRET_KEY", "RESEND_WEBHOOK_SECRET"])
       if (present(environment, name))
@@ -300,6 +298,12 @@ function emailWorkerConfiguration(environment, findings) {
     findings,
     "re_",
   );
+  secret(
+    required(environment, "RESEND_WEBHOOK_SECRET", findings),
+    "RESEND_WEBHOOK_SECRET",
+    findings,
+    "whsec_",
+  );
   if (
     !/^KXRA Group <[a-z0-9._%+-]+@mail\.kxra-group\.com>$/.test(
       environment.KXRA_EMAIL_FROM || "",
@@ -318,7 +322,6 @@ function emailWorkerConfiguration(environment, findings) {
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "TRIGGER_SECRET_KEY",
-    "RESEND_WEBHOOK_SECRET",
     "POSTHOG_KEY",
     "SENTRY_DSN",
   ])

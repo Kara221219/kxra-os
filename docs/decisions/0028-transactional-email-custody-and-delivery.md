@@ -10,6 +10,8 @@ One-time invitation tokens are never stored in plaintext. The private OS seals a
 
 Resend receives the immutable outbox operation key as its idempotency key. Retryable rejection uses a bounded retry schedule; permanent rejection stops; uncertain transport outcome enters `RECONCILIATION_REQUIRED` and is never blindly resent. Provider message IDs are unique. Raw-byte Svix webhook verification precedes parsing and a deduplicated provider event updates delivered, delayed, bounced, complained, failed or suppressed state.
 
+The signed Resend webhook terminates in the isolated email-worker application. This keeps the webhook secret and restricted email-worker database login out of the main OS application; the main OS holds only the matching encryption key needed to seal new delivery secrets.
+
 ## Consequences
 
 - Browser, authenticated application and model roles cannot claim, authorize, complete or reconcile delivery.
