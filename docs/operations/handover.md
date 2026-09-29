@@ -4,7 +4,7 @@ Updated: 29 September 2026.
 
 ## Current continuation repair
 
-The invited staging identity completed provider password recovery but reached `Access unavailable` because its 30-minute browser join intent expired before invitation redemption. The original invitation remains active, email-confirmed, unredeemed and scoped to PROJECT-002; no KXRA profile or membership exists. Migration 0072 adds a narrow authenticated recovery path tied to the consumed one-use signup challenge and exact verified email, and `/join/finish` uses it only when no valid join intent remains. Local focused security, migration, type, format and optimized-build checks pass. Apply and verify 0072, deploy the matching route, then revisit `/join/finish` while signed in and confirm onboarding plus exact project isolation.
+The invited staging identity completed provider password recovery but initially reached `Access unavailable` because its 30-minute browser join intent expired before invitation redemption. Migration 0072 adds a narrow authenticated recovery path tied to the consumed one-use signup challenge and exact verified email, and `/join/finish` uses it only when no valid join intent remains. Local focused security, migration, type, format and optimized-build checks pass. The hash-bound hosted migration and commit `8140b70` deployment are verified; the invited identity resumed into onboarding with one active PARTNER/ORG_MEMBER organisation membership, one redeemed invitation and exactly PROJECT-002 viewer access. Human onboarding and agreement acceptance remain incomplete.
 
 ## Current checkpoint
 
