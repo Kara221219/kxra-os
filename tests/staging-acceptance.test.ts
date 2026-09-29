@@ -19,6 +19,9 @@ const environment = {
   KXRA_STAGING_OS_ORIGIN: "https://kxra-os-preview.vercel.app",
   KXRA_STAGING_MARKETING_ORIGIN: "https://kxra-marketing-preview.vercel.app",
   KXRA_STAGING_EXPECTED_COMMIT: sha,
+  KXRA_STAGING_OS_PROTECTION_BYPASS: "os-bypass-secret-1234567890",
+  KXRA_STAGING_MARKETING_PROTECTION_BYPASS:
+    "marketing-bypass-secret-1234567890",
   KXRA_STAGING_ACCEPTANCE_CONFIRMATION: `VERIFY:kxra-os-preview.vercel.app:kxra-marketing-preview.vercel.app:${sha}`,
 };
 
@@ -45,6 +48,10 @@ test("staging acceptance requires clean exact non-production authority", () => {
   );
   assert.equal(accepted.ok, true);
   assert.ok(accepted.config);
+  assert.notEqual(
+    accepted.config.protectionBypass.os,
+    accepted.config.protectionBypass.marketing,
+  );
   const rejected = validateStagingAcceptanceConfiguration(
     {
       ...environment,
@@ -90,10 +97,16 @@ test("staging smoke plan proves anonymous and public/private route boundaries", 
   ).config!;
   const plan = stagingProbePlan(config) as Probe[];
   assert.equal(plan.length, 18);
-  const results = await executeStagingProbes(config, async (input) => {
+  const results = await executeStagingProbes(config, async (input, init) => {
     const url = new URL(String(input));
     const probe = plan.find((item) => item.url === url.toString());
     assert.ok(probe);
+    assert.equal(
+      new Headers(init?.headers).get("x-vercel-protection-bypass"),
+      probe.surface === "os"
+        ? environment.KXRA_STAGING_OS_PROTECTION_BYPASS
+        : environment.KXRA_STAGING_MARKETING_PROTECTION_BYPASS,
+    );
     const responseHeaders = new Headers({
       ...headers(probe.surface, probe.noIndex),
       ...(probe.private ? { "cache-control": "private, no-store" } : {}),
@@ -120,6 +133,24 @@ test("staging smoke plan proves anonymous and public/private route boundaries", 
     false,
   );
   assert.equal(JSON.stringify(evidence).includes("protectionBypass"), false);
+  assert.equal(JSON.stringify(evidence).includes("bypass-secret"), false);
+});
+
+test("staging acceptance rejects one shared deployment-protection credential", () => {
+  const rejected = validateStagingAcceptanceConfiguration(
+    {
+      ...environment,
+      KXRA_STAGING_PROTECTION_BYPASS: "shared-bypass-secret-1234567890",
+    },
+    repository,
+    true,
+  );
+  assert.equal(rejected.ok, false);
+  assert.ok(
+    rejected.findings.includes(
+      "KXRA_STAGING_PROTECTION_BYPASS: shared bypass prohibited; use separate project credentials",
+    ),
+  );
 });
 
 test("staging smoke fails closed on leaked markers, indexing and permissive CORS", async () => {

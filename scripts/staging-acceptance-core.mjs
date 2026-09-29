@@ -94,13 +94,23 @@ export function validateStagingAcceptanceConfiguration(
     findings.push("repository: pushed branch tip required");
   if (expectedCommit && repository.head !== expectedCommit)
     findings.push("repository: expected commit does not match HEAD");
-  const bypass = environment.KXRA_STAGING_PROTECTION_BYPASS;
-  if (
-    bypass &&
-    (bypass.length < 20 ||
-      /^(?:replace|your_|change|example|test|todo)/i.test(bypass))
-  )
-    findings.push("KXRA_STAGING_PROTECTION_BYPASS: invalid secret format");
+  const bypass = {
+    os: environment.KXRA_STAGING_OS_PROTECTION_BYPASS || "",
+    marketing: environment.KXRA_STAGING_MARKETING_PROTECTION_BYPASS || "",
+  };
+  for (const [surface, value] of Object.entries(bypass))
+    if (
+      value &&
+      (value.length < 20 ||
+        /^(?:replace|your_|change|example|test|todo)/i.test(value))
+    )
+      findings.push(
+        `KXRA_STAGING_${surface.toUpperCase()}_PROTECTION_BYPASS: invalid secret format`,
+      );
+  if (environment.KXRA_STAGING_PROTECTION_BYPASS)
+    findings.push(
+      "KXRA_STAGING_PROTECTION_BYPASS: shared bypass prohibited; use separate project credentials",
+    );
   if (requireConfirmation && os && marketing && expectedCommit) {
     const exact = `VERIFY:${os.hostname}:${marketing.hostname}:${expectedCommit}`;
     if (environment.KXRA_STAGING_ACCEPTANCE_CONFIRMATION !== exact)
@@ -118,7 +128,10 @@ export function validateStagingAcceptanceConfiguration(
             marketingOrigin: marketing.origin,
             commit: expectedCommit,
             branch: repository.branch,
-            protectionBypass: bypass || null,
+            protectionBypass: {
+              os: bypass.os || null,
+              marketing: bypass.marketing || null,
+            },
           }
         : null,
   };
@@ -276,8 +289,11 @@ export async function executeStagingProbes(config, fetchImpl = fetch) {
             Accept: probe.html ? "text/html" : "application/json",
             "User-Agent": "KXRA-Staging-Acceptance/1",
             ...(probe.noCors ? { Origin: config.marketingOrigin } : {}),
-            ...(config.protectionBypass
-              ? { "x-vercel-protection-bypass": config.protectionBypass }
+            ...(config.protectionBypass[probe.surface]
+              ? {
+                  "x-vercel-protection-bypass":
+                    config.protectionBypass[probe.surface],
+                }
               : {}),
           },
         });

@@ -150,16 +150,18 @@ export KXRA_ENVIRONMENT=staging
 export KXRA_STAGING_OS_ORIGIN='https://<exact-private-preview-host>'
 export KXRA_STAGING_MARKETING_ORIGIN='https://<exact-marketing-preview-host>'
 export KXRA_STAGING_EXPECTED_COMMIT='<40-character-deployed-git-sha>'
-# Optional; read without echo if deployment protection requires it.
-read -r -s KXRA_STAGING_PROTECTION_BYPASS
-export KXRA_STAGING_PROTECTION_BYPASS
+# Optional; use each project's existing automation-bypass secret and read without echo.
+read -r -s KXRA_STAGING_OS_PROTECTION_BYPASS
+export KXRA_STAGING_OS_PROTECTION_BYPASS
+read -r -s KXRA_STAGING_MARKETING_PROTECTION_BYPASS
+export KXRA_STAGING_MARKETING_PROTECTION_BYPASS
 npm run staging:acceptance:plan
 export KXRA_STAGING_ACCEPTANCE_CONFIRMATION="VERIFY:<private-host>:<marketing-host>:${KXRA_STAGING_EXPECTED_COMMIT}"
 npm run staging:acceptance:run
-unset KXRA_STAGING_OS_ORIGIN KXRA_STAGING_MARKETING_ORIGIN KXRA_STAGING_EXPECTED_COMMIT KXRA_STAGING_PROTECTION_BYPASS KXRA_STAGING_ACCEPTANCE_CONFIRMATION
+unset KXRA_STAGING_OS_ORIGIN KXRA_STAGING_MARKETING_ORIGIN KXRA_STAGING_EXPECTED_COMMIT KXRA_STAGING_OS_PROTECTION_BYPASS KXRA_STAGING_MARKETING_PROTECTION_BYPASS KXRA_STAGING_ACCEPTANCE_CONFIRMATION
 ```
 
-The run checks 18 anonymous routes for exact public/private separation, secure response headers, private no-store behavior, staging `noindex`, absent permissive CORS and known private/fixture marker leakage. It follows no redirects and retains no response body, cookie, token or credential. Review the generated JSON under `docs/operations/evidence/staging` before committing it. A `FAIL` artifact remains evidence of the failed run and must not be relabelled; fix the environment and run again.
+The run checks 18 anonymous routes for exact public/private separation, secure response headers, private no-store behavior, staging `noindex`, absent permissive CORS and known private/fixture marker leakage. Each project uses its own automation-bypass credential; a shared cross-project bypass is prohibited. The harness follows no redirects and retains no response body, cookie, token or credential. Review the generated JSON under `docs/operations/evidence/staging` before committing it. A `FAIL` artifact remains evidence of the failed run and must not be relabelled; fix the environment and run again.
 
 ## 4. Pre-deployment gate
 
