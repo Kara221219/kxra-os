@@ -37,10 +37,49 @@ function assertWorkerEnabled() {
     throw Error("EMAIL_WORKER_DISABLED");
 }
 
-function safeWorkerFailure(error: unknown, fallback: string) {
+const safeConnectionFailureCodes = new Set([
+  "CERT_HAS_EXPIRED",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+  "ETIMEDOUT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "28P01",
+  "28000",
+  "3D000",
+  "42501",
+  "53300",
+]);
+
+function safeCauseCode(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const code = "code" in error ? String(error.code) : "";
+  if (safeConnectionFailureCodes.has(code)) return code;
+  if ("errors" in error && Array.isArray(error.errors))
+    for (const nested of error.errors) {
+      const nestedCode = safeCauseCode(nested);
+      if (nestedCode) return nestedCode;
+    }
+  if ("cause" in error) return safeCauseCode(error.cause);
+  return null;
+}
+
+function safeWorkerFailure(
+  error: unknown,
+  fallback: string,
+  includeCauseCode = false,
+) {
   if (error instanceof Error && /^[A-Z][A-Z0-9_]{2,80}$/.test(error.message))
     return error;
-  return new Error(fallback, { cause: error });
+  const causeCode = includeCauseCode ? safeCauseCode(error) : null;
+  return new Error(causeCode ? `${fallback}_${causeCode}` : fallback, {
+    cause: error,
+  });
 }
 
 async function workerTransaction<T>(
@@ -57,7 +96,11 @@ async function workerTransaction<T>(
   try {
     await database.connect();
   } catch (error) {
-    throw safeWorkerFailure(error, "EMAIL_WORKER_DATABASE_CONNECT_FAILED");
+    throw safeWorkerFailure(
+      error,
+      "EMAIL_WORKER_DATABASE_CONNECT_FAILED",
+      true,
+    );
   }
   let transactionStarted = false;
   try {
