@@ -405,7 +405,9 @@ Run the exact hosted acceptance sequences with the verified AAL2 owner, then cre
 - The invited PROJECT-002 partner completed onboarding steps 1–7. Step 8 found zero active required legal documents, so PostgreSQL refused completion and recorded no acceptance.
 - The Step 8 UI now removes the placeholder acknowledgement, explains the legal blocker and disables continuation until approved required documents exist. Preview commit `3a2e953` is Ready and the stable branch alias visibly passes this fail-closed state.
 - Live verification exposed one transient `EMAXCONNSESSION` failure because the Vercel application was using Supavisor session mode with a 15-client pool while each serverless instance could retain ten clients. The Vercel runtime pool is now bounded to one client with five-second connection and idle limits.
-- Supabase's transaction pooler on port 6543 remains the correct serverless runtime endpoint. Replacing the existing session-pooler `DATABASE_URL` requires the same restricted `kxra_app` role and verified TLS; operator and migration connections remain on direct/session mode.
+- Supabase's transaction pooler on port 6543 is the selected serverless runtime endpoint. Operator and migration connections remain on direct/session mode.
+- The branch-scoped OS Preview `DATABASE_URL` now uses the same restricted `kxra_app` role through Supabase's transaction pooler on port 6543 with `sslmode=verify-full`. No Production environment variable was changed.
+- Reviewed commit `4ef52ea447d0ef094cc8942a29cc9efe743549ea` passed GitHub CI run `36633056144` and SHA-matched CodeQL run `36633056141`, then redeployed as Preview deployment `Ba8ijYpKGA2EW3roAGUYYvUstMLk` and reached `Ready`. Three consecutive stable-alias onboarding reloads completed without an application error or `EMAXCONNSESSION`; access remained fail closed because the controlled identity was no longer eligible to repeat onboarding. The deployment log reported zero warning, error or fatal events during the check.
 - Solicitor-approved NDA, terms and privacy versions remain the release blocker. No placeholder may be activated to complete onboarding.
 
 ## Publication boundary

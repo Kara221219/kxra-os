@@ -141,7 +141,7 @@ This checkpoint does not prove partner isolation. Complete redemption with the c
 
 Continue Final Milestone 10 production quality without deploying:
 
-0. change only the OS Preview `DATABASE_URL` from the Supabase session-pooler endpoint to the copied transaction-pooler endpoint for the same `kxra_app` role, preserve `sslmode=verify-full`, redeploy and repeat the Step 8 plus concurrent-page smoke test; the code-side one-client bound is a containment measure, not a substitute for transaction pooling;
+0. **Completed 29 September 2026:** the OS branch Preview alone now uses the Supabase transaction-pooler endpoint for the same `kxra_app` role on port 6543 with `sslmode=verify-full`. Reviewed commit `4ef52ea447d0ef094cc8942a29cc9efe743549ea` passed GitHub CI `36633056144` and SHA-matched CodeQL `36633056141`, redeployed as `Ba8ijYpKGA2EW3roAGUYYvUstMLk` and reached Ready. Three stable-alias onboarding reloads produced no application or connection-session error; the deployment log showed zero warning, error or fatal events. The controlled identity is no longer eligible to repeat onboarding, so legal Step 8 remains proven by the earlier fail-closed checkpoint rather than bypassed or reaccepted;
 
 1. run the exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), then prove one bounded staging partner's assignment, revocation and crafted-project isolation; configure and evidence the exact Vercel WAF rate rule after that access evidence passes;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
