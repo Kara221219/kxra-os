@@ -16,6 +16,28 @@ export type Principal = {
   source?: "fixture" | "fake-provider" | "supabase";
 };
 let pool: pg.Pool | undefined;
+
+export function runtimePoolOptions(
+  environment: Record<string, string | undefined> = process.env,
+): Pick<
+  pg.PoolConfig,
+  "max" | "connectionTimeoutMillis" | "idleTimeoutMillis" | "allowExitOnIdle"
+> {
+  if (environment.VERCEL === "1")
+    return {
+      max: 1,
+      connectionTimeoutMillis: 5_000,
+      idleTimeoutMillis: 5_000,
+      allowExitOnIdle: true,
+    };
+  return {
+    max: 10,
+    connectionTimeoutMillis: 5_000,
+    idleTimeoutMillis: 30_000,
+    allowExitOnIdle: false,
+  };
+}
+
 export function localMode() {
   return localModeConfiguration(process.env);
 }
@@ -34,7 +56,7 @@ export function getPool() {
       if (!process.env.DATABASE_URL) throw Error("Database not configured");
       pool = new pg.Pool({
         connectionString: databaseConnectionString(process.env.DATABASE_URL),
-        max: 10,
+        ...runtimePoolOptions(),
         ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
       });
     }

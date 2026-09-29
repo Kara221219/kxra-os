@@ -400,6 +400,14 @@ Run the exact hosted acceptance sequences with the verified AAL2 owner, then cre
 - Vercel Preview commit `54168e3` is Ready at the stable phase-branch alias. A disposable invalid identity passed the database rate-limit boundary and reached Supabase Auth, which returned `invalid_credentials`; this proves the previous secure-service failure is repaired without using the owner's password. Commit `4c71384` also makes every invalid-password, suspended and revoked sign-in return the same non-disclosing credentials result.
 - The final clean hermetic run passes all 199 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 43 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, both builds, CSP/SRI, build budgets, artifact exclusion, a 389-file publication/secret scan and optimized Lighthouse budgets. Real owner recovery, password login, TOTP enrollment and guarded final verification now pass; hosted owner/partner isolation acceptance is the next checkpoint.
 
+## Hosted legal-gate and connection-pool checkpoint
+
+- The invited PROJECT-002 partner completed onboarding steps 1–7. Step 8 found zero active required legal documents, so PostgreSQL refused completion and recorded no acceptance.
+- The Step 8 UI now removes the placeholder acknowledgement, explains the legal blocker and disables continuation until approved required documents exist. Preview commit `3a2e953` is Ready and the stable branch alias visibly passes this fail-closed state.
+- Live verification exposed one transient `EMAXCONNSESSION` failure because the Vercel application was using Supavisor session mode with a 15-client pool while each serverless instance could retain ten clients. The Vercel runtime pool is now bounded to one client with five-second connection and idle limits.
+- Supabase's transaction pooler on port 6543 remains the correct serverless runtime endpoint. Replacing the existing session-pooler `DATABASE_URL` requires the same restricted `kxra_app` role and verified TLS; operator and migration connections remain on direct/session mode.
+- Solicitor-approved NDA, terms and privacy versions remain the release blocker. No placeholder may be activated to complete onboarding.
+
 ## Publication boundary
 
 Only application code, engineering documentation and minimum classified seed records required by the platform may enter the repository. Original Word/text sources, private Genesis research, the private business pack, archives, `.runtime`, credentials, screenshots, traces, databases/object backups and generated test artifacts remain excluded.
