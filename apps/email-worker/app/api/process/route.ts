@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import { processTransactionalEmails } from "../../../../../packages/integrations/email-worker";
-import { authorizeWorkerRequest } from "../../../../../packages/integrations/worker-auth";
+import {
+  authorizeWorkerRequest,
+  hasProhibitedRequestBody,
+} from "../../../../../packages/integrations/worker-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,10 +14,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { "Cache-Control": "private, no-store" },
   });
-}
-
-export async function hasProhibitedRequestBody(request: Request) {
-  return (await request.arrayBuffer()).byteLength !== 0;
 }
 
 export async function POST(request: Request) {

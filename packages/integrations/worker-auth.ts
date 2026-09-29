@@ -6,6 +6,10 @@ export function validWorkerTriggerSecret(value: string | undefined) {
   return secretPattern.test(value || "");
 }
 
+export async function hasProhibitedRequestBody(request: Request) {
+  return (await request.arrayBuffer()).byteLength !== 0;
+}
+
 export function authorizeWorkerRequest(
   request: Request,
   configuredSecret = process.env.KXRA_EMAIL_WORKER_TRIGGER_SECRET,

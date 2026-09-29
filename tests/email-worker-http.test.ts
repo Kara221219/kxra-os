@@ -2,12 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   authorizeWorkerRequest,
+  hasProhibitedRequestBody,
   validWorkerTriggerSecret,
 } from "../packages/integrations/worker-auth";
-import {
-  hasProhibitedRequestBody,
-  POST,
-} from "../apps/email-worker/app/api/process/route";
+import { POST } from "../apps/email-worker/app/api/process/route";
 
 const secret = "w".repeat(72);
 
