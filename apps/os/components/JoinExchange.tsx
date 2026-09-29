@@ -12,10 +12,15 @@ export default function JoinExchange() {
     const safeSearch = new URLSearchParams(window.location.search);
     safeSearch.delete("token");
     const remainingSearch = safeSearch.toString();
+    const safePath = /^\/join\/[A-Za-z0-9_-]{32,100}\/?$/.test(
+      window.location.pathname,
+    )
+      ? "/join"
+      : window.location.pathname;
     window.history.replaceState(
       null,
       "",
-      `${window.location.pathname}${remainingSearch ? `?${remainingSearch}` : ""}`,
+      `${safePath}${remainingSearch ? `?${remainingSearch}` : ""}`,
     );
 
     if (!token) {

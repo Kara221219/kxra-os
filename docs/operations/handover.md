@@ -161,10 +161,12 @@ Never paste secret values into chat or Git. Use the provider dashboards and Verc
 
 ## Current invitation repair handover
 
-- The provider successfully delivered the controlled PROJECT-002 invitation, but the recipient's email handoff stripped its `#token` fragment. The database invitation is not expired, revoked or redeemed.
-- The branch now generates `/join?token=...` links, accepts legacy fragment links, clears the query token from browser history before exchange, and applies private no-store/no-referrer headers to every join route.
-- The complete local acceptance contract passes: 213 code/database/API tests, 171-table RLS verification, 43 applicable private browser journeys, 14 public journeys in both modes, restart/restore, all three builds, artifact/publication/secret scans and Lighthouse budgets.
-- After the matching OS and email-worker Preview deployments are Ready, the owner must use **Resend with new link** once for the existing controlled invitation. Process exactly that queued delivery, then verify exchange, account onboarding, PROJECT-002-only visibility, crafted/cross-project denial and immediate revocation. Do not reuse the old email link.
+- The fragment repair and the later query repair were both delivered successfully but did not reach token exchange on the recipient's private iPhone browser. Provider inspection proved delivery version 3 contained the complete `/join?token=...` link, and Resend click tracking is disabled. Mobile link-tracking protection removing the query is the evidence-backed working diagnosis, not a confirmed Apple internal decision.
+- The branch now generates `/join/<one-time-token>` links, accepts legacy query and fragment links, removes path/query bearers from browser history immediately before exchange, and applies private no-store/no-referrer headers to every join route.
+- The path bearer can appear in the initial Vercel access path. Its exposure is bounded by short expiry, one-time database exchange and immediate browser-history removal; application logs must never retain it. A future selector/challenge design can remove this hosting-log tradeoff after staged onboarding is proven.
+- Provider inspection exposed the delivery-version-3 bearer to an operator tool, so that version is compromised and must not be reused. The owner must use **Resend with new link** once after matching OS and email-worker Preview deployments are Ready.
+- The complete local acceptance contract passes: 214 code/database/API tests, 171-table RLS verification, 43 applicable private browser journeys with five intentional skips, 14 public journeys in both modes, restart/restore, all three builds, artifact/publication/secret scans and Lighthouse budgets.
+- Process exactly the replacement queued delivery, then verify exchange, account onboarding, PROJECT-002-only visibility, crafted/cross-project denial and immediate revocation. Do not reuse any earlier email link.
 - Production remains untouched. Solicitor-approved legal text remains a separate release blocker.
 
 ## Private business-readiness artifacts

@@ -164,9 +164,10 @@ test("AT-03 invitation token stays in delivery and the legacy redeem API is reti
 
   const action = fakeEmailAction(`invitation:${invitation.id}:v1`);
   const actionUrl = new URL(action);
-  assert.equal(actionUrl.pathname, "/join");
+  assert.match(actionUrl.pathname, /^\/join\/[A-Za-z0-9_-]{32,100}$/);
   assert.equal(actionUrl.hash, "");
-  const rawToken = actionUrl.searchParams.get("token");
+  assert.equal(actionUrl.search, "");
+  const rawToken = actionUrl.pathname.split("/").at(-1);
   assert.ok(rawToken);
 
   assert.equal(

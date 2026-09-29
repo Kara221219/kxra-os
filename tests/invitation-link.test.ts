@@ -5,28 +5,35 @@ import {
   invitationTokenFromUrl,
 } from "../packages/authz/invitation-link";
 
-test("invitation email links use a mail-compatible query token", () => {
-  const action = new URL(
-    invitationActionUrl("https://os.example.test", "one-time-secret"),
-  );
+const token = "aBcdEFghIJklMNopQRstUVwxYZ0123456789_-ab";
+
+test("invitation email links use a mobile-privacy-compatible path token", () => {
+  const action = new URL(invitationActionUrl("https://os.example.test", token));
 
   assert.equal(action.origin, "https://os.example.test");
-  assert.equal(action.pathname, "/join");
+  assert.equal(action.pathname, `/join/${token}`);
   assert.equal(action.hash, "");
-  assert.equal(action.searchParams.get("token"), "one-time-secret");
+  assert.equal(action.search, "");
 });
 
-test("invitation exchange accepts new links and existing fragment links", () => {
+test("invitation exchange accepts path links and both legacy link forms", () => {
   assert.equal(
-    invitationTokenFromUrl(
-      "https://os.example.test/join?token=new-one-time-secret",
-    ),
-    "new-one-time-secret",
+    invitationTokenFromUrl(`https://os.example.test/join/${token}`),
+    token,
   );
   assert.equal(
-    invitationTokenFromUrl(
-      "https://os.example.test/join#token=legacy-one-time-secret",
-    ),
-    "legacy-one-time-secret",
+    invitationTokenFromUrl(`https://os.example.test/join?token=${token}`),
+    token,
+  );
+  assert.equal(
+    invitationTokenFromUrl(`https://os.example.test/join#token=${token}`),
+    token,
+  );
+});
+
+test("invitation email links reject malformed bearer values", () => {
+  assert.throws(
+    () => invitationActionUrl("https://os.example.test", "too-short"),
+    /INVITATION_TOKEN_INVALID/,
   );
 });
