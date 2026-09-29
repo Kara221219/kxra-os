@@ -259,7 +259,9 @@ Subscription requests reference normalized billing state but never update it. Da
 
 The local email adapter renders nine versioned templates: Partner Invitation, Invitation Reminder, Password Reset, Email Verification, Welcome, Security Alert, Project Assignment, Access Removed and Approval Required. The outbox has idempotent operation keys and records pending, sent, failed, cancelled and bounced states. The fake transport sends nothing externally.
 
-Hosted Supabase Auth/MFA/session behavior, owner bootstrap, Resend, Stripe, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, YouTube, GitHub analysis, PostHog, Sentry, Cloudflare and Vercel remain target services only.
+The separate `apps/email-worker` Preview target now provides a bodyless, trigger-secret authenticated entry point around the existing restricted Resend worker. Its preflight separates provider delivery credentials from OS webhook/encryption custody and from the public marketing application. The guarded staging operator creates a login that may assume only `kxra_email_worker`. This is implementation evidence only: the worker project, restricted login, Resend domain/API key/webhook and Trigger.dev schedule are not yet connected.
+
+Stripe, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, YouTube, GitHub analysis, PostHog, Sentry and Cloudflare remain target services only. Hosted Supabase Auth/MFA and owner bootstrap have separate staging evidence; partner isolation and Resend delivery remain incomplete.
 
 ## Independent public application
 

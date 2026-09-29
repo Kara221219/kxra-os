@@ -1,0 +1,22 @@
+{
+  "name": "@kxra/email-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3230",
+    "preflight:staging": "node ../../scripts/verify-staging-config.mjs email-worker",
+    "build": "node ../../scripts/build-email-worker.mjs",
+    "start": "next start --hostname 127.0.0.1 --port 3230"
+  },
+  "dependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "next": "^15.5.0",
+    "pg": "^8.16.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.9.2"
+  }
+}

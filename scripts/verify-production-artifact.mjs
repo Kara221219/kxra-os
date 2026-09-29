@@ -5,6 +5,7 @@ const root = path.resolve(import.meta.dirname, "..");
 const outputs = [
   path.join(root, "apps/os/.next"),
   path.join(root, "apps/marketing/.next"),
+  path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
   "Local fixture identities",
@@ -59,5 +60,5 @@ if (findings.length)
   );
 
 console.log(
-  `OS and marketing artifacts exclude ${forbidden.length} fixture identity, selector, state and secret markers.`,
+  `OS, marketing and email-worker artifacts exclude ${forbidden.length} fixture identity, selector, state and secret markers.`,
 );

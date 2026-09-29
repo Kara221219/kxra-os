@@ -9,6 +9,7 @@ const secretNames = [
   "RESEND_API_KEY",
   "RESEND_WEBHOOK_SECRET",
   "KXRA_EMAIL_SECRET_KEY",
+  "KXRA_EMAIL_WORKER_TRIGGER_SECRET",
 ];
 const forbiddenFixtureNames = [
   "KXRA_RUNTIME",
@@ -26,6 +27,7 @@ const marketingForbiddenNames = [
   "KXRA_BILLING_WORKER_DATABASE_URL",
   "KXRA_EMAIL_SECRET_KEY",
   "KXRA_EMAIL_FROM",
+  "KXRA_EMAIL_WORKER_TRIGGER_SECRET",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_STORAGE_SECRET_KEY",
@@ -139,7 +141,7 @@ function common(environment, findings) {
       findings.push(`${name}: fixture value prohibited`);
   for (const name of Object.keys(environment))
     if (
-      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION|APP_PASSWORD|PUBLIC_INGRESS_PASSWORD|ROLE_CONFIRMATION|OWNER_USER_ID|OWNER_EMAIL|OWNER_DISPLAY_NAME|OWNER_CONFIRMATION)$/.test(
+      /^KXRA_STAGING_(?:PROJECT_REF|MIGRATOR_DATABASE_URL|MIGRATION_CONFIRMATION|SEED_CONFIRMATION|APP_PASSWORD|PUBLIC_INGRESS_PASSWORD|ROLE_CONFIRMATION|EMAIL_WORKER_PASSWORD|EMAIL_WORKER_ROLE_CONFIRMATION|OWNER_USER_ID|OWNER_EMAIL|OWNER_DISPLAY_NAME|OWNER_CONFIRMATION)$/.test(
         name,
       ) &&
       present(environment, name)
@@ -158,6 +160,12 @@ function common(environment, findings) {
 }
 
 function osConfiguration(environment, findings) {
+  const emailProfile =
+    environment.KXRA_STAGING_CAPABILITY_PROFILE === "transactional-email";
+  if (present(environment, "KXRA_STAGING_CAPABILITY_PROFILE") && !emailProfile)
+    findings.push(
+      "KXRA_STAGING_CAPABILITY_PROFILE: unsupported capability profile",
+    );
   const origin = exactUrl(
     required(environment, "KXRA_ORIGIN", findings),
     "KXRA_ORIGIN",
@@ -195,18 +203,21 @@ function osConfiguration(environment, findings) {
     "KXRA_WHATSAPP_ENABLED",
     "KXRA_TELEMETRY_ENABLED",
     "KXRA_PUBLIC_WEB_ENABLED",
-    "KXRA_EMAIL_ENABLED",
   ])
     if (environment[name] !== "false")
       findings.push(`${name}: must remain false for core staging`);
+  if (environment.KXRA_EMAIL_ENABLED !== (emailProfile ? "true" : "false"))
+    findings.push(
+      `KXRA_EMAIL_ENABLED: must be ${emailProfile ? "true" : "false"} for this staging profile`,
+    );
   for (const name of [
     "SUPABASE_STORAGE_SECRET_KEY",
     "KXRA_WORKER_DATABASE_URL",
     "KXRA_AI_WORKER_DATABASE_URL",
     "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
     "KXRA_EMAIL_WORKER_DATABASE_URL",
+    "KXRA_EMAIL_WORKER_TRIGGER_SECRET",
     "KXRA_BILLING_WORKER_DATABASE_URL",
-    "KXRA_EMAIL_SECRET_KEY",
     "KXRA_EMAIL_FROM",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
@@ -214,14 +225,105 @@ function osConfiguration(environment, findings) {
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
     "TRIGGER_SECRET_KEY",
     "RESEND_API_KEY",
-    "RESEND_WEBHOOK_SECRET",
     "POSTHOG_KEY",
     "SENTRY_DSN",
   ])
     if (present(environment, name))
       findings.push(`${name}: disabled capability credential prohibited`);
+  if (emailProfile) {
+    const emailSecret = required(
+      environment,
+      "KXRA_EMAIL_SECRET_KEY",
+      findings,
+    );
+    if (!/^[A-Za-z0-9_-]{43}$/.test(emailSecret))
+      findings.push("KXRA_EMAIL_SECRET_KEY: 32-byte base64url secret required");
+    secret(
+      required(environment, "RESEND_WEBHOOK_SECRET", findings),
+      "RESEND_WEBHOOK_SECRET",
+      findings,
+      "whsec_",
+    );
+  } else
+    for (const name of ["KXRA_EMAIL_SECRET_KEY", "RESEND_WEBHOOK_SECRET"])
+      if (present(environment, name))
+        findings.push(`${name}: disabled capability credential prohibited`);
   if (origin && supabase && origin.hostname === supabase.hostname)
     findings.push("KXRA_ORIGIN: application and Supabase hosts must differ");
+}
+
+function emailWorkerConfiguration(environment, findings) {
+  if (environment.KXRA_STAGING_CAPABILITY_PROFILE !== "transactional-email")
+    findings.push(
+      "KXRA_STAGING_CAPABILITY_PROFILE: transactional-email required",
+    );
+  exactUrl(
+    required(environment, "KXRA_EMAIL_WORKER_ORIGIN", findings),
+    "KXRA_EMAIL_WORKER_ORIGIN",
+    findings,
+  );
+  exactUrl(
+    required(environment, "KXRA_ORIGIN", findings),
+    "KXRA_ORIGIN",
+    findings,
+  );
+  databaseUrl(
+    required(environment, "KXRA_EMAIL_WORKER_DATABASE_URL", findings),
+    "KXRA_EMAIL_WORKER_DATABASE_URL",
+    findings,
+    new Set([
+      "postgres",
+      "supabase_admin",
+      "service_role",
+      "kxra_app",
+      "kxra_public_ingress",
+    ]),
+    "kxra_email_runner",
+  );
+  if (environment.KXRA_EMAIL_ENABLED !== "true")
+    findings.push("KXRA_EMAIL_ENABLED: true required");
+  const emailSecret = required(environment, "KXRA_EMAIL_SECRET_KEY", findings);
+  if (!/^[A-Za-z0-9_-]{43}$/.test(emailSecret))
+    findings.push("KXRA_EMAIL_SECRET_KEY: 32-byte base64url secret required");
+  const triggerSecret = required(
+    environment,
+    "KXRA_EMAIL_WORKER_TRIGGER_SECRET",
+    findings,
+  );
+  if (!/^[A-Za-z0-9_-]{64,128}$/.test(triggerSecret))
+    findings.push(
+      "KXRA_EMAIL_WORKER_TRIGGER_SECRET: 64-128 base64url characters required",
+    );
+  secret(
+    required(environment, "RESEND_API_KEY", findings),
+    "RESEND_API_KEY",
+    findings,
+    "re_",
+  );
+  if (
+    !/^KXRA Group <[a-z0-9._%+-]+@mail\.kxra-group\.com>$/.test(
+      environment.KXRA_EMAIL_FROM || "",
+    )
+  )
+    findings.push(
+      "KXRA_EMAIL_FROM: reviewed mail.kxra-group.com sender required",
+    );
+  for (const name of [
+    "DATABASE_URL",
+    "KXRA_PUBLIC_DATABASE_URL",
+    "KXRA_JOIN_SECRET",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_STORAGE_SECRET_KEY",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "TRIGGER_SECRET_KEY",
+    "RESEND_WEBHOOK_SECRET",
+    "POSTHOG_KEY",
+    "SENTRY_DSN",
+  ])
+    if (present(environment, name))
+      findings.push(`${name}: unrelated credential prohibited in email worker`);
 }
 
 function marketingConfiguration(environment, findings) {
@@ -260,12 +362,16 @@ function marketingConfiguration(environment, findings) {
 }
 
 export function verifyStagingConfiguration(kind, environment) {
-  if (!["os", "marketing"].includes(kind))
-    return { ok: false, findings: ["kind: expected os or marketing"] };
+  if (!["os", "marketing", "email-worker"].includes(kind))
+    return {
+      ok: false,
+      findings: ["kind: expected os, marketing or email-worker"],
+    };
   const findings = [];
   common(environment, findings);
   if (kind === "os") osConfiguration(environment, findings);
-  else marketingConfiguration(environment, findings);
+  else if (kind === "marketing") marketingConfiguration(environment, findings);
+  else emailWorkerConfiguration(environment, findings);
   const values = new Map();
   for (const name of secretNames) {
     if (!present(environment, name)) continue;

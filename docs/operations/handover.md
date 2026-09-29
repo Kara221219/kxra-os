@@ -113,6 +113,10 @@ This evidence now proves real owner recovery, password sign-in, TOTP enrollment 
 
 On 29 September 2026 the owner created one controlled 24-hour staging invitation for `h***@icloud.com`, scoped to PROJECT-002 as viewer. The first attempt correctly failed on the recent-MFA boundary; a fresh password-plus-TOTP sign-in allowed the second attempt. The resulting invitation is `PENDING` because hosted email remains disabled. No email was sent and no partner account or membership was created. The current delivery token is not recoverable by design; after Resend and the restricted email worker are configured, use **Resend with new link** to create a fresh encrypted token and deliver it. The Partners UI now reports the true delivery mode instead of claiming hosted staging uses the local fake outbox.
 
+The next code slice adds an isolated `apps/email-worker` deployment target and guarded `kxra_email_runner` role operator. The worker accepts only a bodyless authenticated trigger, processes at most ten queued messages per invocation and has its own `transactional-email` preflight. Its build rejects OS/public credentials and unrelated provider authority; OS and marketing reject its database, trigger and Resend credentials. The clean hermetic contract passes 209 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 43 applicable private browser journeys, all public journeys in both runtime modes, restart/empty-target recovery, all three builds and security/performance scans. It has not yet been deployed or granted provider access.
+
+Vercel Marketplace detected an existing Resend team. The free new-account path was unavailable and showed paid plans, so no plan was selected. The existing-account flow is prepared but not connected. Create a dedicated `kxra-email-worker-staging` Vercel project first, then grant the Resend integration access to that project only. Do not expose `RESEND_API_KEY` to `kxra-os-staging` or `kxra-marketing-staging`.
+
 This checkpoint does not prove partner isolation. Complete redemption with the controlled identity, verify the legal gate fails closed, then prove PROJECT-002-only HTML/API/file/search/Ask access, crafted PROJECT-003 denial and database-backed revocation. Do not activate a placeholder NDA to finish that test.
 
 ## Next implementation slice
@@ -121,7 +125,7 @@ Continue Final Milestone 10 production quality without deploying:
 
 1. run the exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), then prove one bounded staging partner's assignment, revocation and crafted-project isolation; configure and evidence the exact Vercel WAF rate rule after that access evidence passes;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
-3. activate one controlled Resend recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md), then exercise test subscription reconciliation using the [Stripe staging playbook](../playbooks/stripe-billing-staging.md) only after pricing, tax and provider decisions;
+3. deploy the isolated email worker, create/verify its restricted database login, link the existing Resend account to that Vercel project only and verify `mail.kxra-group.com`; then activate one controlled recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md);
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
 5. repeat recovery against authorized staging with encrypted provider backups;
 6. keep deployment/publication disabled until legal, public-copy, provider and owner approval.

@@ -2,6 +2,15 @@
 
 All paths are relative to this workspace. Original source documents and KXRA-GENESIS remain preserved. Runtime/test output is ignored and excluded.
 
+## 29 September isolated staging email worker
+
+- added `apps/email-worker` as a separately built private processing target
+- added timing-safe worker request authentication and bounded bodyless processing
+- added `transactional-email` staging preflight separation and artifact checks
+- added guarded `kxra_email_runner` role plan/apply/verify operators
+- added worker HTTP, staging-configuration and database-role security tests
+- updated architecture, threat model, staging playbook and operating records
+
 ## 27 September Phase 2 Slice 36
 
 - migration `0069` for exact legal/commercial/provider/review release readiness
