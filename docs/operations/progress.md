@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The controlled PROJECT-002 invitation has been redeemed with exact project scope and reached onboarding. ADR 0041 parks mandatory NDA acceptance; migration 0073 and the matching Access Review UI pass the complete local contract and await coordinated staging application. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
+Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The controlled PROJECT-002 invitation has been redeemed with exact project scope and reached onboarding. ADR 0041 parks mandatory NDA acceptance; migration 0073 and the matching Access Review UI pass the complete local contract and are applied together in hosted staging. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
 
 ## Mandatory NDA parked
 
@@ -10,6 +10,7 @@ Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-
 - The release manifest now requires approved Terms, Privacy, Cookie, Data Processing and Custom Project documents. NDA is parked rather than deleted.
 - Project membership, PostgreSQL RLS, tenant isolation, MFA and retrieval authorization are unchanged.
 - The clean hermetic contract passes 219 database/domain/HTTP/security tests, 73 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in development and production, restart/restore, all three optimized builds, CSP/SRI, build budgets, artifact exclusion, a 417-file publication/secret scan and optimized Lighthouse budgets.
+- Commit `3d7d10e0889809ac3c371cd5f272297320971b5a` is pushed and deployed Ready on the private Preview. GitHub CI run `36640690948` and CodeQL run `36640690992` pass at that exact SHA. Supabase records migration 0073 with hash prefix `f9b5798e4f4e` and source-commit prefix `3d7d10e08898`; the owner workspace loads successfully against the migrated database.
 
 ## Invited identity continuation recovery
 
