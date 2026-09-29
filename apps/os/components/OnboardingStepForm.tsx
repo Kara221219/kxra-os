@@ -69,6 +69,7 @@ export default function OnboardingStepForm({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const requiredAgreementsUnavailable = step === 8 && agreements.length === 0;
 
   useEffect(() => setReady(true), []);
 
@@ -345,6 +346,16 @@ export default function OnboardingStepForm({
 
       {step === 8 && (
         <>
+          {requiredAgreementsUnavailable && (
+            <section className="notice" role="alert">
+              <h2>Required legal documents are not configured.</h2>
+              <p>
+                Onboarding cannot be completed until KXRA loads the required
+                approved agreements. No acceptance has been recorded. Contact
+                the KXRA owner for an update.
+              </p>
+            </section>
+          )}
           {agreements.map((agreement) => (
             <article className="agreement" key={agreement.id}>
               <div className="record-top">
@@ -366,10 +377,12 @@ export default function OnboardingStepForm({
               />
             </article>
           ))}
-          <Check
-            name="placeholder_acknowledged"
-            label="I understand that documents marked UNAPPROVED PLACEHOLDER are not approved legal terms or a privacy notice."
-          />
+          {!requiredAgreementsUnavailable && (
+            <Check
+              name="placeholder_acknowledged"
+              label="I understand that documents marked UNAPPROVED PLACEHOLDER are not approved legal terms or a privacy notice."
+            />
+          )}
         </>
       )}
 
@@ -401,12 +414,14 @@ export default function OnboardingStepForm({
             Back
           </Link>
         )}
-        <button disabled={busy || !ready}>
+        <button disabled={busy || !ready || requiredAgreementsUnavailable}>
           {busy
             ? "Saving…"
-            : step === 9
-              ? "Complete onboarding"
-              : "Save and continue"}
+            : requiredAgreementsUnavailable
+              ? "Legal documents required"
+              : step === 9
+                ? "Complete onboarding"
+                : "Save and continue"}
         </button>
       </div>
       {completedSteps.includes(step) && step < currentStep && (
