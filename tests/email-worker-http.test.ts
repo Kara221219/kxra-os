@@ -4,7 +4,10 @@ import {
   authorizeWorkerRequest,
   validWorkerTriggerSecret,
 } from "../packages/integrations/worker-auth";
-import { POST } from "../apps/email-worker/app/api/process/route";
+import {
+  hasProhibitedRequestBody,
+  POST,
+} from "../apps/email-worker/app/api/process/route";
 
 const secret = "w".repeat(72);
 
@@ -65,5 +68,32 @@ test("hosted email worker rejects anonymous, malformed and body-bearing requests
       )
     ).status,
     400,
+  );
+});
+
+test("hosted email worker accepts only a zero-length trigger body", async () => {
+  assert.equal(
+    await hasProhibitedRequestBody(
+      new Request("https://worker.example/api/process", { method: "POST" }),
+    ),
+    false,
+  );
+  assert.equal(
+    await hasProhibitedRequestBody(
+      new Request("https://worker.example/api/process", {
+        method: "POST",
+        body: "",
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    await hasProhibitedRequestBody(
+      new Request("https://worker.example/api/process", {
+        method: "POST",
+        body: "authority must not enter through payload",
+      }),
+    ),
+    true,
   );
 });

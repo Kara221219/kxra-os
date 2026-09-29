@@ -13,11 +13,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
+export async function hasProhibitedRequestBody(request: Request) {
+  return (await request.arrayBuffer()).byteLength !== 0;
+}
+
 export async function POST(request: Request) {
   try {
     if (!authorizeWorkerRequest(request))
       return json({ error: "Access unavailable" }, 401);
-    if (request.body !== null)
+    if (await hasProhibitedRequestBody(request))
       return json({ error: "Request body prohibited" }, 400);
     const results = await processTransactionalEmails({
       maximumJobs: 10,
