@@ -177,9 +177,21 @@ export async function POST(request: Request) {
         "select account_state from kxra.profiles where user_id=$1",
         [identity.id],
       );
+      const invitedRecovery = profile[0]
+        ? false
+        : Boolean(
+            (
+              await query<{ allowed: boolean }>(
+                identity,
+                "select kxra_private.active_invited_password_recovery() as allowed",
+                [],
+              )
+            )[0]?.allowed,
+          );
       if (
-        !profile[0] ||
-        ["SUSPENDED", "REVOKED"].includes(profile[0].account_state)
+        (!profile[0] && !invitedRecovery) ||
+        (profile[0] &&
+          ["SUSPENDED", "REVOKED"].includes(profile[0].account_state))
       )
         return privateJson({ error: "Reset unavailable" }, 409);
       const changed = await client.auth.updateUser({
@@ -189,15 +201,17 @@ export async function POST(request: Request) {
         return privateJson({ error: "Reset unavailable" }, 409);
       // The provider change cannot be rolled back. End provider sessions even
       // if the local audit write subsequently fails.
-      let auditRecorded = true;
-      try {
-        await query(
-          identity,
-          "select kxra.record_password_event('PASSWORD_CHANGED')",
-          [],
-        );
-      } catch {
-        auditRecorded = false;
+      let auditRecorded = !profile[0];
+      if (profile[0]) {
+        try {
+          await query(
+            identity,
+            "select kxra.record_password_event('PASSWORD_CHANGED')",
+            [],
+          );
+        } catch {
+          auditRecorded = false;
+        }
       }
       const signedOut = await client.auth.signOut({ scope: "global" });
       if (!auditRecorded || signedOut.error)

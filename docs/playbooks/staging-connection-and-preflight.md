@@ -100,11 +100,12 @@ Keep new email signup disabled until migration 0070 and the invitation hook are 
 Perform these steps in order. Do not enable email signup first.
 
 1. Apply and verify migration `0070_invitation_only_auth_signup.sql` with the guarded staging migrator.
-2. In Supabase **Authentication → Hooks**, configure **Before User Created** as the Postgres function `kxra_private.before_user_created`.
-3. Enable new email/password users in Supabase Auth. The provider switch permits the signup request to reach the hook; the hook remains the registration gate.
-4. From a clean browser with no invitation, call the normal Supabase email signup path and confirm the provider rejects it with the generic registration error and creates no Auth user.
-5. Open the newest unexpired KXRA invitation, create the account once and confirm the same link/challenge cannot create another account.
-6. Confirm the invited identity has only the exact invitation grants after redemption. Test a crafted project ID, another project's files/search, revoked membership and direct API access.
+2. Apply and verify migration `0071_invited_identity_password_recovery.sql` before testing password recovery for an invited identity that has not redeemed its invitation.
+3. In Supabase **Authentication → Hooks**, configure **Before User Created** as the Postgres function `kxra_private.before_user_created`.
+4. Enable new email/password users in Supabase Auth. The provider switch permits the signup request to reach the hook; the hook remains the registration gate.
+5. From a clean browser with no invitation, call the normal Supabase email signup path and confirm the provider rejects it with the generic registration error and creates no Auth user.
+6. Open the newest unexpired KXRA invitation, create the account once and confirm the same link/challenge cannot create another account.
+7. Confirm the invited identity has only the exact invitation grants after redemption. Test a crafted project ID, another project's files/search, revoked membership and direct API access.
 
 Disable new email signup immediately if the hook is absent, unhealthy or not rejecting direct signup. Do not replace this design with a service-role key in the OS.
 

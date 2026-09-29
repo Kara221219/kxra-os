@@ -8,7 +8,7 @@ Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. H
 
 The current PROJECT-002 invitation now opens the correct account form on mobile. Registration failed because Supabase had public signup disabled. Migration 0070 and ADR 0040 add a private, five-minute, one-use invitation challenge plus a narrowly granted Before User Created hook. Direct signup, wrong-email use, replay and invitation-token rotation fail closed in the local contract. Hosted migration and Auth-hook activation are the immediate checkpoint; do not enable email signup until the hook is configured.
 
-The frozen local implementation passes the complete hermetic contract: 215 database/domain/HTTP/security tests, 70 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in both runtime modes, restart/restore, all three builds and the publication, secret, CSP/SRI, size and Lighthouse gates.
+The last frozen complete hermetic contract passed 215 database/domain/HTTP/security tests, 70 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in both runtime modes, restart/restore, all three builds and the publication, secret, CSP/SRI, size and Lighthouse gates. Migration 0071 and its invited-identity recovery repair require a fresh clean run.
 
 Commit `7e137d8` passes GitHub CI run 36505929242 and CodeQL run 36505929235. Commit `340ffc7` applies the same certificate-verified Supabase TLS configuration to every guarded staging database operator and passes its focused 11-test suite, type checking, full CI run 36507607574 and CodeQL run 36507607508. A fresh hosted account-password sign-in opened the owner-only overview and all seven canonical project gates.
 
@@ -86,6 +86,7 @@ Legal seed records remain `UNAPPROVED_PLACEHOLDER` and inactive. No production l
 - The mobile callback exposed a hosted-only continuation defect: a verified identity could land at sign-in after a PKCE handoff failure, while hosted password and MFA completion always redirected to `/os` instead of the active invitation.
 - The pending repair resumes the encrypted join intent after hosted password or MFA authentication and from `/join/account` when the verified identity has no profile. After its Preview is Ready, the user should sign in with the newly created iCloud account password in the same browser. Expected result: `/join/finish` atomically creates the bounded account and PROJECT-002 viewer membership, then redirects to onboarding.
 - After onboarding, complete hosted negative-access acceptance before any revocation: only PROJECT-002 visible; crafted IDs, direct APIs, cross-project files, search and Ask KXRA denied; first-private-access legal gate enforced. Production remains untouched.
+- A successful Supabase recovery link currently reaches the KXRA reset form but the deployed route rejects the password change because the invited identity has no profile before redemption. Migration 0071 and the matching route repair are pending deployment. The new database predicate requires a provider-verified identity, matching active invitation and consumed signup challenge, and refuses identities with an existing profile. Apply and verify 0071 before asking the user to request another recovery email.
 
 ## Reproduce the evidence
 

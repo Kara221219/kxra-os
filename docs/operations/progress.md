@@ -8,7 +8,7 @@ Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-
 - Added a five-minute one-use challenge bound to the active invitation email and current token digest. The browser receives no database or privileged Auth credential; only the challenge digest is stored.
 - Added a `security invoker` Before User Created hook with narrow `supabase_auth_admin` grants. Missing, wrong-email, replayed, expired, revoked and token-rotated challenges fail with the same generic response.
 - Kept profile, organisation, role and project authority in the existing PostgreSQL invitation redemption path. Signup metadata cannot grant KXRA access.
-- Added complete RLS-matrix coverage for the new challenge table and clean-schema verification for 70 migrations, 172 protected tables and 146 public-schema functions.
+- Added complete RLS-matrix coverage for the signup challenge table and clean-schema verification for 71 migrations, 172 protected tables and 146 public-schema functions.
 - The final hermetic contract passes 215 database/domain/HTTP/security tests, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in development and optimized production, restart/restore, all three builds, CSP/SRI, build budgets, artifact exclusion, a 412-file publication/secret scan and optimized Lighthouse budgets.
 - Hosted activation must occur in this order: apply migration 0070, configure `kxra_private.before_user_created`, enable email signup, prove direct signup denial, then retry the existing controlled invitation.
 
@@ -95,7 +95,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 70 ordered additive migrations, 172 RLS-protected tables with explicit policies and 146 audited public functions.
+- 71 ordered additive migrations, 172 RLS-protected tables with explicit policies and 146 audited public functions.
 - 198 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
 - Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 390-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
@@ -430,3 +430,5 @@ Only application code, engineering documentation and minimum classified seed rec
 - The controlled PROJECT-002 identity completed Supabase email confirmation, but a mobile confirmation handoff could not restore the PKCE browser session and returned to the generic sign-in failure page. Supabase remained authoritative: the identity was confirmed while the invitation was still current, sent and unredeemed, with no profile or project membership created.
 - Hosted password sign-in and hosted MFA completion now resume an existing encrypted join intent through `/join/finish`. A confirmed invited identity returning to `/join/account` without a profile also resumes the same database-authorized redemption path. Callback failure copy states that verification succeeded and asks for password sign-in; it does not create access or weaken invitation checks.
 - TypeScript, focused authentication contracts and an optimized OS production build pass. A standalone full test command was stopped after the existing non-hermetic local database showed accumulated fixture rows; the clean disposable CI contract remains required on the implementation commit.
+- Hosted recovery then exposed a second pre-redemption edge: Supabase accepted and verified the recovery link, but KXRA correctly had no profile yet and the confirmation route rejected the password change. Migration 0071 adds a private, authenticated-only eligibility check requiring the exact verified email, an unredeemed active invitation and a consumed one-use signup challenge, while also requiring that no profile exists. It grants no membership or project context.
+- The hosted reset route uses that check only for the temporary invited/no-profile state. Existing profiles retain suspension/revocation and security-event checks. Provider global sign-out remains mandatory after the password change.
