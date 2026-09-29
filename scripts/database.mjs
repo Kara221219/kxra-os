@@ -90,7 +90,12 @@ async function start() {
     );
   const db = new pg.Client(config);
   await db.connect();
-  for (const role of ["anon", "authenticated", "kxra_app"]) {
+  for (const role of [
+    "anon",
+    "authenticated",
+    "kxra_app",
+    "supabase_auth_admin",
+  ]) {
     const x = await db.query("select 1 from pg_roles where rolname=$1", [role]);
     if (!x.rowCount)
       await db.query(

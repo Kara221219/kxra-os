@@ -1209,7 +1209,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 171);
+    assert.equal(tables.length, 172);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1240,6 +1240,124 @@ test("AT-01 every private table denies unauthorized DML", () =>
           `update kxra.${table} set "${column}"="${column}" where false`,
         );
     }
+  }));
+
+test("AT-03 Supabase Auth signup requires one current invitation challenge", () =>
+  tx(async (db) => {
+    const invitation = crypto.randomUUID();
+    const email = `signup-${crypto.randomUUID()}@fixture.invalid`;
+    const emailDigest = crypto.createHash("sha256").update(email).digest("hex");
+    const tokenDigest = crypto
+      .createHash("sha256")
+      .update(crypto.randomBytes(32))
+      .digest("hex");
+    const proof = crypto.randomBytes(32).toString("base64url");
+    const proofDigest = crypto.createHash("sha256").update(proof).digest("hex");
+    await db.query(
+      `insert into kxra.invitations(
+        id,org_id,project_id,email_digest,token_digest,role,state,approved_by,
+        recipient_email,expires_at
+       ) values($1,$2,$3,$4,$5,'viewer','SENT',$6,$7,now()+interval '1 hour')`,
+      [invitation, org, p2, emailDigest, tokenDigest, users.owner, email],
+    );
+
+    await as(db, null);
+    await db.query("select kxra_private.prepare_invited_signup($1,$2)", [
+      tokenDigest,
+      proofDigest,
+    ]);
+    assert.equal(
+      (
+        await db.query(
+          "select id from kxra.auth_signup_challenges where invitation_id=$1",
+          [invitation],
+        )
+      ).rowCount,
+      0,
+    );
+
+    await db.query("reset role");
+    await db.query("set local role supabase_auth_admin");
+    const direct = (
+      await db.query("select kxra_private.before_user_created($1) as result", [
+        {
+          metadata: { name: "before-user-created" },
+          user: { email, user_metadata: {} },
+        },
+      ])
+    ).rows[0].result;
+    assert.equal(direct.error.http_code, 403);
+    const wrongEmail = (
+      await db.query("select kxra_private.before_user_created($1) as result", [
+        {
+          metadata: { name: "before-user-created" },
+          user: {
+            email: `wrong-${email}`,
+            user_metadata: { kxra_signup_challenge: proof },
+          },
+        },
+      ])
+    ).rows[0].result;
+    assert.equal(wrongEmail.error.http_code, 403);
+    const accepted = (
+      await db.query("select kxra_private.before_user_created($1) as result", [
+        {
+          metadata: { name: "before-user-created" },
+          user: {
+            email,
+            user_metadata: { kxra_signup_challenge: proof },
+          },
+        },
+      ])
+    ).rows[0].result;
+    assert.deepEqual(accepted, {});
+    const replay = (
+      await db.query("select kxra_private.before_user_created($1) as result", [
+        {
+          metadata: { name: "before-user-created" },
+          user: {
+            email,
+            user_metadata: { kxra_signup_challenge: proof },
+          },
+        },
+      ])
+    ).rows[0].result;
+    assert.equal(replay.error.http_code, 403);
+    assert.equal(replay.error.message, "Registration unavailable");
+
+    await db.query("reset role");
+    const consumed = (
+      await db.query(
+        "select consumed_at is not null as consumed from kxra.auth_signup_challenges where invitation_id=$1",
+        [invitation],
+      )
+    ).rows[0];
+    assert.equal(consumed.consumed, true);
+
+    const nextProof = crypto.randomBytes(32).toString("base64url");
+    await as(db, null);
+    await db.query("select kxra_private.prepare_invited_signup($1,$2)", [
+      tokenDigest,
+      crypto.createHash("sha256").update(nextProof).digest("hex"),
+    ]);
+    await db.query("reset role");
+    await db.query("update kxra.invitations set token_digest=$1 where id=$2", [
+      crypto.createHash("sha256").update("rotated").digest("hex"),
+      invitation,
+    ]);
+    await db.query("set local role supabase_auth_admin");
+    const stale = (
+      await db.query("select kxra_private.before_user_created($1) as result", [
+        {
+          metadata: { name: "before-user-created" },
+          user: {
+            email,
+            user_metadata: { kxra_signup_challenge: nextProof },
+          },
+        },
+      ])
+    ).rows[0].result;
+    assert.equal(stale.error.http_code, 403);
   }));
 test("AT-01 anonymous can execute only bounded public RPCs", () =>
   tx(async (db) => {

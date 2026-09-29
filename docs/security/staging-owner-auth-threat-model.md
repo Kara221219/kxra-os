@@ -1,6 +1,6 @@
 # Staging owner and hosted Auth threat model
 
-Updated: 27 September 2026.
+Updated: 29 September 2026.
 
 | Threat | Enforced control | Remaining evidence |
 | --- | --- | --- |
@@ -15,5 +15,9 @@ Updated: 27 September 2026.
 | Owner removes the only second factor | Ordinary owner remove action is rejected server-side and hidden in UI | Approve and rehearse a separate owner recovery runbook |
 | Sign-out is recorded before provider revoke | Supabase global sign-out must succeed first; KXRA records `PROVIDER_CONFIRMED` afterward | Verify revoked refresh-token and access-token expiry behavior |
 | Public/client role reads operator tracking | Bootstrap event table revokes `PUBLIC`, browser and both runtime roles | Verify managed grants/Data API exposure |
+| Enabling provider signup opens public registration | The Before User Created hook accepts only a one-use five-minute challenge bound to the active invitation email and current token digest | Configure and verify the hosted hook before enabling email signup |
+| Signup metadata grants project authority | Metadata proves only possession of the one-use challenge; profile, role and project grants still come from exact database invitation redemption | Complete hosted wrong-project and crafted-ID acceptance |
+| Challenge is replayed or survives invitation rotation | The hook atomically consumes the challenge and rechecks the invitation token snapshot, state and expiry | Exercise direct signup, replay, resend, revoke and expiry against hosted Auth |
+| OS gains a privileged Auth credential | Signup uses the publishable client plus the hook; no service-role or secret key is present in the OS | Re-run environment and publication scans after deployment |
 
 The owner operator does not activate legal requirements, billing, providers, public publication or production. A prepared owner is not customer-readiness evidence.

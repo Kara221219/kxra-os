@@ -67,15 +67,31 @@ export async function POST(request: Request) {
       );
 
     if (!localMode()) {
+      const signupChallenge = crypto.randomBytes(32).toString("base64url");
+      const challengeDigest = crypto
+        .createHash("sha256")
+        .update(signupChallenge)
+        .digest("hex");
+      await query(null, "select kxra_private.prepare_invited_signup($1,$2)", [
+        intent.tokenDigest,
+        challengeDigest,
+      ]);
       const client = await supabase();
       const { error } = await client.auth.signUp({
         email: intent.email,
         password: input.password,
         options: {
           emailRedirectTo: `${process.env.KXRA_ORIGIN}/auth/callback?next=/join/finish`,
+          data: { kxra_signup_challenge: signupChallenge },
         },
       });
-      if (error) return privateJson({ error: "Registration unavailable" }, 409);
+      if (error) {
+        console.error("Supabase invited signup failed", {
+          status: error.status,
+          code: error.code,
+        });
+        return privateJson({ error: "Registration unavailable" }, 409);
+      }
       return privateJson({ next: "/join/account?registered=1" }, 201);
     }
 

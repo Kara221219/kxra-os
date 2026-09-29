@@ -111,6 +111,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "otherApproval",
         "localInvitation",
         "otherInvitation",
+        "localSignupChallenge",
+        "otherSignupChallenge",
         "localAgreement",
         "otherAgreement",
         "partnerAcceptance",
@@ -760,6 +762,27 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       ],
     );
     await db.query(
+      `insert into kxra.auth_signup_challenges(
+        id,org_id,invitation_id,email_digest,token_digest,proof_digest,expires_at
+       ) values
+        ($1,$2,$3,$4,$5,$6,now()+interval '5 minutes'),
+        ($7,$8,$9,$10,$11,$12,now()+interval '5 minutes')`,
+      [
+        ids.localSignupChallenge,
+        org,
+        ids.localInvitation,
+        digest(`email-${ids.localInvitation}`),
+        digest(`token-${ids.localInvitation}`),
+        digest(`proof-${ids.localInvitation}`),
+        ids.otherSignupChallenge,
+        otherOrg,
+        ids.otherInvitation,
+        digest(`email-${ids.otherInvitation}`),
+        digest(`token-${ids.otherInvitation}`),
+        digest(`proof-${ids.otherInvitation}`),
+      ],
+    );
+    await db.query(
       `insert into kxra.onboarding_progress(
         user_id,org_id,current_step,completed_steps,whatsapp_choice,completed_at
        ) values($1,$2,9,array[1,2,3,4,5,6,7,8,9],'SKIP',now())`,
@@ -1264,6 +1287,18 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
           viewer: [],
           revoked: [],
           other: [ids.otherInvitation],
+        },
+      },
+      {
+        table: "auth_signup_challenges",
+        sql: "select id::text as key from kxra.auth_signup_challenges where id=any($1::uuid[])",
+        values: [[ids.localSignupChallenge, ids.otherSignupChallenge]],
+        expected: {
+          owner: [ids.localSignupChallenge],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [ids.otherSignupChallenge],
         },
       },
       {

@@ -93,7 +93,20 @@ Generate two different 48–128 character base64url passwords in a password mana
 
 Keep KXRA tables in the `kxra` schema and outside automatic Data API exposure. PostgreSQL grants and RLS are separate controls: retain explicit minimum grants and verify every protected table with non-bypass identities. Use the current `sb_publishable_…` key for the browser. A Supabase `sb_secret_…` key bypasses RLS and is prohibited from both core staging applications; add one only to a separately reviewed server/worker secret store when a later provider slice explicitly requires it.
 
-Disable open signup. Configure only the exact private staging origin and reviewed Auth callback paths. Enable TOTP enrollment and verification. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user.
+Keep new email signup disabled until migration 0070 and the invitation hook are deployed. Configure only the exact private staging origin and reviewed Auth callback paths. Enable TOTP enrollment and verification. Require the platform's invitation, active-account, selected-organization and agreement gates after Supabase verifies the user.
+
+### Invitation-only Auth signup
+
+Perform these steps in order. Do not enable email signup first.
+
+1. Apply and verify migration `0070_invitation_only_auth_signup.sql` with the guarded staging migrator.
+2. In Supabase **Authentication → Hooks**, configure **Before User Created** as the Postgres function `kxra_private.before_user_created`.
+3. Enable new email/password users in Supabase Auth. The provider switch permits the signup request to reach the hook; the hook remains the registration gate.
+4. From a clean browser with no invitation, call the normal Supabase email signup path and confirm the provider rejects it with the generic registration error and creates no Auth user.
+5. Open the newest unexpired KXRA invitation, create the account once and confirm the same link/challenge cannot create another account.
+6. Confirm the invited identity has only the exact invitation grants after redemption. Test a crafted project ID, another project's files/search, revoked membership and direct API access.
+
+Disable new email signup immediately if the hook is absent, unhealthy or not rejecting direct signup. Do not replace this design with a service-role key in the OS.
 
 ### First staging owner and TOTP
 

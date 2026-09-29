@@ -1,6 +1,16 @@
 # KXRA OS implementation progress
 
-Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, real owner password sign-in, TOTP enrollment, guarded owner verification and controlled transactional-email delivery are complete. The database confirms the latest Resend-accepted and webhook-reconciled PROJECT-002 viewer delivery, but mobile redemption remains incomplete. The second repair link was correct in the delivered email; the recipient's private mobile browser did not reach token exchange. A path-based compatibility repair now passes the complete local contract. The inspected delivery must be rotated before reuse. Hosted partner redemption/isolation acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
+Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The current PROJECT-002 invitation reaches the correct mobile account-creation page. Account creation then failed because Supabase public signup was disabled. An invitation-only Auth hook and one-use challenge fix is implemented and locally verified; migration 0070, hosted hook activation and hosted acceptance remain pending. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
+
+## Invitation-only hosted registration repair
+
+- Confirmed from the hosted Auth event and application path that the invitation was current and the account form worked, but Supabase rejected `/signup` because provider signup was disabled.
+- Added a five-minute one-use challenge bound to the active invitation email and current token digest. The browser receives no database or privileged Auth credential; only the challenge digest is stored.
+- Added a `security invoker` Before User Created hook with narrow `supabase_auth_admin` grants. Missing, wrong-email, replayed, expired, revoked and token-rotated challenges fail with the same generic response.
+- Kept profile, organisation, role and project authority in the existing PostgreSQL invitation redemption path. Signup metadata cannot grant KXRA access.
+- Added complete RLS-matrix coverage for the new challenge table and clean-schema verification for 70 migrations, 172 protected tables and 146 public-schema functions.
+- The final hermetic contract passes 215 database/domain/HTTP/security tests, 43 applicable private browser journeys with five intentional skips, all 14 marketing journeys in development and optimized production, restart/restore, all three builds, CSP/SRI, build budgets, artifact exclusion, a 412-file publication/secret scan and optimized Lighthouse budgets.
+- Hosted activation must occur in this order: apply migration 0070, configure `kxra_private.before_user_created`, enable email signup, prove direct signup denial, then retry the existing controlled invitation.
 
 ## Transactional email staging checkpoint
 
@@ -85,7 +95,7 @@ The cumulative contract remains [Phase Completion Brief 02](CODEX-PHASE-COMPLETI
 ## Cumulative verified implementation
 
 - Next.js 15 / React 19 / TypeScript with PostgreSQL as authorization and state authority.
-- 69 ordered additive migrations, 171 RLS-protected tables with explicit policies and 146 audited public functions.
+- 70 ordered additive migrations, 172 RLS-protected tables with explicit policies and 146 audited public functions.
 - 198 database/domain/HTTP/security tests, 48 private-OS browser scenarios (43 passes/five intentional skips) and 14 public-site browser scenarios under both development and optimized production.
 - Database/private-object restart and 2,710-row/15-object empty-target recovery, both optimized production builds, exact-hash/SRI CSP, compressed page-asset and Lighthouse budgets, exact snapshot/source-boundary checks, 21-marker artifact exclusion and a 390-file publication/secret scan pass.
 - Invitation/account lifecycle, selected-tenant legal gate, owner control plane, seven venture workspaces, file/knowledge lifecycle, permission-safe local Ask/AI execution, deterministic commercial/custom-project foundations and Brand Studio remain green in one hermetic run.
@@ -330,7 +340,7 @@ Run the exact hosted acceptance sequences with the verified AAL2 owner, then cre
 - Added `plan`, `apply` and `verify` operator commands for the first separately authorized Supabase staging database. The tool accepts only the declared 20-character project, direct or session-pooler port 5432, the `postgres` operator identity and certificate-verified TLS.
 - Every one of the 69 ordered migrations is SHA-256 bound. Unknown history, a changed historical file, an unmanaged existing `kxra` schema, source-count drift, a dirty/unpushed branch, Vercel execution or the wrong confirmation phrase fails before mutation.
 - Apply uses a session advisory lock, recalculates pending work after acquiring it, commits each migration with its tracking row and resumes from the exact recorded prefix. Anonymous and authenticated application roles receive no access to migration history.
-- Verification requires all hashes plus exactly 171 RLS-protected tables with policies and 146 `kxra` functions. Operator-only values are rejected from hosted application profiles.
+- Verification requires all hashes plus exactly 172 RLS-protected tables with policies and 146 `kxra` functions. Operator-only values are rejected from hosted application profiles.
 - The clean hermetic run passed 168 tests, 67 migrations, the 168-table RLS audit, 41 applicable private browser journeys, all 14 public journeys in both runtime modes, 2,697-row/15-object recovery, both builds, CSP/SRI, size and Lighthouse budgets; the publication scan covers 354 files.
 - Implementation commit `eeb446ad352891a75f32b0cf42511f287fdedcc5` passed GitHub full CI run 36286028336 and SHA-matched CodeQL run 36286028353.
 - ADR 0032, a staging-migration threat model and the exact operator playbook record the boundary. No credential was stored and no hosted database, provider, deployment or publication was touched.
