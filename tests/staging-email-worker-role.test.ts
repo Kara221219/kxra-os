@@ -80,8 +80,5 @@ test("email-worker role audit table remains protected by RLS", () => {
     operator,
     /alter table public\.kxra_worker_role_events enable row level security/,
   );
-  assert.match(
-    operator,
-    /revoke all on table public\.kxra_worker_role_events/,
-  );
+  assert.match(operator, /revoke all on table public\.kxra_worker_role_events/);
 });
