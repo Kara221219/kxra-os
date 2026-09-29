@@ -9,6 +9,7 @@ type HostedFactor = {
 
 const providerFactorId =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const maxHostedTotpQrLength = 1_000_000;
 
 export type HostedMfaApi = {
   enroll(input: {
@@ -60,7 +61,10 @@ export function hostedTotpEnrollmentResponseFailure(data: any) {
   if (typeof data.totp?.qr_code !== "string") return "qr_type";
   if (!data.totp.qr_code.startsWith("data:image/svg+xml;utf-8,"))
     return "qr_scheme";
-  if (data.totp.qr_code.length > 100_000) return "qr_size";
+  // Supabase returns an uncompressed, URI-safe SVG. Its normal payload can
+  // exceed 100 KB, so retain a generous denial-of-service bound while still
+  // accepting the provider's documented inline SVG format.
+  if (data.totp.qr_code.length > maxHostedTotpQrLength) return "qr_size";
   if (typeof data.totp?.secret !== "string") return "secret_type";
   if (!/^[A-Z2-7]{16,256}$/.test(data.totp.secret)) return "secret_shape";
   return undefined;

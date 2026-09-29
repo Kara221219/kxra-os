@@ -109,6 +109,28 @@ test("hosted TOTP enrollment diagnostics classify shape only", () => {
     }),
     "qr_scheme",
   );
+  assert.equal(
+    hostedTotpEnrollmentResponseFailure({
+      id: factorOne,
+      type: "totp",
+      totp: {
+        qr_code: `data:image/svg+xml;utf-8,<svg>${"x".repeat(150_000)}</svg>`,
+        secret: "ABCDEFGHIJKLMNOP",
+      },
+    }),
+    undefined,
+  );
+  assert.equal(
+    hostedTotpEnrollmentResponseFailure({
+      id: factorOne,
+      type: "totp",
+      totp: {
+        qr_code: `data:image/svg+xml;utf-8,<svg>${"x".repeat(1_000_000)}</svg>`,
+        secret: "ABCDEFGHIJKLMNOP",
+      },
+    }),
+    "qr_size",
+  );
 });
 
 test("hosted sign-in requires the one verified KXRA TOTP factor", async () => {
