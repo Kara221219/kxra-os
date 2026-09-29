@@ -375,3 +375,12 @@ Run the exact hosted acceptance sequences with the verified AAL2 owner, then cre
 ## Publication boundary
 
 Only application code, engineering documentation and minimum classified seed records required by the platform may enter the repository. Original Word/text sources, private Genesis research, the private business pack, archives, `.runtime`, credentials, screenshots, traces, databases/object backups and generated test artifacts remain excluded.
+
+## Hosted staging partner-invitation checkpoint
+
+- On 29 September 2026 the verified owner used a fresh password-plus-TOTP session to create one 24-hour staging invitation for the owner-controlled `h***@icloud.com` acceptance identity.
+- The invitation grants viewer access to PROJECT-002 only. No other project grant or partner account exists.
+- PostgreSQL recorded the invitation as `PENDING`. `KXRA_EMAIL_ENABLED=false`, so no external email was sent and the partner cannot redeem this delivery version. After the reviewed Resend worker is connected, the owner must use **Resend with new link** to rotate the delivery token and send the controlled invitation.
+- The first attempt after an older owner session failed closed with `RECENT_MFA_REQUIRED` and created no invitation. A fresh password-plus-TOTP sign-in satisfied the 15-minute owner step-up boundary.
+- The hosted Partners screen incorrectly described all environments as using the local fake outbox. The UI now derives and displays the actual delivery mode: local fake capture, configured provider queue or disabled hosted delivery.
+- Partner redemption, first-private-access legal denial, PROJECT-002 visibility, crafted/cross-project denial and revocation remain unproved. Real legal text remains blocked on qualified UK counsel; placeholders cannot be activated.

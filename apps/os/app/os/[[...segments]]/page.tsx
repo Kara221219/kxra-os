@@ -1368,7 +1368,16 @@ export default async function Workspace({
             title="Partners"
             sub="Invitation, onboarding, project access and account lifecycle controls."
           />
-          <InvitationForm projects={projects} />
+          <InvitationForm
+            projects={projects}
+            deliveryMode={
+              localMode()
+                ? "fake"
+                : process.env.KXRA_EMAIL_ENABLED === "true"
+                  ? "provider"
+                  : "disabled"
+            }
+          />
           <InvitationList invitations={invitations} />
           <PartnerCards
             partners={members}

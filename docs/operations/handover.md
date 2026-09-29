@@ -111,6 +111,10 @@ The hosted-staging implementation at `93c116e4e2b4c791b80873d46e6a39fb64547319` 
 
 This evidence now proves real owner recovery, password sign-in, TOTP enrollment and guarded database reconciliation. It does not yet prove hosted Storage, owner/partner RLS sessions, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
+On 29 September 2026 the owner created one controlled 24-hour staging invitation for `h***@icloud.com`, scoped to PROJECT-002 as viewer. The first attempt correctly failed on the recent-MFA boundary; a fresh password-plus-TOTP sign-in allowed the second attempt. The resulting invitation is `PENDING` because hosted email remains disabled. No email was sent and no partner account or membership was created. The current delivery token is not recoverable by design; after Resend and the restricted email worker are configured, use **Resend with new link** to create a fresh encrypted token and deliver it. The Partners UI now reports the true delivery mode instead of claiming hosted staging uses the local fake outbox.
+
+This checkpoint does not prove partner isolation. Complete redemption with the controlled identity, verify the legal gate fails closed, then prove PROJECT-002-only HTML/API/file/search/Ask access, crafted PROJECT-003 denial and database-backed revocation. Do not activate a placeholder NDA to finish that test.
+
 ## Next implementation slice
 
 Continue Final Milestone 10 production quality without deploying:

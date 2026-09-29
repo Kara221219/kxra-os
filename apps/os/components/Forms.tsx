@@ -9,7 +9,14 @@ function useReady() {
   return ready;
 }
 type Project = { id: string; code: string; name: string };
-export function InvitationForm({ projects }: { projects: Project[] }) {
+type InvitationDeliveryMode = "fake" | "provider" | "disabled";
+export function InvitationForm({
+  projects,
+  deliveryMode,
+}: {
+  projects: Project[];
+  deliveryMode: InvitationDeliveryMode;
+}) {
   const ready = useReady();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,7 +55,9 @@ export function InvitationForm({ projects }: { projects: Project[] }) {
           setMessage(
             result.state === "SENT"
               ? `Invitation created for ${result.project_count} project${result.project_count === 1 ? "" : "s"} and captured by the local fake email provider.`
-              : "Invitation created and waiting for configured email delivery.",
+              : deliveryMode === "provider"
+                ? "Invitation created and queued for configured email delivery."
+                : "Invitation recorded as pending. Email delivery is disabled; enable the reviewed provider and resend with a new link before the partner can join.",
           );
           formElement.reset();
           router.refresh();
@@ -62,11 +71,24 @@ export function InvitationForm({ projects }: { projects: Project[] }) {
       }}
     >
       <h2>Create an invitation</h2>
-      <p>
-        The partner creates their own password. The one-use link is delivered
-        only through the configured provider; this environment uses a local fake
-        outbox.
-      </p>
+      {deliveryMode === "fake" ? (
+        <p>
+          The partner creates their own password. This local environment
+          captures the one-use link in its fake outbox and sends nothing
+          externally.
+        </p>
+      ) : deliveryMode === "provider" ? (
+        <p>
+          The partner creates their own password. The one-use link is queued for
+          the configured transactional email provider.
+        </p>
+      ) : (
+        <p>
+          Email delivery is disabled. A new invitation can be recorded as
+          pending, but the partner cannot join until the reviewed provider is
+          enabled and the invitation is resent with a new link.
+        </p>
+      )}
       <fieldset disabled={!ready || busy}>
         <label>
           Verified account email
