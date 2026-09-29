@@ -4,7 +4,9 @@ Updated: 29 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair and browser-independent password recovery are complete through deployed commit `a94b1bcdfdf21b2a4923859965e1c2073bb116ff`. The exact Supabase `/reset-password` redirect is saved. The one-hour server-signed intent is bound to the requested email and provider authentication time, delivered only through the recovery email and removed from browser history with the provider fragment. Its tamper/expiry/binding tests, type check and optimized build pass. At 01:45–01:46 the owner completed the real recovery, provider-confirmed password change, global sign-out and fresh password login. No password, token or recovery secret was observed or recorded.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair, browser-independent password recovery, real owner TOTP enrollment and guarded final owner verification are complete. The owner has one verified KXRA TOTP factor and the database confirms its reference against the exact singleton KXRA owner and bootstrap event. No password, TOTP secret, proof code, token or recovery secret was recorded.
+
+Commit `7e137d8` passes GitHub CI run 36505929242 and CodeQL run 36505929235. Commit `340ffc7` applies the same certificate-verified Supabase TLS configuration to every guarded staging database operator and passes its focused 11-test suite, type checking, full CI run 36507607574 and CodeQL run 36507607508. A fresh hosted account-password sign-in opened the owner-only overview and all seven canonical project gates.
 
 Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2` now verifies all 69 migrations, 171 RLS-protected tables, 146 functions, seven canonical projects and 126 classified source records. The seed contains no local fixtures or activated legal/commercial/provider state. Runtime logins `kxra_app` and `kxra_public_ingress` have exact bounded memberships, no bypass, no ownership and no direct grants. Their distinct generated passwords exist only in matching Vercel Preview secrets.
 
@@ -12,7 +14,7 @@ Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to 
 
 Supabase Auth uses the exact private phase-branch origin. Public signup is disabled, email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The exact `/reset-password` redirect is saved. Existing obsolete reset callback and `/reset-password/verify` entries can be removed only after the new flow is proven. The default email service is fixed at two emails per hour; correct-flow attempts at 23:45 and 23:52 were rejected with 429 before the successful 00:22:57 request.
 
-The immediate owner checkpoint is Supabase TOTP enrollment from the authenticated KXRA Profile, followed by guarded final owner verification and the exact hosted acceptance sequences. The owner must personally scan or enter the transient authenticator secret and submit the six-digit proof; never put that secret or code in chat or Git. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
+The immediate checkpoint is the exact hosted acceptance sequence using the verified AAL2 owner, followed by one bounded staging partner for owner/partner/revoked/crafted-project isolation evidence. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
 
 The branch is not merged and nothing is deployed to Production. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -103,13 +105,13 @@ The Slice 36 contract passes the 228-package dependency policy, 196 database/dom
 
 The hosted-staging implementation at `93c116e4e2b4c791b80873d46e6a39fb64547319` passes the complete hermetic contract with 197 database/domain/HTTP/security tests, 69 migrations, 171 protected tables, 48 private-OS runs, 14 marketing runs in development and optimized production, a 2,711-row/15-object empty-target restore, both builds, exact CSP/SRI, artifact exclusion and a 389-file publication/secret scan. Optimized Lighthouse scores are 1.00 performance/accessibility for the tested mobile home and desktop contact scenarios. Guarded hosted checks verify the schema, canonical seed, restricted runtime roles, Ready Vercel previews and the anonymous public/private smoke boundary.
 
-This evidence does not yet prove hosted Storage, MFA, owner/partner RLS sessions, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
+This evidence now proves real owner recovery, password sign-in, TOTP enrollment and guarded database reconciliation. It does not yet prove hosted Storage, owner/partner RLS sessions, Resend, Stripe, OpenAI, YouTube, Meta, Trigger.dev, PostHog/Sentry, Cloudflare, production repository scanners/sandboxing or hosted backup behavior.
 
 ## Next implementation slice
 
 Continue Final Milestone 10 production quality without deploying:
 
-1. enroll and verify the existing hosted owner's KXRA TOTP factor, then run the guarded owner verify and exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md); configure and evidence the exact Vercel WAF rate rule only after that identity gate passes;
+1. run the exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md), then prove one bounded staging partner's assignment, revocation and crafted-project isolation; configure and evidence the exact Vercel WAF rate rule after that access evidence passes;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
 3. activate one controlled Resend recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md), then exercise test subscription reconciliation using the [Stripe staging playbook](../playbooks/stripe-billing-staging.md) only after pricing, tax and provider decisions;
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
@@ -132,9 +134,9 @@ Continue Final Milestone 10 production quality without deploying:
 
 ## Owner/provider connection order
 
-The next material gate is the hosted owner identity. Before staging can become customer-ready, the owner will need to complete these bounded steps in order:
+The hosted owner identity gate is complete. Before staging can become customer-ready, complete these bounded steps in order:
 
-1. complete TOTP enrollment/verification for the existing confirmed Supabase owner, then run guarded final database owner verification and hosted owner/partner isolation acceptance;
+1. run hosted owner/partner/revoked/crafted-project isolation acceptance using the verified owner and one bounded staging partner;
 2. obtain solicitor-approved legal documents and release versions before any customer access;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
