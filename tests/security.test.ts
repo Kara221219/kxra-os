@@ -624,6 +624,98 @@ test("AT-03 invitation identity, expiry, reuse and recent-MFA boundaries fail cl
     await claims(crypto.randomUUID(), email);
     await denied(db, "select kxra.redeem_invitation($1)", [expiredHash]);
   }));
+test("verified invited identity resumes after join intent and delivery token rotation", () =>
+  tx(async (db) => {
+    const accountId = crypto.randomUUID();
+    const email = `resume-${crypto.randomUUID()}@fixture.invalid`;
+    const initialTokenHash = crypto.randomBytes(32).toString("hex");
+    const rotatedTokenHash = crypto.randomBytes(32).toString("hex");
+    const proofHash = crypto.randomBytes(32).toString("hex");
+    const setIdentity = async (claimEmail: string, verified: boolean) => {
+      await db.query("reset role");
+      await db.query("set local role authenticated");
+      await db.query(
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+        [
+          accountId,
+          JSON.stringify({
+            sub: accountId,
+            aal: "aal1",
+            auth_time: Math.floor(Date.now() / 1000),
+            email: claimEmail,
+            email_verified: verified,
+          }),
+        ],
+      );
+    };
+
+    await as(db, "owner");
+    const invitation = (
+      await db.query(
+        "select * from kxra.create_invitation($1,$2,'viewer',$3,$4)",
+        [p2, email, initialTokenHash, new Date(Date.now() + 3_600_000)],
+      )
+    ).rows[0];
+
+    await db.query("reset role");
+    await db.query(
+      `insert into kxra.auth_signup_challenges(
+        org_id,invitation_id,email_digest,token_digest,proof_digest,expires_at,consumed_at
+       ) select org_id,id,email_digest,token_digest,$2,now()+interval '5 minutes',now()
+         from kxra.invitations where id=$1`,
+      [invitation.id, proofHash],
+    );
+    await db.query(
+      `update kxra.invitations
+       set token_digest=$2,delivery_version=delivery_version+1,updated_at=now()
+       where id=$1`,
+      [invitation.id, rotatedTokenHash],
+    );
+
+    await db.query("set local role anon");
+    await denied(db, "select kxra_private.resume_invited_identity()");
+    await setIdentity(email, false);
+    await denied(db, "select kxra_private.resume_invited_identity()");
+    await setIdentity("wrong@fixture.invalid", true);
+    await denied(db, "select kxra_private.resume_invited_identity()");
+
+    await setIdentity(email, true);
+    const resumed = (
+      await db.query("select kxra_private.resume_invited_identity() as result")
+    ).rows[0].result;
+    assert.deepEqual(resumed.project_ids, [p2]);
+    assert.equal(resumed.onboarding_required, true);
+    await denied(db, "select kxra_private.resume_invited_identity()");
+
+    await db.query("reset role");
+    assert.deepEqual(
+      (
+        await db.query(
+          "select project_id,role from kxra.project_memberships where user_id=$1",
+          [accountId],
+        )
+      ).rows,
+      [{ project_id: p2, role: "viewer" }],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          "select account_state from kxra.profiles where user_id=$1",
+          [accountId],
+        )
+      ).rows,
+      [{ account_state: "ONBOARDING" }],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int as n from kxra.invitations where id=$1 and state='REDEEMED' and redeemed_by=$2",
+          [invitation.id, accountId],
+        )
+      ).rows[0].n,
+      1,
+    );
+  }));
 test("AT-19/20 exact grants, agreement versions and required-policy resume are database enforced", () =>
   tx(async (db) => {
     const accountId = crypto.randomUUID();

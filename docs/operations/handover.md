@@ -2,6 +2,10 @@
 
 Updated: 29 September 2026.
 
+## Current continuation repair
+
+The invited staging identity completed provider password recovery but reached `Access unavailable` because its 30-minute browser join intent expired before invitation redemption. The original invitation remains active, email-confirmed, unredeemed and scoped to PROJECT-002; no KXRA profile or membership exists. Migration 0072 adds a narrow authenticated recovery path tied to the consumed one-use signup challenge and exact verified email, and `/join/finish` uses it only when no valid join intent remains. Local focused security, migration, type, format and optimized-build checks pass. Apply and verify 0072, deploy the matching route, then revisit `/join/finish` while signed in and confirm onboarding plus exact project isolation.
+
 ## Current checkpoint
 
 Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair, browser-independent password recovery, real owner TOTP enrollment and guarded final owner verification are complete. The owner has one verified KXRA TOTP factor and the database confirms its reference against the exact singleton KXRA owner and bootstrap event. No password, TOTP secret, proof code, token or recovery secret was recorded.

@@ -2,6 +2,12 @@
 
 Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, owner password sign-in, TOTP, guarded owner verification and controlled transactional-email delivery are complete. The current PROJECT-002 invitation reaches the correct mobile account-creation page. Account creation then failed because Supabase public signup was disabled. An invitation-only Auth hook and one-use challenge fix is implemented and locally verified; migration 0070, hosted hook activation and hosted acceptance remain pending. Production legal/commercial inputs, WAF evidence and production release remain incomplete.**
 
+## Invited identity continuation recovery
+
+- Added migration `0072_resume_invited_identity.sql` and a `/join/finish` fallback for a verified invited identity whose short browser join intent expires during email verification or password recovery.
+- The fallback requires no existing KXRA profile, exactly one active unredeemed invitation for the verified provider email and a consumed one-use Auth signup challenge for that invitation. It reuses the existing audited profile registration and invitation redemption functions; it cannot select roles or projects and is unavailable to anonymous users.
+- Focused tests prove denial for anonymous, unverified and wrong-email identities, denial on replay, successful recovery after invitation delivery-token rotation, and exact single-project scope. Type checking, migration manifest checks, formatting and the optimized OS build pass. Hosted migration and live continuation verification remain pending.
+
 ## Invitation-only hosted registration repair
 
 - Confirmed from the hosted Auth event and application path that the invitation was current and the account form worked, but Supabase rejected `/signup` because provider signup was disabled.
