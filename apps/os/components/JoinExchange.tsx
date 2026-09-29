@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { invitationTokenFromUrl } from "../../../packages/authz/invitation-link";
 
 export default function JoinExchange() {
   const [message, setMessage] = useState("Validating secure link…");
 
   useEffect(() => {
     let active = true;
-    const parameters = new URLSearchParams(window.location.hash.slice(1));
-    const token = parameters.get("token");
+    const token = invitationTokenFromUrl(window.location.href);
+    const safeSearch = new URLSearchParams(window.location.search);
+    safeSearch.delete("token");
+    const remainingSearch = safeSearch.toString();
     window.history.replaceState(
       null,
       "",
-      `${window.location.pathname}${window.location.search}`,
+      `${window.location.pathname}${remainingSearch ? `?${remainingSearch}` : ""}`,
     );
 
     if (!token) {

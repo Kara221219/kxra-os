@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
+import { invitationTokenFromUrl } from "../../packages/authz/invitation-link";
 import { runtimeFile } from "../support/runtime";
 
 const projectTwo = "30000000-0000-4000-8000-000000000002";
@@ -125,9 +126,7 @@ async function createAndVerifyAccount(
   password: string,
   testReturnPath: boolean,
 ) {
-  const rawToken = new URLSearchParams(
-    new URL(invitationUrl).hash.slice(1),
-  ).get("token");
+  const rawToken = invitationTokenFromUrl(invitationUrl);
   expect(rawToken).toBeTruthy();
   const networkUrls: string[] = [];
   const consoleLines: string[] = [];
@@ -140,7 +139,9 @@ async function createAndVerifyAccount(
     page.getByRole("heading", { name: "Create your KXRA account." }),
   ).toBeVisible();
   expect(page.url()).not.toContain(rawToken!);
-  expect(networkUrls.some((url) => url.includes(rawToken!))).toBe(false);
+  expect(networkUrls.filter((url) => url.includes(rawToken!))).toEqual([
+    invitationUrl,
+  ]);
   expect(consoleLines.some((line) => line.includes(rawToken!))).toBe(false);
   expect(
     await page.evaluate(

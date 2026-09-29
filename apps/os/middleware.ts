@@ -53,7 +53,11 @@ export async function middleware(request: NextRequest) {
   }
   response.headers.set("Content-Security-Policy", policy);
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "same-origin");
+  const invitationPath = request.nextUrl.pathname.startsWith("/join");
+  response.headers.set(
+    "Referrer-Policy",
+    invitationPath ? "no-referrer" : "same-origin",
+  );
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set(
     "Permissions-Policy",
@@ -62,7 +66,8 @@ export async function middleware(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith("/os") ||
     request.nextUrl.pathname.startsWith("/api") ||
-    request.nextUrl.pathname.startsWith("/login")
+    request.nextUrl.pathname.startsWith("/login") ||
+    invitationPath
   )
     response.headers.set("Cache-Control", "private, no-store");
   return response;

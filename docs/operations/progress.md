@@ -403,3 +403,11 @@ Only application code, engineering documentation and minimum classified seed rec
 - The first attempt after an older owner session failed closed with `RECENT_MFA_REQUIRED` and created no invitation. A fresh password-plus-TOTP sign-in satisfied the 15-minute owner step-up boundary.
 - The hosted Partners screen incorrectly described all environments as using the local fake outbox. The UI now derives and displays the actual delivery mode: local fake capture, configured provider queue or disabled hosted delivery.
 - Partner redemption, first-private-access legal denial, PROJECT-002 visibility, crafted/cross-project denial and revocation remain unproved. Real legal text remains blocked on qualified UK counsel; placeholders cannot be activated.
+
+## Hosted invitation link compatibility repair
+
+- The first controlled PROJECT-002 invitation reached the provider `DELIVERED` state, but the recipient's email handoff removed the URL fragment before KXRA loaded. Hosted request evidence showed `GET /join` followed by `/join/account` with no exchange request. PostgreSQL confirmed the invitation remained sent, current, unexpired and unused.
+- New invitation emails place the one-time token in the `/join` query string. The client reads either the new query form or the legacy fragment form, removes the token from browser history before exchange, and keeps `/join` private, uncached and `no-referrer`.
+- Regression coverage proves the initial navigation is the only browser request containing the query token and that it does not appear in later requests, history, console, local storage or session storage.
+- The clean hermetic contract passes 213 database/domain/HTTP/security tests, the 69-migration/171-table RLS audit, 43 applicable private browser journeys with five intentional skips, all 14 public journeys in development and optimized production, database/private-object restart, a 2,710-row/15-object empty-target restore, all three builds, CSP/SRI and size/Lighthouse budgets, artifact exclusion and the 409-file publication/secret scan.
+- A replacement delivery and hosted redemption/isolation acceptance remain required after the repaired Preview is Ready. No production deployment was made.

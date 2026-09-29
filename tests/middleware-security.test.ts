@@ -36,10 +36,11 @@ test("AT-27 OS middleware issues a unique strict nonce policy", async () => {
   );
 });
 
-test("AT-27 CSP covers non-private OS routes without forcing private caching", async () => {
+test("AT-27 invitation routes prevent token referral and caching", async () => {
   const response = await middleware(
-    new NextRequest("https://os.example.test/join"),
+    new NextRequest("https://os.example.test/join?token=secret"),
   );
   assert.ok(response.headers.get("content-security-policy"));
-  assert.equal(response.headers.get("cache-control"), null);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
 });

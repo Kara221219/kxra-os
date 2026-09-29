@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { invitationTokenFromUrl } from "../packages/authz/invitation-link";
 import { runtimeFile, testOrigin } from "./support/runtime";
 
 const base = testOrigin;
@@ -144,8 +145,7 @@ function actionUrl(message: FakeMessage) {
 }
 
 function invitationToken(url: string) {
-  const parsed = new URL(url);
-  const token = new URLSearchParams(parsed.hash.slice(1)).get("token");
+  const token = invitationTokenFromUrl(url);
   assert.ok(token);
   return token;
 }

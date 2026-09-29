@@ -103,6 +103,7 @@ import {
 } from "../../../../../packages/authz/supabase-mfa";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
+import { invitationActionUrl } from "../../../../../packages/authz/invitation-link";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ path: string[] }> };
@@ -3154,7 +3155,10 @@ async function handle(req: Request, ctx: Context) {
                 projectNames: assigned.map(
                   (item) => `${item.code} · ${item.name}`,
                 ),
-                actionUrl: `${process.env.KXRA_ORIGIN}/join#token=${encodeURIComponent(token)}`,
+                actionUrl: invitationActionUrl(
+                  process.env.KXRA_ORIGIN || "",
+                  token,
+                ),
               }),
             });
             await query(
@@ -3243,7 +3247,10 @@ async function handle(req: Request, ctx: Context) {
                 projectNames: grants.map(
                   (item) => `${item.project_code} · ${item.project_name}`,
                 ),
-                actionUrl: `${process.env.KXRA_ORIGIN}/join#token=${encodeURIComponent(token)}`,
+                actionUrl: invitationActionUrl(
+                  process.env.KXRA_ORIGIN || "",
+                  token,
+                ),
               }),
             });
             await query(

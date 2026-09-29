@@ -159,6 +159,14 @@ The hosted owner identity gate is complete. Before staging can become customer-r
 
 Never paste secret values into chat or Git. Use the provider dashboards and Vercel/Supabase secret stores referenced by the relevant future playbook.
 
+## Current invitation repair handover
+
+- The provider successfully delivered the controlled PROJECT-002 invitation, but the recipient's email handoff stripped its `#token` fragment. The database invitation is not expired, revoked or redeemed.
+- The branch now generates `/join?token=...` links, accepts legacy fragment links, clears the query token from browser history before exchange, and applies private no-store/no-referrer headers to every join route.
+- The complete local acceptance contract passes: 213 code/database/API tests, 171-table RLS verification, 43 applicable private browser journeys, 14 public journeys in both modes, restart/restore, all three builds, artifact/publication/secret scans and Lighthouse budgets.
+- After the matching OS and email-worker Preview deployments are Ready, the owner must use **Resend with new link** once for the existing controlled invitation. Process exactly that queued delivery, then verify exchange, account onboarding, PROJECT-002-only visibility, crafted/cross-project denial and immediate revocation. Do not reuse the old email link.
+- Production remains untouched. Solicitor-approved legal text remains a separate release blocker.
+
 ## Private business-readiness artifacts
 
 The ignored private business pack contains the Customer Discovery Pack, tracker and Solicitor Brief alongside the business plan, decks, financial model and playbooks. They are not public-repository content. The solicitor brief is an instruction pack, not legal advice or approved customer-facing terms.

@@ -7,6 +7,7 @@ import {
   type EmailTemplateKey,
   type EmailTransportResult,
 } from "./email";
+import { invitationActionUrl } from "../authz/invitation-link";
 
 type ClaimedEmail = {
   outbox_id: string;
@@ -207,7 +208,7 @@ export async function processNextTransactionalEmail(
       authTag: mail.auth_tag,
       secretSha256: mail.secret_sha256,
     });
-    actionUrl = `${process.env.KXRA_ORIGIN}/join#token=${encodeURIComponent(token)}`;
+    actionUrl = invitationActionUrl(process.env.KXRA_ORIGIN || "", token);
   } else if (
     ["APPROVAL_REQUIRED", "PROJECT_ASSIGNMENT", "SECURITY_ALERT"].includes(
       mail.template_key,
