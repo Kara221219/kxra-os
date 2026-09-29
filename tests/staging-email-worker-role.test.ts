@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { test } from "node:test";
 import {
   emailWorkerRoleFindings,
@@ -67,5 +68,20 @@ test("email-worker login must have only the no-login capability role", () => {
       directGrants: { grants: 0 },
     }),
     [],
+  );
+});
+
+test("email-worker role audit table remains protected by RLS", () => {
+  const operator = fs.readFileSync(
+    new URL("../scripts/staging-email-worker-role.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    operator,
+    /alter table public\.kxra_worker_role_events enable row level security/,
+  );
+  assert.match(
+    operator,
+    /revoke all on table public\.kxra_worker_role_events/,
   );
 });

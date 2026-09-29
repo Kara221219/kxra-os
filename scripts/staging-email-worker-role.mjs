@@ -125,6 +125,9 @@ try {
           role_name text not null,applied_at timestamptz not null default now()
         )`);
         await database.query(
+          "alter table public.kxra_worker_role_events enable row level security",
+        );
+        await database.query(
           "revoke all on table public.kxra_worker_role_events from public,anon,authenticated,kxra_app,kxra_public_ingress,kxra_email_runner",
         );
         await database.query(

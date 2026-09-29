@@ -2,6 +2,14 @@
 
 Updated: 29 September 2026. Status: **Core hosted staging is connected and fail-closed. Browser-independent password recovery, real owner password sign-in, TOTP enrollment and guarded final owner verification are complete. Supabase Auth contains one verified KXRA TOTP factor, and the database verifier confirms the exact singleton owner, factor reference and operator tracking event. No password, TOTP secret, proof code, provider token or recovery secret was recorded. Hosted owner/partner isolation acceptance, WAF evidence and production legal/commercial inputs remain incomplete.**
 
+## Transactional email staging checkpoint
+
+- `mail.kxra-group.com` is verified in Resend. DNS was added without changing the existing root mail service or optional DMARC policy. A sending-only Resend key is restricted to that domain and stored only in the email-worker Vercel Preview environment.
+- Vercel project `kxra-email-worker-staging` is connected to `apps/email-worker`. Its database URL, email encryption key, trigger secret, Supabase CA and Resend key are stored as secrets only for `codex/phase-2-completion`; its staging profile, origin, sender and enablement settings use the same branch-only scope. The OS Preview holds only the shared email encryption key and email capability settings. Marketing has none of these values.
+- Supabase role `kxra_email_runner` verifies with `LOGIN`, `NOINHERIT`, `NOBYPASSRLS`, connection limit three, only the no-login `kxra_email_worker` membership, no admin option, no ownership and no direct grants. The operator event table has RLS enabled and all seven hosted verification checks passed.
+- A Vercel manual deployment unexpectedly selected Production. The worker preflight rejected it before build because `VERCEL_ENV=preview` is mandatory and the branch-only secrets were absent. No worker code served traffic. The next pushed phase-branch commit is the approved Preview deployment trigger.
+- No email has been sent. Resend webhook signing, Preview runtime verification and one explicitly authorized controlled delivery remain pending.
+
 ## Hosted staging connection checkpoint
 
 - Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) is active and healthy in `eu-west-2` on PostgreSQL 17. All 69 reviewed migrations verify, including 171 protected tables and 146 KXRA functions. The canonical profile verifies exactly seven projects and 126 classified source records with no local fixture identities, legal activation, product, entitlement, billing or provider state.
