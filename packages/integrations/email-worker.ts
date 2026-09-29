@@ -1,5 +1,5 @@
 import pg from "pg";
-import { databaseSsl } from "../db/ssl";
+import { databaseConnectionString, databaseSsl } from "../db/ssl";
 import {
   openEmailDeliverySecret,
   renderEmail,
@@ -27,7 +27,7 @@ function databaseConfiguration() {
   const connectionString = process.env.KXRA_EMAIL_WORKER_DATABASE_URL;
   if (!connectionString) throw Error("EMAIL_WORKER_DATABASE_NOT_CONFIGURED");
   return {
-    connectionString,
+    connectionString: databaseConnectionString(connectionString),
     ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
   };
 }
