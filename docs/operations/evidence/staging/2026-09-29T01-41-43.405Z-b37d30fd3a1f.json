@@ -1,0 +1,359 @@
+{
+  "schema": "kxra-staging-acceptance-v1",
+  "environment": "staging",
+  "branch": "codex/phase-2-completion",
+  "commit": "b37d30fd3a1f04c90d97fdeb0f6cfe92c34161fa",
+  "origins": {
+    "os": "https://kxra-os-staging-git-codex-phas-62bd6c-husainkara-6439s-projects.vercel.app",
+    "marketing": "https://kxra-marketing-staging-git-cod-1ab442-husainkara-6439s-projects.vercel.app"
+  },
+  "started_at": "2026-09-29T01:41:43.405Z",
+  "completed_at": "2026-09-29T01:41:45.207Z",
+  "outcome": "FAIL",
+  "probes": [
+    {
+      "id": "os-login-boundary",
+      "surface": "os",
+      "path": "/login",
+      "status": 302,
+      "body_bytes": 644,
+      "body_sha256": "15fcf31f32d30fe59b419293f769ce275036b429c2f95979d0a3fbea0a03bccf",
+      "header_sha256": "839c35f8cef69ea039294b8b060075e7f7862fc359f9f8dbe556ca01302763d7",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "OS CSP nonce/strict-dynamic missing",
+        "OS referrer policy mismatch",
+        "OS permissions policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "os-anonymous-projects",
+      "surface": "os",
+      "path": "/api/projects",
+      "status": 401,
+      "body_bytes": 624,
+      "body_sha256": "d41eaff236157c421730f325125d0519d21e67ed79b6a38c8f1e0eddc3b82ae0",
+      "header_sha256": "01253760882b5a804364b23302fc80bc03ec1a43b8970ebcccb260289db0a026",
+      "outcome": "FAIL",
+      "findings": [
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "OS CSP nonce/strict-dynamic missing",
+        "OS referrer policy mismatch",
+        "OS permissions policy mismatch"
+      ]
+    },
+    {
+      "id": "os-anonymous-files",
+      "surface": "os",
+      "path": "/api/files",
+      "status": 401,
+      "body_bytes": 621,
+      "body_sha256": "3e290a20979a2d8e3b321fa0ae94b7098236fbbb684d0453d516626d7acc31fb",
+      "header_sha256": "bc03d7199d173991836727fcaad2bbaead89d4eccc15672348f500a4f490e0df",
+      "outcome": "FAIL",
+      "findings": [
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "OS CSP nonce/strict-dynamic missing",
+        "OS referrer policy mismatch",
+        "OS permissions policy mismatch"
+      ]
+    },
+    {
+      "id": "os-anonymous-search",
+      "surface": "os",
+      "path": "/api/search?q=staging-probe",
+      "status": 401,
+      "body_bytes": 642,
+      "body_sha256": "71643e57d3cddece4395f2af143a80ea055d08b419edfb5709b7ac0649560866",
+      "header_sha256": "a6a24a3d080c669cddb75567a1daa433593669c8b5e3f831d1426b5860c221cd",
+      "outcome": "FAIL",
+      "findings": [
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "OS CSP nonce/strict-dynamic missing",
+        "OS referrer policy mismatch",
+        "OS permissions policy mismatch"
+      ]
+    },
+    {
+      "id": "marketing-home",
+      "surface": "marketing",
+      "path": "/",
+      "status": 302,
+      "body_bytes": 639,
+      "body_sha256": "7ef0017a5b8c72834d14f9c1dea7344f809eaa899db5a2c170ce75b1ab9ef161",
+      "header_sha256": "fc16b60772e9c083cdf1719f6750b107d5f721d025fc5205498bc1263536df9a",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-platform",
+      "surface": "marketing",
+      "path": "/platform",
+      "status": 302,
+      "body_bytes": 647,
+      "body_sha256": "4baa8f32cf4a46fb314590fa909a47c9d2f5d9c95a4074b733f54cea4b951aed",
+      "header_sha256": "07479119d28224ffc4af73172e0a7d9f3ab09b0c8191bc795f6509c9b28da104",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-industries",
+      "surface": "marketing",
+      "path": "/industries",
+      "status": 302,
+      "body_bytes": 649,
+      "body_sha256": "63d25ebc9c92a3055e3f073f814edbc6836d1b7ad57486c7c0974197e1907fb1",
+      "header_sha256": "7adae51e379542bf9a2dc011c8b825836b56450585d8212536575edd2c5f09cc",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-approach",
+      "surface": "marketing",
+      "path": "/approach",
+      "status": 302,
+      "body_bytes": 647,
+      "body_sha256": "9bdc931d7a609b52b0e5d455906c296f889ffd0c65cbd2b1b34bea9c0eb6e7a4",
+      "header_sha256": "be5a6079ff564b71af04a1dceb2655b525732e58d518c5668680cc72fd5c780e",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-brand-studio",
+      "surface": "marketing",
+      "path": "/brand-studio",
+      "status": 302,
+      "body_bytes": 651,
+      "body_sha256": "d7f1be74263361356d5783c2b5987a4d62c11da1c74fe155d1c1cc3e9f7c47ce",
+      "header_sha256": "8dc3ec58735ec1a52a703151ffa7d32e206993f00d4251afb982644a367623cf",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-custom-projects",
+      "surface": "marketing",
+      "path": "/custom-projects",
+      "status": 302,
+      "body_bytes": 654,
+      "body_sha256": "89db48f5e63882c5a2a2c19e2be333ff06fa5ce7ecb7fc278c50f36365f5b646",
+      "header_sha256": "fbf9846e1b87ba2aa8802837d1f3eadfff8e93b0a83083b92f6749eb597b5b6f",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-contact",
+      "surface": "marketing",
+      "path": "/contact",
+      "status": 302,
+      "body_bytes": 646,
+      "body_sha256": "192ef3cb2b6954e6299f235a3ffcfc991a1a146acb9875a0526971f098f2cee7",
+      "header_sha256": "095a429871a5a14df1b43dd7556547cb8f1d4c0d38d4b0cb349d6df0f8124485",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-legal-privacy",
+      "surface": "marketing",
+      "path": "/legal/privacy",
+      "status": 302,
+      "body_bytes": 656,
+      "body_sha256": "29f9d1ccc1750181be973edf69f05c89c669f72188f1475acec2d4f8cb95e9d0",
+      "header_sha256": "3d36d78211c7b33df171cc4f25d379ac8ff72c6bc9c19a078588f3bcf19a76db",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-legal-terms",
+      "surface": "marketing",
+      "path": "/legal/terms",
+      "status": 302,
+      "body_bytes": 654,
+      "body_sha256": "7b93d97050a9e418ad1ccf565c32aa6bf0dbbc01584a196abba68fd0e3b1a1f4",
+      "header_sha256": "01f3b758254285e8ac155466d6c3287838675aeb05b5d7b15331c0d716cd2410",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-legal-cookies",
+      "surface": "marketing",
+      "path": "/legal/cookies",
+      "status": 302,
+      "body_bytes": 656,
+      "body_sha256": "a3f5bd3e72fedbe38f943f9a8d413bf9e5e65a4c8cb05a5c29255f07423ef5d6",
+      "header_sha256": "2e9229efe8efacc9ba12b9d53244e737f3dff01018d1e4241881956f3d81ca32",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-login-separation",
+      "surface": "marketing",
+      "path": "/login",
+      "status": 401,
+      "body_bytes": 615,
+      "body_sha256": "d7b925f6c3ceae73d63396afd3cf8e6fd04216909507447c74aa29c482a03edc",
+      "header_sha256": "ae3f497e08277c9d655ccae538236ad5964b33dd3229fcdd0ffcc5b91a19b01b",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 401",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "login redirect target mismatch"
+      ]
+    },
+    {
+      "id": "marketing-no-private-projects",
+      "surface": "marketing",
+      "path": "/api/projects",
+      "status": 302,
+      "body_bytes": 655,
+      "body_sha256": "bff1910a58d39f7372a980b472a6542fc0ca5eb70b76873e6357a4b93e5ceb82",
+      "header_sha256": "ab08c71c0aa77c0289e1f999ebd8ae675a0070abc6ac08a20fb6dac0722f9988",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-no-private-files",
+      "surface": "marketing",
+      "path": "/api/files",
+      "status": 302,
+      "body_bytes": 652,
+      "body_sha256": "91cd2dcbb0bfdd633fe868379a6243e1751a57b871c823814384e5495511abf4",
+      "header_sha256": "3931a172d3a15e3ace8fac384de2532fc8062a593bfa66662624438a6bdbb711",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    },
+    {
+      "id": "marketing-no-private-ask",
+      "surface": "marketing",
+      "path": "/api/ask",
+      "status": 302,
+      "body_bytes": 650,
+      "body_sha256": "c72f53e3df43d42f675bccb1ebe7b07f3b1b93516ce93f6fa756522900a1c7d1",
+      "header_sha256": "4334550dde442f659070109ab7cbf04d83172fd485272a3c99cd77512943f865",
+      "outcome": "FAIL",
+      "findings": [
+        "unexpected status 302",
+        "missing nosniff",
+        "CSP default-src is not self",
+        "CSP frame-ancestors is not none",
+        "CSP object-src is not none",
+        "marketing referrer policy mismatch",
+        "main landmark missing"
+      ]
+    }
+  ]
+}
