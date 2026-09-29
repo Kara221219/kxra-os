@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   beginHostedTotp,
+  hostedTotpEnrollmentResponseFailure,
   hostedTotpTimestamp,
   hostedMfaGate,
   prepareHostedTotp,
@@ -82,6 +83,31 @@ test("hosted TOTP enrollment accepts only a bounded inline QR response", async (
       }),
     ),
     /MFA_ENROLLMENT_RESPONSE_INVALID/,
+  );
+});
+
+test("hosted TOTP enrollment diagnostics classify shape only", () => {
+  assert.equal(
+    hostedTotpEnrollmentResponseFailure({
+      id: factorOne,
+      type: "totp",
+      totp: {
+        qr_code: "data:image/svg+xml;utf-8,<svg></svg>",
+        secret: "ABCDEFGHIJKLMNOP",
+      },
+    }),
+    undefined,
+  );
+  assert.equal(
+    hostedTotpEnrollmentResponseFailure({
+      id: factorOne,
+      type: "totp",
+      totp: {
+        qr_code: "data:image/png;base64,redacted",
+        secret: "ABCDEFGHIJKLMNOP",
+      },
+    }),
+    "qr_scheme",
   );
 });
 

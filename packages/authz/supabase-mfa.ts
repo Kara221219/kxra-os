@@ -53,6 +53,19 @@ function providerError(result: MfaResult, code: string) {
   return result.data;
 }
 
+export function hostedTotpEnrollmentResponseFailure(data: any) {
+  if (data?.type !== "totp") return "factor_type";
+  if (typeof data.id !== "string" || !providerFactorId.test(data.id))
+    return "factor_id";
+  if (typeof data.totp?.qr_code !== "string") return "qr_type";
+  if (!data.totp.qr_code.startsWith("data:image/svg+xml;utf-8,"))
+    return "qr_scheme";
+  if (data.totp.qr_code.length > 100_000) return "qr_size";
+  if (typeof data.totp?.secret !== "string") return "secret_type";
+  if (!/^[A-Z2-7]{16,256}$/.test(data.totp.secret)) return "secret_shape";
+  return undefined;
+}
+
 export async function beginHostedTotp(api: HostedMfaApi) {
   const data = providerError(
     await api.enroll({
@@ -62,17 +75,13 @@ export async function beginHostedTotp(api: HostedMfaApi) {
     }),
     "MFA_ENROLLMENT_FAILED",
   );
-  if (
-    data.type !== "totp" ||
-    typeof data.id !== "string" ||
-    !providerFactorId.test(data.id) ||
-    typeof data.totp?.qr_code !== "string" ||
-    !data.totp.qr_code.startsWith("data:image/svg+xml;utf-8,") ||
-    data.totp.qr_code.length > 100_000 ||
-    typeof data.totp?.secret !== "string" ||
-    !/^[A-Z2-7]{16,256}$/.test(data.totp.secret)
-  )
+  const responseFailure = hostedTotpEnrollmentResponseFailure(data);
+  if (responseFailure) {
+    console.error("KXRA MFA enrollment response rejected", {
+      reason: responseFailure,
+    });
     throw Error("MFA_ENROLLMENT_RESPONSE_INVALID");
+  }
   return {
     factorId: data.id,
     qrCode: data.totp.qr_code,
