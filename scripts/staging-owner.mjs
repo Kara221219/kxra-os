@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { stagingDatabaseConfig } from "./staging-database.mjs";
 import {
   canonicalSeedManifest,
   canonicalSeedProfile,
@@ -145,11 +146,12 @@ async function verify(database) {
 }
 
 const sourceCommit = repositoryState();
-const database = new pg.Client({
-  connectionString: process.env.KXRA_STAGING_MIGRATOR_DATABASE_URL,
-  ssl: { rejectUnauthorized: true },
-  application_name: `kxra-staging-owner-${command}`,
-});
+const database = new pg.Client(
+  stagingDatabaseConfig(
+    process.env.KXRA_STAGING_MIGRATOR_DATABASE_URL,
+    `kxra-staging-owner-${command}`,
+  ),
+);
 await database.connect();
 try {
   await database.query("set statement_timeout='30s'");
