@@ -16,7 +16,9 @@ Supabase Auth uses the exact private phase-branch origin. Public signup is disab
 
 The immediate checkpoint is the exact hosted acceptance sequence using the verified AAL2 owner, followed by one bounded staging partner for owner/partner/revoked/crafted-project isolation evidence. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
 
-The first 18-probe anonymous run against `b37d30f` retained a redacted FAIL artifact because Vercel Authentication intercepted all probes with protection-layer 302/401 responses. This is a deployment-protection checkpoint, not KXRA route evidence. Each Vercel project already has a distinct automation-bypass secret. The corrected harness accepts one per project, stores neither and rejects a shared cross-project bypass. Rerun against the next exact Ready branch tip; do not disable Vercel Authentication.
+The first 18-probe anonymous run against `b37d30f` retained a redacted FAIL artifact because Vercel Authentication intercepted all probes with protection-layer 302/401 responses. This is a deployment-protection checkpoint, not KXRA route evidence. Each Vercel project already has a distinct automation-bypass secret. The corrected harness accepts one per project, stores neither and rejects a shared cross-project bypass. Do not disable Vercel Authentication.
+
+That rerun is complete: both Vercel projects reported Ready for `0472b61`, and all 18 protected anonymous probes passed. The PASS artifact records only origins, exact commit, timing, status, body/header hashes and empty findings. Continue with hosted owner/partner/revoked/crafted-project isolation; Vercel Authentication remains enabled.
 
 The branch is not merged and nothing is deployed to Production. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
