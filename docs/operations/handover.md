@@ -4,7 +4,7 @@ Updated: 29 September 2026.
 
 ## Current checkpoint
 
-Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair is complete. Recovery commit `f46d2a3`, deployed through `ea3372e`, fixed the cross-browser reset failure with a server-verified implicit recovery submission. The exact Supabase `/reset-password` redirect is saved. Hosted use then exposed that Supabase's implicit recovery JWT uses AMR `otp`; the provider JWT alone cannot distinguish it from an ordinary OTP session. The corrected flow adds a one-hour server-signed intent bound to the requested email and provider authentication time, delivered only through the recovery email and removed from browser history with the provider fragment. Its tamper/expiry/binding tests, type check and optimized build pass locally and await Preview deployment. Older reset emails must not be used because they lack the signed intent.
+Work from /Users/kara/Desktop/P1/The KXRA Group on `codex/phase-2-completion`. Hosted sign-in/database repair and browser-independent password recovery are complete through deployed commit `a94b1bcdfdf21b2a4923859965e1c2073bb116ff`. The exact Supabase `/reset-password` redirect is saved. The one-hour server-signed intent is bound to the requested email and provider authentication time, delivered only through the recovery email and removed from browser history with the provider fragment. Its tamper/expiry/binding tests, type check and optimized build pass. At 01:45–01:46 the owner completed the real recovery, provider-confirmed password change, global sign-out and fresh password login. No password, token or recovery secret was observed or recorded.
 
 Supabase project `KXRA Staging` (`jlebgsxcvhvpueuibekd`) in `eu-west-2` now verifies all 69 migrations, 171 RLS-protected tables, 146 functions, seven canonical projects and 126 classified source records. The seed contains no local fixtures or activated legal/commercial/provider state. Runtime logins `kxra_app` and `kxra_public_ingress` have exact bounded memberships, no bypass, no ownership and no direct grants. Their distinct generated passwords exist only in matching Vercel Preview secrets.
 
@@ -12,7 +12,7 @@ Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to 
 
 Supabase Auth uses the exact private phase-branch origin. Public signup is disabled, email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The exact `/reset-password` redirect is saved. Existing obsolete reset callback and `/reset-password/verify` entries can be removed only after the new flow is proven. The default email service is fixed at two emails per hour; correct-flow attempts at 23:45 and 23:52 were rejected with 429 before the successful 00:22:57 request.
 
-The immediate owner checkpoint is deploying the signed-intent recovery fix, requesting one fresh email after the deployment is ready, confirming its provider redirect contains the signed `intent`, and having the owner personally choose and submit the password. Never put the password in chat or Git. Successful sign-in then continues to Supabase TOTP enrollment. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
+The immediate owner checkpoint is Supabase TOTP enrollment from the authenticated KXRA Profile, followed by guarded final owner verification and the exact hosted acceptance sequences. The owner must personally scan or enter the transient authenticator secret and submit the six-digit proof; never put that secret or code in chat or Git. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
 
 The branch is not merged and nothing is deployed to Production. Preserve the private `KXRA-GENESIS` package, original source documents and unrelated parent-repository applications. PostgreSQL authorization, tenant/project isolation, Project 004's paper-only boundary, Project 005's demand gate, the Projects 006/007 no-side-effect boundaries and the repository publication boundary remain non-negotiable.
 
@@ -26,9 +26,9 @@ Read, in order:
 
 ## Actual delivered state
 
-Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 37 recovery code and handover are pushed at `ea3372e` and the private Preview deployment succeeded. The current schema has 171 RLS-protected tables and 146 audited public functions.
+Final Milestones 1–4 and Phase 2 Slices 0–36 are committed remotely. Slice 37 recovery code and provider-failure handling are pushed through `a94b1bc` and the private Preview deployment succeeded. The current schema has 171 RLS-protected tables and 146 audited public functions.
 
-The staging recovery redirect allowlist includes the exact-origin `/reset-password**` pattern for the signed intent query. The next post-change recovery request reached Supabase at 00:49 and was rejected by the built-in provider's project-wide two-emails-per-hour quota. Wait for the rolling quota to clear before requesting exactly one new email. The request route now checks provider errors and returns a single non-enumerating temporary-unavailability response while logging only a bounded class and numeric status.
+The staging recovery redirect allowlist includes the exact-origin `/reset-password**` pattern for the signed intent query. The request route checks provider errors and returns a single non-enumerating temporary-unavailability response while logging only a bounded class and numeric status. After the built-in provider's rolling two-emails-per-hour quota cleared, Supabase accepted one new request at 01:45, sent the recovery email, verified the link, accepted the owner-performed password change, globally signed out the recovery session and accepted a fresh password sign-in at 01:46. The authenticated KXRA owner workspace loaded successfully.
 
 Slice 37 makes recovery independent of the browser that requested the email. The link returns tokens in a client-only fragment; KXRA removes that fragment from history, sends the credentials only with the chosen password, verifies the provider user and signed JWT, requires the newest AMR entry to be a recent `recovery`, validates active KXRA account state, changes the password, records the security event and globally signs out. Ordinary sessions and the general Auth callback cannot grant reset authority.
 
@@ -109,7 +109,7 @@ This evidence does not yet prove hosted Storage, MFA, owner/partner RLS sessions
 
 Continue Final Milestone 10 production quality without deploying:
 
-1. create and confirm the single hosted owner Auth identity, enroll and verify its KXRA TOTP factor, then run the guarded owner plan/apply/verify and exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md); configure and evidence the exact Vercel WAF rate rule only after that identity gate passes;
+1. enroll and verify the existing hosted owner's KXRA TOTP factor, then run the guarded owner verify and exact hosted acceptance sequences in [staging connection and preflight](../playbooks/staging-connection-and-preflight.md); configure and evidence the exact Vercel WAF rate rule only after that identity gate passes;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
 3. activate one controlled Resend recipient using the [transactional email playbook](../playbooks/transactional-email-staging.md), then exercise test subscription reconciliation using the [Stripe staging playbook](../playbooks/stripe-billing-staging.md) only after pricing, tax and provider decisions;
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
@@ -134,7 +134,7 @@ Continue Final Milestone 10 production quality without deploying:
 
 The next material gate is the hosted owner identity. Before staging can become customer-ready, the owner will need to complete these bounded steps in order:
 
-1. create and confirm the single Supabase owner Auth user, complete TOTP enrollment/verification, then run the guarded database owner bootstrap and hosted owner/partner isolation acceptance;
+1. complete TOTP enrollment/verification for the existing confirmed Supabase owner, then run guarded final database owner verification and hosted owner/partner isolation acceptance;
 2. obtain solicitor-approved legal documents and release versions before any customer access;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
