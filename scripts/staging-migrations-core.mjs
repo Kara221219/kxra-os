@@ -5,7 +5,7 @@ import path from "node:path";
 export const expectedStagingDatabase = {
   migrations: 74,
   protectedTables: 172,
-  exposedFunctions: 148,
+  exposedFunctions: 146,
 };
 
 export function validateStagingTarget(environment) {
