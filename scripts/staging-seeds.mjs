@@ -79,8 +79,6 @@ async function seedState(database) {
         )
       ).rows
     : [];
-  if (rows.length > 1) throw Error("STAGING_UNKNOWN_SEED_PROFILE");
-  const row = rows[0] || null;
   const unmanaged = (
     await database.query(
       `select exists(
@@ -91,13 +89,13 @@ async function seedState(database) {
       [org, manifest.recordCodes],
     )
   ).rows[0].exists;
-  return { row, unmanaged };
+  return { rows, unmanaged };
 }
 
 async function verify(database) {
   await requireMigrations(database);
   const tracked = await seedState(database);
-  const state = reconcileSeedState(manifest, tracked.row, tracked.unmanaged);
+  const state = reconcileSeedState(manifest, tracked.rows, tracked.unmanaged);
   if (!state.applied) throw Error("STAGING_CANONICAL_SEEDS_INCOMPLETE");
   const projects = (
     await database.query(
@@ -188,7 +186,7 @@ try {
   const initial = await seedState(database);
   const initialState = reconcileSeedState(
     manifest,
-    initial.row,
+    initial.rows,
     initial.unmanaged,
   );
   if (command === "plan") {
@@ -211,7 +209,7 @@ try {
       const locked = await seedState(database);
       const lockedState = reconcileSeedState(
         manifest,
-        locked.row,
+        locked.rows,
         locked.unmanaged,
       );
       if (!lockedState.applied) {

@@ -7,6 +7,8 @@ Status: accepted
 
 The first hosted staging import uses the versioned `KXRA-CANONICAL-SEEDS-V1` profile. It imports only the public, source-backed Genesis registers required to establish the KXRA organization, seven project records, project gates, project modules and classified operating records.
 
+The twelve-project expansion uses `KXRA-CANONICAL-SEEDS-V2`. The operator verifies the exact immutable `V1` hash when that predecessor exists, applies the expanded import atomically, and inserts a separate `V2` history row. It rejects unknown predecessor profiles and altered predecessor hashes rather than rewriting seed history.
+
 The profile stops before every local executable/test contract. It does not create fixture identities, members, agreement acceptances, legal placeholders, local model or budget policies, approved Ask manifests, routine service identities, entitlements, active product catalogue entries, billing state or provider state.
 
 The operator binds every included register file to SHA-256, requires the complete hash-bound schema first, rejects unmanaged or changed history, serializes apply, commits the import and tracking row atomically, and verifies exact project/record provenance. Application roles cannot access seed history.

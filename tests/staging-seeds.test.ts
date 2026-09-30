@@ -3,6 +3,7 @@ import { test } from "node:test";
 import path from "node:path";
 import {
   canonicalSeedManifest,
+  canonicalSeedPredecessors,
   canonicalSeedProfile,
   reconcileSeedState,
   validateStagingSeeder,
@@ -65,18 +66,19 @@ test("canonical staging seed apply needs its own exact confirmation", () => {
 
 test("canonical staging seed history rejects unmanaged, changed and wrong profiles", () => {
   const manifest = canonicalSeedManifest(root);
-  assert.deepEqual(reconcileSeedState(manifest, null, false), {
+  assert.equal(canonicalSeedProfile, "KXRA-CANONICAL-SEEDS-V2");
+  assert.deepEqual(reconcileSeedState(manifest, [], false), {
     applied: false,
   });
   assert.throws(
-    () => reconcileSeedState(manifest, null, true),
+    () => reconcileSeedState(manifest, [], true),
     /STAGING_UNMANAGED_CANONICAL_SEED/,
   );
   assert.throws(
     () =>
       reconcileSeedState(
         manifest,
-        { profile: manifest.profile, sha256: "a".repeat(64) },
+        [{ profile: manifest.profile, sha256: "a".repeat(64) }],
         true,
       ),
     /STAGING_SEED_HASH_MISMATCH/,
@@ -85,7 +87,7 @@ test("canonical staging seed history rejects unmanaged, changed and wrong profil
     () =>
       reconcileSeedState(
         manifest,
-        { profile: "UNKNOWN", sha256: manifest.sha256 },
+        [{ profile: "UNKNOWN", sha256: manifest.sha256 }],
         true,
       ),
     /STAGING_SEED_PROFILE_MISMATCH/,
@@ -93,9 +95,50 @@ test("canonical staging seed history rejects unmanaged, changed and wrong profil
   assert.deepEqual(
     reconcileSeedState(
       manifest,
-      { profile: manifest.profile, sha256: manifest.sha256 },
+      [{ profile: manifest.profile, sha256: manifest.sha256 }],
       true,
     ),
     { applied: true },
+  );
+  assert.deepEqual(
+    reconcileSeedState(
+      manifest,
+      [
+        {
+          profile: "KXRA-CANONICAL-SEEDS-V1",
+          sha256: canonicalSeedPredecessors.get("KXRA-CANONICAL-SEEDS-V1"),
+        },
+      ],
+      true,
+    ),
+    { applied: false },
+  );
+  assert.deepEqual(
+    reconcileSeedState(
+      manifest,
+      [
+        {
+          profile: "KXRA-CANONICAL-SEEDS-V1",
+          sha256: canonicalSeedPredecessors.get("KXRA-CANONICAL-SEEDS-V1"),
+        },
+        { profile: manifest.profile, sha256: manifest.sha256 },
+      ],
+      true,
+    ),
+    { applied: true },
+  );
+  assert.throws(
+    () =>
+      reconcileSeedState(
+        manifest,
+        [
+          {
+            profile: "KXRA-CANONICAL-SEEDS-V1",
+            sha256: "b".repeat(64),
+          },
+        ],
+        true,
+      ),
+    /STAGING_SEED_HASH_MISMATCH/,
   );
 });
