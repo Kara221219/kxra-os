@@ -32,11 +32,11 @@ const journey: readonly JourneyChapter[] = [
   },
   {
     index: "04",
-    eyebrow: "Mobility · media · controlled AI",
-    title: "Operate with permission, evidence and continuity.",
-    copy: "Specialist AI capabilities work inside a hierarchy with bounded tools, project-level access, run history and human approval before consequential action.",
-    tags: ["Scoped context", "Approvals", "Run logs", "Continuity"],
-    signal: "Control retained",
+    eyebrow: "Measurement · learning · controlled AI",
+    title: "Improve the system from measured outcomes.",
+    copy: "KXRA connects ideas, experiments, results and decisions. Specialist AI can identify the next improvement signal, while project access, budgets, releases and consequential action stay under explicit control.",
+    tags: ["Outcomes", "Experiments", "Run history", "Approvals"],
+    signal: "Learning governed",
   },
 ];
 
@@ -116,9 +116,10 @@ export default function Home() {
             <h2>Permission, evidence and approval stay visible.</h2>
           </div>
           <p>
-            KXRA separates project access, records AI runs, and holds
-            consequential actions for explicit approval. Connected provider
-            capabilities remain disabled until they pass staged review.
+            KXRA separates project access, records AI runs, surfaces measured
+            improvement signals, and holds consequential actions for explicit
+            approval. Connected provider capabilities remain disabled until they
+            pass staged review.
           </p>
         </div>
         <div className="card-grid">

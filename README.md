@@ -41,7 +41,8 @@ After both staging previews exist, `staging:acceptance:plan` and `staging:accept
 - Approved-version legal document, requirement, presentation, acceptance, decline, re-acknowledgement and release-manifest records. An unapproved placeholder cannot become mandatory or unlock release.
 - First-private-access agreement UI/API. Private routes fail with typed `AGREEMENT_REQUIRED` until the exact approved version/hash and wording are accepted.
 - Owner Dashboard, Portfolio, typed Ideas, Work Log, redacted Admin, invitation/account lifecycle and mandatory onboarding.
-- Seven venture workspaces with exact common/specialist modules and hard stops. Project 004 remains paper only; Project 005 remains demand gated.
+- Twelve venture workspaces with exact common/specialist modules and hard stops. Project 004 remains paper only; Project 005 remains demand gated.
+- Owner-only governed Improvement Loop that derives repair, decision, measurement, experiment and enquiry-review signals from current PostgreSQL evidence without executing consequential actions.
 - Evidence-backed Venture and Confidence Score assessments with accepted-record versions, deterministic coverage/bounds, owner MFA approval, stale-state rejection and immutable superseded history. Partial assessments never invent headline scores.
 - Project 006 immutable content packages, exact source/claim/rights/compliance/technical checks, independent review, synthetic channel verification evidence and idempotent disabled upload intents. No upload or schedule executor exists.
 - Project 007 pinned repository candidates, no-execution quarantine evidence, bounded security/licence assessment, independently reviewed adoption proposals and no-execution implementation intents. No candidate runner, Git writer, merge, release or deployment path exists.

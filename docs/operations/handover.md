@@ -2,6 +2,14 @@
 
 Updated: 30 September 2026.
 
+## Current governed-improvement checkpoint
+
+The working branch adds an owner-only Improvement Loop without adding a new autonomous agent or database authority. `improvementLoop()` reads only current governed records under the verified owner/RLS transaction and returns ranked repair, decide, measure, test and review signals. The owner UI links each signal to the existing typed workflow. The policy reports zero automatic consequential actions. Partner navigation and direct API access fail closed.
+
+The public site now explains KXRA as a business operating platform rather than only an AI/venture concept. `/platform` identifies buyer groups and the measured learning loop. `/pricing` states the owner-supplied approximately £30 monthly target only as a pricing hypothesis, keeps custom projects separate and preserves auditable free partner access. The four-stage depth journey now resolves into governed measured improvement. The reviewed publication snapshot remains disabled and hash-bound.
+
+The exact working tree passes the complete hermetic contract: 219 core tests, 74 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 16-journey marketing runs, restart persistence, empty-target restore, all three optimized builds, CSP/SRI, build budgets, artifact/secret scans and Lighthouse budgets. No schema migration, live provider call, customer contact, paid generation, production deployment or `main` merge occurred. Before continuing commercial activation, read [ADR 0043](../decisions/0043-governed-improvement-loop.md) and the [platform review](platform-review-2026-09-30.md).
+
 ## Current hosted twelve-project checkpoint
 
 Branch `codex/phase-2-completion` is pushed through commit `dd892636d78d7df3c747fdc8c198bd9177487b55`. The guarded Supabase operator applied and verified migration 0074 and the expanded canonical seed. Hosted staging now verifies 74 migrations, 172 RLS-protected tables, 146 exposed `kxra` functions and twelve canonical projects. The two migration-0074 internal functions remain in `kxra_private` and are not counted as exposed application functions.

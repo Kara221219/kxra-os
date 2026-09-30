@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Project } from "../lib/data";
 import type {
   DashboardSection,
+  ImprovementSignal,
+  ImprovementStage,
   IdeaRow,
   PortfolioRow,
   PublicEnquiryRow,
@@ -14,6 +16,103 @@ import {
 } from "./ControlPlaneForms";
 
 type Member = { id: string; display_name: string; role?: string };
+
+const improvementStages: Array<{
+  key: ImprovementStage;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "REPAIR",
+    label: "Repair",
+    description: "Investigate failed governed execution before retrying.",
+  },
+  {
+    key: "DECIDE",
+    label: "Decide",
+    description: "Convert a measured result into an explicit decision.",
+  },
+  {
+    key: "MEASURE",
+    label: "Measure",
+    description: "Record the outcome and evidence for an active experiment.",
+  },
+  {
+    key: "TEST",
+    label: "Test",
+    description: "Turn a promising idea into a bounded experiment.",
+  },
+  {
+    key: "REVIEW",
+    label: "Review",
+    description: "Qualify new demand before it enters the operating system.",
+  },
+];
+
+export function ImprovementLoopView({
+  snapshot,
+}: {
+  snapshot: {
+    total: number;
+    counts: Record<ImprovementStage, number>;
+    signals: ImprovementSignal[];
+    policy: { automatic_actions: number; statement: string };
+  };
+}) {
+  return (
+    <>
+      <section className="panel improvement-policy">
+        <div>
+          <p className="eyebrow">Governed learning contract</p>
+          <h2>Observe → test → measure → decide → improve</h2>
+          <p>{snapshot.policy.statement}</p>
+        </div>
+        <div className="stat">
+          <p>Automatic consequential actions</p>
+          <strong>{snapshot.policy.automatic_actions}</strong>
+        </div>
+      </section>
+      <div className="improvement-stage-grid" aria-label="Improvement stages">
+        {improvementStages.map((stage) => (
+          <section className="panel" key={stage.key}>
+            <p className="eyebrow">{stage.label}</p>
+            <strong className="control-count">
+              {snapshot.counts[stage.key]}
+            </strong>
+            <p>{stage.description}</p>
+          </section>
+        ))}
+      </div>
+      <section className="panel">
+        <div className="record-top">
+          <div>
+            <p className="eyebrow">Prioritised evidence queue</p>
+            <h2>{snapshot.total} improvement signal(s)</h2>
+          </div>
+          <span className="badge">Owner only</span>
+        </div>
+        <div className="control-items">
+          {snapshot.signals.map((signal) => (
+            <Link className="control-item" href={signal.href} key={signal.id}>
+              <span className="badge">{signal.stage}</span>
+              <strong>{signal.title}</strong>
+              <p>{signal.detail}</p>
+              <small>
+                {signal.project_code || "KXRA Group"} · {label(signal.source)} ·{" "}
+                {date(signal.observed_at)}
+              </small>
+            </Link>
+          ))}
+          {!snapshot.signals.length && (
+            <p className="empty compact">
+              No current evidence requires an improvement-loop action.
+            </p>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
 
 export function PublicEnquiryInbox({ rows }: { rows: PublicEnquiryRow[] }) {
   return (
@@ -31,7 +130,11 @@ export function PublicEnquiryInbox({ rows }: { rows: PublicEnquiryRow[] }) {
       </p>
       <div className="record-list">
         {rows.map((row) => (
-          <article className="record" key={row.id}>
+          <article
+            className="record"
+            key={row.id}
+            id={`public-enquiry-${row.id}`}
+          >
             <div className="record-top">
               <div>
                 <small>{label(row.form_kind)}</small>

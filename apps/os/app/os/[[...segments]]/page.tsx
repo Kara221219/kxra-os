@@ -18,6 +18,7 @@ import {
 import {
   AdminView,
   DashboardSectionView,
+  ImprovementLoopView,
   IdeaInboxView,
   PublicEnquiryInbox,
   PortfolioView,
@@ -60,6 +61,7 @@ import {
   listPortfolio,
   listWorkLog,
   ownerDashboard,
+  improvementLoop,
 } from "../../../lib/control-plane";
 import { loadProjectWorkspace } from "../../../lib/project-workspaces";
 import { loadBrandStudio } from "../../../lib/brand-studio";
@@ -258,6 +260,18 @@ export default async function Workspace({
               section={dashboard.recent_activity}
             />
           </div>
+        </>
+      );
+    } else if (section === "improvements") {
+      owner(a);
+      const snapshot = await improvementLoop(a);
+      content = (
+        <>
+          <Heading
+            title="Improvement Loop"
+            sub="Evidence-backed operating signals routed into governed repair, experiments, measurement and decisions."
+          />
+          <ImprovementLoopView snapshot={snapshot} />
         </>
       );
     } else if (section === "portfolio") {

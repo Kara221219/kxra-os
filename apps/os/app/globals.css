@@ -1067,6 +1067,29 @@ pre {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
+.improvement-policy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.28fr);
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.improvement-policy h2 {
+  margin-bottom: 0.65rem;
+}
+.improvement-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+.improvement-stage-grid .panel {
+  min-width: 0;
+}
+.improvement-stage-grid p:last-child {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 .dashboard-control-grid .panel {
   margin: 0;
 }
@@ -1329,6 +1352,8 @@ pre {
     margin-bottom: 6px;
   }
   .dashboard-control-grid,
+  .improvement-policy,
+  .improvement-stage-grid,
   .admin-grid {
     grid-template-columns: 1fr;
   }

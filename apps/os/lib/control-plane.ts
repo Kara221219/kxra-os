@@ -335,6 +335,121 @@ export type DashboardSection = {
   note?: string;
 };
 
+export type ImprovementStage =
+  "REPAIR" | "DECIDE" | "MEASURE" | "TEST" | "REVIEW";
+
+export type ImprovementSignal = {
+  id: string;
+  stage: ImprovementStage;
+  priority: number;
+  source: string;
+  title: string;
+  detail: string;
+  project_code: string | null;
+  href: string;
+  observed_at: string;
+};
+
+export async function improvementLoop(a: Actor) {
+  owner(a);
+  const signals = await query<ImprovementSignal>(
+    a,
+    `with signals as (
+      select 'agent-run:'||run.id::text as id,'REPAIR'::text as stage,100 as priority,
+       'AI_RUN'::text as source,'Investigate failed agent run'::text as title,
+       concat(agent.code,' / ',skill.code,' failed',
+        case when failure.failure_code is null then '' else ': '||failure.failure_code end) as detail,
+       project.code as project_code,'/os/runs#run-'||run.id::text as href,
+       coalesce(run.completed_at,run.created_at) as observed_at
+      from kxra.agent_runs run
+      join kxra.agent_manifests agent on agent.id=run.agent_id
+      join kxra.skill_manifests skill on skill.id=run.skill_id
+      left join kxra.projects project on project.id=run.project_id
+      left join lateral(
+       select item.failure_code from kxra.run_failures item where item.run_id=run.id
+       order by item.created_at desc,item.id desc limit 1
+      ) failure on true
+      where run.org_id=$1 and run.state='FAILED'
+      union all
+      select 'routine-run:'||run.id::text,'REPAIR',90,'ROUTINE_RUN',
+       'Review failed routine',manifest.name,
+       project.code,'/os/routines#routine-'||manifest.id::text,
+       coalesce(run.completed_at,run.created_at)
+      from kxra.routine_runs run
+      join kxra.routine_manifests manifest on manifest.id=run.routine_id
+      left join kxra.projects project on project.id=run.project_id
+      where run.org_id=$1 and run.outcome_disposition='FAILED'
+      union all
+      select 'decision:'||result.id::text,'DECIDE',80,'EXPERIMENT_RESULT',
+       'Turn measured evidence into a decision',experiment.title,
+       project.code,'/os/projects/'||project.id::text||'/experiments',result.created_at
+      from kxra.experiment_results result
+      join kxra.records experiment on experiment.id=result.experiment_id
+      join kxra.projects project on project.id=result.project_id
+      where result.org_id=$1 and not exists(
+       select 1 from kxra.record_links link
+       where link.relation='decides_experiment'
+        and link.to_record_id=result.experiment_id
+        and link.to_version=result.experiment_version
+      )
+      union all
+      select 'measure:'||experiment.id::text,'MEASURE',60,'EXPERIMENT',
+       'Record the experiment result',experiment.title,
+       project.code,'/os/projects/'||project.id::text||'/experiments',experiment.updated_at
+      from kxra.records experiment
+      join kxra.projects project on project.id=experiment.project_id
+      where experiment.org_id=$1 and experiment.kind='experiment'
+       and experiment.status in ('draft','submitted','accepted')
+       and not exists(
+        select 1 from kxra.experiment_results result
+        where result.experiment_id=experiment.id
+         and result.experiment_version=experiment.version
+       )
+      union all
+      select 'test:'||idea.record_id::text,'TEST',40,'IDEA',
+       'Design the next bounded experiment',record.title,
+       project.code,'/os/projects/'||project.id::text||'/experiments',idea.updated_at
+      from kxra.ideas idea
+      join kxra.records record on record.id=idea.record_id
+      join kxra.projects project on project.id=idea.project_id
+      where idea.org_id=$1 and idea.state in ('TRIAGE','VALIDATING','PROMISING','BUILDING')
+       and not exists(
+        select 1 from kxra.record_links link
+        where link.relation='tests_idea' and link.to_record_id=idea.record_id
+         and link.to_version=idea.version
+       )
+      union all
+      select 'enquiry:'||enquiry.id::text,'REVIEW',30,'PUBLIC_ENQUIRY',
+       'Qualify a new business enquiry',concat(enquiry.form_kind,' · ',enquiry.company),
+       null,'/os/ideas#public-enquiry-'||enquiry.id::text,enquiry.received_at
+      from kxra.public_enquiry_submissions enquiry
+      where enquiry.org_id=$1 and enquiry.status='UNVERIFIED'
+     )
+     select id,stage,priority,source,title,detail,project_code,href,observed_at
+     from signals order by priority desc,observed_at asc,id limit 100`,
+    [a.org_id],
+  );
+  const counts: Record<ImprovementStage, number> = {
+    REPAIR: 0,
+    DECIDE: 0,
+    MEASURE: 0,
+    TEST: 0,
+    REVIEW: 0,
+  };
+  for (const signal of signals) counts[signal.stage] += 1;
+  return {
+    generated_at: new Date().toISOString(),
+    total: signals.length,
+    counts,
+    signals,
+    policy: {
+      automatic_actions: 0,
+      statement:
+        "KXRA may identify evidence-backed opportunities. Experiments, decisions, approvals and consequential actions remain governed by their existing authority boundaries.",
+    },
+  };
+}
+
 function number(value: string | number | undefined) {
   return Number(value || 0);
 }

@@ -30,6 +30,7 @@ import {
   listPortfolio,
   listWorkLog,
   ownerDashboard,
+  improvementLoop,
   recommendations,
   workLogTypes,
 } from "../../../lib/control-plane";
@@ -443,6 +444,8 @@ async function handle(req: Request, ctx: Context) {
     const a = await actor();
     if (p[0] === "dashboard" && method === "GET")
       return json(await ownerDashboard(a));
+    if (p[0] === "improvements" && method === "GET")
+      return json(await improvementLoop(a));
     if (p[0] === "portfolio" && method === "GET") {
       owner(a);
       const input = z

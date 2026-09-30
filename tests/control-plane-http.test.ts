@@ -95,6 +95,30 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   for (const section of Object.values(dashboard) as any[])
     for (const item of section.items) assert.match(item.href, /^\/os\//);
 
+  const improvementResponse = await api("improvements", owner);
+  assert.equal(
+    improvementResponse.status,
+    200,
+    await improvementResponse.clone().text(),
+  );
+  const improvement = await improvementResponse.json();
+  assert.equal(improvement.policy.automatic_actions, 0);
+  assert.equal(
+    Object.values(improvement.counts).reduce(
+      (sum: number, count) => sum + Number(count),
+      0,
+    ),
+    improvement.total,
+  );
+  assert.ok(
+    improvement.signals.every(
+      (signal: any) =>
+        ["REPAIR", "DECIDE", "MEASURE", "TEST", "REVIEW"].includes(
+          signal.stage,
+        ) && /^\/os\//.test(signal.href),
+    ),
+  );
+
   const firstResponse = await api(
     "portfolio?page=1&page_size=2&sort=code&direction=asc",
     owner,
@@ -130,7 +154,13 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
     validation.rows.every((row: any) => row.lifecycle_stage === "VALIDATION"),
   );
 
-  for (const endpoint of ["dashboard", "portfolio", "work-log", "admin"])
+  for (const endpoint of [
+    "dashboard",
+    "improvements",
+    "portfolio",
+    "work-log",
+    "admin",
+  ])
     assert.equal((await api(endpoint, partner)).status, 403, endpoint);
 
   const beforeAudit = Number(

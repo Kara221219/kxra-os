@@ -4,6 +4,7 @@ const routes = [
   "/",
   "/platform",
   "/brand-studio",
+  "/pricing",
   "/custom-projects",
   "/industries",
   "/about",

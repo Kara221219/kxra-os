@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Actor } from "../lib/auth";
 const ownerNav = [
   ["Dashboard", ""],
+  ["Improvement Loop", "improvements"],
   ["Portfolio", "portfolio"],
   ["Idea Inbox", "ideas"],
   ["Projects", "projects"],

@@ -26,6 +26,13 @@
       "description": "Submit a business need for separate scoping, evidence review and commercial proposal."
     }
   ],
+  "commercialModel": {
+    "status": "Pricing validation",
+    "subscription": "Founding access is being validated around £30 per month. This is a pricing hypothesis, not a live offer.",
+    "subscriptionBoundary": "Subscription access covers only the tools and usage limits shown in the accepted plan.",
+    "customProjects": "Discovery, integrations and bespoke implementation are proposed and priced separately.",
+    "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription."
+  },
   "industries": [
     "Professional services",
     "Retail and e-commerce",

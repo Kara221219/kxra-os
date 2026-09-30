@@ -187,7 +187,7 @@ export function AgentRunHistoryView({ runs }: { runs: AgentRun[] }) {
         </thead>
         <tbody>
           {runs.map((run) => (
-            <tr key={run.id}>
+            <tr key={run.id} id={`run-${run.id}`}>
               <td className="project-name">
                 <small>{run.project_code || "KXRA GROUP"}</small>
                 <strong>{run.id}</strong>

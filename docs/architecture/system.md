@@ -247,6 +247,12 @@ Every newly generated enabled approval uses the canonical states `DRAFT`, `REQUE
 
 The Work Log is not a free-form register. Triggers project real audit and account-security rows into typed, uniquely sourced entries linked back to records, projects, tasks, approvals, accounts or invitations. Admin is owner-only, logs every view and returns bounded counts, policy state and boolean integration presence; it never returns secret values or a generic database/role editor.
 
+### Governed improvement loop
+
+The owner-only Improvement Loop is a read model over existing authoritative records. It ranks failed AI/routine execution for repair, measured experiments awaiting a decision, experiments awaiting results, current ideas awaiting a bounded test and unverified public demand awaiting review. It does not add a shadow recommendation store or let a model infer state.
+
+Every signal is derived after verified owner identity and tenant selection inside the authenticated RLS transaction. It links back to the typed workflow responsible for the next step. Automatic consequential actions remain zero; experiments, decisions, approvals, spending, customer communication, publication, deployment and release retain their existing authority. See [ADR 0043](../decisions/0043-governed-improvement-loop.md).
+
 ## Customer service and privacy requests
 
 The private OS exposes one tenant-bound request surface for support, subscription cancellation or withdrawal, and personal-data access, erasure or correction. `customer_service_requests` stores immutable intake evidence and controlled state/version fields. `customer_service_events` is the customer-visible timeline; `customer_service_internal_notes` is readable only by an explicit KXRA handler.
@@ -270,6 +276,8 @@ Stripe, Supabase Storage/scanning, Trigger.dev, OpenAI, Meta WhatsApp, YouTube, 
 The public form route is the only mutable boundary. It validates exact origin, body size, schema, form/path relation, consent and idempotency before computing HMAC request/content digests. It calls one parameterized database function under the anonymous role. The function applies validation, deduplication and transactional rate limiting, then writes one `UNVERIFIED` owner-only row plus an audit event. It exposes no list/read/update operation to the public app. KXRA owners see the resulting inbox under private OS RLS.
 
 The layered homepage is ordinary semantic content first. CSS adds desktop depth and supported view-linked motion; reduced-motion and mobile rules remove the movement and sticky composition. The same text, links and form alternatives remain server rendered when JavaScript is unavailable. See [ADR 0015](../decisions/0015-independent-public-marketing-boundary.md), the [threat model](../security/public-marketing-threat-model.md) and [staging playbook](../playbooks/marketing-staging-and-release.md).
+
+The public Platform and Pricing routes distinguish packaged tools, separately scoped custom work and auditable free partner access. The approximately £30 monthly amount remains explicitly labelled as a validation hypothesis until plan limits, tax, cancellation/refund policy, legal wording and an exact live release are approved.
 
 Production marketing HTML uses a stable two-pass build under one build ID. Every generated inline script is bound into the final CSP by its exact SHA-256 hash, every static script reference receives SRI, and the build rejects any pass-to-pass drift. The optimized server then repeats the complete public browser suite under the enforced policy. See [ADR 0018](../decisions/0018-static-marketing-csp-and-sri.md).
 

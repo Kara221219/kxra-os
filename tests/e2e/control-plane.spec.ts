@@ -127,6 +127,18 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
     ).toBeVisible();
   }
 
+  await navigate(page, "Improvement Loop");
+  await expect(
+    page.getByRole("heading", { name: "Improvement Loop" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Observe → test → measure → decide → improve",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Automatic consequential actions")).toBeVisible();
+  await expect(page.getByLabel("Improvement stages")).toBeVisible();
+
   await navigate(page, "Portfolio");
   await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
   await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(10);
@@ -253,6 +265,7 @@ test("AT-22 partner Idea access and owner control routes fail closed", async ({
   ).toBeVisible();
   for (const ownerLink of [
     "Dashboard",
+    "Improvement Loop",
     "Portfolio",
     "Routines",
     "Work Log",

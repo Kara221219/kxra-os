@@ -427,6 +427,28 @@ textarea {
   padding: 1rem 1.2rem;
   background: #fff8e8;
 }
+.operating-loop-section {
+  border-block: 1px solid var(--line);
+}
+.commercial-card {
+  min-height: 420px;
+}
+.commercial-price {
+  margin: 1.5rem 0;
+  color: var(--ink) !important;
+  font-size: clamp(2.6rem, 6vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+.commercial-price span {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.pricing-boundaries .notice {
+  margin-top: 2rem;
+}
 footer {
   background: var(--night);
   color: white;
