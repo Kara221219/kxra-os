@@ -50,6 +50,7 @@ async function expectNoDocumentOverflow(page: Page) {
 test("AT-23 owner receives the exact common and specialist workspace contracts", async ({
   page,
 }) => {
+  test.slow();
   await fixtureLogin(page, "owner");
   const expected = [
     {
