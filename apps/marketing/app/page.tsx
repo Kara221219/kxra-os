@@ -1,43 +1,60 @@
 import Link from "next/link";
+import {
+  ImmersiveJourney,
+  type JourneyChapter,
+} from "../components/ImmersiveJourney";
 import { publication } from "../lib/publication";
 
-const layers = [
-  [
-    "01",
-    "Business context",
-    "Start with the company, customer, evidence and actual constraint.",
-    publication.industries.slice(0, 3),
-  ],
-  [
-    "02",
-    "Reusable capability",
-    "Bring structured research, brand knowledge, decisions and project delivery into one controlled workspace.",
-    ["Research", "Brand", "Projects", "Knowledge"],
-  ],
-  [
-    "03",
-    "Controlled AI",
-    "Give each specialist a defined role, bounded tools and a human approval boundary.",
-    ["Scoped context", "Run logs", "Approvals", "QA"],
-  ],
-  [
-    "04",
-    "Measurable outcome",
-    "Track evidence, work, costs and decisions so useful progress can be inspected and repeated.",
-    ["Experiments", "Metrics", "Finance", "Continuity"],
-  ],
-] as const;
+const journey: readonly JourneyChapter[] = [
+  {
+    index: "01",
+    eyebrow: "Context · professional services · technology",
+    title: "See the business before asking AI to act.",
+    copy: "KXRA starts with the company, customer, evidence and real constraint. The operating context becomes the boundary for research, decisions and delivery.",
+    tags: ["Business context", "Evidence", "Research", "Decisions"],
+    signal: "Context established",
+  },
+  {
+    index: "02",
+    eyebrow: "Property · hospitality · place",
+    title: "Turn complex opportunities into governed projects.",
+    copy: "Property and hospitality work can move from an early idea into assumptions, experiments, risks, partners and an explicit next gate—without presenting exploration as proven demand.",
+    tags: ["Property", "Hospitality", "Partners", "Experiments"],
+    signal: "Opportunity structured",
+  },
+  {
+    index: "03",
+    eyebrow: "Retail · e-commerce · health services",
+    title: "Build reusable capability around real work.",
+    copy: "Brand knowledge, customer needs, approved source material and project evidence can support repeatable tools while custom needs remain separately scoped and priced.",
+    tags: ["Brand Studio", "Commerce", "Knowledge", "Custom projects"],
+    signal: "Capability assembled",
+  },
+  {
+    index: "04",
+    eyebrow: "Mobility · media · controlled AI",
+    title: "Operate with permission, evidence and continuity.",
+    copy: "Specialist AI capabilities work inside a hierarchy with bounded tools, project-level access, run history and human approval before consequential action.",
+    tags: ["Scoped context", "Approvals", "Run logs", "Continuity"],
+    signal: "Control retained",
+  },
+];
 
 export default function Home() {
   return (
     <>
-      <section className="hero">
+      <section className="hero home-hero">
+        <div className="hero-grid" aria-hidden="true" />
+        <div className="hero-circuit hero-circuit-left" aria-hidden="true" />
+        <div className="hero-circuit hero-circuit-right" aria-hidden="true" />
         <div className="hero-inner">
-          <p className="eyebrow">KXRA Group · business operating platform</p>
-          <h1>Make AI useful to the business.</h1>
+          <p className="eyebrow">
+            KXRA Group · AI-native venture and business platform
+          </p>
+          <h1>Ideas take shape.</h1>
           <p className="hero-copy">
-            {publication.brand.summary} The platform is being prepared for
-            controlled customer onboarding.
+            Move from business need to evidence, capability and controlled
+            delivery in one operating system.
           </p>
           <div className="actions">
             <Link className="button light" href="/platform">
@@ -47,13 +64,32 @@ export default function Home() {
               Bring us a business need
             </Link>
           </div>
+          <p className="hero-proof">
+            Context <span /> Connections <span /> Capabilities <span /> Control
+          </p>
         </div>
+        <div className="hero-object" aria-hidden="true">
+          <div className="hero-object-frame">
+            <div className="hero-prism">
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="hero-object-label">
+              <span>KXRA OS</span>
+              <small>OPERATING CORE</small>
+            </div>
+          </div>
+        </div>
+        <a className="scroll-cue" href="#journey-title">
+          Enter the operating journey <span aria-hidden="true">↓</span>
+        </a>
       </section>
-      <section className="section">
+      <section className="section proposition-section">
         <div className="section-lead">
           <div>
-            <p className="eyebrow">A practical starting point</p>
-            <h2>Tools for recurring work. A route for work that is unique.</h2>
+            <p className="eyebrow">One platform · two ways to work</p>
+            <h2>Use a proven tool. Build what your business uniquely needs.</h2>
           </div>
           <p>
             Use a shared KXRA capability where it fits. When the problem needs
@@ -72,37 +108,8 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <section className="layers" aria-labelledby="layers-title">
-        <div className="layer-track">
-          <div className="section-lead">
-            <div>
-              <p className="eyebrow">One operating core</p>
-              <h2 id="layers-title">
-                Built to move through different business contexts.
-              </h2>
-            </div>
-            <p>
-              These industries are examples of applicability. They are not
-              customer or outcome claims.
-            </p>
-          </div>
-          {layers.map(([index, title, copy, tags]) => (
-            <article className="layer" key={index}>
-              <p className="layer-index">PLANE {index}</p>
-              <div>
-                <h2>{title}</h2>
-                <p>{copy}</p>
-                <ul className="layer-tags">
-                  {tags.map((tag) => (
-                    <li key={tag}>{tag}</li>
-                  ))}
-                </ul>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-      <section className="section">
+      <ImmersiveJourney chapters={journey} />
+      <section className="section governance-section">
         <div className="section-lead">
           <div>
             <p className="eyebrow">Governance by design</p>
@@ -121,6 +128,22 @@ export default function Home() {
               <h3>{principle}</h3>
             </article>
           ))}
+        </div>
+        <div className="final-cta">
+          <p className="eyebrow">Start with the need</p>
+          <h2>Bring KXRA the problem worth solving.</h2>
+          <p>
+            Explore the shared platform or submit a custom project for separate
+            discovery, scope and commercial review.
+          </p>
+          <div className="actions">
+            <Link className="button light" href="/submit-opportunity">
+              Start a project
+            </Link>
+            <Link className="button ghost" href="/contact">
+              Contact KXRA
+            </Link>
+          </div>
         </div>
       </section>
     </>

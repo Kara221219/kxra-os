@@ -137,6 +137,42 @@ test("AT-44 reduced motion preserves every layered section and removes sticky mo
   ).toBe(true);
 });
 
+test("depth journey advances chapters through the viewport", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const journey = page.locator(".journey");
+  await expect(journey).toHaveClass(/journey--enhanced/);
+
+  await journey.evaluate((element) => {
+    const viewport = window.innerHeight;
+    const destination =
+      (element as HTMLElement).offsetTop +
+      (element.scrollHeight - viewport) * 0.72;
+    window.scrollTo(0, destination);
+  });
+
+  await expect
+    .poll(() =>
+      page
+        .locator(".journey-stage")
+        .evaluate((stage) =>
+          Number(
+            getComputedStyle(stage)
+              .getPropertyValue("--journey-progress")
+              .trim(),
+          ),
+        ),
+    )
+    .toBeGreaterThan(0.65);
+  await expect(
+    page.locator('.journey-chapter[data-active="true"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.locator(".journey-chapter").filter({ hasText: "Build reusable" }),
+  ).toHaveAttribute("data-active", "true");
+});
+
 test("AT-44 320px reflow and 200 percent text preserve access", async ({
   page,
 }) => {

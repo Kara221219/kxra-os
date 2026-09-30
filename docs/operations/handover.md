@@ -216,3 +216,11 @@ Never paste secret values into chat or Git. Use the provider dashboards and Verc
 ## Private business-readiness artifacts
 
 The ignored private business pack contains the Customer Discovery Pack, tracker and Solicitor Brief alongside the business plan, decks, financial model and playbooks. They are not public-repository content. The solicitor brief is an instruction pack, not legal advice or approved customer-facing terms.
+
+## Public landing-page handover
+
+- The marketing home page now uses a CSS perspective/depth journey implemented by `apps/marketing/components/ImmersiveJourney.tsx` and the public snapshot content in `apps/marketing/app/page.tsx`. Keep the four `.layer` chapters because no-JavaScript, reduced-motion and reflow acceptance depends on all content remaining available.
+- Do not replace the progressive enhancement with a WebGL-only experience. Any future 3D or generated-video layer must keep the current HTML narrative, motion preference, keyboard access, 320px reflow and 140 KiB gzip route budget.
+- The supplied generated references are aesthetic inputs only. Do not publish their Dola AI watermarks, malformed text, staged team portrait or any unverified performance/customer claims.
+- No Higgsfield top-up is needed for the current build. A later Seedance request is billable and must use the guarded server-side example, a locally entered credential and an explicit one-run confirmation.
+- The next provider-independent checkpoint is the automatically generated Vercel Preview for this branch. Production promotion still requires the release blockers and explicit approval already recorded in this handover.
