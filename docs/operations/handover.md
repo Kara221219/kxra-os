@@ -1,6 +1,18 @@
 # Engineering handover
 
-Updated: 29 September 2026.
+Updated: 30 September 2026.
+
+## Current venture-intake checkpoint
+
+Work remains on `codex/phase-2-completion`. The canonical local portfolio now contains twelve projects. PROJECT-008–012 cover Wall Printing, Signature Stays Manchester, Clear Aligner Dental, Online Product Commerce and the Auto AI Sales Assistant. Their source claims are classified; unknown commercial facts remain unknown. Each project has its own discovery document, assumption, experiment, blocker, risk, specialist workspace and evidence gate. The new projects grant no partner access and expose no side-effect executor.
+
+Migration 0074 extends the existing transaction-time project initializer. A canonical seed creates all twelve projects, 18 common modules per project, the reviewed specialist module set and exact project gates. The full hermetic contract passes 219 database/domain/HTTP/security tests, 74 migrations, 172 RLS-protected tables, 43 applicable private browser journeys with five intentional skips, both 14-journey public-site runs, restart/restore, all three builds and the CSP/SRI, size, artifact, secret and Lighthouse gates.
+
+The self-contained completion brief at `docs/operations/KXRA-VENTURES-AND-IMMERSIVE-WEBSITE-COMPLETION-BRIEF.md` is the current build instruction for the original KXRA immersive public journey and the five venture validation paths. It supplements earlier approved briefs. It does not authorize invented public proof, autonomous commercial action or production release.
+
+The official Higgsfield TypeScript SDK is installed. `npm run higgsfield:seedance:example` runs the reviewed Seedance 2.5 example only when `.env.local` contains server-only `HF_CREDENTIALS` and the owner explicitly sets the exact one-run billable confirmation. Both missing-secret and missing-confirmation paths were verified fail-closed. No billable request has been made, so video-generation success is not claimed.
+
+Before these records appear in hosted Preview, push the reviewed commit, allow GitHub checks and Preview builds to pass, then use the guarded staging operator to apply migration 0074 and the revised canonical seed. This requires the Supabase administrator password through a local non-echoing prompt; never place it in chat, Git, shell history or Vercel. Hosted verification must then prove twelve projects, exact gates/modules, owner visibility and PROJECT-002-only partner isolation. Production and main remain untouched.
 
 ## Current continuation repair
 

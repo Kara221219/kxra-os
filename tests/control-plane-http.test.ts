@@ -107,7 +107,7 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const second = await (
     await api("portfolio?page=2&page_size=2&sort=code&direction=asc", owner)
   ).json();
-  assert.equal(first.total_count, 7);
+  assert.equal(first.total_count, 12);
   assert.equal(first.rows.length, 2);
   assert.deepEqual(
     first.rows.map((row: any) => row.id),

@@ -67,12 +67,14 @@
     "staging:owner:verify": "node scripts/staging-owner.mjs verify",
     "staging:acceptance:plan": "node scripts/staging-acceptance.mjs plan",
     "staging:acceptance:run": "node scripts/staging-acceptance.mjs run",
+    "higgsfield:seedance:example": "node --env-file-if-exists=.env.local --import tsx scripts/higgsfield-seedance-example.ts",
     "test:ci": "node scripts/ci.mjs",
     "lint": "npm run typecheck && npm run format:check",
     "check": "npm run lint && npm run test:dependencies && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:marketing-csp && npm run test:build-budgets && npm run test:artifact && npm run test:secrets",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\""
   },
   "dependencies": {
+    "@higgsfield/client": "^0.2.6",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.0",
     "pg": "^8.16.3",

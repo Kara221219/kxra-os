@@ -129,7 +129,10 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
 
   await navigate(page, "Portfolio");
   await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
-  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(7);
+  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(10);
+  await expect(page.getByText("Page 1 of 2", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Next →" }).click();
+  await expect(page.locator(".portfolio-table tbody tr")).toHaveCount(2);
   await expect(
     page.getByText("NOT ASSESSED", { exact: true }).first(),
   ).toBeVisible();

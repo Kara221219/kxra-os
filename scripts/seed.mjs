@@ -36,8 +36,12 @@ export function loadSeeds(root) {
   );
 }
 export function projectId(code) {
-  if (!/^PROJECT-00[1-7]$/.test(code)) throw Error("Unknown project code");
-  return "30000000-0000-4000-8000-00000000000" + code.slice(-1);
+  if (!/^PROJECT-(?:00[1-9]|01[0-2])$/.test(code))
+    throw Error("Unknown project code");
+  return (
+    "30000000-0000-4000-8000-" +
+    String(Number(code.slice(-3))).padStart(12, "0")
+  );
 }
 export function stableId(code) {
   const h = crypto
@@ -62,13 +66,18 @@ export function validateSeeds(bundle) {
     "PROJECT-005",
     "PROJECT-006",
     "PROJECT-007",
+    "PROJECT-008",
+    "PROJECT-009",
+    "PROJECT-010",
+    "PROJECT-011",
+    "PROJECT-012",
   ];
   if (
-    codes.length !== 7 ||
-    new Set(codes).size !== 7 ||
+    codes.length !== 12 ||
+    new Set(codes).size !== 12 ||
     expected.some((x) => !codes.includes(x))
   )
-    throw Error("Exactly PROJECT-001 through PROJECT-007 required");
+    throw Error("Exactly PROJECT-001 through PROJECT-012 required");
   codes.forEach(projectId);
   const all = [
     ...bundle.projects,
@@ -839,6 +848,11 @@ export async function importSeeds(
         "PROJECT-005",
         "PROJECT-006",
         "PROJECT-007",
+        "PROJECT-008",
+        "PROJECT-009",
+        "PROJECT-010",
+        "PROJECT-011",
+        "PROJECT-012",
       ],
       capability: "records.read",
       action: "read.project_blocker_health",

@@ -97,5 +97,60 @@
     "owner_role": "CTO",
     "status": "open",
     "blocks": "external activation or project gate; does not block local specification"
+  },
+  {
+    "id": "BLK-010",
+    "project_scope": "PROJECT-008",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Comparable wall-printer supplier dossier and written quotes",
+    "why": "The social reference and one vendor benchmark do not establish supplier identity, machine suitability or landed cost",
+    "resolution": "Collect exact purchase and lease quotes, compliance documents, demonstration, support and consumable evidence",
+    "owner_role": "COO",
+    "status": "open",
+    "blocks": "supplier selection, deposit, lease or purchase"
+  },
+  {
+    "id": "BLK-011",
+    "project_scope": "PROJECT-009",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Manchester operator interviews and property-specific authority",
+    "why": "No property, owner mandate, commercial model or compliance assessment exists",
+    "resolution": "Interview operators and assemble three property packs with authority, compliance and economics",
+    "owner_role": "COO",
+    "status": "open",
+    "blocks": "listing, booking or property pilot"
+  },
+  {
+    "id": "BLK-012",
+    "project_scope": "PROJECT-010",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "Named accountable clinical provider, professionals and premises model",
+    "why": "The venture cannot define registration, professional scope, insurance or patient flow without them",
+    "resolution": "Obtain clinician commitments, regulatory advice, provider pathway and written premises options",
+    "owner_role": "COO",
+    "status": "open",
+    "blocks": "marketing, patient intake and clinical activity"
+  },
+  {
+    "id": "BLK-013",
+    "project_scope": "PROJECT-011",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "One exact product and supplier evidence pack",
+    "why": "A generic dropshipping idea cannot be assessed for demand, safety, rights, tax, delivery or returns",
+    "resolution": "Select one product and collect current buyer, supplier, sample, compliance and landed-cost evidence",
+    "owner_role": "CMO",
+    "status": "open",
+    "blocks": "listing, advertising and orders"
+  },
+  {
+    "id": "BLK-014",
+    "project_scope": "PROJECT-012",
+    "classification": "UNRESOLVED QUESTION",
+    "missing": "One dealer workflow, consent path and finance perimeter",
+    "why": "The assistant cannot be safely scoped without exact data, channel, human approval and regulated-activity boundaries",
+    "resolution": "Complete dealer discovery and approve one signed, consent-based pilot specification",
+    "owner_role": "CTO",
+    "status": "open",
+    "blocks": "CRM connection and external customer contact"
   }
 ]

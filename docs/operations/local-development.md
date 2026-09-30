@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations, imports the seven projects plus classified required registers and runs the deterministic private-file worker beside Next.js. Existing runtime data is preserved. Local fixture accounts, Auth state, private objects, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
+Open `http://127.0.0.1:3210`; the exact loopback host matters. Startup creates an isolated Unix-socket PostgreSQL database, applies additive migrations, imports the twelve projects plus classified required registers and runs the deterministic private-file worker beside Next.js. Existing runtime data is preserved. Local fixture accounts, Auth state, private objects, outbox captures, signing secrets and preview logs live under ignored `.runtime` paths.
 
 The independent public application runs separately:
 

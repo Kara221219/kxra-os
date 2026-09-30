@@ -8,6 +8,11 @@ const projects = {
   p5: "30000000-0000-4000-8000-000000000005",
   p6: "30000000-0000-4000-8000-000000000006",
   p7: "30000000-0000-4000-8000-000000000007",
+  p8: "30000000-0000-4000-8000-000000000008",
+  p9: "30000000-0000-4000-8000-000000000009",
+  p10: "30000000-0000-4000-8000-000000000010",
+  p11: "30000000-0000-4000-8000-000000000011",
+  p12: "30000000-0000-4000-8000-000000000012",
 };
 
 async function fixtureLogin(page: Page, fixture: string) {
@@ -102,6 +107,46 @@ test("AT-23 owner receives the exact common and specialist workspace contracts",
       gate: "P007 ADOPTION",
       module: "candidate-intake",
       moduleName: "Candidate Intake",
+    },
+    {
+      id: projects.p8,
+      name: "KXRA Wall Printing",
+      specialistCount: 8,
+      gate: "P008 SUPPLIER SELECTION",
+      module: "supplier-intake",
+      moduleName: "Supplier Intake",
+    },
+    {
+      id: projects.p9,
+      name: "KXRA Signature Stays Manchester",
+      specialistCount: 8,
+      gate: "P009 PROPERTY PILOT",
+      module: "operator-discovery",
+      moduleName: "Operator Discovery",
+    },
+    {
+      id: projects.p10,
+      name: "KXRA Clear Aligner Dental Venture",
+      specialistCount: 8,
+      gate: "P010 CLINICAL READINESS",
+      module: "clinical-operator",
+      moduleName: "Clinical Operator",
+    },
+    {
+      id: projects.p11,
+      name: "KXRA Online Product Commerce",
+      specialistCount: 8,
+      gate: "P011 COMMERCE PILOT",
+      module: "product-hypotheses",
+      moduleName: "Product Hypotheses",
+    },
+    {
+      id: projects.p12,
+      name: "KXRA Auto AI Sales Assistant",
+      specialistCount: 8,
+      gate: "P012 DEALER PILOT",
+      module: "dealer-discovery",
+      moduleName: "Dealer Discovery",
     },
   ];
 
@@ -293,6 +338,11 @@ test("AT-23 partner project navigation remains exact and server-scoped", async (
   ).toBeVisible();
 
   await page.goto(`/os/projects/${projects.p3}/photos`);
+  await expect(
+    page.getByRole("heading", { name: "Not available", exact: true }),
+  ).toBeVisible();
+
+  await page.goto(`/os/projects/${projects.p8}/supplier-intake`);
   await expect(
     page.getByRole("heading", { name: "Not available", exact: true }),
   ).toBeVisible();

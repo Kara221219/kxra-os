@@ -100,6 +100,11 @@ test("AT-23 every project exposes the exact common and specialist module contrac
       { code: "PROJECT-005", common: 18, specialist: 16 },
       { code: "PROJECT-006", common: 18, specialist: 18 },
       { code: "PROJECT-007", common: 18, specialist: 18 },
+      { code: "PROJECT-008", common: 18, specialist: 8 },
+      { code: "PROJECT-009", common: 18, specialist: 8 },
+      { code: "PROJECT-010", common: 18, specialist: 8 },
+      { code: "PROJECT-011", common: 18, specialist: 8 },
+      { code: "PROJECT-012", common: 18, specialist: 8 },
     ]);
     assert.deepEqual(
       (
@@ -136,7 +141,7 @@ test("AT-23 every project exposes the exact common and specialist module contrac
           "select count(*)::int as n from kxra.project_gate_policies",
         )
       ).rows[0].n,
-      7,
+      12,
     );
 
     await as(db, "partner");

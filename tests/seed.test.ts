@@ -83,7 +83,7 @@ test("staging canonical-only seed excludes every local executable fixture", () =
     await importSeeds(db, bundle, { canonicalOnly: true });
     await db.query("commit");
 
-    assert.equal((await db.query("select * from kxra.projects")).rowCount, 7);
+    assert.equal((await db.query("select * from kxra.projects")).rowCount, 12);
     assert.ok((await db.query("select * from kxra.records")).rows.length > 0);
     for (const table of [
       "members",
@@ -114,7 +114,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
     await importSeeds(db, bundle);
     await db.query("commit");
 
-    assert.equal((await db.query("select * from kxra.projects")).rowCount, 7);
+    assert.equal((await db.query("select * from kxra.projects")).rowCount, 12);
     assert.deepEqual(
       (await db.query("select code from kxra.projects order by code")).rows.map(
         (row) => row.code,
@@ -127,6 +127,11 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
         "PROJECT-005",
         "PROJECT-006",
         "PROJECT-007",
+        "PROJECT-008",
+        "PROJECT-009",
+        "PROJECT-010",
+        "PROJECT-011",
+        "PROJECT-012",
       ],
     );
     assert.equal(
@@ -135,7 +140,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           "select count(*)::int as n from kxra.projects where venture_score is null and confidence_score is null and not live_execution_enabled and not product_creation_enabled and source_hash is not null",
         )
       ).rows[0].n,
-      7,
+      12,
     );
     assert.deepEqual(
       (
@@ -187,6 +192,36 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           disposition: "ACTIVE",
           next_gate: "P007_ADOPTION",
         },
+        {
+          code: "PROJECT-008",
+          lifecycle_stage: "PROBLEM_DISCOVERY",
+          disposition: "ACTIVE",
+          next_gate: "P008_SUPPLIER_SELECTION",
+        },
+        {
+          code: "PROJECT-009",
+          lifecycle_stage: "PROBLEM_DISCOVERY",
+          disposition: "ACTIVE",
+          next_gate: "P009_PROPERTY_PILOT",
+        },
+        {
+          code: "PROJECT-010",
+          lifecycle_stage: "FEASIBILITY",
+          disposition: "ACTIVE",
+          next_gate: "P010_CLINICAL_READINESS",
+        },
+        {
+          code: "PROJECT-011",
+          lifecycle_stage: "PROBLEM_DISCOVERY",
+          disposition: "ACTIVE",
+          next_gate: "P011_COMMERCE_PILOT",
+        },
+        {
+          code: "PROJECT-012",
+          lifecycle_stage: "PROBLEM_DISCOVERY",
+          disposition: "ACTIVE",
+          next_gate: "P012_DEALER_PILOT",
+        },
       ],
     );
     assert.deepEqual(
@@ -208,6 +243,11 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
         { code: "PROJECT-005", common: 18, specialist: 16 },
         { code: "PROJECT-006", common: 18, specialist: 18 },
         { code: "PROJECT-007", common: 18, specialist: 18 },
+        { code: "PROJECT-008", common: 18, specialist: 8 },
+        { code: "PROJECT-009", common: 18, specialist: 8 },
+        { code: "PROJECT-010", common: 18, specialist: 8 },
+        { code: "PROJECT-011", common: 18, specialist: 8 },
+        { code: "PROJECT-012", common: 18, specialist: 8 },
       ],
     );
     assert.equal(
@@ -216,7 +256,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
           "select count(*)::int as n from kxra.project_gate_policies",
         )
       ).rows[0].n,
-      7,
+      12,
     );
     assert.equal(
       (
@@ -226,7 +266,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
            where v.version=p.governance_version and v.next_gate=p.next_gate`,
         )
       ).rows[0].n,
-      7,
+      12,
     );
     assert.deepEqual(
       (
@@ -340,7 +380,7 @@ test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", (
     );
     assert.equal(
       (await db.query("select * from kxra.routine_version_projects")).rowCount,
-      9,
+      14,
     );
     assert.equal(
       (

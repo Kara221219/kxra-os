@@ -20,7 +20,7 @@ test("canonical staging seed manifest binds only reviewed public registers", () 
   const manifest = canonicalSeedManifest(root);
   assert.equal(manifest.profile, canonicalSeedProfile);
   assert.match(manifest.sha256, /^[a-f0-9]{64}$/);
-  assert.equal(manifest.bundle.projects.length, 7);
+  assert.equal(manifest.bundle.projects.length, 12);
   assert.deepEqual(
     manifest.bundle.projects.map((project: { id: string }) => project.id),
     [
@@ -31,9 +31,14 @@ test("canonical staging seed manifest binds only reviewed public registers", () 
       "PROJECT-005",
       "PROJECT-006",
       "PROJECT-007",
+      "PROJECT-008",
+      "PROJECT-009",
+      "PROJECT-010",
+      "PROJECT-011",
+      "PROJECT-012",
     ],
   );
-  assert.ok(manifest.recordCodes.includes("PROJECT-007-BRIEF"));
+  assert.ok(manifest.recordCodes.includes("PROJECT-012-BRIEF"));
   assert.ok(!manifest.files.some((file) => file.name.includes("partner")));
 });
 

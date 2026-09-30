@@ -64,5 +64,60 @@
     "status": "unverified",
     "owner_role": "Chief of Staff",
     "review_date": "2026-09-18"
+  },
+  {
+    "id": "ASM-007",
+    "title": "Wall-printing service demand",
+    "project_scope": "PROJECT-008",
+    "classification": "ASSUMPTION",
+    "statement": "Manchester commercial-interior buyers will pay enough for direct wall printing to support a service business",
+    "validation": "Customer interviews, paid pilot evidence and deterministic machine-versus-rental economics",
+    "status": "unverified",
+    "owner_role": "COO",
+    "review_date": "2026-10-31"
+  },
+  {
+    "id": "ASM-008",
+    "title": "Short-stay operator need",
+    "project_scope": "PROJECT-009",
+    "classification": "ASSUMPTION",
+    "statement": "Selected Manchester short-stay operators need a KXRA listing, referral or management service and will accept commercially viable terms",
+    "validation": "Ten operator interviews and three property-level commercial comparisons",
+    "status": "unverified",
+    "owner_role": "COO",
+    "review_date": "2026-10-31"
+  },
+  {
+    "id": "ASM-009",
+    "title": "Clear-aligner operating partnership",
+    "project_scope": "PROJECT-010",
+    "classification": "ASSUMPTION",
+    "statement": "A compliant clinical-provider and premises partnership can be assembled before a dedicated lease is needed",
+    "validation": "Named clinician commitments, CQC-perimeter review and written premises proposals",
+    "status": "unverified",
+    "owner_role": "COO",
+    "review_date": "2026-10-31"
+  },
+  {
+    "id": "ASM-010",
+    "title": "Online product opportunity",
+    "project_scope": "PROJECT-011",
+    "classification": "ASSUMPTION",
+    "statement": "At least one safely sourceable product has evidenced demand and positive contribution after returns, delivery, tax and support",
+    "validation": "One exact product evidence pack and bounded demand experiment",
+    "status": "unverified",
+    "owner_role": "CMO",
+    "review_date": "2026-10-31"
+  },
+  {
+    "id": "ASM-011",
+    "title": "Dealer workflow value",
+    "project_scope": "PROJECT-012",
+    "classification": "ASSUMPTION",
+    "statement": "A human-approved AI assistant can improve one dealer sales workflow without increasing compliance or customer harm",
+    "validation": "Ten dealer interviews and one monitored, consent-based pilot",
+    "status": "unverified",
+    "owner_role": "CMO",
+    "review_date": "2026-10-31"
   }
 ]

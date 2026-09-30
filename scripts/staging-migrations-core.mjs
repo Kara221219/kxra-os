@@ -3,9 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const expectedStagingDatabase = {
-  migrations: 73,
+  migrations: 74,
   protectedTables: 172,
-  exposedFunctions: 146,
+  exposedFunctions: 148,
 };
 
 export function validateStagingTarget(environment) {

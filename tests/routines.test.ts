@@ -122,7 +122,7 @@ test("AT-14 typed routine seed remains exact, disabled and owner-only", () =>
     );
     assert.equal(
       (await db.query("select * from kxra.routine_version_projects")).rowCount,
-      9,
+      14,
     );
     await denied(
       db,

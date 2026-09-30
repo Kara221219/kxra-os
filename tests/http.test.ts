@@ -123,7 +123,7 @@ test("HTTP unauthenticated direct API calls cannot read or write", async () => {
 });
 test("HTTP owner and active partners see assigned projects; revoked access fails closed", async () => {
   for (const [who, count] of [
-    ["owner", 7],
+    ["owner", 12],
     ["partner", 1],
   ] as const) {
     const cookie = await login(who),

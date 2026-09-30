@@ -111,10 +111,10 @@ async function record(
   ).rows[0].id;
 }
 after(() => admin.end());
-test("owner can access all seven projects; application login cannot bypass RLS", () =>
+test("owner can access all twelve projects; application login cannot bypass RLS", () =>
   tx(async (db) => {
     await as(db, "owner");
-    assert.equal((await db.query("select * from kxra.projects")).rowCount, 7);
+    assert.equal((await db.query("select * from kxra.projects")).rowCount, 12);
     const roles = await db.query(
       "select rolbypassrls,rolsuper from pg_roles where rolname='kxra_app'",
     );
