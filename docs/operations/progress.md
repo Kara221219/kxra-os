@@ -1,6 +1,14 @@
 # KXRA OS implementation progress
 
-Updated: 30 September 2026. Status: **Core hosted staging is connected and fail-closed. The local canonical portfolio now contains twelve governed ventures. Projects 008–012 have classified source records, discovery workspaces, assumptions, experiments, blockers, risks and exact evidence gates. The reviewed public-site completion brief and a locked server-side Higgsfield Seedance 2.5 example are ready. Migration 0074 and the expanded canonical seed pass the complete hermetic contract locally; they are not yet applied to hosted staging. Production legal/commercial inputs, provider acceptance, public-site implementation, WAF evidence and production release remain incomplete.**
+Updated: 30 September 2026. Status: **Core hosted staging is connected and fail-closed. Supabase now verifies all 74 reviewed migrations, 172 RLS-protected tables, 146 exposed KXRA functions and the canonical twelve-project portfolio. The immutable seven-project `KXRA-CANONICAL-SEEDS-V1` history is preserved and the expanded `V2` import is separately hash-bound. Projects 008–012 have classified source records, discovery workspaces, assumptions, experiments, blockers, risks and exact evidence gates. Production legal/commercial inputs, remaining provider acceptance, full immersive public-site implementation, WAF evidence and production release remain incomplete.**
+
+## Hosted twelve-project staging checkpoint
+
+- Guarded staging migration plan/apply/verify completed against Supabase project `jlebgsxcvhvpueuibekd`; migration 0074 is present and the hosted schema verifies 74 migrations, 172 protected tables and 146 exposed `kxra` functions. Migration 0074 also adds two internal `kxra_private` functions, which are deliberately excluded from the exposed-function count.
+- The seed operator found the exact immutable seven-project `KXRA-CANONICAL-SEEDS-V1` history. Commit `dd892636d78d7df3c747fdc8c198bd9177487b55` introduced `KXRA-CANONICAL-SEEDS-V2`, verifies the exact V1 predecessor hash, rejects altered or unknown history and records V2 separately rather than rewriting V1.
+- The guarded seed plan/apply/verify completed and proved the canonical twelve-project portfolio plus exact classified records, modules and gates. Fixture identities, active legal documents, products, entitlements, billing and provider authority remain excluded.
+- The exact pushed commit passed local hermetic CI: 219 core tests, 74-migration/172-table verification, 43 applicable private browser journeys with five intentional skips, 14 public journeys in both runs, restart persistence, a 3,014-row/15-object empty-target restore, all three optimized builds, CSP/SRI, budgets, artifact and 426-file secret scans, and Lighthouse 1.00 performance/accessibility for both measured routes.
+- GitHub CodeQL run `36768006957` and full CI run `36768007053` passed at the exact V2 commit. The matching OS, marketing and isolated email-worker Vercel Preview deployments are all Ready at their stable phase-branch aliases. Production and `main` remain untouched.
 
 ## Five-venture intake and immersive-site completion brief
 

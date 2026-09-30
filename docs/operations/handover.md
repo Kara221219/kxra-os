@@ -2,6 +2,16 @@
 
 Updated: 30 September 2026.
 
+## Current hosted twelve-project checkpoint
+
+Branch `codex/phase-2-completion` is pushed through commit `dd892636d78d7df3c747fdc8c198bd9177487b55`. The guarded Supabase operator applied and verified migration 0074 and the expanded canonical seed. Hosted staging now verifies 74 migrations, 172 RLS-protected tables, 146 exposed `kxra` functions and twelve canonical projects. The two migration-0074 internal functions remain in `kxra_private` and are not counted as exposed application functions.
+
+Seed history is now explicitly versioned. The existing seven-project `KXRA-CANONICAL-SEEDS-V1` row and exact hash remain immutable. `KXRA-CANONICAL-SEEDS-V2` verifies that predecessor, imports the twelve-project source set atomically and records a separate history row. Unknown profiles, altered predecessor/current hashes, unmanaged canonical rows and provenance drift fail closed. The hosted plan, apply and verify sequence completed successfully; no fixture identity, active legal/commercial state, entitlement, billing record or provider authority was imported.
+
+The exact V2 commit passes the complete local hermetic contract: 219 core tests, 74 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 14-journey public runs, restart persistence, a 3,014-row/15-object empty-target restore, all three builds, CSP/SRI, build budgets, artifact exclusion, a 426-file publication/secret scan and Lighthouse 1.00 performance/accessibility for both measured routes. GitHub CodeQL run `36768006957` and full CI run `36768007053` pass at the same SHA. Matching OS deployment `dpl_67omxHuJvqeMw7ypHVE9CQiAcuMY`, marketing deployment `dpl_7cijxTKw2YpPAxmNcwPXTdK42igW` and isolated email-worker deployment `dpl_2A6w5AbcFb8aaq9c6MeDd9y4vbBD` are Ready Preview builds at their stable phase-branch aliases.
+
+Production and `main` remain untouched. The next evidence slice is hosted owner/partner/revoked/crafted-project isolation against the twelve-project database, followed by exact WAF evidence. Customer release still requires approved legal/commercial content and the remaining provider/release evidence.
+
 ## Current venture-intake checkpoint
 
 Work remains on `codex/phase-2-completion`. The canonical local portfolio now contains twelve projects. PROJECT-008–012 cover Wall Printing, Signature Stays Manchester, Clear Aligner Dental, Online Product Commerce and the Auto AI Sales Assistant. Their source claims are classified; unknown commercial facts remain unknown. Each project has its own discovery document, assumption, experiment, blocker, risk, specialist workspace and evidence gate. The new projects grant no partner access and expose no side-effect executor.
