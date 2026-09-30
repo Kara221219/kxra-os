@@ -14,5 +14,5 @@ The versioned legal-document, presentation and immutable acceptance-evidence sys
 - Existing acceptance evidence is preserved; no historical record is deleted or rewritten.
 - A future approved required agreement reopens onboarding at Access Review and must be accepted before private access resumes.
 - Project membership, PostgreSQL RLS, MFA, tenant selection and retrieval authorization are unchanged.
-- Terms, Privacy, Cookie, Data Processing and Custom Project documents remain separate release inputs. Their legal and commercial approval is still outstanding.
+- Terms, Privacy, Cookie, Data Processing and Custom Project documents remain separate release inputs. ADR 0044 supersedes the earlier solicitor-approval dependency: exact owner approval is required, while independent legal review is optional and risk-based.
 - KXRA may reconsider an NDA after qualified advice or a demonstrated commercial need.

@@ -43,9 +43,8 @@ For the owner, it is a portfolio and operating control plane: ideas, evidence, e
 
 ## Commercial readiness conclusion
 
-The platform is credible for controlled private discovery and staging demonstrations. It is not ready to take public subscription revenue or onboard unrestricted customers. Activation requires owner-approved product limits and pricing, solicitor/accountant-approved documents and policies, live Stripe and provider acceptance, production support/incident arrangements, final WAF evidence and an exact signed release manifest.
+The platform is credible for controlled private discovery and staging demonstrations. It is not ready to take public subscription revenue or onboard unrestricted customers. Activation requires owner-approved product limits, pricing and exact customer documents, accountant-approved tax treatment, live Stripe and provider acceptance, production support/incident arrangements, final WAF evidence and an exact signed release manifest. Independent legal review is optional and risk-based rather than a mandatory release dependency.
 
 ## Verification
 
 The final local run passed 219 core tests, 74 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, 16 public journeys in development and optimized production, restart persistence, empty-target restore, three optimized builds, CSP/SRI, artifact and secret scans, build budgets and Lighthouse performance/accessibility budgets.
-

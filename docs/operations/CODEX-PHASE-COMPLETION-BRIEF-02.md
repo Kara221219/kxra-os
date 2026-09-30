@@ -1,5 +1,7 @@
 # CODEX PHASE COMPLETION BRIEF 02
 
+> Current owner decision: ADR 0044 supersedes this historical brief wherever it makes solicitor approval a universal customer-document or release prerequisite. Exact versioned owner-approved customer documents remain required; independent legal review is optional and risk-based. Project-specific regulated hard stops remain unchanged.
+
 ## Actual repository audit, SaaS direction and final completion contract
 
 Version 1 · 19 September 2026

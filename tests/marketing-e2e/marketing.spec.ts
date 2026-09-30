@@ -49,6 +49,20 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
   ).toBe(true);
 });
 
+test("customer-document copy requires owner approval without a universal solicitor gate", async ({
+  page,
+}) => {
+  for (const route of ["/pricing", "/legal/privacy", "/legal/terms"]) {
+    await page.goto(route);
+    await expect(page.locator("main")).toContainText(
+      /owner approval|approved by the owner/i,
+    );
+    await expect(page.locator("main")).not.toContainText(
+      /require(?:s|d)? solicitor|solicitor approval before activation/i,
+    );
+  }
+});
+
 test("AT-26 accessible public contact submission reaches private inbox", async ({
   page,
 }) => {

@@ -13,7 +13,9 @@ export default function Privacy() {
           Public enquiry submissions are intended to be stored in an owner-only
           KXRA review inbox so KXRA can respond. Final controller identity,
           lawful basis, retention, rights process, subprocessors and contact
-          wording require solicitor review before launch.
+          wording must be completed, checked against the implemented data flows
+          and approved by the owner before launch. Independent legal review is
+          risk-based rather than a mandatory platform dependency.
         </p>
         <p>
           Contact: <a href="mailto:info@kxra-group.com">info@kxra-group.com</a>.

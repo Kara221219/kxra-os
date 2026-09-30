@@ -1,6 +1,6 @@
 # Engineering handover
 
-Updated: 30 September 2026.
+Updated: 1 October 2026.
 
 ## Current governed-improvement checkpoint
 
@@ -201,7 +201,7 @@ Continue Final Milestone 10 production quality without deploying:
 The hosted owner identity gate is complete. Before staging can become customer-ready, complete these bounded steps in order:
 
 1. run hosted owner/partner/revoked/crafted-project isolation acceptance using the verified owner and one bounded staging partner;
-2. obtain approved Terms, Privacy, Cookie, Data Processing and Custom Project documents before customer release; reconsider an NDA only after qualified advice or demonstrated need;
+2. complete and owner-approve exact Terms, Privacy, Cookie, Data Processing and Custom Project documents before customer release; independent legal review is optional and risk-based, and an NDA remains parked unless demonstrated need changes that decision;
 3. create the private Storage bucket and production scanning/extraction service identities;
 4. configure Stripe products/prices/webhook endpoint after pricing decisions;
 5. configure Resend and DNS only after approved sender copy and domains;
@@ -219,7 +219,7 @@ Never paste secret values into chat or Git. Use the provider dashboards and Verc
 - Provider inspection exposed the delivery-version-3 bearer to an operator tool, so that version is compromised and must not be reused. The owner must use **Resend with new link** once after matching OS and email-worker Preview deployments are Ready.
 - The complete local acceptance contract passes: 214 code/database/API tests, 171-table RLS verification, 43 applicable private browser journeys with five intentional skips, 14 public journeys in both modes, restart/restore, all three builds, artifact/publication/secret scans and Lighthouse budgets.
 - Process exactly the replacement queued delivery, then verify exchange, account onboarding, PROJECT-002-only visibility, crafted/cross-project denial and immediate revocation. Do not reuse any earlier email link.
-- Production remains untouched. Solicitor-approved legal text remains a separate release blocker.
+- Production remains untouched. Exact owner-approved customer documents remain a release input; solicitor approval is not a release blocker under ADR 0044.
 
 ## Private business-readiness artifacts
 
@@ -232,3 +232,11 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - The supplied generated references are aesthetic inputs only. Do not publish their Dola AI watermarks, malformed text, staged team portrait or any unverified performance/customer claims.
 - No Higgsfield top-up is needed for the current build. A later Seedance request is billable and must use the guarded server-side example, a locally entered credential and an explicit one-run confirmation.
 - The next provider-independent checkpoint is the automatically generated Vercel Preview for this branch. Production promotion still requires the release blockers and explicit approval already recorded in this handover.
+
+## Customer-document approval decision
+
+- ADR 0044 records the owner's decision that solicitor approval is not a technical or commercial release prerequisite for customer documents.
+- Public sales still require exact Terms, Privacy, Cookie, applicable data-processing and Custom Project documents that match the implemented product, are versioned and hashed, and receive explicit owner approval in the release evidence.
+- Independent legal review is optional and risk-based. Existing clinical, financial and other regulated project-specific hard stops remain unchanged.
+- The mandatory NDA remains parked. No placeholder is approved or active, and this decision does not authorize production publication or customer sales.
+- A desktop/mobile browser regression verifies that Pricing, Privacy and Terms require owner approval without reinstating a universal solicitor gate. The complete disposable verification contract passes.

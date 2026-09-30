@@ -12,7 +12,9 @@ export default function Terms() {
         <p>
           No subscription, custom-project contract, guarantee or service
           commitment is offered by this preview build. Final website and service
-          terms require solicitor and owner approval before activation.
+          terms require owner approval and an exact versioned release record
+          before activation. Independent legal review may be commissioned when
+          the owner considers the product, audience or risk to require it.
         </p>
       </section>
     </>

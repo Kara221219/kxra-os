@@ -12,7 +12,9 @@ The current schema assumes one organization membership per account, the public p
 
 Retain the internal venture OS and add a multi-tenant customer platform through additive migrations. Normalize account identity from many-to-many organization membership. Keep authorization roles small (`KXRA_OWNER`, `KXRA_STAFF`, `ORG_ADMIN`, `ORG_MEMBER`); treat partner/customer/client as commercial metadata. Require one exact tenant and, for project work, one exact project before retrieval.
 
-Create deterministic plans, entitlements, usage reservations and explicit owner free grants. Keep custom-project proposal, acceptance, milestones and billing separate from subscription tools. Add a first-private-access legal gate that can activate only solicitor-approved exact documents.
+Create deterministic plans, entitlements, usage reservations and explicit owner free grants. Keep custom-project proposal, acceptance, milestones and billing separate from subscription tools. Add a first-private-access legal gate that can activate only approved exact documents.
+
+ADR 0044 supersedes the original universal solicitor-approval dependency. Exact versioned owner approval remains required; independent legal review is optional and risk-based.
 
 Build KXRA Brand Studio as the first subscription tool. Build a separate marketing application with approved public snapshots and no private import/credential path. Add Projects 006 and 007 with the hard stops in their project specifications and the current Phase Completion Brief 02.
 

@@ -57,8 +57,8 @@ export default function Pricing() {
           </article>
         </div>
         <p className="notice">
-          Pricing, taxes, usage limits, cancellation terms and customer legal
-          wording require final approval before public sales are activated.
+          Pricing, taxes, usage limits, cancellation terms and exact customer
+          documents require owner approval before public sales are activated.
         </p>
       </section>
     </>

@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 30 September 2026. Status: **Core hosted staging is connected and fail-closed. Supabase verifies all 74 reviewed migrations, 172 RLS-protected tables, 146 exposed KXRA functions and the canonical twelve-project portfolio. A controlled hosted partner completed onboarding with PROJECT-002 viewer access; owner, assigned-project, cross-project, crafted-ID, Ask KXRA and database-backed immediate-revocation checks passed, and the original viewer grant was restored. The immutable seven-project `KXRA-CANONICAL-SEEDS-V1` history is preserved and the expanded `V2` import is separately hash-bound. The immersive public journey, governed owner Improvement Loop and transparent commercial-positioning pages are implemented locally and fully verified. Production legal/commercial inputs, remaining provider acceptance, WAF evidence and production release remain incomplete.**
+Updated: 1 October 2026. Status: **Core hosted staging is connected and fail-closed. Supabase verifies all 74 reviewed migrations, 172 RLS-protected tables, 146 exposed KXRA functions and the canonical twelve-project portfolio. A controlled hosted partner completed onboarding with PROJECT-002 viewer access; owner, assigned-project, cross-project, crafted-ID, Ask KXRA and database-backed immediate-revocation checks passed, and the original viewer grant was restored. The immutable seven-project `KXRA-CANONICAL-SEEDS-V1` history is preserved and the expanded `V2` import is separately hash-bound. The immersive public journey, governed owner Improvement Loop and transparent commercial-positioning pages are implemented locally and fully verified. Exact owner-approved customer documents, commercial inputs, remaining provider acceptance, WAF evidence and production release remain incomplete.**
 
 ## Governed improvement and commercial-positioning checkpoint
 
@@ -184,7 +184,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 
 ## Active owner and external inputs
 
-- Qualified UK legal approval for Terms, Privacy, cookie, AI/data-processing and custom-project documents. NDA/confidentiality is parked for later reconsideration.
+- Exact owner-approved Terms, Privacy, Cookie, AI/data-processing and Custom Project documents. Independent legal review is optional and risk-based under ADR 0044; NDA/confidentiality is parked for later reconsideration.
 - Customer discovery decisions for initial segment, launch plan, plan limits, the approximately £30 pricing hypothesis, free-partner policy and custom-project terms.
 - Entity/public contact details, retention/recovery targets, support/privacy mailboxes and approved public copy/brand assets.
 - Later staging credentials and budgets through provider secret stores, never chat or Git.
@@ -476,7 +476,9 @@ Only application code, engineering documentation and minimum classified seed rec
 - Vercel project `kxra-email-worker-staging` is connected to `apps/email-worker`. Its commit `49ddc9e31ec3671823deffdbb6b87a9093460118` Preview is Ready with branch-only restricted database, encryption, trigger, Resend sending and Resend webhook credentials. The corresponding OS Preview is also Ready and has no worker database, trigger, sending or webhook authority.
 - The first attempt after an older owner session failed closed with `RECENT_MFA_REQUIRED` and created no invitation. A fresh password-plus-TOTP sign-in satisfied the 15-minute owner step-up boundary.
 - The hosted Partners screen incorrectly described all environments as using the local fake outbox. The UI now derives and displays the actual delivery mode: local fake capture, configured provider queue or disabled hosted delivery.
-- Partner redemption, first-private-access legal denial, PROJECT-002 visibility, crafted/cross-project denial and revocation remain unproved. Real legal text remains blocked on qualified UK counsel; placeholders cannot be activated.
+- Partner redemption, first-private-access legal denial, PROJECT-002 visibility, crafted/cross-project denial and revocation remain unproved. Exact customer documents remain incomplete and placeholders cannot be activated; solicitor approval is no longer a universal blocker under ADR 0044.
+
+2026-10-01 — Recorded the owner's decision that solicitor approval is not a universal release dependency for customer documents. ADR 0044 requires exact, versioned and owner-approved Terms, Privacy, Cookie, applicable data-processing and Custom Project documents that match implemented product and data flows. Independent legal review is optional and risk-based; regulated project-specific hard stops remain unchanged. Updated public legal/pricing copy, current playbooks, the platform review and handover, and marked conflicting requirements in the historical Phase Completion Brief as superseded. Added a browser regression preventing the generic solicitor gate from returning. The complete hermetic contract passes 219 core tests, 74 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all three builds, CSP/SRI, artifact/secret scans, budgets and Lighthouse. No placeholder was activated and no production release was authorized.
 
 ## Hosted invitation link compatibility repair
 

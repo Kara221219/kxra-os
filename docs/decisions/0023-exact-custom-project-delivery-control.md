@@ -20,4 +20,4 @@ Creating a delivery workspace is not enough to control a paid customer engagemen
 
 - Subscription entitlement still cannot authorize custom delivery.
 - A stale hash, crafted project, wrong currency, missing party, duplicate party decision, unauthorized delivery, forged invoice or cross-project read fails closed.
-- KXRA OS now has a complete local request-to-delivery evidence path. Connected accounting/payment providers, credit-note/void operations and solicitor-approved customer terms remain release work.
+- KXRA OS now has a complete local request-to-delivery evidence path. Connected accounting/payment providers, credit-note/void operations and exact owner-approved customer terms remain release work. ADR 0044 makes independent legal review optional and risk-based.

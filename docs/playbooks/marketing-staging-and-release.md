@@ -12,7 +12,7 @@ Complete the [staging connection and preflight](staging-connection-and-preflight
 6. Run AT-17, AT-26, AT-44 and AT-45 against the deployed output. Inspect HTML, scripts, RSC/prefetch, maps, headers, error responses and caches for every private marker.
 7. Submit one synthetic enquiry. Confirm one `UNVERIFIED` owner-only row, one audit event, no anonymous/partner visibility, idempotent replay, a safe duplicate result and the sixth hourly request returning 429.
 8. Verify 1440, 768, 390 and 320 widths, 200% text, keyboard order, visible focus, reduced motion, no JavaScript, representative screen readers and recorded Lighthouse/Core Web Vitals.
-9. Replace legal placeholders only with solicitor-approved exact documents. Pin hashes and approval dates in the release manifest. Approve final copy, entity details, retention, privacy contact, support route and cookie behavior.
+9. Replace legal placeholders only with exact owner-approved documents that match the implemented product and data flows. Pin hashes, sources, review notes and approval dates in the release manifest. Approve final copy, entity details, retention, privacy contact, support route and cookie behavior. Independent legal review is optional and risk-based; it is not a technical release prerequisite.
 10. Request owner approval for the exact production deploy, DNS switch and indexing change. Record commit, artifact hashes, environment, rollback and approvers.
 
 Rollback removes the marketing deployment/domain assignment and rotates the ingress secret/login if exposure is suspected. Database rows remain private evidence under the approved retention process.
