@@ -240,3 +240,11 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - Independent legal review is optional and risk-based. Existing clinical, financial and other regulated project-specific hard stops remain unchanged.
 - The mandatory NDA remains parked. No placeholder is approved or active, and this decision does not authorize production publication or customer sales.
 - A desktop/mobile browser regression verifies that Pricing, Privacy and Terms require owner approval without reinstating a universal solicitor gate. The complete disposable verification contract passes.
+
+## Hosted owner-approval migration checkpoint
+
+- Supabase staging migration 0075 is applied. The hosted schema now has `owner_approval_reference`, `owner_approved_at` and `independent_review_reference` on `kxra.legal_documents`, the validated `legal_documents_approved_by_owner` constraint, the `legal_document_owner_approval_normalize` trigger and its restricted normalization function.
+- The same transaction backfilled existing approved documents. A subsequent guarded verification found no approved document missing owner approval evidence.
+- `public.kxra_schema_migrations` records `0075_owner_approved_legal_documents.sql` with SHA-256 `85e103d36858161c632db520547f836abb9aa31a081eac806719f9cba5ab5ef7` and source commit `bc6120ca6fa5c2d2aa57f64fcb8f3e6cae95f33c`.
+- Both SQL Editor transactions reported success. Production was not touched. The database password was reset after it was accidentally entered into an ordinary local terminal; the replacement password was never provided to Codex or used by the application.
+- Exact owner-approved customer-document content, commercial limits, tax treatment and Stripe test-mode evidence remain release blockers. Migration 0075 removes the obsolete universal solicitor-approval dependency; it does not approve placeholder documents or authorize public sales.
