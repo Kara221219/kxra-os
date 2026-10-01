@@ -2,6 +2,16 @@
 
 Updated: 1 October 2026.
 
+## Current commercial-foundation checkpoint
+
+Branch `codex/phase-2-completion` is pushed through implementation commit `ebba44953ec2ee813844ce7ecc5aa5f57a409ad4`. Migration `0076_brand_studio_catalogue_seed.sql` is applied to authorized Supabase staging and ledgered at SHA-256 `cfa889bc6b3d3a75e16c277a3b313d99abc6e75bbc2ae432e471187309444cf7` against that source commit. Hosted verification proves 76 exact migrations, 172 RLS-protected tables, 146 exposed `kxra` functions, one active Brand Studio catalogue record and one active version. The migration imports no identity, fixture entitlement or provider authority.
+
+The founding commercial plan is active in staging with one plan, two versions, six exact feature rows and two Stripe TEST price references. The monthly and annual versions provide Brand Studio access plus 120 generated creative variants and 120 reviewed exports per month with no rollover. Stripe Sandbox product `prod_VMHTknMmr7LV1r` has the approved tax-exclusive prices `price_1ULYzlC84VkhhIRziFf99Grl` (£29 monthly, default) and `price_1ULYyIC84VkhhIRza8JkYHz5` (£290 yearly). Superseded tax-inclusive price `price_1ULYv0C84VkhhIRzivfFjr42` is archived and has zero active subscriptions.
+
+The exact implementation commit passes the full local hermetic contract: 222 core tests, 76 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart persistence, a 3,015-row/15-object empty-target restore, all three optimized builds, 72 exact CSP hashes, 129 SRI records, build budgets, a 439-file artifact/secret scan and Lighthouse 1.00 performance/accessibility. GitHub CodeQL run `36803453320` and full CI run `36803453498` pass at the same SHA.
+
+Checkout and customer sales remain disabled. Before release, set owner-approved cancellation, refund and grace-period policy; approve the exact customer documents; configure restricted billing-worker Stripe credentials, webhook and customer portal in staging; pass a complete test Checkout, webhook reconciliation, entitlement and cancellation journey; and record WAF and release evidence. Production, live Stripe and `main` remain untouched.
+
 ## Current governed-improvement checkpoint
 
 The working branch adds an owner-only Improvement Loop without adding a new autonomous agent or database authority. `improvementLoop()` reads only current governed records under the verified owner/RLS transaction and returns ranked repair, decide, measure, test and review signals. The owner UI links each signal to the existing typed workflow. The policy reports zero automatic consequential actions. Partner navigation and direct API access fail closed.
