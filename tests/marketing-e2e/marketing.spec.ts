@@ -60,6 +60,17 @@ test("customer-document copy requires owner approval without a universal solicit
     await expect(page.locator("main")).not.toContainText(
       /require(?:s|d)? solicitor|solicitor approval before activation/i,
     );
+    if (route === "/pricing") {
+      await expect(page.locator("main")).toContainText("£29");
+      await expect(page.locator("main")).toContainText("£290");
+      await expect(page.locator("main")).toContainText(
+        "120 generated creative variants",
+      );
+      await expect(page.locator("main")).toContainText("120 reviewed exports");
+      await expect(page.locator("main")).toContainText(
+        "Stripe test billing and the production release gate must pass",
+      );
+    }
   }
 });
 

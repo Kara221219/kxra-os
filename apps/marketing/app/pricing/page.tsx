@@ -41,6 +41,27 @@ export default function Pricing() {
           </Link>
         </article>
       </section>
+      <section className="section">
+        <p className="eyebrow">Founding plan limits</p>
+        <h2>A bounded starting offer.</h2>
+        <div className="card-grid">
+          <article className="card">
+            <p className="number">01</p>
+            <h3>Brand Studio</h3>
+            <p>Access for one customer organisation.</p>
+          </article>
+          <article className="card">
+            <p className="number">120</p>
+            <h3>Creative variants</h3>
+            <p>Generated variants each month.</p>
+          </article>
+          <article className="card">
+            <p className="number">120</p>
+            <h3>Reviewed exports</h3>
+            <p>Controlled exports each month.</p>
+          </article>
+        </div>
+      </section>
       <section className="section pricing-boundaries">
         <p className="eyebrow">Clear commercial boundaries</p>
         <h2>Access is explicit and auditable.</h2>
@@ -59,9 +80,9 @@ export default function Pricing() {
           </article>
         </div>
         <p className="notice">
-          Exact usage limits, tax treatment, cancellation terms and customer
-          documents require owner approval. Production billing must also pass
-          the release gate before public sales are activated.
+          Tax treatment, cancellation terms and customer documents require owner
+          approval. Stripe test billing and the production release gate must
+          pass before public sales are activated.
         </p>
       </section>
     </>
