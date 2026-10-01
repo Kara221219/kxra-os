@@ -111,6 +111,13 @@ test("transactional-email staging keeps provider and webhook custody separated",
 
 test("subscription-billing staging requires test-only Stripe and a bounded worker login", () => {
   assert.equal(verifyStagingConfiguration("os", billingOs).ok, true);
+  assert.equal(
+    verifyStagingConfiguration("os", {
+      ...billingOs,
+      STRIPE_SECRET_KEY: `rk_test_${secret("r")}`,
+    }).ok,
+    true,
+  );
   const liveKey = verifyStagingConfiguration("os", {
     ...billingOs,
     STRIPE_SECRET_KEY: `sk_live_${secret("k")}`,

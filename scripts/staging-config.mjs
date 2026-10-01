@@ -81,6 +81,15 @@ function secret(value, name, findings, prefix) {
     findings.push(`${name}: invalid secret format`);
 }
 
+function stripeTestSecret(value, name, findings) {
+  if (
+    value.length < 32 ||
+    placeholder.test(value) ||
+    !/^(?:sk|rk)_test_[A-Za-z0-9_]+$/.test(value)
+  )
+    findings.push(`${name}: invalid secret format`);
+}
+
 function databaseUrl(value, name, findings, forbiddenUsers, expectedUser) {
   let url;
   try {
@@ -253,11 +262,10 @@ function osConfiguration(environment, findings) {
       ]),
       "kxra_billing_runner",
     );
-    secret(
+    stripeTestSecret(
       required(environment, "STRIPE_SECRET_KEY", findings),
       "STRIPE_SECRET_KEY",
       findings,
-      "sk_test_",
     );
     secret(
       required(environment, "STRIPE_WEBHOOK_SECRET", findings),

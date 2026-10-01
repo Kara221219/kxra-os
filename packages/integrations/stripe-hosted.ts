@@ -83,7 +83,7 @@ function configuration() {
   if (process.env.KXRA_BILLING_ENABLED !== "true")
     throw Error("STRIPE_BILLING_DISABLED");
   const secret = process.env.STRIPE_SECRET_KEY || "";
-  if (!/^sk_test_[A-Za-z0-9_]{20,}$/.test(secret))
+  if (!/^(?:sk|rk)_test_[A-Za-z0-9_]{20,}$/.test(secret))
     throw Error("STRIPE_TEST_KEY_UNAVAILABLE");
   const origin = process.env.KXRA_ORIGIN || "";
   const parsed = new URL(origin);

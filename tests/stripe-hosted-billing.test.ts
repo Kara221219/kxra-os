@@ -18,7 +18,7 @@ const config = JSON.parse(
 );
 const admin = new pg.Pool({ ...config, user: os.userInfo().username });
 process.env.KXRA_BILLING_ENABLED = "true";
-process.env.STRIPE_SECRET_KEY = `sk_test_${crypto.randomBytes(24).toString("hex")}`;
+process.env.STRIPE_SECRET_KEY = `rk_test_${crypto.randomBytes(24).toString("hex")}`;
 process.env.STRIPE_PORTAL_CONFIGURATION_ID = "bpc_synthetic123";
 process.env.KXRA_ORIGIN = "http://127.0.0.1:3210";
 
