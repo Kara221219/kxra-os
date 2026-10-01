@@ -10,18 +10,20 @@ export default function Pricing() {
         eyebrow={`Commercial model · ${commercial.status}`}
         title="Simple access for repeatable tools. Separate scope for custom work."
       >
-        KXRA is validating a straightforward subscription model while the
-        platform remains in private preview.
+        KXRA has set its founding launch price while the platform remains in
+        private preview and checkout stays disabled.
       </PageHero>
       <section className="section split">
         <article className="card commercial-card">
           <p className="number">PLATFORM ACCESS</p>
           <h2>Founding subscription</h2>
           <p className="commercial-price">
-            Around £30 <span>/ month</span>
+            £29 <span>/ organisation / month</span>
           </p>
           <p>{commercial.subscription}</p>
           <p>{commercial.subscriptionBoundary}</p>
+          <p>{commercial.usageBoundary}</p>
+          <p>{commercial.taxBoundary}</p>
           <Link className="button" href="/partner">
             Join pricing discovery
           </Link>
@@ -57,8 +59,9 @@ export default function Pricing() {
           </article>
         </div>
         <p className="notice">
-          Pricing, taxes, usage limits, cancellation terms and exact customer
-          documents require owner approval before public sales are activated.
+          Exact usage limits, tax treatment, cancellation terms and customer
+          documents require owner approval. Production billing must also pass
+          the release gate before public sales are activated.
         </p>
       </section>
     </>

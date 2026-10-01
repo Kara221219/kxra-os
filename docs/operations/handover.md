@@ -6,9 +6,9 @@ Updated: 1 October 2026.
 
 The working branch adds an owner-only Improvement Loop without adding a new autonomous agent or database authority. `improvementLoop()` reads only current governed records under the verified owner/RLS transaction and returns ranked repair, decide, measure, test and review signals. The owner UI links each signal to the existing typed workflow. The policy reports zero automatic consequential actions. Partner navigation and direct API access fail closed.
 
-The public site now explains KXRA as a business operating platform rather than only an AI/venture concept. `/platform` identifies buyer groups and the measured learning loop. `/pricing` states the owner-supplied approximately £30 monthly target only as a pricing hypothesis, keeps custom projects separate and preserves auditable free partner access. The four-stage depth journey now resolves into governed measured improvement. The reviewed publication snapshot remains disabled and hash-bound.
+The public site now explains KXRA as a business operating platform rather than only an AI/venture concept. `/platform` identifies buyer groups and the measured learning loop. ADR 0045 sets `/pricing` at £29 per organisation per month or £290 per year, keeps custom projects and expensive usage separate, and preserves auditable free partner access. Checkout remains disabled. The reviewed publication snapshot remains disabled and hash-bound.
 
-The exact working tree passes the complete hermetic contract: 219 core tests, 74 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 16-journey marketing runs, restart persistence, empty-target restore, all three optimized builds, CSP/SRI, build budgets, artifact/secret scans and Lighthouse budgets. No schema migration, live provider call, customer contact, paid generation, production deployment or `main` merge occurred. Before continuing commercial activation, read [ADR 0043](../decisions/0043-governed-improvement-loop.md) and the [platform review](platform-review-2026-09-30.md).
+The exact working tree passes the complete hermetic contract: 219 core tests, 75 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart persistence, a 3,014-row/15-object empty-target restore, all three optimized builds, CSP/SRI, build budgets, artifact/secret scans and Lighthouse budgets. Migration 0075 records explicit owner approval for customer documents and preserves immutable evidence; independent review is optional. No live provider call, customer contact, paid generation, production deployment or `main` merge occurred. Before continuing commercial activation, read [ADR 0045](../decisions/0045-founding-subscription-price.md), the [pricing research](../research/subscription-pricing-2026-10-01.md) and the [platform review](platform-review-2026-09-30.md).
 
 ## Current hosted twelve-project checkpoint
 
@@ -203,7 +203,7 @@ The hosted owner identity gate is complete. Before staging can become customer-r
 1. run hosted owner/partner/revoked/crafted-project isolation acceptance using the verified owner and one bounded staging partner;
 2. complete and owner-approve exact Terms, Privacy, Cookie, Data Processing and Custom Project documents before customer release; independent legal review is optional and risk-based, and an NDA remains parked unless demonstrated need changes that decision;
 3. create the private Storage bucket and production scanning/extraction service identities;
-4. configure Stripe products/prices/webhook endpoint after pricing decisions;
+4. configure Stripe test products/prices at £29 monthly and £290 yearly, then verify checkout, webhook and reconciliation evidence before any live-mode work;
 5. configure Resend and DNS only after approved sender copy and domains;
 6. configure OpenAI project/data controls and explicit budgets;
 7. configure YouTube OAuth for the exact Finance Unfolded account only when the disabled local intent contract is accepted;

@@ -211,9 +211,10 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
   await admin.query(
     `insert into kxra.legal_documents(
       id,org_id,document_type,audience,jurisdiction,version,title,rendered_content,
-      content_sha256,immutable_object_key,status,effective_at,legal_reviewer_reference
+      content_sha256,immutable_object_key,status,effective_at,
+      owner_approval_reference,owner_approved_at
      ) values($1,$2,'CUSTOM_PROJECT','ALL','GB',1,'Synthetic custom terms',$3,$4,$5,
-      'APPROVED',now(),'SYNTHETIC_TEST_REVIEWER_NOT_COUNSEL')`,
+      'APPROVED',now(),'SYNTHETIC_TEST_OWNER_APPROVAL',now())`,
     [
       legalDocumentId,
       organisationId,
@@ -519,9 +520,10 @@ test("AT-32 HTTP first-private-access gate is typed and acceptance is exact", as
   await admin.query(
     `insert into kxra.legal_documents(
       id,org_id,document_type,audience,version,title,rendered_content,
-      content_sha256,immutable_object_key,status,effective_at,legal_reviewer_reference
+      content_sha256,immutable_object_key,status,effective_at,
+      owner_approval_reference,owner_approved_at
      ) values($1,$2,'NDA','PARTNER',$3,'Synthetic HTTP NDA',$4,$5,$6,
-      'APPROVED',now(),'SYNTHETIC_TEST_REVIEWER_NOT_COUNSEL')`,
+      'APPROVED',now(),'SYNTHETIC_TEST_OWNER_APPROVAL',now())`,
     [
       documentId,
       kxraOrg,

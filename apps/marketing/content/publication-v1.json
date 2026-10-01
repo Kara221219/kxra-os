@@ -27,11 +27,13 @@
     }
   ],
   "commercialModel": {
-    "status": "Pricing validation",
-    "subscription": "Founding access is being validated around £30 per month. This is a pricing hypothesis, not a live offer.",
+    "status": "Reviewed launch pricing · private preview",
+    "subscription": "Founding access is priced at £29 per organisation per month, with a £290 annual option. Checkout is not yet live.",
     "subscriptionBoundary": "Subscription access covers only the tools and usage limits shown in the accepted plan.",
     "customProjects": "Discovery, integrations and bespoke implementation are proposed and priced separately.",
-    "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription."
+    "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription.",
+    "taxBoundary": "Applicable VAT or other tax will be shown before purchase once the approved tax treatment is configured.",
+    "usageBoundary": "Generated media, high-cost research, integrations and custom delivery are separate unless an accepted plan explicitly includes them."
   },
   "industries": [
     "Professional services",

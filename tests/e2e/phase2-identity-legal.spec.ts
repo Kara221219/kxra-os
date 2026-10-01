@@ -143,9 +143,10 @@ test("AT-31/32 browser tenant selection and exact legal gate fail closed", async
     await admin.query(
       `insert into kxra.legal_documents(
         id,org_id,document_type,audience,version,title,rendered_content,
-        content_sha256,immutable_object_key,status,effective_at,legal_reviewer_reference
+        content_sha256,immutable_object_key,status,effective_at,
+        owner_approval_reference,owner_approved_at
        ) values($1,$2,'NDA','PARTNER',$3,$4,$5,$6,$7,
-        'APPROVED',now(),'SYNTHETIC_E2E_REVIEWER_NOT_COUNSEL')`,
+        'APPROVED',now(),'SYNTHETIC_E2E_OWNER_APPROVAL',now())`,
       [
         documentId,
         kxraOrg,

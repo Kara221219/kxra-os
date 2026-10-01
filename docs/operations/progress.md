@@ -1,13 +1,22 @@
 # KXRA OS implementation progress
 
-Updated: 1 October 2026. Status: **Core hosted staging is connected and fail-closed. Supabase verifies all 74 reviewed migrations, 172 RLS-protected tables, 146 exposed KXRA functions and the canonical twelve-project portfolio. A controlled hosted partner completed onboarding with PROJECT-002 viewer access; owner, assigned-project, cross-project, crafted-ID, Ask KXRA and database-backed immediate-revocation checks passed, and the original viewer grant was restored. The immutable seven-project `KXRA-CANONICAL-SEEDS-V1` history is preserved and the expanded `V2` import is separately hash-bound. The immersive public journey, governed owner Improvement Loop and transparent commercial-positioning pages are implemented locally and fully verified. Exact owner-approved customer documents, commercial inputs, remaining provider acceptance, WAF evidence and production release remain incomplete.**
+Updated: 1 October 2026. Status: **Core hosted staging is connected and fail-closed. The repository verifies 75 reviewed migrations, 172 RLS-protected tables and the canonical twelve-project portfolio; hosted staging remains on 74 migrations until guarded migration 0075 is applied. A controlled hosted partner completed onboarding with PROJECT-002 viewer access; owner, assigned-project, cross-project, crafted-ID, Ask KXRA and database-backed immediate-revocation checks passed, and the original viewer grant was restored. ADR 0045 sets the launch-candidate subscription at £29 per organisation per month or £290 per year. Exact plan limits, owner-approved customer documents, tax and cancellation policy, production Stripe/provider acceptance, WAF evidence and production release remain incomplete.**
+
+## Founding-price and owner-document checkpoint
+
+- Researched current official prices from Canva, Adobe Express, Buffer, Gamma, Zapier, Copy.ai and Jasper. ADR 0045 sets the KXRA launch candidate at £29 per organisation per month or £290 per year. Custom projects, generated media, high-cost research and integrations remain separately priced unless an exact plan includes them.
+- The reviewed public pricing snapshot states the launch price, annual option, tax boundary, separate-work boundary and private-preview status. Checkout remains disabled and the snapshot remains hash-bound with publication disabled.
+- Migration `0075_owner_approved_legal_documents.sql` makes explicit owner approval evidence authoritative for an `APPROVED` legal document. Independent review is optional evidence. The legacy reviewer field is populated only with a compatibility marker and no longer supplies approval authority.
+- A negative database test proves a document cannot become approved without the owner reference and timestamp. Existing presentation and acceptance evidence remains immutable.
+- The complete hermetic contract passes 219 core tests, 75 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart persistence, a 3,014-row/15-object empty-target restore, all three optimized builds, CSP/SRI, build budgets, artifact/secret scans and Lighthouse performance/accessibility scores of 1.00 on both measured routes.
+- No Higgsfield request, provider charge, external send, production deployment or `main` merge occurred.
 
 ## Governed improvement and commercial-positioning checkpoint
 
 - Reviewed the actual repository and product paths rather than the briefs. The platform already contained the necessary evidence, experiment, decision, approval, run and commercial records, but they were fragmented across separate registers.
 - Added an owner-only Improvement Loop that deterministically ranks failed AI/routine runs, experiment results awaiting decisions, experiments awaiting measurement, current ideas awaiting tests and unverified enquiries. It creates no mutation and performs zero automatic consequential actions.
 - The endpoint requires the verified KXRA owner before database access. Partner navigation omits it and partner/direct API requests return 403. Every signal links to the existing governed workflow that owns the next action.
-- Reworked public product positioning around practical value, target users and the understand → prove → test → decide → improve operating loop. Added a `/pricing` route that presents approximately £30 per month only as a validation hypothesis, preserves separately scoped custom projects and explains auditable free partner access.
+- Reworked public product positioning around practical value, target users and the understand → prove → test → decide → improve operating loop. Added a `/pricing` route that presents the reviewed £29 monthly and £290 annual launch candidates, preserves separately scoped custom projects and explains auditable free partner access while checkout remains disabled.
 - Updated the depth journey’s final chapter from a general controlled-AI claim to measured, governed learning. No generated assets, unsupported proof, customer claim or billable Higgsfield request was used.
 - Added ADR 0043 and the actual [platform review](platform-review-2026-09-30.md). The final hermetic run passes 219 core tests, 74 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 16-journey public runs, restart/restore, three builds, CSP/SRI, artifact/secret and Lighthouse gates.
 
@@ -185,7 +194,7 @@ Definitions, schemas, disabled controls and local provider doubles are not count
 ## Active owner and external inputs
 
 - Exact owner-approved Terms, Privacy, Cookie, AI/data-processing and Custom Project documents. Independent legal review is optional and risk-based under ADR 0044; NDA/confidentiality is parked for later reconsideration.
-- Customer discovery decisions for initial segment, launch plan, plan limits, the approximately £30 pricing hypothesis, free-partner policy and custom-project terms.
+- Customer discovery decisions for the initial segment, exact plan limits, free-partner policy and custom-project terms. The launch-candidate price is decided under ADR 0045.
 - Entity/public contact details, retention/recovery targets, support/privacy mailboxes and approved public copy/brand assets.
 - Later staging credentials and budgets through provider secret stores, never chat or Git.
 - When the YouTube slice is connected: a Google Cloud project, YouTube Data API, OAuth consent configuration and the exact Finance Unfolded channel-authorized account.
@@ -195,7 +204,7 @@ These inputs do not block continued local work with synthetic fixtures and disab
 
 ## Next safe action
 
-Run the exact hosted acceptance sequences with the verified AAL2 owner, then create one bounded staging partner to prove owner/partner/revoked/crafted-project RLS behavior. After that, configure and evidence the exact Vercel WAF rule. Keep production deployment, customer access and publication disabled.
+Apply and verify migration 0075 through the guarded hosted-staging operator. Then approve exact plan limits and customer documents, configure Stripe test products at £29/month and £290/year, and rerun the deterministic release check. Keep production charging and unrestricted customer access disabled until every release blocker is cleared.
 
 ## Slice 9 local evidence
 
@@ -479,6 +488,8 @@ Only application code, engineering documentation and minimum classified seed rec
 - Partner redemption, first-private-access legal denial, PROJECT-002 visibility, crafted/cross-project denial and revocation remain unproved. Exact customer documents remain incomplete and placeholders cannot be activated; solicitor approval is no longer a universal blocker under ADR 0044.
 
 2026-10-01 — Recorded the owner's decision that solicitor approval is not a universal release dependency for customer documents. ADR 0044 requires exact, versioned and owner-approved Terms, Privacy, Cookie, applicable data-processing and Custom Project documents that match implemented product and data flows. Independent legal review is optional and risk-based; regulated project-specific hard stops remain unchanged. Updated public legal/pricing copy, current playbooks, the platform review and handover, and marked conflicting requirements in the historical Phase Completion Brief as superseded. Added a browser regression preventing the generic solicitor gate from returning. The complete hermetic contract passes 219 core tests, 74 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all three builds, CSP/SRI, artifact/secret scans, budgets and Lighthouse. No placeholder was activated and no production release was authorized.
+
+2026-10-01 — Researched comparable official product pricing and accepted ADR 0045: £29 per organisation per month or £290 per year for the founding KXRA subscription, with custom projects and high-cost usage separate. Updated the disabled reviewed public snapshot and pricing route. Added migration 0075 so owner approval, rather than a legal-review field, is authoritative for approved customer documents while preserving immutable historical evidence. The clean hermetic contract passes 219 core tests, 75 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all three builds, CSP/SRI, budgets, artifact/secret scans and Lighthouse. Hosted migration, exact plan limits, tax/commercial policy, production Stripe and release evidence remain open.
 
 ## Hosted invitation link compatibility repair
 

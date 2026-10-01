@@ -108,8 +108,8 @@ async function addApprovedLegalDocument(
     `insert into kxra.legal_documents(
       id,org_id,document_type,audience,jurisdiction,version,title,
       rendered_content,content_sha256,immutable_object_key,status,effective_at,
-      legal_reviewer_reference
-     ) values($1,$2,$3,'ALL','GB',$4,$5,$6,$7,$8,'APPROVED',now(),$9)`,
+      owner_approval_reference,owner_approved_at
+     ) values($1,$2,$3,'ALL','GB',$4,$5,$6,$7,$8,'APPROVED',now(),$9,now())`,
     [
       id,
       organisationId,
@@ -119,7 +119,7 @@ async function addApprovedLegalDocument(
       content,
       hash,
       `synthetic://legal/${id}/${version}`,
-      "SYNTHETIC_TEST_REVIEWER_NOT_COUNSEL",
+      "SYNTHETIC_TEST_OWNER_APPROVAL",
     ],
   );
   return { id, version, hash, content };
@@ -260,6 +260,27 @@ test("AT-32 approved exact legal versions gate every private table and preserve 
        values($1,$2,'LEGAL-PRIVATE','Legal gated project','customer','active','accept exact NDA')`,
       [projectId, organisationId],
     );
+    const unapprovedContent = "Synthetic document without owner approval";
+    await db.query("savepoint missing_owner_approval");
+    await assert.rejects(
+      () =>
+        db.query(
+          `insert into kxra.legal_documents(
+          id,org_id,document_type,audience,jurisdiction,version,title,
+          rendered_content,content_sha256,immutable_object_key,status,effective_at
+         ) values($1,$2,'NDA','ALL','GB',999,'Missing owner approval',$3,$4,$5,
+          'APPROVED',now())`,
+          [
+            crypto.randomUUID(),
+            organisationId,
+            unapprovedContent,
+            digest(unapprovedContent),
+            `synthetic://legal/missing-owner/${crypto.randomUUID()}`,
+          ],
+        ),
+      /Explicit owner approval evidence is required/,
+    );
+    await db.query("rollback to savepoint missing_owner_approval");
     const first = await addApprovedLegalDocument(db, organisationId, 1);
     const wording =
       "I accept this exact synthetic NDA version for local testing.";
