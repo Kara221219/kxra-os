@@ -337,6 +337,37 @@ h3 {
 .prose {
   max-width: 780px;
 }
+.legal-document section {
+  margin-top: 3rem;
+}
+.legal-document h2 {
+  font-size: clamp(1.5rem, 3vw, 2.3rem);
+  letter-spacing: -0.03em;
+}
+.legal-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0 3rem;
+}
+.legal-meta div {
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 1rem;
+}
+.legal-meta dt {
+  color: #976d2f;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.legal-meta dd {
+  margin: 0.45rem 0 0;
+}
+.legal-index .card h2 {
+  font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+}
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;

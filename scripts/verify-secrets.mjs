@@ -44,6 +44,7 @@ const patterns = [
 const findings = [];
 for (const file of publicationCandidates) {
   const target = path.join(root, file);
+  if (!fs.existsSync(target)) continue;
   if (!fs.statSync(target).isFile()) continue;
   const bytes = fs.readFileSync(target);
   if (bytes.includes(0)) continue;

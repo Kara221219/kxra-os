@@ -57,6 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/legal/privacy">Privacy</Link>
             <Link href="/legal/terms">Terms</Link>
             <Link href="/legal/cookies">Cookies</Link>
+            <Link href="/legal">Customer documents</Link>
           </div>
           <p className="preview-note">
             Private build preview · publication is disabled

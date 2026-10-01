@@ -1,0 +1,454 @@
+{
+  "packId": "KXRA-CUSTOMER-DOCUMENTS-V1-DRAFT",
+  "status": "OWNER_REVIEW_REQUIRED",
+  "version": 1,
+  "updatedAt": "2026-10-01",
+  "entity": {
+    "legalName": "KXRA GROUP LTD",
+    "companyNumber": "17435511",
+    "registeredOffice": "66 Paul Street, London, England, United Kingdom, EC2A 4NA",
+    "email": "info@kxra-group.com"
+  },
+  "documents": [
+    {
+      "slug": "terms",
+      "documentType": "TERMS",
+      "title": "Business subscription terms",
+      "summary": "Terms for organisations using the KXRA platform and founding subscription.",
+      "audience": "Business customers only",
+      "sections": [
+        {
+          "heading": "1. About these terms",
+          "paragraphs": [
+            "These terms govern access to the KXRA platform supplied by KXRA GROUP LTD, company number 17435511, whose registered office is 66 Paul Street, London, England, United Kingdom, EC2A 4NA (KXRA, we, us).",
+            "The service is offered only to organisations and people acting wholly or mainly for business purposes. It is not currently offered to consumers. The person accepting these terms confirms that they can bind the customer organisation."
+          ]
+        },
+        {
+          "heading": "2. The service",
+          "paragraphs": [
+            "The founding subscription provides access to the KXRA Brand Studio and the usage allowance shown at checkout: 120 generated creative variants and 120 reviewed exports per monthly allowance period. Unused allowance does not roll over.",
+            "Ask KXRA, generated image or video media, high-cost research, integrations, custom development and other separately described services are excluded unless an accepted order expressly includes them."
+          ]
+        },
+        {
+          "heading": "3. Accounts and authorised users",
+          "paragraphs": [
+            "The customer must provide accurate account information, keep sign-in credentials and multi-factor authentication secure, and promptly remove access for people who no longer need it. Accounts are personal to the authorised user and must not be shared.",
+            "KXRA may suspend access where reasonably necessary to protect the service, another customer or the security of data. KXRA will restore access when the reason for suspension is resolved where it is safe to do so."
+          ]
+        },
+        {
+          "heading": "4. Price, tax and renewal",
+          "paragraphs": [
+            "The founding subscription is £29 per organisation per month or £290 per organisation per year. Prices exclude VAT and other applicable taxes, which will be identified before payment where chargeable.",
+            "The subscription renews automatically for the same billing interval until cancelled. Stripe processes subscription payments. KXRA does not receive or store full payment-card details."
+          ]
+        },
+        {
+          "heading": "5. Cancellation",
+          "paragraphs": [
+            "The customer may cancel at any time through the billing portal or by contacting info@kxra-group.com. Cancellation takes effect at the end of the current paid billing period. The customer retains paid access until then and no further renewal is charged.",
+            "A cancellation request submitted after a renewal has completed applies to the next renewal unless KXRA confirms otherwise."
+          ]
+        },
+        {
+          "heading": "6. Refunds",
+          "paragraphs": [
+            "Subscription fees are non-refundable for a billing period that has started, except for a duplicate or incorrect charge, where the law requires a refund, or where KXRA expressly agrees one after a material service failure. This does not limit any remedy that cannot legally be excluded.",
+            "Custom-project payments and refunds are governed by the accepted custom-project order and the Custom Project Terms."
+          ]
+        },
+        {
+          "heading": "7. Failed payments and grace period",
+          "paragraphs": [
+            "If a renewal payment fails, KXRA may retry payment and will allow a seven-calendar-day grace period. During that period the service may continue. If payment remains overdue after seven days, generation and export functions may be suspended.",
+            "KXRA may provide read-only access for up to 30 days after the first failed payment to allow payment correction and data retrieval. KXRA may then suspend or close the workspace subject to the Privacy Notice and retention policy."
+          ]
+        },
+        {
+          "heading": "8. Customer content and permissions",
+          "paragraphs": [
+            "The customer retains ownership of content it supplies. The customer grants KXRA a limited right to host, copy, process and display that content only to provide, secure and support the service and to comply with law.",
+            "The customer must have the rights and lawful basis needed to submit content. It must not submit unlawful material, malicious code, special-category personal data, confidential third-party material or regulated data unless KXRA has expressly agreed the relevant controls in writing."
+          ]
+        },
+        {
+          "heading": "9. AI-assisted output",
+          "paragraphs": [
+            "AI-assisted output may be incomplete, inaccurate or similar to material produced for others. The customer must review output before relying on, publishing or using it. KXRA does not represent that output is unique, error-free, legally compliant or suitable for a regulated decision.",
+            "The service must not be used to make solely automated decisions with legal or similarly significant effects, to provide medical, legal or financial advice, or to execute trading, payment, employment or safety-critical decisions without an expressly agreed controlled service and qualified human review."
+          ]
+        },
+        {
+          "heading": "10. Acceptable use",
+          "paragraphs": [
+            "The customer must not attempt to bypass permissions or usage limits, access another organisation's data, probe or disrupt the service, introduce malware, misuse another person's identity, infringe rights, generate unlawful or deceptive material, or use the service to train a competing model without written permission.",
+            "KXRA may investigate suspected abuse using proportionate security records and may suspend the affected capability while an investigation is active."
+          ]
+        },
+        {
+          "heading": "11. KXRA intellectual property",
+          "paragraphs": [
+            "KXRA and its licensors retain ownership of the platform, software, workflows, templates, methods, branding and pre-existing materials. Subject to payment and these terms, KXRA grants the customer a non-exclusive, non-transferable right to use the service during the subscription.",
+            "No ownership of KXRA software or operating methods transfers to the customer. Rights in bespoke deliverables are governed by an accepted custom-project order."
+          ]
+        },
+        {
+          "heading": "12. Confidentiality",
+          "paragraphs": [
+            "Each party must protect the other party's non-public business, technical and commercial information using reasonable care and use it only for the relationship. This does not cover information that is public without breach, already lawfully known, independently developed or lawfully received from another source.",
+            "A party may disclose confidential information where required by law after giving notice where legally permitted."
+          ]
+        },
+        {
+          "heading": "13. Availability and changes",
+          "paragraphs": [
+            "KXRA will use reasonable care and skill to provide the service. The service may be unavailable for maintenance, security work, provider interruption or events outside reasonable control. No uninterrupted-availability commitment applies unless an order states one.",
+            "KXRA may improve or change features. A material reduction to a paid core feature will be notified in advance where reasonably possible. If a change materially disadvantages the customer, the customer may cancel before the next renewal."
+          ]
+        },
+        {
+          "heading": "14. Liability",
+          "paragraphs": [
+            "Nothing in these terms excludes liability for death or personal injury caused by negligence, fraud or fraudulent misrepresentation, or any liability that cannot lawfully be excluded.",
+            "Subject to that sentence, neither party is liable for indirect or consequential loss, lost profit, lost revenue, lost opportunity or loss of anticipated savings. KXRA's total aggregate liability arising from the subscription in any 12-month period is limited to the fees paid or payable for that subscription in that period.",
+            "The customer remains responsible for business decisions, published material, legal compliance and maintaining appropriate copies of its source content."
+          ]
+        },
+        {
+          "heading": "15. Ending the agreement",
+          "paragraphs": [
+            "Either party may end the agreement immediately if the other commits a material breach and does not remedy it within 14 days after written notice, or becomes insolvent. KXRA may end access immediately for serious security abuse, unlawful use or attempted cross-tenant access.",
+            "On expiry or termination, access ends subject to any stated grace or retrieval period. Clauses intended to continue, including payment, confidentiality, intellectual property, liability and dispute terms, remain effective."
+          ]
+        },
+        {
+          "heading": "16. Notices and changes to these terms",
+          "paragraphs": [
+            "Operational notices may be sent to the account email. Legal notices to KXRA must be sent to info@kxra-group.com. The customer must keep its contact details current.",
+            "KXRA may update these terms for legal, security or material service changes. Material changes will be notified before they take effect. Continued use after the notified effective date constitutes acceptance where permitted; otherwise KXRA will request fresh acceptance."
+          ]
+        },
+        {
+          "heading": "17. Governing law",
+          "paragraphs": [
+            "These terms and any non-contractual obligations are governed by the law of England and Wales. The courts of England and Wales have exclusive jurisdiction."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "privacy",
+      "documentType": "PRIVACY",
+      "title": "Privacy notice",
+      "summary": "How KXRA uses personal data across the website, platform, projects and support.",
+      "audience": "Website visitors, users, partners and business contacts",
+      "sections": [
+        {
+          "heading": "1. Who controls your personal data",
+          "paragraphs": [
+            "KXRA GROUP LTD, company number 17435511, registered at 66 Paul Street, London, England, United Kingdom, EC2A 4NA, is the controller for account, relationship, billing, security, enquiry and business-contact data described in this notice.",
+            "Contact KXRA about privacy at info@kxra-group.com. KXRA has not appointed a data protection officer because the current processing does not require one."
+          ]
+        },
+        {
+          "heading": "2. Data we collect",
+          "paragraphs": [
+            "We may collect identity and work-contact data, organisation and role information, account and authentication records, project and task activity, files and content you submit, support and privacy requests, billing identifiers and subscription state, consent and agreement evidence, security and audit records, device and bounded network information, and correspondence.",
+            "We receive data directly from you, your organisation's administrator, invited partners, service providers used to operate the platform, and public sources that a governed project is authorised to research."
+          ]
+        },
+        {
+          "heading": "3. Why we use data and our lawful bases",
+          "paragraphs": [
+            "We use account, project, subscription and support data to perform a contract or take requested pre-contract steps. We use security, audit, fraud-prevention, service-improvement and business-administration data for our legitimate interests in operating a secure and accountable service, balanced against individual rights.",
+            "We use data to meet legal obligations, including tax, accounting, sanctions, law-enforcement and data-protection duties. Where consent is the appropriate basis, including non-essential cookies or optional marketing, consent can be withdrawn at any time."
+          ]
+        },
+        {
+          "heading": "4. AI and authorised context",
+          "paragraphs": [
+            "KXRA retrieves project context only after server and database permissions are checked. A model does not decide access. AI output is logged with bounded run evidence so authorised users can inspect how work was produced.",
+            "External model processing remains disabled unless KXRA has approved the provider, purpose, region, retention, data terms and spend controls. When enabled, the applicable provider and transfer information will be added before customer data is sent."
+          ]
+        },
+        {
+          "heading": "5. Sharing and service providers",
+          "paragraphs": [
+            "We share data only as needed with infrastructure and service providers, professional advisers, authorities where legally required, and people authorised by the relevant organisation. Current launch providers include Vercel for application hosting, Supabase for authentication and database services, Resend for transactional email, and Stripe for billing.",
+            "Stripe acts under its own privacy terms for payment information. KXRA does not store full card details. Providers that are not activated for customer processing are not treated as active recipients merely because they appear in the technical roadmap."
+          ]
+        },
+        {
+          "heading": "6. International transfers",
+          "paragraphs": [
+            "Some providers may process data outside the United Kingdom. Where UK adequacy regulations do not apply, we require an appropriate transfer mechanism such as the UK International Data Transfer Agreement, the UK Addendum to approved standard contractual clauses, or another lawful safeguard. You may request information about the applicable safeguard."
+          ]
+        },
+        {
+          "heading": "7. Retention",
+          "paragraphs": [
+            "Active account and project data is kept while needed to provide the service. Following workspace closure, ordinary customer content is scheduled for deletion or irreversible anonymisation within 90 days, with encrypted backups expiring within a further 35 days unless a legal hold applies.",
+            "Enquiries that do not become customers are normally kept for 12 months. Security and audit evidence is normally kept for 12 months. Contract, payment, invoice and tax records may be kept for six years after the relevant financial year or longer where law or a dispute requires. Agreement and consent evidence is retained for the relationship and six years afterwards."
+          ]
+        },
+        {
+          "heading": "8. Security",
+          "paragraphs": [
+            "We use access controls, row-level database policies, multi-factor authentication for privileged accounts, encryption in transit, restricted service roles, logging, backups and review gates. No system is completely secure, and users must protect their credentials and report suspected compromise promptly."
+          ]
+        },
+        {
+          "heading": "9. Your rights",
+          "paragraphs": [
+            "Depending on the circumstances, you may have rights to access, correct, erase or restrict personal data, object to processing, receive portable data, and withdraw consent. The right to object to direct marketing applies at any time.",
+            "Send a request to info@kxra-group.com. We may need to verify identity and authority before acting. Some rights are limited where we must retain data or another lawful exemption applies."
+          ]
+        },
+        {
+          "heading": "10. Automated decisions",
+          "paragraphs": [
+            "KXRA does not use personal data to make solely automated decisions that produce legal or similarly significant effects. AI-assisted suggestions remain subject to authorised human review."
+          ]
+        },
+        {
+          "heading": "11. Complaints",
+          "paragraphs": [
+            "Please contact KXRA first so we can investigate. You may also complain to the UK Information Commissioner's Office at ico.org.uk or by using the contact details published by the ICO."
+          ]
+        },
+        {
+          "heading": "12. Changes",
+          "paragraphs": [
+            "We will update this notice when processing, providers or legal requirements materially change. The current version and effective date will be shown on this page, and material changes will be notified where appropriate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "cookies",
+      "documentType": "COOKIE",
+      "title": "Cookie notice",
+      "summary": "The cookies and similar storage used by KXRA.",
+      "audience": "Website visitors and platform users",
+      "sections": [
+        {
+          "heading": "1. Current position",
+          "paragraphs": [
+            "The public KXRA marketing website does not currently set analytics or advertising cookies. KXRA will not activate non-essential cookies until a consent control is available and the Cookie Notice identifies the provider, purpose and duration.",
+            "The private platform uses strictly necessary cookies and local storage needed for sign-in, security, invitation redemption and the selected organisation workspace."
+          ]
+        },
+        {
+          "heading": "2. Strictly necessary storage",
+          "paragraphs": [
+            "Supabase authentication cookies maintain the signed-in session and refresh it securely. Their names may include the Supabase project reference; their duration follows the authenticated session configuration.",
+            "kxra_organisation stores the selected organisation context. It is secure, same-site and limited to the private platform. kxra_join_intent temporarily protects invitation redemption and is deleted when redemption finishes or the short-lived intent expires."
+          ]
+        },
+        {
+          "heading": "3. Consent",
+          "paragraphs": [
+            "Strictly necessary storage does not require consent because the requested secure service cannot work without it. Any future analytics, marketing or preference storage will remain off until you make a choice. Refusing non-essential cookies will not block the core service."
+          ]
+        },
+        {
+          "heading": "4. Managing cookies",
+          "paragraphs": [
+            "You can delete or block cookies using browser settings, but blocking strictly necessary cookies will prevent secure sign-in and workspace access. If KXRA introduces a consent centre, you will also be able to change non-essential choices there."
+          ]
+        },
+        {
+          "heading": "5. Contact",
+          "paragraphs": [
+            "Questions about KXRA storage technologies can be sent to info@kxra-group.com."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "data-processing",
+      "documentType": "DATA_PROCESSING",
+      "title": "Data processing terms",
+      "summary": "Controller-to-processor terms for customer content processed through KXRA.",
+      "audience": "Business customers acting as controller",
+      "sections": [
+        {
+          "heading": "1. Scope and roles",
+          "paragraphs": [
+            "These terms apply where KXRA processes personal data in customer content on behalf of a business customer. The customer is controller and KXRA is processor for that data. KXRA remains controller for its own account, billing, security, legal and relationship records."
+          ]
+        },
+        {
+          "heading": "2. Processing instructions",
+          "paragraphs": [
+            "KXRA will process customer personal data only on documented instructions contained in the service agreement, accepted project orders and authorised platform actions, unless law requires other processing. KXRA will inform the customer if an instruction appears to breach data-protection law unless prohibited from doing so."
+          ]
+        },
+        {
+          "heading": "3. Processing details",
+          "paragraphs": [
+            "The subject matter is hosting and processing authorised business content to provide KXRA platform tools and separately ordered project services. Processing may include collection, organisation, storage, retrieval, analysis, generation, transmission to approved subprocessors, restriction and deletion.",
+            "Data subjects may include the customer's staff, contractors, clients, prospects and business contacts. Data may include work-contact details, project records, communications, files, brand material and other categories the customer is authorised to submit. Special-category and criminal-offence data are excluded unless expressly agreed in writing with additional controls."
+          ]
+        },
+        {
+          "heading": "4. Confidentiality and personnel",
+          "paragraphs": [
+            "KXRA will ensure people authorised to process customer personal data are bound by confidentiality and receive access only where needed for their role."
+          ]
+        },
+        {
+          "heading": "5. Security",
+          "paragraphs": [
+            "KXRA will maintain measures appropriate to risk, including tenant isolation, row-level database controls, least-privilege service roles, authentication, encryption in transit, controlled secrets, audit evidence, tested backup procedures and incident handling."
+          ]
+        },
+        {
+          "heading": "6. Subprocessors",
+          "paragraphs": [
+            "The customer authorises the subprocessors identified in the current KXRA subprocessor register. KXRA will impose materially equivalent data-protection obligations and remains responsible for their processing under these terms.",
+            "KXRA will give reasonable prior notice of a new subprocessor that will process customer content. The customer may object on reasonable data-protection grounds before the change takes effect; the parties will work in good faith on an alternative, and either party may end the affected service if no reasonable alternative exists."
+          ]
+        },
+        {
+          "heading": "7. International transfers",
+          "paragraphs": [
+            "KXRA will not transfer customer personal data outside the United Kingdom unless a lawful transfer basis applies. Where required, KXRA will use the UK International Data Transfer Agreement, UK Addendum or another valid safeguard and make relevant information available to the customer."
+          ]
+        },
+        {
+          "heading": "8. Assistance",
+          "paragraphs": [
+            "Taking account of the nature of processing and information available, KXRA will reasonably assist the customer with data-subject requests, security obligations, impact assessments and regulator consultations. KXRA may charge reasonable costs for assistance outside the normal service where the need was not caused by KXRA's breach."
+          ]
+        },
+        {
+          "heading": "9. Personal-data incidents",
+          "paragraphs": [
+            "KXRA will notify the customer without undue delay after becoming aware of a personal-data breach affecting customer content and will provide available information reasonably needed for the customer's assessment and notifications. KXRA's notice is not an admission of fault."
+          ]
+        },
+        {
+          "heading": "10. Return and deletion",
+          "paragraphs": [
+            "At the customer's choice and subject to available product controls, KXRA will return or delete customer personal data after the service ends, unless law requires retention. Ordinary customer content is scheduled for deletion or irreversible anonymisation within 90 days after closure, and backup copies expire within a further 35 days unless a legal hold applies."
+          ]
+        },
+        {
+          "heading": "11. Audit information",
+          "paragraphs": [
+            "KXRA will provide information reasonably necessary to demonstrate compliance. Audits must be proportionate, protect other customers and security, use existing independent reports where suitable, and normally occur no more than once a year unless a breach or regulator requires more."
+          ]
+        },
+        {
+          "heading": "12. Priority",
+          "paragraphs": [
+            "If these data processing terms conflict with other customer terms on processor obligations, these terms take priority for that conflict."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "custom-projects",
+      "documentType": "CUSTOM_PROJECT",
+      "title": "Custom project terms",
+      "summary": "Terms that apply when KXRA accepts a separately scoped custom project.",
+      "audience": "Business custom-project clients",
+      "sections": [
+        {
+          "heading": "1. Separate order",
+          "paragraphs": [
+            "A submitted idea or discovery request is not an order. A custom project begins only when KXRA and the client accept a written order that identifies scope, deliverables, assumptions, dependencies, price, tax, milestones, acceptance criteria and named decision-makers."
+          ]
+        },
+        {
+          "heading": "2. Discovery and estimates",
+          "paragraphs": [
+            "Discovery findings, feasibility views, timelines and estimates are based on the evidence available at the time. Unknowns and third-party dependencies may change the recommended scope. KXRA will not represent a hypothesis or estimate as a guaranteed result."
+          ]
+        },
+        {
+          "heading": "3. Client responsibilities",
+          "paragraphs": [
+            "The client must provide timely, accurate information, access, decisions, materials and suitably authorised contacts. The client is responsible for rights in supplied material and for obtaining professional or regulatory advice required for its business.",
+            "Delay caused by missing client input may move dates and create additional cost through an agreed change."
+          ]
+        },
+        {
+          "heading": "4. Fees and payment",
+          "paragraphs": [
+            "The order states the fees, deposit, milestone payments, expenses and tax treatment. Unless the order says otherwise, invoices are due within 14 days. KXRA may pause work on overdue amounts after reasonable notice."
+          ]
+        },
+        {
+          "heading": "5. Changes",
+          "paragraphs": [
+            "Either party may propose a change. No material change to scope, price, timing, data use or acceptance criteria is effective until both parties accept a written change record. KXRA may stop affected work while a change is unresolved."
+          ]
+        },
+        {
+          "heading": "6. Delivery and acceptance",
+          "paragraphs": [
+            "KXRA will provide milestone evidence against the accepted criteria. The client must accept the milestone or provide specific reasons for rejection within ten business days. KXRA will correct a verified non-conformity within the agreed scope.",
+            "A milestone is treated as accepted when the client confirms acceptance, uses it in production, or does not provide a specific rejection within the review period after a reminder."
+          ]
+        },
+        {
+          "heading": "7. Intellectual property",
+          "paragraphs": [
+            "Each party retains its pre-existing materials, methods, software, data and know-how. Unless the order states otherwise, after full payment the client receives a perpetual, non-exclusive licence to use bespoke deliverables for its business.",
+            "Reusable KXRA platform components, templates, libraries, workflows and general know-how remain KXRA property. Third-party materials remain subject to their own licences."
+          ]
+        },
+        {
+          "heading": "8. Data and security",
+          "paragraphs": [
+            "The parties will identify personal, confidential, regulated or security-sensitive data before transfer. The Data Processing Terms apply where KXRA acts as processor. KXRA may refuse data that falls outside the agreed controls."
+          ]
+        },
+        {
+          "heading": "9. External services",
+          "paragraphs": [
+            "Third-party services, licences and provider charges are included only where the order says so. The client remains responsible for its own accounts and provider terms unless KXRA expressly agrees to manage them. Provider outages and policy changes may require a change to the project."
+          ]
+        },
+        {
+          "heading": "10. Regulated and consequential work",
+          "paragraphs": [
+            "KXRA does not execute trading, publish content, contact third parties, make regulated decisions, deploy to production or incur spend unless the order and a separate approval boundary expressly authorise the action. Qualified human approval remains required for legal, medical, financial, employment and safety-critical decisions."
+          ]
+        },
+        {
+          "heading": "11. Termination",
+          "paragraphs": [
+            "Either party may terminate for an unremedied material breach after 14 days' written notice, or immediately for insolvency or serious unlawful or security-threatening conduct. The client may end for convenience on written notice and must pay for completed work, committed non-cancellable cost and reasonable wind-down work.",
+            "KXRA will provide paid-for completed deliverables and a reasonable export of agreed client data, subject to security, law and unpaid amounts."
+          ]
+        },
+        {
+          "heading": "12. Liability and law",
+          "paragraphs": [
+            "The liability exclusions and cap in the Business Subscription Terms apply to the project unless the order states a different negotiated cap. Nothing excludes liability that cannot lawfully be excluded.",
+            "The order and these terms are governed by the law of England and Wales, and the courts of England and Wales have exclusive jurisdiction."
+          ]
+        }
+      ]
+    }
+  ],
+  "commercialPolicy": {
+    "market": "Business customers only",
+    "trial": "No free trial at launch",
+    "monthlyPriceMinor": 2900,
+    "annualPriceMinor": 29000,
+    "currency": "GBP",
+    "taxTreatment": "Prices exclude VAT and other applicable tax; tax is added and shown before payment where chargeable.",
+    "cancellation": "Cancel at any time; cancellation takes effect at the end of the current paid billing period and prevents the next renewal.",
+    "refund": "Fees are non-refundable after a billing period starts except for duplicate or incorrect charges, a legal requirement, or an expressly agreed remedy for material service failure.",
+    "failedPaymentGraceDays": 7,
+    "readOnlyRecoveryDays": 30,
+    "customerDataDeletionDays": 90,
+    "backupExpiryDays": 35
+  }
+}

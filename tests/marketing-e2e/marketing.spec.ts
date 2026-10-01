@@ -14,6 +14,9 @@ const routes = [
   "/legal/privacy",
   "/legal/terms",
   "/legal/cookies",
+  "/legal",
+  "/legal/data-processing",
+  "/legal/custom-projects",
   "/approach",
   "/explorations",
   "/privacy",
@@ -49,17 +52,30 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
   ).toBe(true);
 });
 
-test("customer-document copy requires owner approval without a universal solicitor gate", async ({
+test("customer-document pack is complete and requires exact owner approval", async ({
   page,
 }) => {
-  for (const route of ["/pricing", "/legal/privacy", "/legal/terms"]) {
+  for (const route of [
+    "/pricing",
+    "/legal/privacy",
+    "/legal/terms",
+    "/legal/cookies",
+    "/legal/data-processing",
+    "/legal/custom-projects",
+  ]) {
     await page.goto(route);
     await expect(page.locator("main")).toContainText(
-      /owner approval|approved by the owner/i,
+      /owner (?:approval|approves)|approved by the owner/i,
     );
     await expect(page.locator("main")).not.toContainText(
       /require(?:s|d)? solicitor|solicitor approval before activation/i,
     );
+    if (route.startsWith("/legal/")) {
+      await expect(page.locator("script")).toHaveCount(0);
+      await expect(
+        page.locator('link[href="/legal-documents.css"]'),
+      ).toHaveCount(1);
+    }
     if (route === "/pricing") {
       await expect(page.locator("main")).toContainText("£29");
       await expect(page.locator("main")).toContainText("£290");
@@ -72,6 +88,19 @@ test("customer-document copy requires owner approval without a universal solicit
       );
     }
   }
+  await page.goto("/legal/terms");
+  await expect(page.locator("main")).toContainText("£29");
+  await expect(page.locator("main")).toContainText(
+    "seven-calendar-day grace period",
+  );
+  await expect(page.locator("main")).toContainText("Business customers only");
+  await page.goto("/legal/privacy");
+  await expect(page.locator("main")).toContainText("17435511");
+  await expect(page.locator("main")).toContainText("90 days");
+  await page.goto("/legal/cookies");
+  await expect(page.locator("main")).toContainText(
+    "does not currently set analytics or advertising cookies",
+  );
 });
 
 test("AT-26 accessible public contact submission reaches private inbox", async ({
