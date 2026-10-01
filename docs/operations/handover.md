@@ -2,6 +2,12 @@
 
 Updated: 1 October 2026.
 
+## Billing activation in progress
+
+Migration 0077 and the guarded billing-runner operator are implemented locally. Release readiness now checks the explicit owner approval fields introduced by migration 0075; it does not infer independent legal review and does not restore the parked NDA. Staging configuration supports a test-only `subscription-billing` profile and a combined `transactional-email-and-billing` profile. Thirty-two focused tests pass across release evidence, forged tenant denial, customer bootstrap, hosted sessions, signed webhook replay/order, entitlement grant/removal and restricted role structure. The complete hermetic contract passes 231 core tests, 77 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all builds and the security/performance gates.
+
+The connected `kxra-os-staging` Preview currently has the core/email variables only. It has no `KXRA_BILLING_WORKER_DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` or `STRIPE_PORTAL_CONFIGURATION_ID`, and billing remains disabled. Apply and verify migration 0077, create the exact `kxra_billing_runner`, configure the Stripe test portal and signed subscription webhook, add only branch-scoped Preview variables, redeploy the reviewed branch and complete one synthetic Checkout/cancellation cycle before recording `STRIPE_TEST` release evidence. Production and live-mode Stripe remain prohibited.
+
 ## Current commercial-foundation checkpoint
 
 Branch `codex/phase-2-completion` is pushed through implementation commit `ebba44953ec2ee813844ce7ecc5aa5f57a409ad4`. Migration `0076_brand_studio_catalogue_seed.sql` is applied to authorized Supabase staging and ledgered at SHA-256 `cfa889bc6b3d3a75e16c277a3b313d99abc6e75bbc2ae432e471187309444cf7` against that source commit. Hosted verification proves 76 exact migrations, 172 RLS-protected tables, 146 exposed `kxra` functions, one active Brand Studio catalogue record and one active version. The migration imports no identity, fixture entitlement or provider authority.

@@ -160,9 +160,18 @@ function common(environment, findings) {
 }
 
 function osConfiguration(environment, findings) {
+  const profile = environment.KXRA_STAGING_CAPABILITY_PROFILE;
   const emailProfile =
-    environment.KXRA_STAGING_CAPABILITY_PROFILE === "transactional-email";
-  if (present(environment, "KXRA_STAGING_CAPABILITY_PROFILE") && !emailProfile)
+    profile === "transactional-email" ||
+    profile === "transactional-email-and-billing";
+  const billingProfile =
+    profile === "subscription-billing" ||
+    profile === "transactional-email-and-billing";
+  if (
+    present(environment, "KXRA_STAGING_CAPABILITY_PROFILE") &&
+    !emailProfile &&
+    !billingProfile
+  )
     findings.push(
       "KXRA_STAGING_CAPABILITY_PROFILE: unsupported capability profile",
     );
@@ -199,13 +208,16 @@ function osConfiguration(environment, findings) {
   for (const name of [
     "KXRA_AI_ENABLED",
     "KXRA_STORAGE_ENABLED",
-    "KXRA_BILLING_ENABLED",
     "KXRA_WHATSAPP_ENABLED",
     "KXRA_TELEMETRY_ENABLED",
     "KXRA_PUBLIC_WEB_ENABLED",
   ])
     if (environment[name] !== "false")
       findings.push(`${name}: must remain false for core staging`);
+  if (environment.KXRA_BILLING_ENABLED !== (billingProfile ? "true" : "false"))
+    findings.push(
+      `KXRA_BILLING_ENABLED: must be ${billingProfile ? "true" : "false"} for this staging profile`,
+    );
   if (environment.KXRA_EMAIL_ENABLED !== (emailProfile ? "true" : "false"))
     findings.push(
       `KXRA_EMAIL_ENABLED: must be ${emailProfile ? "true" : "false"} for this staging profile`,
@@ -217,11 +229,7 @@ function osConfiguration(environment, findings) {
     "KXRA_BRAND_SOURCE_WORKER_DATABASE_URL",
     "KXRA_EMAIL_WORKER_DATABASE_URL",
     "KXRA_EMAIL_WORKER_TRIGGER_SECRET",
-    "KXRA_BILLING_WORKER_DATABASE_URL",
     "KXRA_EMAIL_FROM",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "STRIPE_PORTAL_CONFIGURATION_ID",
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
     "TRIGGER_SECRET_KEY",
     "RESEND_API_KEY",
@@ -230,6 +238,51 @@ function osConfiguration(environment, findings) {
   ])
     if (present(environment, name))
       findings.push(`${name}: disabled capability credential prohibited`);
+  if (billingProfile) {
+    databaseUrl(
+      required(environment, "KXRA_BILLING_WORKER_DATABASE_URL", findings),
+      "KXRA_BILLING_WORKER_DATABASE_URL",
+      findings,
+      new Set([
+        "postgres",
+        "supabase_admin",
+        "service_role",
+        "kxra_app",
+        "kxra_public_ingress",
+        "kxra_email_runner",
+      ]),
+      "kxra_billing_runner",
+    );
+    secret(
+      required(environment, "STRIPE_SECRET_KEY", findings),
+      "STRIPE_SECRET_KEY",
+      findings,
+      "sk_test_",
+    );
+    secret(
+      required(environment, "STRIPE_WEBHOOK_SECRET", findings),
+      "STRIPE_WEBHOOK_SECRET",
+      findings,
+      "whsec_",
+    );
+    const portalConfiguration = required(
+      environment,
+      "STRIPE_PORTAL_CONFIGURATION_ID",
+      findings,
+    );
+    if (!/^bpc_[A-Za-z0-9_]{6,}$/.test(portalConfiguration))
+      findings.push(
+        "STRIPE_PORTAL_CONFIGURATION_ID: test portal configuration required",
+      );
+  } else
+    for (const name of [
+      "KXRA_BILLING_WORKER_DATABASE_URL",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "STRIPE_PORTAL_CONFIGURATION_ID",
+    ])
+      if (present(environment, name))
+        findings.push(`${name}: disabled capability credential prohibited`);
   if (emailProfile) {
     const emailSecret = required(
       environment,

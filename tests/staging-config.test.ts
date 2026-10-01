@@ -51,6 +51,16 @@ const emailWorker = {
   RESEND_API_KEY: `re_${secret("r")}`,
   RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
 };
+const billingOs = {
+  ...os,
+  KXRA_STAGING_CAPABILITY_PROFILE: "subscription-billing",
+  KXRA_BILLING_ENABLED: "true",
+  KXRA_BILLING_WORKER_DATABASE_URL:
+    "postgresql://kxra_billing_runner:private-password@db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full",
+  STRIPE_SECRET_KEY: `sk_test_${secret("k")}`,
+  STRIPE_WEBHOOK_SECRET: `whsec_${secret("w")}`,
+  STRIPE_PORTAL_CONFIGURATION_ID: "bpc_synthetic123",
+};
 
 test("staging preflight accepts the separated disabled core profiles", () => {
   assert.deepEqual(verifyStagingConfiguration("os", os), {
@@ -96,6 +106,45 @@ test("transactional-email staging keeps provider and webhook custody separated",
       RESEND_WEBHOOK_SECRET: `whsec_${secret("w")}`,
     }).ok,
     false,
+  );
+});
+
+test("subscription-billing staging requires test-only Stripe and a bounded worker login", () => {
+  assert.equal(verifyStagingConfiguration("os", billingOs).ok, true);
+  const liveKey = verifyStagingConfiguration("os", {
+    ...billingOs,
+    STRIPE_SECRET_KEY: `sk_live_${secret("k")}`,
+  });
+  assert.equal(liveKey.ok, false);
+  assert.ok(
+    liveKey.findings.includes("STRIPE_SECRET_KEY: invalid secret format"),
+  );
+  const appRole = verifyStagingConfiguration("os", {
+    ...billingOs,
+    KXRA_BILLING_WORKER_DATABASE_URL: os.DATABASE_URL,
+  });
+  assert.equal(appRole.ok, false);
+  assert.ok(
+    appRole.findings.includes(
+      "KXRA_BILLING_WORKER_DATABASE_URL: privileged database user prohibited",
+    ),
+  );
+  assert.ok(
+    appRole.findings.includes(
+      "KXRA_BILLING_WORKER_DATABASE_URL: kxra_billing_runner database user required",
+    ),
+  );
+});
+
+test("combined commercial staging permits only the reviewed email and billing capabilities", () => {
+  assert.equal(
+    verifyStagingConfiguration("os", {
+      ...billingOs,
+      KXRA_STAGING_CAPABILITY_PROFILE: "transactional-email-and-billing",
+      KXRA_EMAIL_ENABLED: "true",
+      KXRA_EMAIL_SECRET_KEY: "e".repeat(43),
+    }).ok,
+    true,
   );
 });
 
