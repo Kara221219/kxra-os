@@ -96,7 +96,6 @@ test("staging canonical-only seed excludes every local executable fixture", () =
       "skill_manifests",
       "routine_service_identities",
       "routine_manifests",
-      "tool_catalogue",
       "entitlement_grants",
     ])
       assert.equal(
@@ -104,6 +103,26 @@ test("staging canonical-only seed excludes every local executable fixture", () =
         0,
         `${table} must stay empty in the canonical-only profile`,
       );
+    assert.deepEqual(
+      (
+        await db.query(
+          `select tool.id,tool.tool_key,tool.state,version.id as version_id,
+            version.version,version.state as version_state
+           from kxra.tool_catalogue tool
+           join kxra.tool_versions version on version.tool_id=tool.id`,
+        )
+      ).rows,
+      [
+        {
+          id: "9c531a0d-396d-5161-adf0-844c72f0d754",
+          tool_key: "brand-studio",
+          state: "ACTIVE",
+          version_id: "12a0de8d-aceb-5e17-a139-9de1f7fa7912",
+          version: 1,
+          version_state: "ACTIVE",
+        },
+      ],
+    );
   }));
 
 test("AT-05 fresh seed is exact, attributable, repeatable and reorder-stable", () =>

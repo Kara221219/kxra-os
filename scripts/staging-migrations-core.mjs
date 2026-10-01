@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const expectedStagingDatabase = {
-  migrations: 75,
+  migrations: 76,
   protectedTables: 172,
   exposedFunctions: 146,
 };
