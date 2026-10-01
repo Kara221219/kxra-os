@@ -1,8 +1,8 @@
 # KXRA customer-document pack version 1
 
-Status: owner review required; not in force.
+Status: owner approved on 1 October 2026; staged activation pending.
 
-The canonical draft is `apps/marketing/content/legal-draft-v1.json`. It contains the five release-gated document types:
+The canonical, byte-frozen source is `apps/marketing/content/legal-draft-v1.json`. The approval record is `apps/marketing/content/legal-approval-v1.json`. The owner approved the source exactly as supplied at SHA-256 `8277d2cbad017feaf4fea238d9eecedd1e7cfff0aaab6fa80fca5a239a8783a9`; the internal `OWNER_REVIEW_REQUIRED` source label is retained because changing it would change the approved bytes. The pack contains the five release-gated document types:
 
 - Business Subscription Terms;
 - Privacy Notice;
@@ -15,11 +15,13 @@ The pack identifies KXRA GROUP LTD, company number 17435511, at its Companies Ho
 ## Activation process
 
 1. Review the rendered routes `/legal/terms`, `/legal/privacy`, `/legal/cookies`, `/legal/data-processing` and `/legal/custom-projects` on desktop and mobile.
-2. Confirm VAT status and the final support, privacy and security contact routing.
-3. Approve or amend ADR 0047.
-4. Record explicit owner approval for the exact JSON bytes and generated document hashes.
-5. Import immutable approved versions into `kxra.legal_documents`; do not mutate or replace the historical placeholders.
-6. Bind the exact document references into the release manifest and run the complete release check.
+2. Confirm VAT status and the final support, privacy and security contact routing. **Completed: KXRA is not VAT registered; `info@kxra-group.com` remains the current route.**
+3. Approve or amend ADR 0047. **Completed: accepted on 1 October 2026.**
+4. Record explicit owner approval for the exact JSON bytes and generated document hashes. **Completed in `legal-approval-v1.json`.**
+5. Import immutable approved versions into `kxra.legal_documents`; do not mutate or replace the historical placeholders. **Staging activation is the next controlled operation.**
+6. Bind the exact document references into the release manifest and run the complete release check. **Pending complete release evidence.**
+
+Terms and Privacy are mandatory for customer memberships. Cookie is a published notice. Data Processing and Custom Project terms are approved documents applied only when the relevant processing or separately scoped project requires them. The parked NDA remains inactive.
 
 Independent legal review is optional under ADR 0044. A material product, provider, data-flow, audience or commercial change requires a new document version.
 

@@ -52,7 +52,7 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
   ).toBe(true);
 });
 
-test("customer-document pack is complete and requires exact owner approval", async ({
+test("customer-document pack is complete and records exact owner approval", async ({
   page,
 }) => {
   for (const route of [
@@ -65,7 +65,7 @@ test("customer-document pack is complete and requires exact owner approval", asy
   ]) {
     await page.goto(route);
     await expect(page.locator("main")).toContainText(
-      /owner (?:approval|approves)|approved by the owner/i,
+      /owner[- ]approved|owner approved/i,
     );
     await expect(page.locator("main")).not.toContainText(
       /require(?:s|d)? solicitor|solicitor approval before activation/i,

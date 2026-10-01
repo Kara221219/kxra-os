@@ -1,6 +1,6 @@
 {
   "snapshot": "publication-v1.json",
-  "sha256": "47d5985480a2547581fdb75f48b7b24f2f4f6e7644ff03d45a1003e6f7a0cbf3",
+  "sha256": "b790713f10e3008e15949929bb2cda25c1b2f0e8d7b83137128d7a2a1c076b9b",
   "status": "REVIEW_REQUIRED",
   "publicationEnabled": false,
   "scope": "Local build and acceptance testing only"

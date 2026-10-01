@@ -1,0 +1,16 @@
+{
+  "approvalId": "KXRA-CUSTOMER-DOCUMENTS-V1-OWNER-APPROVAL",
+  "packFile": "legal-draft-v1.json",
+  "packSha256": "8277d2cbad017feaf4fea238d9eecedd1e7cfff0aaab6fa80fca5a239a8783a9",
+  "approvedOn": "2026-10-01",
+  "approvedBy": "KXRA owner",
+  "decisionReference": "ADR-0047",
+  "vatStatus": "NOT_VAT_REGISTERED",
+  "documents": [
+    { "slug": "terms", "id": "c0470000-0000-4000-8000-000000000001", "databaseVersion": 1, "audience": "CUSTOMER", "sha256": "de9124af2df90c7af25027668a98245f9a843b64235af2240e7683ef4a69b003", "requiredFor": "CUSTOMER" },
+    { "slug": "privacy", "id": "c0470000-0000-4000-8000-000000000002", "databaseVersion": 2, "audience": "ALL", "sha256": "b987fb70a004fa9287e73a6d15776ba7bd40b85ed5ecc6d25f468490be6a3c6a", "requiredFor": "CUSTOMER" },
+    { "slug": "cookies", "id": "c0470000-0000-4000-8000-000000000003", "databaseVersion": 1, "audience": "ALL", "sha256": "9df093abc76f179e2466d46d3f3843218859ce897191519e89d7bf663e5774e2", "requiredFor": null },
+    { "slug": "data-processing", "id": "c0470000-0000-4000-8000-000000000004", "databaseVersion": 1, "audience": "CUSTOMER", "sha256": "e9e1c056f7a65b5d99ad07329832ba787f69c6ba747dc04c7e86fde6528cab0e", "requiredFor": null },
+    { "slug": "custom-projects", "id": "c0470000-0000-4000-8000-000000000005", "databaseVersion": 1, "audience": "CLIENT", "sha256": "cbcae2b713ec07e53e19cc7229061820b0e430ba3e5ec339478fb5a8e501b0d2", "requiredFor": null }
+  ]
+}

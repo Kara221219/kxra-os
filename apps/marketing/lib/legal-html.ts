@@ -1,5 +1,5 @@
 import type { LegalDocument } from "./legal";
-import { legalDocument, legalPack } from "./legal";
+import { legalApproval, legalDocument, legalPack } from "./legal";
 
 function escapeHtml(value: string): string {
   return value
@@ -64,12 +64,12 @@ function documentHtml(document: LegalDocument): string {
     ${navigation()}
     <main id="main">
       <header class="page-hero">
-        <p class="eyebrow">Owner review draft</p>
+        <p class="eyebrow">Owner-approved customer document</p>
         <h1>${escapeHtml(document.title)}</h1>
         <p>${escapeHtml(document.summary)}</p>
       </header>
       <article class="section prose legal-document">
-        <p class="notice">Draft version ${escapeHtml(String(legalPack.version))}, updated ${escapeHtml(legalPack.updatedAt)}. This document is not yet in force and cannot be accepted or used for live sales until the KXRA owner approves its exact version and hash.</p>
+        <p class="notice">Owner-approved version ${escapeHtml(String(legalPack.version))}, approved ${escapeHtml(legalApproval.approvedOn)}. Customer acceptance and live sales remain disabled until the controlled release checks pass.</p>
         <dl class="legal-meta">
           <div><dt>Entity</dt><dd>${escapeHtml(legalPack.entity.legalName)} · Company ${escapeHtml(legalPack.entity.companyNumber)}</dd></div>
           <div><dt>Audience</dt><dd>${escapeHtml(document.audience)}</dd></div>

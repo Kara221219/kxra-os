@@ -80,9 +80,9 @@ export default function Pricing() {
           </article>
         </div>
         <p className="notice">
-          Tax treatment, cancellation terms and customer documents require owner
-          approval. Stripe test billing and the production release gate must
-          pass before public sales are activated.
+          The owner approved the tax treatment, cancellation terms and exact
+          customer-document pack. Stripe test billing and the production release
+          gate must pass before public sales are activated.
         </p>
       </section>
     </>

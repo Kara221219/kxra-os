@@ -1,8 +1,8 @@
-# ADR 0047: Founding commercial policy candidate
+# ADR 0047: Founding commercial policy
 
-Status: proposed for exact owner approval.
+Status: accepted by the owner on 1 October 2026.
 
-## Candidate decision
+## Decision
 
 Launch the founding subscription to business customers only at £29 per organisation per month or £290 per year, exclusive of applicable VAT or other tax. Do not offer a free trial at launch. The subscription renews automatically until cancelled.
 
@@ -16,4 +16,6 @@ This keeps the launch offer understandable, avoids an unproved free-trial abuse 
 
 ## Activation boundary
 
-The candidate is encoded in customer-document draft version 1. It is not active policy until the owner approves the exact document pack and hash. Activation also requires Stripe test acceptance, customer-document database import, tax confirmation and release-manifest evidence.
+The owner approved customer-document pack version 1 at SHA-256 `8277d2cbad017feaf4fea238d9eecedd1e7cfff0aaab6fa80fca5a239a8783a9`. KXRA confirmed that it is not VAT registered. The approved tax wording therefore adds no VAT to the current £29 monthly or £290 annual price; a future registration or other chargeable tax treatment requires an updated commercial decision and customer-facing configuration before collection.
+
+Activation still requires the immutable customer-document database import, complete Stripe test acceptance and release-manifest evidence. This decision does not authorize production publication or live charging.

@@ -32,7 +32,7 @@
     "subscriptionBoundary": "The founding plan includes Brand Studio, 120 generated creative variants and 120 reviewed exports per month.",
     "customProjects": "Discovery, integrations and bespoke implementation are proposed and priced separately.",
     "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription.",
-    "taxBoundary": "Applicable VAT or other tax will be shown before purchase once the approved tax treatment is configured.",
+    "taxBoundary": "KXRA is not VAT registered, so VAT is not currently added to the stated price. Any future chargeable tax will be configured and shown before payment.",
     "usageBoundary": "Unused units do not roll over. Generated media, high-cost research, integrations, Ask KXRA and custom delivery are separate unless a later accepted plan explicitly includes them."
   },
   "industries": [
@@ -49,5 +49,5 @@
     "Evidence before claims",
     "Human approval before consequential action"
   ],
-  "legalStatus": "Customer-document draft version 1 requires exact owner approval and is not an activated customer agreement."
+  "legalStatus": "Customer-document pack version 1 is owner approved at its recorded SHA-256. Customer acceptance and live sales remain disabled pending controlled activation and complete release evidence."
 }
