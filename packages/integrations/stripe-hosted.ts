@@ -113,7 +113,7 @@ async function stripePost(
       Authorization: `Bearer ${secret}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "Idempotency-Key": idempotencyKey,
-      "Stripe-Version": "2025-06-30.basil",
+      "Stripe-Version": "2025-07-30.basil",
     },
     body: values,
     signal: AbortSignal.timeout(15_000),

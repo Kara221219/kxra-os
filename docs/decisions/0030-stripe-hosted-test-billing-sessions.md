@@ -10,7 +10,7 @@ PostgreSQL derives the organization, existing Stripe customer and active TEST pr
 
 The database serializes open sessions per organization and kind. Exact retries reuse the same intent and provider idempotency key. A different request cannot create another open Checkout or Portal session. Unresolved requests stop after 23 hours and require reconciliation rather than creating another provider operation after Stripe's idempotency-retention boundary.
 
-The server calls only fixed Stripe API endpoints, pins API version `2025-06-30.basil`, prohibits redirects, uses a test secret key, limits responses to 100 KB and accepts only test-mode response objects. Checkout redirects must use `checkout.stripe.com`; Portal redirects must use `billing.stripe.com`. The no-login/no-bypass billing worker records the validated result before the URL is returned.
+The server calls only fixed Stripe API endpoints, pins API version `2025-07-30.basil`, prohibits redirects, uses a test secret key, limits responses to 100 KB and accepts only test-mode response objects. Checkout redirects must use `checkout.stripe.com`; Portal redirects must use `billing.stripe.com`. The no-login/no-bypass billing worker records the validated result before the URL is returned.
 
 Checkout success never grants access. Only the separately signed subscription webhook and PostgreSQL reconciliation may create entitlement periods.
 

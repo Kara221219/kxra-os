@@ -277,7 +277,7 @@ test("Stripe hosted adapter sends fixed test-mode forms and validates returned a
   assert.equal(checkoutRequest?.init?.redirect, "error");
   assert.equal(
     new Headers(checkoutRequest?.init?.headers).get("stripe-version"),
-    "2025-06-30.basil",
+    "2025-07-30.basil",
   );
   const checkoutBody = new URLSearchParams(String(checkoutRequest?.init?.body));
   assert.equal(checkoutBody.get("customer"), intent.provider_customer_id);

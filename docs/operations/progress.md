@@ -1,6 +1,15 @@
 # KXRA OS implementation progress
 
-Updated: 1 October 2026. Status: **Core hosted staging is connected and fail-closed. The repository verifies 76 reviewed migrations, 172 RLS-protected tables and the canonical twelve-project portfolio; hosted staging has 75 recorded migrations and requires migration 0076 before the founding plan can activate. Stripe Sandbox contains the KXRA Founding product and the approved tax-exclusive £29 monthly and £290 yearly prices. Checkout, live charging and production remain disabled. A controlled hosted partner completed onboarding with PROJECT-002 viewer access; owner, assigned-project, cross-project, crafted-ID, Ask KXRA and database-backed immediate-revocation checks passed, and the original viewer grant was restored. Exact customer documents, cancellation/refund/grace policy, billing-worker/webhook acceptance, WAF evidence and production release remain incomplete.**
+Updated: 1 October 2026. Status: **Core hosted staging is connected and fail-closed. Hosted Supabase verifies 77 reviewed migrations, 172 RLS-protected tables, the canonical twelve-project portfolio and the restricted `kxra_billing_runner`. Stripe Sandbox contains the KXRA Founding product and approved tax-exclusive £29 monthly and £290 yearly prices. A restricted test key, branch-only Preview secrets, a customer portal configuration and an active five-event subscription webhook are configured; the protected Preview rebuilt successfully and an invalid-signature probe returned the required 400 response. Live charging, production and `main` remain untouched. A complete synthetic Checkout, webhook, entitlement and cancellation cycle plus final release evidence remain incomplete.**
+
+## Hosted Stripe staging configuration checkpoint
+
+- Created the restricted Stripe Sandbox key `KXRA OS staging billing` with write access limited to Customers, Checkout Sessions and Customer Portal Sessions. No live key was created or stored.
+- Saved customer portal configuration `bpc_1ULqnpC84VkhhIRzEh19PWjz` with invoice history, payment-method updates, end-of-period cancellation and cancellation-reason collection. Plan and quantity switching remain disabled.
+- Activated webhook destination `we_1ULqtcC84VkhhIRzUqInZXf1` on the stable phase-branch Preview endpoint for exactly `customer.subscription.created`, `updated`, `deleted`, `paused` and `resumed`, using Stripe API version `2025-07-30.basil`.
+- Stored `KXRA_BILLING_WORKER_DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION_ID` as branch-scoped Preview values only. Updated `KXRA_BILLING_ENABLED=true` and the combined `transactional-email-and-billing` profile. Production received none of these values.
+- Preview deployment `dpl_8iUshgA3Ao6e2Vpgi26tJB3DbFhh` reached Ready at the stable phase-branch alias. Authenticated probes returned 200 for `/login` and 400 with the bounded invalid-webhook response for a deliberately invalid Stripe signature, proving the deployed route is enabled and fails closed.
+- The remaining billing release evidence is one owner-authorized synthetic Stripe Checkout and cancellation sequence that proves customer creation, signed webhook reconciliation, entitlement grant, portal cancellation-at-period-end and final entitlement removal. This has not been claimed or run.
 
 ## Founding-price and owner-document checkpoint
 
