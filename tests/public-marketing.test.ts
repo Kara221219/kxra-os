@@ -5,7 +5,10 @@ import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
 import { marketingOrigin, runtimeFile } from "./support/runtime";
-import { trustedClientAddress } from "../apps/marketing/lib/ingress";
+import {
+  classifyDatabaseConnectionFailure,
+  trustedClientAddress,
+} from "../apps/marketing/lib/ingress";
 
 const config = JSON.parse(
   fs.readFileSync(runtimeFile("database.json"), "utf8"),
@@ -60,6 +63,27 @@ test("AT-26 public ingress trusts only its configured edge address", () => {
     null,
   );
   assert.equal(trustedClientAddress(headers, {}), null);
+});
+
+test("AT-26 public ingress connection diagnostics disclose only bounded classes", () => {
+  assert.equal(
+    classifyDatabaseConnectionFailure({
+      code: "28P01",
+      message: "password authentication failed for secret-user",
+    }),
+    "PUBLIC_INGRESS_DATABASE_CONNECT_AUTH_FAILED",
+  );
+  assert.equal(
+    classifyDatabaseConnectionFailure({
+      code: "ENOTFOUND",
+      hostname: "secret.database.invalid",
+    }),
+    "PUBLIC_INGRESS_DATABASE_CONNECT_DNS_FAILED",
+  );
+  assert.equal(
+    classifyDatabaseConnectionFailure(new Error("secret connection value")),
+    "PUBLIC_INGRESS_DATABASE_CONNECT_UNKNOWN",
+  );
 });
 
 async function role(db: pg.PoolClient, actor: string | null) {

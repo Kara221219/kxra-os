@@ -59,6 +59,30 @@ function localConfiguration() {
   return JSON.parse(fs.readFileSync(target, "utf8")) as pg.ClientConfig;
 }
 
+export function classifyDatabaseConnectionFailure(error: unknown) {
+  const rawCode =
+    typeof error === "object" && error && "code" in error
+      ? String(error.code).toUpperCase()
+      : "";
+  const classifications: Record<string, string> = {
+    "28P01": "AUTH_FAILED",
+    "28000": "AUTHORIZATION_FAILED",
+    "3D000": "DATABASE_NOT_FOUND",
+    "53300": "CAPACITY_REACHED",
+    ENOTFOUND: "DNS_FAILED",
+    EAI_AGAIN: "DNS_TEMPORARY_FAILURE",
+    ECONNREFUSED: "NETWORK_REFUSED",
+    ETIMEDOUT: "NETWORK_TIMEOUT",
+    ECONNRESET: "NETWORK_RESET",
+    ERR_TLS_CERT_ALTNAME_INVALID: "TLS_IDENTITY_FAILED",
+    UNABLE_TO_VERIFY_LEAF_SIGNATURE: "TLS_CHAIN_FAILED",
+    SELF_SIGNED_CERT_IN_CHAIN: "TLS_CHAIN_FAILED",
+    DEPTH_ZERO_SELF_SIGNED_CERT: "TLS_CHAIN_FAILED",
+    CERT_HAS_EXPIRED: "TLS_CERTIFICATE_EXPIRED",
+  };
+  return `PUBLIC_INGRESS_DATABASE_CONNECT_${classifications[rawCode] || "UNKNOWN"}`;
+}
+
 export async function storePublicEnquiry(input: PublicEnquiry) {
   const local = localConfiguration();
   const connectionString = process.env.KXRA_PUBLIC_DATABASE_URL;
@@ -73,7 +97,7 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
   try {
     await client.connect();
   } catch (error) {
-    throw new Error("PUBLIC_INGRESS_DATABASE_CONNECT_FAILED", { cause: error });
+    throw new Error(classifyDatabaseConnectionFailure(error), { cause: error });
   }
   let transactionStarted = false;
   try {
