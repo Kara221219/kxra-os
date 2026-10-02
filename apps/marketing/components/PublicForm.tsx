@@ -5,6 +5,11 @@ import { FormEvent, useState } from "react";
 type Kind = "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
 
 export function PublicForm({ kind }: { kind: Kind }) {
+  const sourcePath = {
+    ENQUIRY: "/partner",
+    CUSTOM_PROJECT: "/submit-opportunity",
+    CONTACT: "/contact",
+  }[kind];
   const [state, setState] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -47,7 +52,14 @@ export function PublicForm({ kind }: { kind: Kind }) {
   }
 
   return (
-    <form onSubmit={submit} aria-describedby="form-status">
+    <form
+      action="/api/enquiries"
+      method="post"
+      onSubmit={submit}
+      aria-describedby="form-status"
+    >
+      <input name="kind" type="hidden" value={kind} />
+      <input name="sourcePath" type="hidden" value={sourcePath} />
       <div className="field">
         <label htmlFor={`${kind}-name`}>Name</label>
         <input

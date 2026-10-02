@@ -107,6 +107,15 @@ test("AT-26 accessible public contact submission reaches private inbox", async (
   page,
 }) => {
   await page.goto("/contact");
+  await expect(page.locator("form")).toHaveAttribute("method", "post");
+  await expect(page.locator("form")).toHaveAttribute(
+    "action",
+    "/api/enquiries",
+  );
+  await expect(page.locator('input[name="kind"]')).toHaveValue("CONTACT");
+  await expect(page.locator('input[name="sourcePath"]')).toHaveValue(
+    "/contact",
+  );
   await page.getByLabel("Name").fill("Browser Test");
   await page
     .getByLabel("Work email")

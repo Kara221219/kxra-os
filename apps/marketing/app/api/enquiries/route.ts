@@ -77,10 +77,12 @@ export async function POST(request: Request) {
       { status: 202 },
     );
   } catch (error) {
-    const code =
+    const rawCode =
       typeof error === "object" && error && "code" in error
         ? String(error.code)
         : "";
+    const code = /^[A-Z0-9_]{1,16}$/.test(rawCode) ? rawCode : "UNKNOWN";
+    console.error("[api/enquiries] storage failed", { code });
     const status = code === "P0001" ? 429 : 503;
     return NextResponse.json(
       { message: safeMessage(status), request: crypto.randomUUID() },
