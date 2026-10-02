@@ -1,6 +1,13 @@
 # KXRA OS implementation progress
 
-Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecycle and post-cancellation resubscription path now pass against protected hosted Preview. Hosted Supabase verifies 80 reviewed migrations and 172 RLS-protected tables. Stripe Checkout and Portal display KXRA Group, a fresh £290 annual test Checkout opens after cancellation, and no purchase was submitted. Live charging, production and `main` remain untouched.**
+Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecycle and post-cancellation resubscription path pass against protected hosted Preview. The next release control is prepared: a Preview-only, log-only Vercel WAF rule for `POST /api/enquiries` is staged for owner publication. It is not live and cannot block traffic. Live charging, production and `main` remain untouched.**
+
+## Preview enquiry WAF observation checkpoint
+
+- Staged Vercel rule `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`) on the `kxra-marketing-staging` project.
+- The match is exact: request path equals `/api/enquiries`, method equals `POST`, and environment equals `Preview`. The action is `Log` only.
+- The rule is a draft and is not live. The owner must publish the staged Vercel firewall change. After publication, send controlled Preview enquiry traffic, observe the firewall event data for at least ten minutes, and only then prepare a bounded Preview rate-limit rule from measured traffic.
+- No production firewall rule, blocking action, production deployment or `main` merge was created.
 
 ## Complete Stripe Sandbox lifecycle and security checkpoint
 
@@ -22,7 +29,7 @@ Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecyc
 - Activated webhook destination `we_1ULqtcC84VkhhIRzUqInZXf1` on the stable phase-branch Preview endpoint for exactly `customer.subscription.created`, `updated`, `deleted`, `paused` and `resumed`, using Stripe API version `2025-07-30.basil`.
 - Stored `KXRA_BILLING_WORKER_DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION_ID` as branch-scoped Preview values only. Updated `KXRA_BILLING_ENABLED=true` and the combined `transactional-email-and-billing` profile. Production received none of these values.
 - Preview deployment `dpl_8iUshgA3Ao6e2Vpgi26tJB3DbFhh` reached Ready at the stable phase-branch alias. Authenticated probes returned 200 for `/login` and 400 with the bounded invalid-webhook response for a deliberately invalid Stripe signature, proving the deployed route is enabled and fails closed.
-- This configuration checkpoint is superseded by the completed 2 October lifecycle above. The remaining Stripe launch work is merchant-label correction, repeat visual acceptance and an explicit later decision before any live-mode activation.
+- This configuration checkpoint is superseded by the completed 2 October lifecycle above. Merchant naming, statement descriptor and repeat visual acceptance are complete. Live-mode activation still requires the remaining release evidence and a separate explicit production decision.
 
 ## Founding-price and owner-document checkpoint
 
