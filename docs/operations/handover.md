@@ -14,7 +14,7 @@ The exact implementation commit passed GitHub CI run `37063068727`: 233/233 core
 
 The Preview automation-bypass secret was rotated after it became visible during provider configuration, and the Stripe test webhook was updated. A manual event resend is recorded by Stripe as `Delivered`, `Recovered`, `200 OK`; PostgreSQL remained cancelled with zero entitlements after replay. Temporary environment exports were deleted. No live Stripe credential, production deployment or `main` merge occurred.
 
-Stripe's account name and customer-facing trading name now read `KXRA Group`. Portal branding was visually accepted, and a new annual Checkout opened from the cancelled state showing KXRA Group, KXRA Founding and £290 per year. No payment method was entered and no purchase was submitted. Keep live mode disabled until the remaining release evidence and an explicit production decision are complete. Stripe's legacy statement descriptor remains `FP&AA`; treat any change as a separate owner-authorized live account setting.
+Stripe's account name and customer-facing trading name now read `KXRA Group`, and the customer bank-statement descriptor is `KXRA GROUP`. Stripe Business details visibly confirm the saved values. Portal branding was visually accepted, and a new annual Checkout opened from the cancelled state showing KXRA Group, KXRA Founding and £290 per year. No payment method was entered and no purchase was submitted. Keep live mode disabled until the remaining release evidence and an explicit production decision are complete.
 
 ## Earlier billing activation checkpoint
 
