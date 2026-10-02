@@ -1,12 +1,22 @@
 # Engineering handover
 
-Updated: 1 October 2026.
+Updated: 2 October 2026.
 
-## Billing activation in progress
+## Stripe Sandbox acceptance complete
+
+Branch `codex/phase-2-completion` is pushed through implementation commit `3b594534e25506b3b381cdbabfe0e0440c228f1d`. Hosted Supabase contains 79 reviewed migrations and 172 RLS-protected tables. The synthetic Stripe test subscription completed its full create, update and delete lifecycle through the protected Preview webhook. End-of-period cancellation retained the three plan entitlements; immediate cancellation removed them. The final database state is `CANCELLED`, `cancel_at_period_end=false`, three signed events, three processed provider events, zero effective entitlements and zero overlapping entitlement periods.
+
+Migration 0079 fixes the overlap found during the hosted lifecycle by closing prior source periods before inserting the current subscription state. It also repairs existing overlaps without granting access. The focused Stripe worker contract passes 7/7, type checking and formatting pass, and a clean disposable database verifies 79 migrations and 172 protected tables. The complete repository test suite was not rerun after this focused hosted acceptance work; do not restate an earlier full-suite result as evidence for commit `3b59453`.
+
+The Preview automation-bypass secret was rotated after it became visible during provider configuration, and the Stripe test webhook was updated. A manual event resend is recorded by Stripe as `Delivered`, `Recovered`, `200 OK`; PostgreSQL remained cancelled with zero entitlements after replay. Temporary environment exports were deleted. No live Stripe credential, production deployment or `main` merge occurred.
+
+Before customer release, change Stripe's public merchant/business label from `FP&A` to `KXRA Group` and repeat Checkout/Portal visual acceptance. Keep live mode disabled until the remaining release evidence and an explicit production decision are complete. The synthetic subscription is cancelled, so any further billing UI testing requires a fresh test customer/subscription or a separately governed free-partner entitlement.
+
+## Earlier billing activation checkpoint
 
 Migration 0077 and the guarded billing-runner operator are implemented locally. Release readiness now checks the explicit owner approval fields introduced by migration 0075; it does not infer independent legal review and does not restore the parked NDA. Staging configuration supports a test-only `subscription-billing` profile and a combined `transactional-email-and-billing` profile. Thirty-two focused tests pass across release evidence, forged tenant denial, customer bootstrap, hosted sessions, signed webhook replay/order, entitlement grant/removal and restricted role structure. The complete hermetic contract passes 231 core tests, 77 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all builds and the security/performance gates.
 
-Hosted Supabase now has migration 0077 and the exact restricted `kxra_billing_runner`. Stripe Sandbox has a restricted test key, customer portal configuration `bpc_1ULqnpC84VkhhIRzEh19PWjz` and active webhook destination `we_1ULqtcC84VkhhIRzUqInZXf1` for the five subscription lifecycle events. The four billing values are stored only on the `codex/phase-2-completion` Preview branch; billing is enabled under the combined `transactional-email-and-billing` profile. Preview deployment `dpl_8iUshgA3Ao6e2Vpgi26tJB3DbFhh` is Ready, `/login` returns 200 through authenticated Vercel access and an invalid webhook signature returns the required bounded 400 response. Complete one owner-authorized synthetic Checkout/cancellation cycle before recording `STRIPE_TEST` release evidence. Production and live-mode Stripe remain prohibited.
+Hosted Supabase had migration 0077 and the exact restricted `kxra_billing_runner` at this checkpoint. Stripe Sandbox had a restricted test key, customer portal configuration `bpc_1ULqnpC84VkhhIRzEh19PWjz` and active webhook destination `we_1ULqtcC84VkhhIRzUqInZXf1` for the five subscription lifecycle events. The four billing values were stored only on the `codex/phase-2-completion` Preview branch; billing was enabled under the combined `transactional-email-and-billing` profile. Preview deployment `dpl_8iUshgA3Ao6e2Vpgi26tJB3DbFhh` was Ready, `/login` returned 200 through authenticated Vercel access and an invalid webhook signature returned the required bounded 400 response. The 2 October checkpoint above supersedes the pending lifecycle statement. Production and live-mode Stripe remain prohibited.
 
 ## Current commercial-foundation checkpoint
 
