@@ -260,6 +260,81 @@ test("signed Stripe webhook creates one test subscription and exact replay is st
   );
 });
 
+test("subscription updates replace effective periods without overlap and cancellation closes them", async () => {
+  const fixture = await commercialFixture();
+  const subscriptionId = `sub_${crypto.randomBytes(8).toString("hex")}`;
+  const createdAt = Math.floor(Date.now() / 1000) - 10;
+  const created = verified(
+    payload(fixture, {
+      subscriptionId,
+      eventType: "customer.subscription.created",
+      created: createdAt,
+    }),
+  );
+  assert.equal(
+    await recordStripeSubscriptionEvent(created, workerConfiguration),
+    "PROCESSED",
+  );
+  const updated = verified(
+    payload(fixture, {
+      subscriptionId,
+      eventType: "customer.subscription.updated",
+      created: createdAt + 1,
+    }),
+  );
+  assert.equal(
+    await recordStripeSubscriptionEvent(updated, workerConfiguration),
+    "PROCESSED",
+  );
+  const periodState = (
+    await admin.query(
+      `select
+        count(*) filter(where effective_from<=now() and effective_until>now())::int active,
+        count(*)::int total,
+        count(*) filter(where exists(
+          select 1 from kxra.entitlement_effective_periods other
+          where other.source_type=period.source_type
+           and other.source_id=period.source_id
+           and other.feature_key=period.feature_key
+           and other.id<>period.id
+           and tstzrange(other.effective_from,other.effective_until,'[)')
+            && tstzrange(period.effective_from,period.effective_until,'[)')
+        ))::int overlapping
+       from kxra.entitlement_effective_periods period
+       where source_type='SUBSCRIPTION' and source_id=(
+        select id from kxra.billing_subscriptions where provider_subscription_id=$1
+       )`,
+      [subscriptionId],
+    )
+  ).rows[0];
+  assert.deepEqual(periodState, { active: 2, total: 4, overlapping: 0 });
+
+  const cancelled = verified(
+    payload(fixture, {
+      subscriptionId,
+      eventType: "customer.subscription.deleted",
+      status: "canceled",
+      created: createdAt + 2,
+    }),
+  );
+  assert.equal(
+    await recordStripeSubscriptionEvent(cancelled, workerConfiguration),
+    "PROCESSED",
+  );
+  assert.equal(
+    (
+      await admin.query(
+        `select count(*)::int n from kxra.entitlement_effective_periods
+         where source_type='SUBSCRIPTION' and source_id=(
+          select id from kxra.billing_subscriptions where provider_subscription_id=$1
+         ) and effective_from<=now() and effective_until>now()`,
+        [subscriptionId],
+      )
+    ).rows[0].n,
+    0,
+  );
+});
+
 test("past-due fails closed and an older event cannot restore entitlement", async () => {
   const fixture = await commercialFixture();
   const subscriptionId = `sub_${crypto.randomBytes(8).toString("hex")}`;

@@ -1,52 +1,24 @@
 begin;
 
-do $$ begin
- if not exists(select 1 from pg_roles where rolname='kxra_billing_worker') then
-  create role kxra_billing_worker nologin noinherit nobypassrls;
- end if;
-end $$;
+-- Keep the append-only entitlement ledger non-overlapping for every feature.
+with ordered as (
+ select id,effective_from,
+  lead(effective_from) over(
+   partition by source_type,source_id,feature_key order by effective_from,id
+  ) as next_effective_from
+ from kxra.entitlement_effective_periods
+ where source_type='SUBSCRIPTION'
+)
+update kxra.entitlement_effective_periods period set
+ effective_until=greatest(ordered.next_effective_from,
+  period.effective_from+interval '1 microsecond')
+from ordered
+where period.id=ordered.id and ordered.next_effective_from is not null
+ and (period.effective_until is null
+  or period.effective_until>greatest(ordered.next_effective_from,
+   period.effective_from+interval '1 microsecond'));
 
-grant usage on schema kxra,kxra_private to kxra_billing_worker;
-
-alter table kxra.billing_subscriptions
- drop constraint billing_subscriptions_state_check;
-alter table kxra.billing_subscriptions
- add constraint billing_subscriptions_state_check check(state in (
-  'INCOMPLETE','INCOMPLETE_EXPIRED','TRIALING','ACTIVE','PAST_DUE','PAUSED',
-  'CANCELLED','UNPAID','UNKNOWN'
- ));
-
-create table kxra.billing_provider_events(
- id uuid primary key default gen_random_uuid(),
- org_id uuid references kxra.organisations(id),
- provider text not null default 'STRIPE' check(provider='STRIPE'),
- provider_event_id text not null check(provider_event_id~'^evt_[A-Za-z0-9]{6,}$'),
- event_type text not null check(event_type in (
-  'customer.subscription.created','customer.subscription.updated',
-  'customer.subscription.deleted','customer.subscription.paused',
-  'customer.subscription.resumed'
- )),
- provider_created_at timestamptz not null,
- livemode boolean not null,
- provider_customer_id text not null check(provider_customer_id~'^cus_[A-Za-z0-9]{6,}$'),
- provider_subscription_id text not null check(provider_subscription_id~'^sub_[A-Za-z0-9]{6,}$'),
- provider_price_id text not null check(provider_price_id~'^price_[A-Za-z0-9]{6,}$'),
- payload_hash text not null check(payload_hash~'^[a-f0-9]{64}$'),
- processing_state text not null default 'RECEIVED'
-  check(processing_state in ('RECEIVED','PROCESSED','IGNORED','FAILED')),
- processing_reason text check(processing_reason is null or length(processing_reason)<=1000),
- received_at timestamptz not null default now(),
- processed_at timestamptz,
- unique(provider,provider_event_id)
-);
-
-alter table kxra.billing_provider_events enable row level security;
-grant select on kxra.billing_provider_events to authenticated,anon;
-create policy billing_provider_events_owner_read
- on kxra.billing_provider_events for select
- using(kxra_private.is_platform_owner());
-
-create function kxra_private.record_stripe_subscription_event(
+create or replace function kxra_private.record_stripe_subscription_event(
  p_event_id text,
  p_event_type text,
  p_created_at timestamptz,
@@ -229,5 +201,6 @@ grant execute on function kxra_private.record_stripe_subscription_event(
  text,text,timestamptz,boolean,text,text,text,timestamptz,timestamptz,
  boolean,text,text,bigint,text
 ) to kxra_billing_worker;
+
 
 commit;
