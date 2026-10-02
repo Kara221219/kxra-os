@@ -49,6 +49,18 @@ const subscriptionObjectSchema = z
             .object({
               id: stripeId("si"),
               quantity: z.number().int().positive().max(1_000_000),
+              current_period_start: z
+                .number()
+                .int()
+                .positive()
+                .nullable()
+                .optional(),
+              current_period_end: z
+                .number()
+                .int()
+                .positive()
+                .nullable()
+                .optional(),
               price: z.object({ id: stripeId("price") }).passthrough(),
             })
             .passthrough(),
@@ -108,8 +120,15 @@ export function normalizeStripeSubscriptionEvent(
   if (event.livemode) throw new Error("BILLING_LIVE_EVENT_PROHIBITED");
   const subscription = event.data.object;
   const item = subscription.items.data[0];
-  const periodStart = timestamp(subscription.current_period_start);
-  const periodEnd = timestamp(subscription.current_period_end);
+  // Stripe Basil 2025-03-31 moved billing periods from the subscription to
+  // each subscription item. Keep the top-level fallback for older snapshots
+  // while treating the item as authoritative for the pinned webhook version.
+  const periodStart = timestamp(
+    item.current_period_start ?? subscription.current_period_start,
+  );
+  const periodEnd = timestamp(
+    item.current_period_end ?? subscription.current_period_end,
+  );
   if (
     ["active", "trialing"].includes(subscription.status) &&
     (!periodStart || !periodEnd || periodEnd <= periodStart)

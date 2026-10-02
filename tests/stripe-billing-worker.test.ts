@@ -102,6 +102,8 @@ function payload(
               id:
                 options.itemId || `si_${crypto.randomBytes(8).toString("hex")}`,
               quantity: 1,
+              current_period_start: now - 60,
+              current_period_end: now + 2_592_000,
               price: { id: fixture.priceId },
             },
           ],
@@ -125,6 +127,18 @@ test("Stripe subscription normalization binds raw bytes and rejects live or mult
   const normalized = verified(value);
   assert.equal(normalized.customerId, fixture.customerId);
   assert.equal(normalized.priceId, fixture.priceId);
+  assert.equal(
+    normalized.periodStart,
+    new Date(
+      value.data.object.items.data[0].current_period_start * 1000,
+    ).toISOString(),
+  );
+  assert.equal(
+    normalized.periodEnd,
+    new Date(
+      value.data.object.items.data[0].current_period_end * 1000,
+    ).toISOString(),
+  );
   const body = Buffer.from(JSON.stringify(value));
   const signature = signFakeBillingWebhook(body, webhookSecret);
   assert.throws(
@@ -144,6 +158,8 @@ test("Stripe subscription normalization binds raw bytes and rejects live or mult
   multiple.data.object.items.data.push({
     id: `si_${crypto.randomBytes(8).toString("hex")}`,
     quantity: 1,
+    current_period_start: value.data.object.current_period_start,
+    current_period_end: value.data.object.current_period_end,
     price: { id: fixture.priceId },
   });
   assert.throws(() => verified(multiple));
