@@ -22,7 +22,7 @@ test("staging migration manifest is contiguous and hash-bound", () => {
   assert.match(manifest[0].sha256, /^[a-f0-9]{64}$/);
   assert.equal(
     manifest.at(-1)?.name,
-    "0079_fix_subscription_entitlement_periods.sql",
+    "0080_allow_checkout_after_cancelled_subscription.sql",
   );
 });
 

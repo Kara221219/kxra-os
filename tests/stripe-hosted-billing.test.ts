@@ -210,6 +210,30 @@ test("hosted billing intent derives customer and TEST price and replays exactly"
     ).rows[0];
     assert.equal(visible.state, "READY");
     assert.equal(visible.provider_session_id, "cs_test_synthetic123");
+
+    await db.query("reset role");
+    const billingCustomer = (
+      await db.query(
+        "select id from kxra.billing_customers where org_id=$1 and provider_customer_id=$2",
+        [value.org, value.customer],
+      )
+    ).rows[0];
+    await db.query(
+      `insert into kxra.billing_subscriptions(
+        org_id,billing_customer_id,provider_subscription_id,plan_version_id,state,
+        provider_event_created_at,provider_event_id,created_at
+       ) values($1,$2,'sub_cancelled123',$3,'CANCELLED',now(),'evt_cancelled123',now())`,
+      [value.org, billingCustomer.id, value.version],
+    );
+    await as(db, value.account, value.org);
+    const resubscribe = (
+      await db.query("select * from kxra.request_checkout_session($1,$2)", [
+        value.version,
+        crypto.randomUUID(),
+      ])
+    ).rows[0];
+    assert.equal(resubscribe.intent_state, "REQUESTED");
+    assert.notEqual(resubscribe.intent_id, first.intent_id);
   }));
 
 test("ordinary member, anonymous caller and forged tenant cannot request billing sessions", () =>
