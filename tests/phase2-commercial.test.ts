@@ -369,6 +369,17 @@ test("AT-32 approved exact legal versions gate every private table and preserve 
       ).rows[0].n,
       1,
     );
+    await db.query("reset role");
+    await db.query("savepoint immutable_presentation");
+    await assert.rejects(
+      () =>
+        db.query("delete from kxra.legal_presentations where id=$1", [
+          presentations.rows[0].presentation_id,
+        ]),
+      /Legal evidence is immutable/,
+    );
+    await db.query("rollback to savepoint immutable_presentation");
+    await as(db, accountId, organisationId);
     const responseRequest = crypto.randomUUID();
     await db.query("select * from kxra.record_legal_response($1,true,$2)", [
       presentations.rows[0].presentation_id,

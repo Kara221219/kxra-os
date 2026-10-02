@@ -1,18 +1,23 @@
 import pg from "pg";
-import { databaseSsl } from "../db/ssl";
+import { databaseConnectionString, databaseSsl } from "../db/ssl";
 import type { NormalizedStripeSubscriptionEvent } from "./billing";
 import type {
   StripeBillingCustomer,
   StripeHostedSession,
 } from "./stripe-hosted";
 
-function databaseConfiguration() {
-  const connectionString = process.env.KXRA_BILLING_WORKER_DATABASE_URL;
+export function billingWorkerDatabaseConfiguration(
+  environment: Record<string, string | undefined> = process.env,
+) {
+  const connectionString = environment.KXRA_BILLING_WORKER_DATABASE_URL;
   if (!connectionString)
     throw Error("Billing worker database is not configured");
   return {
-    connectionString,
-    ssl: process.env.NODE_ENV === "production" ? databaseSsl() : undefined,
+    connectionString: databaseConnectionString(connectionString),
+    ssl:
+      environment.NODE_ENV === "production"
+        ? databaseSsl(environment)
+        : undefined,
   };
 }
 
@@ -25,7 +30,9 @@ async function billingTransaction<T>(
   work: (database: pg.Client) => Promise<T>,
   configuration?: pg.ClientConfig,
 ) {
-  const database = new pg.Client(configuration || databaseConfiguration());
+  const database = new pg.Client(
+    configuration || billingWorkerDatabaseConfiguration(),
+  );
   await database.connect();
   try {
     await database.query("begin");

@@ -7,6 +7,7 @@ import {
   databaseConnectionString,
   databaseSsl,
 } from "../packages/db/ssl";
+import { billingWorkerDatabaseConfiguration } from "../packages/integrations/billing-worker";
 
 const certificate = `-----BEGIN CERTIFICATE-----\n${"A".repeat(64)}\n-----END CERTIFICATE-----\n`;
 
@@ -46,6 +47,30 @@ test("URL SSL options cannot override the verified certificate configuration", (
     ).connectionParameters.ssl,
     verifiedSsl,
   );
+});
+
+test("billing worker strips URL SSL overrides and retains the verified CA", () => {
+  const configuration = billingWorkerDatabaseConfiguration({
+    NODE_ENV: "production",
+    KXRA_BILLING_WORKER_DATABASE_URL:
+      "postgresql://billing:secret@db.example.test:5432/postgres?sslmode=verify-full&application_name=kxra-billing",
+    KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(certificate).toString("base64"),
+  });
+
+  assert.equal(
+    new URL(configuration.connectionString).searchParams.get("sslmode"),
+    null,
+  );
+  assert.equal(
+    new URL(configuration.connectionString).searchParams.get(
+      "application_name",
+    ),
+    "kxra-billing",
+  );
+  assert.deepEqual(configuration.ssl, {
+    ca: [...rootCertificates, certificate],
+    rejectUnauthorized: true,
+  });
 });
 
 test("database diagnostics omit connection credentials and certificate contents", () => {
