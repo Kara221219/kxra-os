@@ -64,12 +64,21 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
   const connectionString = process.env.KXRA_PUBLIC_DATABASE_URL;
   if (!local && !connectionString)
     throw new Error("Public ingress storage unavailable");
-  const client = new pg.Client(
-    local || { connectionString, ssl: databaseSsl() },
-  );
-  await client.connect();
+  let client: pg.Client;
+  try {
+    client = new pg.Client(local || { connectionString, ssl: databaseSsl() });
+  } catch (error) {
+    throw new Error("PUBLIC_INGRESS_DATABASE_CONFIG_FAILED", { cause: error });
+  }
+  try {
+    await client.connect();
+  } catch (error) {
+    throw new Error("PUBLIC_INGRESS_DATABASE_CONNECT_FAILED", { cause: error });
+  }
+  let transactionStarted = false;
   try {
     await client.query("begin");
+    transactionStarted = true;
     await client.query("set local role anon");
     const result = await client.query(
       `select * from kxra.submit_public_enquiry($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
@@ -88,14 +97,29 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
       ],
     );
     await client.query("commit");
+    transactionStarted = false;
     return result.rows[0] as {
       receipt_id: string;
       accepted: boolean;
       outcome: string;
     };
   } catch (error) {
-    await client.query("rollback");
-    throw error;
+    if (transactionStarted)
+      try {
+        await client.query("rollback");
+      } catch {
+        // Preserve the bounded original failure classification.
+      }
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      String(error.code) === "P0001"
+    )
+      throw error;
+    throw new Error("PUBLIC_INGRESS_DATABASE_TRANSACTION_FAILED", {
+      cause: error,
+    });
   } finally {
     await client.end();
   }

@@ -81,9 +81,13 @@ export async function POST(request: Request) {
       typeof error === "object" && error && "code" in error
         ? String(error.code)
         : "";
-    const code = /^[A-Z0-9_]{1,16}$/.test(rawCode) ? rawCode : "UNKNOWN";
-    console.error("[api/enquiries] storage failed", { code });
-    const status = code === "P0001" ? 429 : 503;
+    const code = /^[A-Z0-9_]{1,40}$/.test(rawCode) ? rawCode : "UNKNOWN";
+    const diagnostic =
+      error instanceof Error && /^[A-Z][A-Z0-9_]{2,80}$/.test(error.message)
+        ? error.message
+        : code;
+    console.error("[api/enquiries] storage failed", { code: diagnostic });
+    const status = rawCode === "P0001" ? 429 : 503;
     return NextResponse.json(
       { message: safeMessage(status), request: crypto.randomUUID() },
       { status },
