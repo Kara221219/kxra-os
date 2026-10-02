@@ -7,6 +7,7 @@ import pg from "pg";
 import { marketingOrigin, runtimeFile } from "./support/runtime";
 import {
   classifyDatabaseConnectionFailure,
+  publicIngressConnectionDiagnostics,
   trustedClientAddress,
 } from "../apps/marketing/lib/ingress";
 
@@ -84,6 +85,21 @@ test("AT-26 public ingress connection diagnostics disclose only bounded classes"
     classifyDatabaseConnectionFailure(new Error("secret connection value")),
     "PUBLIC_INGRESS_DATABASE_CONNECT_UNKNOWN",
   );
+  const diagnostics = publicIngressConnectionDiagnostics({
+    KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(
+      `-----BEGIN CERTIFICATE-----\n${"A".repeat(64)}\n-----END CERTIFICATE-----\n`,
+    ).toString("base64"),
+    KXRA_PUBLIC_DATABASE_URL:
+      "postgresql://kxra_public_ingress.secret-ref:secret-password@aws-0-eu-west-2.pooler.supabase.com:5432/postgres?sslmode=verify-full",
+  });
+  assert.deepEqual(diagnostics, {
+    certificateBytes: 119,
+    certificateFingerprint: null,
+    endpointMode: "SESSION_POOLER",
+    usernameMode: "CUSTOM_POOLER",
+    sslMode: "verify-full",
+  });
+  assert.equal(JSON.stringify(diagnostics).includes("secret"), false);
 });
 
 async function role(db: pg.PoolClient, actor: string | null) {

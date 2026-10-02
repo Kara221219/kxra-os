@@ -83,6 +83,48 @@ export function classifyDatabaseConnectionFailure(error: unknown) {
   return `PUBLIC_INGRESS_DATABASE_CONNECT_${classifications[rawCode] || "UNKNOWN"}`;
 }
 
+export function publicIngressConnectionDiagnostics(
+  environment: Record<string, string | undefined> = process.env,
+) {
+  const encoded = environment.KXRA_DATABASE_CA_CERT_BASE64 || "";
+  const decoded = Buffer.from(encoded, "base64");
+  let certificateFingerprint: string | null = null;
+  try {
+    certificateFingerprint = new crypto.X509Certificate(decoded).fingerprint256;
+  } catch {
+    // Invalid certificate input is represented without disclosing its contents.
+  }
+  let endpointMode = "INVALID";
+  let usernameMode = "INVALID";
+  let sslMode: string | null = null;
+  try {
+    const url = new URL(environment.KXRA_PUBLIC_DATABASE_URL || "");
+    sslMode = url.searchParams.get("sslmode");
+    if (url.hostname.endsWith(".pooler.supabase.com"))
+      endpointMode =
+        url.port === "6543" ? "TRANSACTION_POOLER" : "SESSION_POOLER";
+    else if (
+      url.hostname.startsWith("db.") &&
+      url.hostname.endsWith(".supabase.co")
+    )
+      endpointMode = "DIRECT";
+    usernameMode = url.username.startsWith("kxra_public_ingress.")
+      ? "CUSTOM_POOLER"
+      : url.username === "kxra_public_ingress"
+        ? "CUSTOM_DIRECT"
+        : "UNEXPECTED";
+  } catch {
+    // Invalid connection input is represented without disclosing its contents.
+  }
+  return {
+    certificateBytes: decoded.byteLength,
+    certificateFingerprint,
+    endpointMode,
+    usernameMode,
+    sslMode,
+  };
+}
+
 export async function storePublicEnquiry(input: PublicEnquiry) {
   const local = localConfiguration();
   const connectionString = process.env.KXRA_PUBLIC_DATABASE_URL;

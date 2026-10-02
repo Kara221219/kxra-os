@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  publicIngressConnectionDiagnostics,
   digest,
   storePublicEnquiry,
   trustedClientAddress,
@@ -86,7 +87,10 @@ export async function POST(request: Request) {
       error instanceof Error && /^[A-Z][A-Z0-9_]{2,80}$/.test(error.message)
         ? error.message
         : code;
-    console.error("[api/enquiries] storage failed", { code: diagnostic });
+    console.error("[api/enquiries] storage failed", {
+      code: diagnostic,
+      database: publicIngressConnectionDiagnostics(),
+    });
     const status = rawCode === "P0001" ? 429 : 503;
     return NextResponse.json(
       { message: safeMessage(status), request: crypto.randomUUID() },
