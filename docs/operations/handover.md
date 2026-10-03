@@ -1,12 +1,12 @@
 # Engineering handover
 
-Updated: 2 October 2026.
+Updated: 3 October 2026.
 
-## Preview enquiry WAF rule staged, awaiting owner publication
+## Preview enquiry ingress and WAF observation complete
 
-Vercel has one unpublished firewall draft for `kxra-marketing-staging`: `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`). It matches only Preview requests where the path equals `/api/enquiries` and the method equals `POST`; its action is `Log`. It cannot block traffic and does not target Production.
+Vercel has one active Preview-only firewall rule for `kxra-marketing-staging`: `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`). It matches only Preview requests where the path equals `/api/enquiries` and the method equals `POST`; its action is `Log`. It cannot block traffic and does not target Production.
 
-The Vercel Review Change panel is open with the draft ready. The owner must click **Publish**. Once live, generate controlled Preview enquiry traffic and observe the firewall event data for at least ten minutes before drafting a measured Preview rate limit. Do not create a blocking or Production rule from assumptions.
+Ordinary protected-browser traffic produced 12 logged requests attributed to the exact rule, host and `/api/enquiries` path. The accepted synthetic ingress receipt remains the sole matching database record; repeated/rejected browser attempts created no duplicate inbox rows. Keep the rule in log mode. These synthetic repeats are not a customer-traffic baseline and do not justify a rate limit.
 
 ## Stripe Sandbox acceptance and resubscription complete
 
@@ -36,7 +36,7 @@ The founding commercial plan is active in staging with one plan, two versions, s
 
 The exact implementation commit passes the full local hermetic contract: 222 core tests, 76 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart persistence, a 3,015-row/15-object empty-target restore, all three optimized builds, 72 exact CSP hashes, 129 SRI records, build budgets, a 439-file artifact/secret scan and Lighthouse 1.00 performance/accessibility. GitHub CodeQL run `36803453320` and full CI run `36803453498` pass at the same SHA.
 
-Checkout and customer sales remain disabled. Before release, set owner-approved cancellation, refund and grace-period policy; approve the exact customer documents; configure restricted billing-worker Stripe credentials, webhook and customer portal in staging; pass a complete test Checkout, webhook reconciliation, entitlement and cancellation journey; and record WAF and release evidence. Production, live Stripe and `main` remain untouched.
+Checkout and customer sales remain disabled. Cancellation, refund and grace-period policy, exact customer documents, restricted billing-worker Stripe configuration, complete test Checkout lifecycle and Preview WAF evidence are complete. Production, live Stripe and `main` remain untouched while the remaining release evidence is completed.
 
 ## Current governed-improvement checkpoint
 
@@ -56,7 +56,7 @@ The exact V2 commit passes the complete local hermetic contract: 219 core tests,
 
 The controlled iCloud partner completed redemption and onboarding with exactly PROJECT-002 viewer access. Live UI checks passed for assigned-project visibility, direct PROJECT-003 and crafted-ID denial, owner Admin denial, one-project Ask scope and empty cross-project files. An exact owner approval revoked PROJECT-002; hosted PostgreSQL under the real `authenticated` role and exact partner context then returned zero projects, records, files and knowledge chunks. A second exact approval restored viewer access; hosted RLS returned exactly PROJECT-002 while PROJECT-003 and the crafted UUID remained invisible. Because all in-app tabs share one cookie jar, a simultaneous two-session HTTP revocation check still needs a genuinely isolated browser context and is not claimed by this checkpoint.
 
-Production and `main` remain untouched. The next evidence slice is the isolated-cookie hosted HTTP/direct-API revocation sequence, followed by exact WAF evidence. Customer release still requires approved legal/commercial content and the remaining provider/release evidence.
+Production and `main` remain untouched. The next evidence slice is the isolated-cookie hosted HTTP/direct-API revocation sequence. Preview WAF evidence is complete; customer release still requires the remaining provider/release evidence.
 
 ## Current venture-intake checkpoint
 
@@ -92,7 +92,7 @@ Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to 
 
 Supabase Auth uses the exact private phase-branch origin. New email signup remains disabled pending migration 0070 and the Before User Created hook; after both are verified, the provider switch can be enabled while the hook keeps registration invitation-only. Email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The exact `/reset-password` redirect is saved. Existing obsolete reset callback and `/reset-password/verify` entries can be removed only after the new flow is proven. The default email service is fixed at two emails per hour; correct-flow attempts at 23:45 and 23:52 were rejected with 429 before the successful 00:22:57 request.
 
-The immediate checkpoint is the exact hosted acceptance sequence using the verified AAL2 owner, followed by one bounded staging partner for owner/partner/revoked/crafted-project isolation evidence. No hosted partner exists, and the hosted acceptance operator and exact WAF evidence have not run.
+The historical hosted-acceptance checkpoint is superseded: the verified AAL2 owner and bounded staging partner isolation cycle have run, and exact Preview WAF evidence now passes. The remaining hosted security item is a genuinely isolated-cookie direct-API and active-session revocation sequence.
 
 The first 18-probe anonymous run against `b37d30f` retained a redacted FAIL artifact because Vercel Authentication intercepted all probes with protection-layer 302/401 responses. This is a deployment-protection checkpoint, not KXRA route evidence. Each Vercel project already has a distinct automation-bypass secret. The corrected harness accepts one per project, stores neither and rejects a shared cross-project bypass. Do not disable Vercel Authentication.
 
@@ -211,7 +211,7 @@ Continue Final Milestone 10 production quality without deploying:
 
 0. **Completed 29 September 2026:** the OS branch Preview alone now uses the Supabase transaction-pooler endpoint for the same `kxra_app` role on port 6543 with `sslmode=verify-full`. Reviewed commit `4ef52ea447d0ef094cc8942a29cc9efe743549ea` passed GitHub CI `36633056144` and SHA-matched CodeQL `36633056141`, redeployed as `Ba8ijYpKGA2EW3roAGUYYvUstMLk` and reached Ready. Three stable-alias onboarding reloads produced no application or connection-session error; the deployment log showed zero warning, error or fatal events. The controlled identity is no longer eligible to repeat onboarding, so legal Step 8 remains proven by the earlier fail-closed checkpoint rather than bypassed or reaccepted;
 
-1. complete the remaining hosted HTTP acceptance in a genuinely isolated partner cookie jar: direct API, cross-project files/search/Ask and active-session denial during a bounded revoke/restore cycle; the database-backed revoke/restore and UI crafted-project checks already pass. Then configure and evidence the exact Vercel WAF rate rule;
+1. complete the remaining hosted HTTP acceptance in a genuinely isolated partner cookie jar: direct API, cross-project files/search/Ask and active-session denial during a bounded revoke/restore cycle; the database-backed revoke/restore and UI crafted-project checks already pass. Keep the exact Preview WAF rule in log mode and collect representative traffic before considering a rate limit;
 2. activate Brand-source acquisition only as a separately credentialed worker using the [staging playbook](../playbooks/brand-source-acquisition-staging.md) and prove real egress/TLS/failure behavior;
 3. complete replay-denial, invitation-revocation and post-acceptance trigger/key-rotation evidence for the delivered controlled invitation using the [transactional email playbook](../playbooks/transactional-email-staging.md);
 4. add human assistive-technology, field Web Vitals and broader provider-failure/load evidence;
@@ -292,7 +292,7 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - `staging:founding-plan:plan|apply|verify` now binds the exact Supabase staging project, two distinct Stripe TEST price IDs, the clean pushed phase branch and an apply-only confirmation. It creates one plan, two active versions, six deterministic feature rows and two TEST price mappings in one transaction and rejects existing mismatches rather than taking them over.
 - Stripe Sandbox product `prod_VMHTknMmr7LV1r` exists. Use only `price_1ULYzlC84VkhhIRziFf99Grl` (£29 monthly, default) and `price_1ULYyIC84VkhhIRza8JkYHz5` (£290 yearly). Both are tax-exclusive prices; no VAT is currently added because the owner confirmed that KXRA is not VAT registered. The superseded automatically tax-inclusive monthly price is archived with zero active subscriptions.
 - Migration `0076_brand_studio_catalogue_seed.sql` is applied and ledgered in authorized Supabase staging. Hosted verification proves 76 exact migrations, 172 RLS-protected tables, one active Brand Studio tool/version, one active founding plan, two plan versions, six feature rows and the two approved TEST price mappings. Implementation commit `ebba44953ec2ee813844ce7ecc5aa5f57a409ad4` passes GitHub full CI `36803453498` and CodeQL `36803453320`.
-- Cancellation/refund/grace policy, customer-document approval, restricted billing-worker Stripe configuration and staging billing acceptance are complete. WAF observation and the remaining release evidence remain separate gates. Live mode stays disabled.
+- Cancellation/refund/grace policy, customer-document approval, restricted billing-worker Stripe configuration, staging billing acceptance and Preview WAF observation are complete. Remaining release evidence is still a separate gate. Live mode stays disabled.
 
 ## Customer-document approval checkpoint
 
@@ -312,4 +312,5 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - Root cause of the prior 503 was application-level SSL option precedence: URL `sslmode` replaced the explicit verified CA object in the marketing route. The route now uses `databaseConnectionString(...)` to strip URL SSL controls before applying `databaseSsl()`.
 - Safe diagnostics may log only bounded error class, public certificate metadata and endpoint/username mode. They do not log credentials, URLs, form content or source addresses.
 - Local acceptance is green: 234 core tests; 80 migrations and 172 RLS tables; 43 private browser journeys with five intentional skips; both 18-test public runs; restart/restore; all three optimized builds; CSP/SRI, size, artifact and secret gates; Lighthouse 1.00 performance/accessibility.
-- Remaining action: submit the same approved synthetic contact once through the ordinary protected browser and confirm Vercel Firewall increments `Logged`. Automation-bypass CLI traffic does not exercise the ordinary edge observation. Keep the rule in log mode until evidence supports any rate limit.
+- Ordinary protected-browser attempts incremented Vercel Firewall `Logged` to 12 for the exact rule, host and `/api/enquiries` path. The rule stayed non-blocking. Supabase still contains exactly one matching accepted synthetic record, so the repeated/rejected observation attempts created no duplicates. Keep the rule in log mode; the synthetic sample is not sufficient evidence for a rate limit.
+- GitHub full CI run `37080911556` passed in 14m48s at documentation commit `31d8ee0`; the associated CodeQL run `37080911548` also passed.

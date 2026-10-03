@@ -1,12 +1,13 @@
 # KXRA OS implementation progress
 
-Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecycle and post-cancellation resubscription path pass against protected hosted Preview. The next release control is prepared: a Preview-only, log-only Vercel WAF rule for `POST /api/enquiries` is staged for owner publication. It is not live and cannot block traffic. Live charging, production and `main` remain untouched.**
+Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview public ingress and the Preview-only enquiry firewall observation all pass. The WAF rule logged ordinary browser traffic without blocking it, and the accepted synthetic enquiry is present in the owner-only database inbox. Live charging, production and `main` remain untouched.**
 
 ## Preview enquiry WAF observation checkpoint
 
-- Staged Vercel rule `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`) on the `kxra-marketing-staging` project.
+- Published Vercel rule `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`) on the `kxra-marketing-staging` project.
 - The match is exact: request path equals `/api/enquiries`, method equals `POST`, and environment equals `Preview`. The action is `Log` only.
-- The rule is a draft and is not live. The owner must publish the staged Vercel firewall change. After publication, send controlled Preview enquiry traffic, observe the firewall event data for at least ten minutes, and only then prepare a bounded Preview rate-limit rule from measured traffic.
+- Ordinary protected-browser traffic produced 12 logged requests for `/api/enquiries`; Vercel attributed all 12 to this exact rule, host and request path. The rule remained non-blocking. The 12 repeated synthetic attempts are observation evidence, not a representative customer traffic baseline, so no rate limit was inferred from them.
+- The canonical accepted synthetic request remains receipt `46d33e37-7a02-4b2b-bc13-29a130cbf069`. A database query found no duplicate `KXRA WAF Observation Test%` records, confirming the rejected/repeated browser attempts did not create extra inbox items.
 - No production firewall rule, blocking action, production deployment or `main` merge was created.
 
 ## Complete Stripe Sandbox lifecycle and security checkpoint
@@ -56,7 +57,7 @@ Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecyc
 - The owner executed an exact current-state approval changing PROJECT-002 from active to revoked. Under the real hosted `authenticated` role and the partner's exact subject/organisation context, PostgreSQL RLS then returned zero visible projects, zero target-project records, zero target-project files and zero target-project knowledge chunks.
 - The owner executed a second exact approval restoring the same PROJECT-002 viewer grant. Hosted RLS then returned exactly one visible project: PROJECT-002. PROJECT-003 and a crafted UUID remained invisible. The accidental no-op approval created during UI preparation was rejected and cannot execute.
 - The deployed OS runtime database password had become invalid (`28P01`). Only the restricted `kxra_app` credential was rotated through a local non-echoing helper, verified through the transaction pooler and replaced in the OS Preview branch secret. The resulting Preview is Ready and invalid credentials now reach the correct bounded authentication failure instead of a configuration error. No secret was retained or printed.
-- Remaining acceptance in this area: capture a true HTTP revocation check with two isolated browser cookie jars, exercise direct API and active-session revocation on the hosted runtime, then configure and evidence the exact WAF rule. Local SQL/HTTP/browser tests already cover these negative cases.
+- Remaining acceptance in this area: capture a true HTTP revocation check with two isolated browser cookie jars and exercise direct API plus active-session revocation on the hosted runtime. The exact Preview WAF observation is complete. Local SQL/HTTP/browser tests already cover these negative cases.
 
 ## Hosted twelve-project staging checkpoint
 
@@ -129,7 +130,7 @@ Updated: 2 October 2026. Status: **The complete synthetic Stripe Sandbox lifecyc
 - After the token-shape correction deployed, the retained recovery session returned `Reset unavailable` without a corresponding Supabase password-update call. Its authentication was then more than ten minutes old, exposing an extra KXRA cutoff shorter than the provider's valid recovery session. That time-only correction was superseded once the provider's actual implicit-recovery AMR behavior was confirmed.
 - A further hosted retry confirmed that Supabase implicit recovery uses AMR `otp`, matching its Auth source, rather than a JWT-bound `recovery` method. Accepting any OTP session would weaken the reset boundary. KXRA now seals a server-only HMAC recovery intent containing a digest of the requested email and an exact one-hour lifetime, includes it only in the provider's emailed redirect, removes it and the provider fragment from browser history, and requires its email and time window to match the verified provider user and latest `otp`/`recovery` AMR. Tampered, expired, wrong-email, early, late, malformed and password-session cases fail closed.
 - At 01:45 the deployed signed-intent flow completed end to end: `/recover` returned 200 and sent the email, `/verify` completed the provider login, `PUT /user` returned 200 for the owner-performed password change, global `/logout` returned 204 and a fresh password grant at 01:46 returned 200. The authenticated KXRA owner workspace loaded successfully. No password, provider token or recovery secret was inspected or retained.
-- Owner password establishment, hosted sign-in, TOTP enrollment and guarded final owner verification are complete. The database password was rotated by the owner and the documented Supavisor credential-cache delay cleared on a fresh connection. Hosted owner/partner/RLS acceptance, the exact WAF rule and release evidence remain pending.
+- Owner password establishment, hosted sign-in, TOTP enrollment and guarded final owner verification are complete. The database password was rotated by the owner and the documented Supavisor credential-cache delay cleared on a fresh connection. Hosted owner/partner/RLS and exact Preview WAF acceptance now pass; the isolated-cookie HTTP revocation sequence and remaining release evidence remain pending.
 
 Current branch: `codex/phase-2-completion`. Recovery implementation is deployed on the private Preview and verified with the real owner recovery/sign-in sequence. MFA compatibility commit `7e137d8` accepts the provider's bounded inline SVG QR representation and passed GitHub CI run 36505929242 and CodeQL run 36505929235. Operator TLS commit `340ffc7` removes URL SSL overrides and applies the validated Supabase CA plus Node trust roots to all staging database operators; focused tests, type checking, full CI run 36507607574 and CodeQL run 36507607508 pass. The branch is not merged. No default-branch change, production deployment, provider activation, charge, candidate-code execution or publication occurred.
 
@@ -285,7 +286,7 @@ Apply and verify migration 0075 through the guarded hosted-staging operator. The
 - Hosted public ingress now accepts client identity only from one syntactically valid `x-vercel-forwarded-for` address when `VERCEL=1`; conflicting caller forwarding headers are ignored and missing/list/malformed values fail closed.
 - Loopback fixtures have an explicit separate path and use valid synthetic network addresses. There is no generic hosted proxy-header fallback.
 - The complete hermetic contract passes 131 tests, including strict edge selection and the 20-request race, 42 private runs, 24 public runs, recovery, builds, CSP/SRI, budgets and the 297-file scan before this ADR. The final publication scan covers 298 files.
-- Vercel WAF rule activation and observed hosted header behavior remain staging gates. Cloudflare stays DNS-only unless Vercel Trusted Proxy is purchased and verified.
+- Vercel WAF rule activation and ordinary edge observation pass in Preview. Cloudflare stays DNS-only unless Vercel Trusted Proxy is purchased and verified.
 - Full GitHub CI run 36255785726 and CodeQL run 36255785732 passed for Slice 15 commit `0720360`.
 
 ## Slice 16 local optimized performance and accessibility evidence
@@ -507,7 +508,7 @@ Only application code, engineering documentation and minimum classified seed rec
 - Preview initially failed at TLS verification even though it received the official Supabase Root 2021 certificate, the expected session pooler, the custom pooler username and `verify-full`. The route had passed URL-level `sslmode` alongside an explicit CA object; node-postgres URL parsing replaced the verified CA settings. Public ingress now removes URL-level SSL controls before supplying the certificate-verifying SSL object, matching the private OS connection path.
 - The corrected deployment `dpl_3YtRnnXwEZokXchG6n3LX2foYySX` is Ready. An owner-approved synthetic request returned `202 Accepted` with receipt `46d33e37-7a02-4b2b-bc13-29a130cbf069`. Independent Supabase inspection found exactly that `CONTACT` record with `UNVERIFIED` status and `/contact` source path.
 - The complete final hermetic contract passes 234 core tests, 80 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart and empty-target restore, all three builds, CSP/SRI, budgets, artifact/secret scans and Lighthouse performance/accessibility 1.00.
-- Vercel CLI requests use deployment-protection automation bypass and therefore do not provide ordinary edge-rule observations. One normal protected-browser submission and the resulting WAF log count remain the only open item in this checkpoint. Production and `main` remain untouched.
+- Vercel CLI requests use deployment-protection automation bypass and therefore were not used as edge-rule evidence. Ordinary protected-browser attempts produced 12 `Log` observations under the exact Preview rule and host; none were blocked. This checkpoint is complete. Production and `main` remain untouched.
 
 ## Hosted staging partner-invitation checkpoint
 
