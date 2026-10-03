@@ -1667,6 +1667,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "project_score_factor_evidence",
       "project_score_factors",
       "release_manifests",
+      "release_review_attestations",
       "repository_adoption_proposal_versions",
       "repository_adoption_proposals",
       "repository_adoption_reviews",

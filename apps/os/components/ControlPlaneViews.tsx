@@ -14,6 +14,8 @@ import {
   IdeaOwnerControls,
   ProjectGovernanceForm,
 } from "./ControlPlaneForms";
+import ReleaseReviewForm from "./ReleaseReviewForm";
+import { releaseReviewEvidenceSha256 } from "../lib/release-review-evidence";
 
 type Member = { id: string; display_name: string; role?: string };
 
@@ -918,6 +920,24 @@ export function AdminView({ snapshot }: { snapshot: any }) {
           status cannot deploy or publish anything.
         </p>
       </section>
+      {snapshot.release_gate.id && (
+        <div className="release-review-grid">
+          {(["ACCESSIBILITY", "SECURITY"] as const).map((kind) => (
+            <ReleaseReviewForm
+              key={kind}
+              kind={kind}
+              manifestId={snapshot.release_gate.id}
+              candidateSha256={snapshot.release_gate.candidate_sha256}
+              evidenceSha256={releaseReviewEvidenceSha256(kind)}
+              recorded={
+                snapshot.release_gate.review_attestations.find(
+                  (item: { review_type: string }) => item.review_type === kind,
+                ) || null
+              }
+            />
+          ))}
+        </div>
+      )}
       <section className="panel" id="security-events">
         <h2>Recent account security events</h2>
         {snapshot.security_events.map((event: any) => (

@@ -2,13 +2,22 @@
 
 Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview public ingress, Preview-only enquiry firewall observation and isolated hosted partner revocation/restoration acceptance all pass. PROJECT-002 is restored as the partner's only project grant; PROJECT-003 remains unavailable through UI, direct API, search and Ask KXRA. Live charging, production and `main` remain untouched.**
 
+## Hosted release candidate and governed human reviews
+
+- Applied and verified `founding-private-launch-v1` against authorized Supabase staging. Owner Admin shows `BLOCKED` with exactly three remaining evidence classes: provider-backed recovery, accessibility review and security review.
+- Supabase Backups confirms the current Free plan has no hosted project backups. The approved provider-backed recovery path therefore requires a Supabase Pro upgrade before KXRA can capture backup evidence and rehearse an empty-target restore. No upgrade or charge was initiated.
+- Added immutable owner accessibility and security attestations in migration `0081_release_review_attestations.sql`. Both the application and database require recent owner MFA; the database derives identity from the authenticated session and rejects partners, direct inserts, AAL1, incomplete checklists, changed candidates and replay.
+- Each review binds the exact base-candidate SHA-256 and versioned review-packet SHA-256. Recording a review cannot change release state, deploy, publish, enable live billing, grant access or merge `main`.
+- The complete hermetic contract passes 239/239 database/domain/HTTP/security tests, 81 migrations, 173 protected tables, 148 exposed `kxra` functions, 43 applicable private browser journeys with five intentional skips, both 18-journey public runs, restart persistence, a 3,037-row/15-object empty-target restore, all three optimized builds, 64 exact CSP hashes, 101 SRI references, artifact and secret gates, and Lighthouse 1.00 performance/accessibility on both measured routes.
+- The review workflow is locally complete and awaiting commit, GitHub checks, Preview deployment and guarded staging application. Human reviews and hosted recovery evidence have not been claimed.
+
 ## Guarded customer release candidate
 
 - Added one immutable private-launch candidate source that binds the owner-approved customer-document pack, £29 KXRA Founding monthly plan, approved usage/policy terms, public-copy hash, `info@kxra-group.com` support route and four completed staging evidence classes.
 - Added a clean-branch, exact-target, TLS-verified staging operator with plan/apply/verify modes. Existing drift causes takeover rejection; apply has its own exact confirmation phrase and creates no deployment, publication, charge or access grant.
 - The candidate is intentionally `BLOCKED`. It omits provider-backed hosted backup/restore evidence and records no accessibility or security reviewer. The database must return exactly those three remaining checks; any broader or narrower result fails verification.
 - Replaced opaque release codes in Owner Admin with an actionable checklist that separates engineering work from named owner sign-off. The approved retention policy is now represented accurately in Admin controls.
-- The complete hermetic contract passes: 237/237 database/domain/HTTP/security tests, 43 applicable private browser journeys with five intentional skips, both 18-journey public-site runs, restart persistence, a 3,037-row/15-object empty-target restore, all three optimized builds, CSP/SRI, size, artifact and secret gates, and Lighthouse 1.00 performance/accessibility.
+- The preceding guarded-candidate implementation passed 237/237 database/domain/HTTP/security tests. The current 239-test result and migration/table counts are recorded in the hosted release-candidate section above.
 
 ## Preview enquiry WAF observation checkpoint
 

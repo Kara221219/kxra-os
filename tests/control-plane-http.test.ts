@@ -174,8 +174,8 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const adminResponse = await api("admin", owner);
   assert.equal(adminResponse.status, 200, await adminResponse.clone().text());
   const snapshot = await adminResponse.json();
-  assert.equal(snapshot.database.rls_tables, 172);
-  assert.equal(snapshot.database.protected_tables, 172);
+  assert.equal(snapshot.database.rls_tables, 173);
+  assert.equal(snapshot.database.protected_tables, 173);
   assert.deepEqual(snapshot.release_gate, {
     id: null,
     release_name: null,
@@ -223,6 +223,14 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
         /^\/os\//.test(row.href),
     ),
   );
+});
+
+test("release review evidence is owner-only at the HTTP boundary", async () => {
+  const owner = await login("owner");
+  const partner = await login("partner");
+  assert.equal((await api("release-reviews", owner)).status, 200);
+  assert.equal((await api("release-reviews", partner)).status, 403);
+  assert.equal((await api("release-reviews")).status, 401);
 });
 
 test("AT-22 HTTP Idea lifecycle and explicit-share isolation reveal no hidden aggregate", async () => {

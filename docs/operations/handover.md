@@ -2,15 +2,23 @@
 
 Updated: 3 October 2026.
 
+## Current release-review checkpoint
+
+The guarded `founding-private-launch-v1` candidate has been applied to authorized Supabase staging and independently verified. Owner Admin reports `BLOCKED` with exactly provider-backed recovery, accessibility review and security review outstanding. The current Supabase project is on the Free plan, whose Backups page states that project backups are unavailable; the approved hosted recovery evidence therefore requires a Pro upgrade. No plan change or charge was made.
+
+The working tree adds migration `0081_release_review_attestations.sql`, ADR 0049 and owner Admin forms for the two human reviews. An attestation requires current owner authority, recent MFA, the exact unchanged candidate and review-packet digests, every required check and meaningful notes. It is immutable and cannot deploy, publish, enable live billing, grant access or change the release state. Both reviews remain genuinely outstanding and must be completed by the owner after the commit is deployed to Preview.
+
+The full local contract passes 239/239 service tests, 81 migrations, 173 RLS-protected tables, 148 exposed functions, 43 applicable private browser journeys with five intentional skips, both 18-journey public runs, restart, a 3,037-row/15-object empty-target restore, all three builds and every security/performance gate. Next: commit and push this exact tree, require GitHub CI and CodeQL, apply migration 0081 through the guarded staging operator, verify the Preview forms, complete the two owner reviews, then upgrade Supabase and capture provider-backed recovery evidence. Do not finalize or release before all three evidence classes are bound by a separate guarded finalization step.
+
 ## Blocked launch-candidate preparation
 
 The branch now contains a guarded staging operator for `founding-private-launch-v1`. Its reviewed source binds the five owner-approved customer documents, KXRA Founding at £29 monthly, 120 monthly generation and export units, the approved cancellation/refund/grace/tax/retention terms, four current launch subprocessors, the reviewed disabled public-copy hash, the public `info@kxra-group.com` contact and completed Core Preview, Auth/RLS, Stripe Sandbox and email evidence.
 
 The operator is intentionally unable to report release readiness. Its exact expected blockers are hosted provider backup/restore evidence, a named human accessibility review and a named human security review. It rejects existing drift and requires the exact Supabase staging target, verified TLS, a clean pushed `codex/phase-2-completion` head and a separate apply phrase. No production, live Stripe, publication or `main` authority was added.
 
-The complete local contract passes 237/237 service tests, 43 applicable private browser journeys, both 18-journey public runs, restart, a 3,037-row/15-object empty-target restore, all builds and the security/performance gates. The Admin checklist passes at desktop, mobile and 200% text sizing.
+The preceding guarded-candidate implementation passed 237/237 service tests. The current 239-test result and migration/table counts are recorded in the checkpoint above. The Admin checklist passes at desktop, mobile and 200% text sizing.
 
-After the implementation is committed, pushed and passes GitHub checks, run the guarded plan/apply/verify sequence against staging. Then confirm the Owner Admin checklist shows the exact three remaining items. Do not fill review identities or dates until the reviews have actually occurred.
+That guarded plan/apply/verify sequence is complete and Owner Admin shows the exact three remaining items. Do not fill review identities or dates until the reviews have actually occurred.
 
 ## Hosted partner isolation cycle complete
 

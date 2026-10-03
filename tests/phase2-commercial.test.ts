@@ -1571,3 +1571,118 @@ test("AT-46 release readiness requires exact legal, commercial, provider and rev
       { ready: true, blockers: [] },
     );
   }));
+
+test("AT-47 release reviews are exact, owner-MFA-bound and immutable", () =>
+  tx(async (db) => {
+    const manifest = crypto.randomUUID();
+    await db.query(
+      `insert into kxra.release_manifests(
+        id,org_id,release_name,release_version,commercial_configuration,
+        support_channels,state,legal_owner,commercial_owner,reviewed_at
+       ) values($1,$2,'Synthetic review candidate',$3,$4,$5,'BLOCKED',
+        'Synthetic legal owner','Synthetic commercial owner',now())`,
+      [
+        manifest,
+        kxraOrg,
+        `review-${crypto.randomUUID()}`,
+        {
+          plan_code: "synthetic",
+          accessibility_review: {},
+          security_review: {},
+        },
+        { support_email: "review@fixture.invalid" },
+      ],
+    );
+    const accessibility = {
+      customer_journeys: true,
+      keyboard_navigation: true,
+      focus_visibility: true,
+      screen_reader_labels: true,
+      zoom_and_reflow: true,
+      reduced_motion: true,
+      form_errors: true,
+      contrast_and_readability: true,
+    };
+    await as(db, partnerId, kxraOrg);
+    await denied(db, "select kxra.release_candidate_digest($1)", [manifest]);
+    await denied(
+      db,
+      `insert into kxra.release_review_attestations(
+        org_id,release_manifest_id,review_type,reviewer_id,reviewer_name,
+        candidate_sha256,evidence_sha256,checklist,notes
+       ) values($1,$2,'ACCESSIBILITY',$3,'Forged reviewer',$4,$4,$5,$6)`,
+      [
+        kxraOrg,
+        manifest,
+        partnerId,
+        digest("forged"),
+        accessibility,
+        "Forged direct review evidence.",
+      ],
+    );
+
+    await as(db, ownerId, kxraOrg, "aal1");
+    await denied(
+      db,
+      "select * from kxra.attest_release_review($1,'ACCESSIBILITY',$2,$3,$4,$5)",
+      [
+        manifest,
+        digest("wrong-candidate"),
+        digest("accessibility-evidence"),
+        accessibility,
+        "Owner review notes long enough for the contract.",
+      ],
+    );
+
+    await as(db, ownerId, kxraOrg);
+    const candidate = (
+      await db.query<{ release_candidate_digest: string }>(
+        "select kxra.release_candidate_digest($1)",
+        [manifest],
+      )
+    ).rows[0].release_candidate_digest;
+    await denied(
+      db,
+      "select * from kxra.attest_release_review($1,'ACCESSIBILITY',$2,$3,$4,$5)",
+      [
+        manifest,
+        candidate,
+        digest("accessibility-evidence"),
+        { ...accessibility, form_errors: false },
+        "One accessibility check deliberately remains incomplete.",
+      ],
+    );
+    const review = (
+      await db.query(
+        "select * from kxra.attest_release_review($1,'ACCESSIBILITY',$2,$3,$4,$5)",
+        [
+          manifest,
+          candidate,
+          digest("accessibility-evidence"),
+          accessibility,
+          "Completed every synthetic accessibility check for this exact candidate.",
+        ],
+      )
+    ).rows[0];
+    assert.equal(review.review_type, "ACCESSIBILITY");
+    assert.equal(review.reviewer_id, ownerId);
+    assert.equal(review.candidate_sha256, candidate);
+    await denied(
+      db,
+      "select * from kxra.attest_release_review($1,'ACCESSIBILITY',$2,$3,$4,$5)",
+      [
+        manifest,
+        candidate,
+        digest("accessibility-evidence"),
+        accessibility,
+        "A replay must not replace the first immutable attestation.",
+      ],
+    );
+    const unchanged = (
+      await db.query(
+        "select commercial_configuration from kxra.release_manifests where id=$1",
+        [manifest],
+      )
+    ).rows[0].commercial_configuration;
+    assert.deepEqual(unchanged.accessibility_review, {});
+  }));

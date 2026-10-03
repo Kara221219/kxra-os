@@ -820,10 +820,23 @@ export async function adminSnapshot(a: Actor) {
         release_version: string;
         state: string;
         reviewed_at: string | null;
+        candidate_sha256: string;
+        review_attestations: Array<{
+          review_type: "ACCESSIBILITY" | "SECURITY";
+          reviewer_name: string;
+          evidence_sha256: string;
+          attested_at: string;
+        }>;
         ready: boolean;
         blockers: string[];
       }>(
         `select m.id,m.release_name,m.release_version,m.state,m.reviewed_at,
+          kxra.release_candidate_digest(m.id) as candidate_sha256,
+          coalesce((select jsonb_agg(jsonb_build_object(
+            'review_type',r.review_type,'reviewer_name',r.reviewer_name,
+            'evidence_sha256',r.evidence_sha256,'attested_at',r.attested_at
+           ) order by r.review_type) from kxra.release_review_attestations r
+           where r.release_manifest_id=m.id),'[]'::jsonb) as review_attestations,
           checked.ready,checked.blockers
          from kxra.release_manifests m
          cross join lateral kxra.release_manifest_check(m.id) checked

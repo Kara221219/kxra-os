@@ -73,6 +73,11 @@ import {
   sha256 as objectSha256,
 } from "../../../../../packages/storage";
 import {
+  releaseReviewPackets,
+  type ReleaseReviewType,
+} from "../../../lib/release-review-packets";
+import { releaseReviewEvidenceSha256 } from "../../../lib/release-review-evidence";
+import {
   renderEmail,
   sealEmailDeliverySecret,
 } from "../../../../../packages/integrations/email";
@@ -3781,6 +3786,58 @@ async function handle(req: Request, ctx: Context) {
             "QUERY_FAILED",
           ]).catch(() => {});
         throw error;
+      }
+    }
+    if (p[0] === "release-reviews") {
+      owner(a);
+      if (method === "GET") {
+        return json(
+          await query(
+            a,
+            `select r.id,r.release_manifest_id,r.review_type,r.reviewer_name,
+              r.candidate_sha256,r.evidence_sha256,r.checklist,r.notes,r.status,r.attested_at
+             from kxra.release_review_attestations r
+             order by r.attested_at desc,r.id desc`,
+          ),
+        );
+      }
+      if (method === "POST") {
+        recentOwnerMfa(a);
+        const input = z
+          .object({
+            manifest_id: uuid,
+            review_type: z.enum(["ACCESSIBILITY", "SECURITY"]),
+            candidate_sha256: sha256,
+            evidence_sha256: sha256,
+            checklist: z.record(z.string(), z.boolean()),
+            notes: z.string().trim().min(20).max(4000),
+          })
+          .strict()
+          .parse(await body(req));
+        const kind = input.review_type as ReleaseReviewType;
+        const expectedKeys = releaseReviewPackets[kind].checks
+          .map(([key]) => key)
+          .sort();
+        const suppliedKeys = Object.keys(input.checklist).sort();
+        if (
+          input.evidence_sha256 !== releaseReviewEvidenceSha256(kind) ||
+          JSON.stringify(suppliedKeys) !== JSON.stringify(expectedKeys) ||
+          Object.values(input.checklist).some((value) => value !== true)
+        )
+          throw new HttpError(400, "Every review check must pass");
+        const rows = await query(
+          a,
+          "select * from kxra.attest_release_review($1,$2,$3,$4,$5,$6)",
+          [
+            input.manifest_id,
+            kind,
+            input.candidate_sha256,
+            input.evidence_sha256,
+            JSON.stringify(input.checklist),
+            input.notes,
+          ],
+        );
+        return json(rows[0], 201);
       }
     }
     if (p[0] === "approvals") {
