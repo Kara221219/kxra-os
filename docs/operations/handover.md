@@ -2,6 +2,8 @@
 
 Updated: 3 October 2026.
 
+The first migration-0081 staging plan correctly failed closed on historical migration drift. Migration 0065 had received a one-condition edit after its original hosted application. Hosted ledger evidence proves the immutable source SHA-256 is `7af17804df2f895cbf260d5845641cd1589c0ffc225c74751366da359bd3820e` from commit `600391f4095908d1a31fffd65e0a240ad85237ae`; additive migration 0079 already carries and applies the later behavior. Migration 0065 is restored to the hosted bytes. Do not rewrite the hosted ledger.
+
 ## Current release-review checkpoint
 
 The guarded `founding-private-launch-v1` candidate has been applied to authorized Supabase staging and independently verified. Owner Admin reports `BLOCKED` with exactly provider-backed recovery, accessibility review and security review outstanding. The current Supabase project is on the Free plan, whose Backups page states that project backups are unavailable; the approved hosted recovery evidence therefore requires a Pro upgrade. No plan change or charge was made.

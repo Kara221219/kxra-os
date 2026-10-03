@@ -185,8 +185,7 @@ begin
  update kxra.entitlement_effective_periods set
   effective_until=greatest(p_created_at,effective_from+interval '1 microsecond')
  where source_type='SUBSCRIPTION' and source_id=subscription_row.id
-  and (effective_until is null
-   or effective_until>greatest(p_created_at,effective_from+interval '1 microsecond'));
+  and effective_until is null;
  if incoming_state in ('ACTIVE','TRIALING') then
   insert into kxra.entitlement_effective_periods(
    org_id,feature_key,source_type,source_id,quantity_limit,usage_window,
