@@ -3,7 +3,10 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import pg from "pg";
-import { databaseSsl } from "../../../packages/db/ssl";
+import {
+  databaseConnectionString,
+  databaseSsl,
+} from "../../../packages/db/ssl";
 
 export type PublicEnquiry = {
   kind: "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
@@ -132,7 +135,12 @@ export async function storePublicEnquiry(input: PublicEnquiry) {
     throw new Error("Public ingress storage unavailable");
   let client: pg.Client;
   try {
-    client = new pg.Client(local || { connectionString, ssl: databaseSsl() });
+    client = new pg.Client(
+      local || {
+        connectionString: databaseConnectionString(connectionString as string),
+        ssl: databaseSsl(),
+      },
+    );
   } catch (error) {
     throw new Error("PUBLIC_INGRESS_DATABASE_CONFIG_FAILED", { cause: error });
   }
