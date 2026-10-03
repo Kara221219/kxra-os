@@ -208,9 +208,11 @@ test("AT-24 owner Work Log and redacted Admin are real, linked and bounded", asy
   await expect(
     page.locator("#release-gate").getByText("No release manifest"),
   ).toBeVisible();
+  await expect(page.getByText("Release record", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("RELEASE MANIFEST MISSING", { exact: true }),
+    page.getByText(/Prepare the guarded staging release candidate/),
   ).toBeVisible();
+  await expect(page.getByText("ENGINEERING", { exact: true })).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(page.getByText(/Generic secret editing/)).toBeVisible();
 });

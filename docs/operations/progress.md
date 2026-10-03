@@ -2,6 +2,14 @@
 
 Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview public ingress, Preview-only enquiry firewall observation and isolated hosted partner revocation/restoration acceptance all pass. PROJECT-002 is restored as the partner's only project grant; PROJECT-003 remains unavailable through UI, direct API, search and Ask KXRA. Live charging, production and `main` remain untouched.**
 
+## Guarded customer release candidate
+
+- Added one immutable private-launch candidate source that binds the owner-approved customer-document pack, £29 KXRA Founding monthly plan, approved usage/policy terms, public-copy hash, `info@kxra-group.com` support route and four completed staging evidence classes.
+- Added a clean-branch, exact-target, TLS-verified staging operator with plan/apply/verify modes. Existing drift causes takeover rejection; apply has its own exact confirmation phrase and creates no deployment, publication, charge or access grant.
+- The candidate is intentionally `BLOCKED`. It omits provider-backed hosted backup/restore evidence and records no accessibility or security reviewer. The database must return exactly those three remaining checks; any broader or narrower result fails verification.
+- Replaced opaque release codes in Owner Admin with an actionable checklist that separates engineering work from named owner sign-off. The approved retention policy is now represented accurately in Admin controls.
+- The complete hermetic contract passes: 237/237 database/domain/HTTP/security tests, 43 applicable private browser journeys with five intentional skips, both 18-journey public-site runs, restart persistence, a 3,037-row/15-object empty-target restore, all three optimized builds, CSP/SRI, size, artifact and secret gates, and Lighthouse 1.00 performance/accessibility.
+
 ## Preview enquiry WAF observation checkpoint
 
 - Published Vercel rule `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`) on the `kxra-marketing-staging` project.

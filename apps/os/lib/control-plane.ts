@@ -873,7 +873,7 @@ export async function adminSnapshot(a: Actor) {
         external_messages: "DISABLED",
         production_deployment: "DISABLED",
         backups: "EVIDENCE_NOT_CONNECTED",
-        retention: "POLICY_NOT_APPROVED",
+        retention: "OWNER_APPROVED_V1",
       },
       release_gate: releaseGate.rows[0] || {
         id: null,

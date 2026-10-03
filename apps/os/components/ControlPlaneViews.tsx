@@ -778,6 +778,46 @@ function CountPanel({
 }
 
 export function AdminView({ snapshot }: { snapshot: any }) {
+  const releaseGuidance: Record<
+    string,
+    { area: string; action: string; ownerAction: boolean }
+  > = {
+    RELEASE_MANIFEST_MISSING: {
+      area: "Release record",
+      action:
+        "Prepare the guarded staging release candidate from the approved legal pack, founding plan and verified evidence.",
+      ownerAction: false,
+    },
+    PROVIDER_EVIDENCE_INCOMPLETE: {
+      area: "Recovery evidence",
+      action:
+        "Complete a provider-backed staging backup and empty-target restore, then bind its evidence to this exact candidate.",
+      ownerAction: false,
+    },
+    ACCESSIBILITY_REVIEW_MISSING_OR_INVALID: {
+      area: "Accessibility review",
+      action:
+        "A named human must review the customer journeys, record findings and sign the exact release candidate.",
+      ownerAction: true,
+    },
+    SECURITY_REVIEW_MISSING_OR_INVALID: {
+      area: "Security review",
+      action:
+        "A named human must review the threat models and staging evidence, record findings and sign the exact release candidate.",
+      ownerAction: true,
+    },
+  };
+  const releaseBlockers = snapshot.release_gate.blockers.map(
+    (blocker: string) => ({
+      code: blocker,
+      ...(releaseGuidance[blocker] || {
+        area: label(blocker),
+        action:
+          "Resolve this deterministic release check and regenerate the candidate evidence.",
+        ownerAction: false,
+      }),
+    }),
+  );
   return (
     <>
       <div className="admin-grid">
@@ -854,12 +894,20 @@ export function AdminView({ snapshot }: { snapshot: any }) {
             ? ` · ${snapshot.release_gate.release_version}`
             : ""}
         </p>
-        {snapshot.release_gate.blockers.length ? (
-          <ul>
-            {snapshot.release_gate.blockers.map((blocker: string) => (
-              <li key={blocker}>{label(blocker)}</li>
+        {releaseBlockers.length ? (
+          <div className="release-checklist">
+            {releaseBlockers.map((blocker: any) => (
+              <article className="list-item" key={blocker.code}>
+                <div>
+                  <strong>{blocker.area}</strong>
+                  <p>{blocker.action}</p>
+                </div>
+                <span className={`badge ${blocker.ownerAction ? "amber" : ""}`}>
+                  {blocker.ownerAction ? "OWNER SIGN-OFF" : "ENGINEERING"}
+                </span>
+              </article>
             ))}
-          </ul>
+          </div>
         ) : (
           <p>All deterministic manifest checks pass.</p>
         )}

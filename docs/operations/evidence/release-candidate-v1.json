@@ -1,0 +1,45 @@
+{
+  "schema": "kxra-release-candidate-evidence-v1",
+  "releaseName": "KXRA Founding private-launch candidate",
+  "releaseVersion": "founding-private-launch-v1",
+  "reviewedAt": "2026-10-01T00:00:00.000Z",
+  "legalOwner": "KXRA owner",
+  "commercialOwner": "KXRA owner",
+  "support": {
+    "support_email": "info@kxra-group.com",
+    "privacy_email": "info@kxra-group.com",
+    "security_email": "info@kxra-group.com",
+    "response_policy": "KXRA receives business support, privacy and security requests through info@kxra-group.com and responds according to urgency and applicable legal deadlines."
+  },
+  "providerEvidence": [
+    {
+      "key": "CORE_STAGING",
+      "status": "PASS",
+      "reference": "docs/operations/handover.md#preview-enquiry-ingress-and-waf-observation-complete",
+      "assertion": "The protected OS, marketing and email-worker Preview deployments are operational and the bounded public enquiry ingress has passed its database and WAF observation checks."
+    },
+    {
+      "key": "AUTH_RLS",
+      "status": "PASS",
+      "reference": "docs/operations/acceptance-evidence.md#hosted-partner-isolation-cycle",
+      "assertion": "Hosted owner and isolated partner sessions prove owner-only administration, active-session revocation and PROJECT-002-only UI, API, search and Ask KXRA access."
+    },
+    {
+      "key": "STRIPE_TEST",
+      "status": "PASS",
+      "reference": "docs/operations/handover.md#stripe-sandbox-acceptance-and-resubscription-complete",
+      "assertion": "Stripe Sandbox checkout, signed subscription lifecycle reconciliation, portal cancellation, replay idempotency and entitlement removal passed without live charging."
+    },
+    {
+      "key": "EMAIL_STAGING",
+      "status": "PASS",
+      "reference": "docs/operations/handover.md#transactional-email-staging-checkpoint",
+      "assertion": "The isolated email worker completed one controlled Resend delivery and signed-webhook reconciliation using restricted staging authority."
+    }
+  ],
+  "knownBlockers": [
+    "BACKUP_RESTORE_HOSTED_EVIDENCE",
+    "ACCESSIBILITY_REVIEW",
+    "SECURITY_REVIEW"
+  ]
+}
