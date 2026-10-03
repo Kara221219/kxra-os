@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview public ingress and the Preview-only enquiry firewall observation all pass. The WAF rule logged ordinary browser traffic without blocking it, and the accepted synthetic enquiry is present in the owner-only database inbox. Live charging, production and `main` remain untouched.**
+Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview public ingress, Preview-only enquiry firewall observation and isolated hosted partner revocation/restoration acceptance all pass. PROJECT-002 is restored as the partner's only project grant; PROJECT-003 remains unavailable through UI, direct API, search and Ask KXRA. Live charging, production and `main` remain untouched.**
 
 ## Preview enquiry WAF observation checkpoint
 
@@ -53,11 +53,13 @@ Updated: 3 October 2026. Status: **Stripe Sandbox lifecycle, protected Preview p
 ## Hosted owner and partner isolation checkpoint
 
 - The controlled `h***@icloud.com` identity completed invitation redemption and all onboarding steps with no mandatory NDA. Its only project grant is PROJECT-002 as viewer; the owner remains the only KXRA owner and uses hosted password plus TOTP assurance.
-- Live private UI checks showed one partner project, read-only PROJECT-002 access, generic denial for direct PROJECT-003 and crafted UUID routes, no owner Admin access, an Ask KXRA selector containing only PROJECT-002 and no cross-project file visibility. The shared in-app browser cookie jar could not preserve simultaneous owner and partner cookies, so it is not cited as active-session revocation evidence.
+- Live private UI checks in an isolated Safari partner session showed one partner project, read-only PROJECT-002 access, generic denial for direct PROJECT-003 and crafted UUID routes, no owner Admin access, and an Ask KXRA selector containing only PROJECT-002.
 - The owner executed an exact current-state approval changing PROJECT-002 from active to revoked. Under the real hosted `authenticated` role and the partner's exact subject/organisation context, PostgreSQL RLS then returned zero visible projects, zero target-project records, zero target-project files and zero target-project knowledge chunks.
 - The owner executed a second exact approval restoring the same PROJECT-002 viewer grant. Hosted RLS then returned exactly one visible project: PROJECT-002. PROJECT-003 and a crafted UUID remained invisible. The accidental no-op approval created during UI preparation was rejected and cannot execute.
 - The deployed OS runtime database password had become invalid (`28P01`). Only the restricted `kxra_app` credential was rotated through a local non-echoing helper, verified through the transaction pooler and replaced in the OS Preview branch secret. The resulting Preview is Ready and invalid credentials now reach the correct bounded authentication failure instead of a configuration error. No secret was retained or printed.
-- Remaining acceptance in this area: capture a true HTTP revocation check with two isolated browser cookie jars and exercise direct API plus active-session revocation on the hosted runtime. The exact Preview WAF observation is complete. Local SQL/HTTP/browser tests already cover these negative cases.
+- The isolated partner session remained signed in while the owner executed an exact revocation approval. Without logout, `/os/projects` fell to zero projects, PROJECT-002 evidence search changed to the generic `{"error":"Not found"}` response and Ask KXRA exposed no project option. This proves current membership is rechecked on each hosted request rather than cached in the browser session.
+- After a fresh owner AAL2 challenge, the already approved restoration executed. The same partner session immediately regained exactly PROJECT-002. Direct `GET /api/projects` returned only PROJECT-002; direct PROJECT-003 and PROJECT-003 search returned generic `{"error":"Not found"}`; PROJECT-002 search returned only PROJECT-002 evidence; and Ask KXRA exposed exactly `PROJECT-002 · US Vehicle Seat Covers`.
+- Hosted staging currently contains zero file rows, so a real cross-project object/download attempt cannot be exercised without introducing a safe staged file. The Files UI and `/api/files` returned no files, while the hermetic SQL/HTTP/browser suite continues to cover cross-project file isolation. This is an explicit evidence limitation, not a claimed hosted file pass.
 
 ## Hosted twelve-project staging checkpoint
 

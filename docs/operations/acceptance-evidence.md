@@ -341,11 +341,19 @@ Evidence: migrations `0056`–`0057`; `apps/marketing`; owner private-inbox rend
 - RLS keeps requested assessments and all approval envelopes owner-only. An active assigned partner can read only applied or superseded assessment/factor/evidence summaries for that project; viewer, revoked, anonymous and cross-project principals receive no rows.
 - SQL, HTTP and desktop/mobile browser tests cover partial/full arithmetic, supersession, direct DML, malformed confidence, crafted IDs/evidence, stale governance and the owner scorecard workflow. Seeded project scores remain `Not Assessed`.
 
+## Hosted partner isolation acceptance — PASS with one file-data limitation
+
+On 3 October 2026 the controlled iCloud partner and owner were held in separate browser cookie jars against the protected OS Preview. Before revocation, the partner saw exactly PROJECT-002, could retrieve its evidence and received generic `Not found` for direct PROJECT-003, a crafted project id and cross-project search. Ask KXRA listed only PROJECT-002.
+
+The owner then executed the exact approved change from PROJECT-002 viewer active to inactive. The existing partner session was not logged out. Its next project, search and Ask requests immediately returned zero authority. After a new owner AAL2 challenge, the exact approved inverse change executed. The same partner session immediately regained exactly PROJECT-002. Direct `/api/projects`, allowed PROJECT-002 search, denied PROJECT-003 detail/search and the Ask project selector all matched that boundary.
+
+This proves hosted active-session membership reauthorization, generic cross-project denial and permission restoration without relying on an LLM or client-supplied role. Hosted staging contains zero `kxra.files` rows, so no genuine cross-project file-object/download request was available. Empty Files UI/API behavior was observed and the automated SQL/HTTP/browser file-isolation suite passes; the hosted object-level case remains explicitly unclaimed until a safe staged file exists.
+
 ## Security and accessibility review notes
 
 The [account threat model](../security/account-identity-threat-model.md), [file/knowledge threat model](../security/file-knowledge-threat-model.md), [AI execution threat model](../security/ai-execution-threat-model.md), [Brand Studio threat model](../security/brand-studio-threat-model.md), [YouTube/repository threat model](../security/youtube-and-repository-pipelines-threat-model.md), [routine threat model](../security/routine-engine-threat-model.md), [WhatsApp threat model](../security/whatsapp-gateway-threat-model.md), [public marketing threat model](../security/public-marketing-threat-model.md) and [access-control model](../security/access-control.md) record assets, trust boundaries, attacks, controls and hosted gaps. Owner partner administration, the control plane, project workspaces, Brand Studio, Routine Registry and WhatsApp status collapse before tablet width; mobile navigation uses a keyboard-operable disclosure model.
 
-Legal text remains unapproved. Local fake proofs, files and screen captures are ignored and absent from production output. All external providers remain disconnected.
+Customer-document pack version 1 is owner-approved and imported to staging; NDA remains parked. Local fake proofs, files and screen captures are ignored and absent from production output. Unfinished external providers remain disabled.
 
 ## Next evidence gate
 

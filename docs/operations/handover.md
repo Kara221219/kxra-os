@@ -2,6 +2,14 @@
 
 Updated: 3 October 2026.
 
+## Hosted partner isolation cycle complete
+
+The controlled iCloud partner session is restored to its original PROJECT-002 viewer grant after a bounded revoke/restore acceptance cycle. The owner executed both exact state changes through the approval system with recent AAL2. No production or `main` change occurred.
+
+The partner browser remained signed in throughout revocation. On the next requests it moved from one visible project to zero, PROJECT-002 search returned generic `Not found`, and Ask KXRA exposed no project. After restoration, the same session returned to exactly one project. `/api/projects` contains only PROJECT-002, allowed search returns only PROJECT-002 evidence, direct PROJECT-003 and cross-project search return generic `Not found`, and the Ask KXRA project menu contains only PROJECT-002. This completes the previously outstanding isolated-cookie direct-API and active-session revocation sequence.
+
+Hosted staging has no file rows. The empty Files UI and API are verified, but a real cross-project object/download denial remains unexercised in hosted Preview until a safe staged file exists. Automated database, HTTP and browser isolation tests cover that boundary. Do not create customer-like file content solely to remove this evidence limitation.
+
 ## Preview enquiry ingress and WAF observation complete
 
 Vercel has one active Preview-only firewall rule for `kxra-marketing-staging`: `KXRA enquiry observation` (`rule_kxra_enquiry_observation_Zlx5Sp`). It matches only Preview requests where the path equals `/api/enquiries` and the method equals `POST`; its action is `Log`. It cannot block traffic and does not target Production.
@@ -54,9 +62,9 @@ Seed history is now explicitly versioned. The existing seven-project `KXRA-CANON
 
 The exact V2 commit passes the complete local hermetic contract: 219 core tests, 74 migrations, 172 protected tables, 43 applicable private browser journeys with five intentional skips, both 14-journey public runs, restart persistence, a 3,014-row/15-object empty-target restore, all three builds, CSP/SRI, build budgets, artifact exclusion, a 426-file publication/secret scan and Lighthouse 1.00 performance/accessibility for both measured routes. GitHub CodeQL run `36768006957` and full CI run `36768007053` pass at the same SHA. Matching OS deployment `dpl_67omxHuJvqeMw7ypHVE9CQiAcuMY`, marketing deployment `dpl_7cijxTKw2YpPAxmNcwPXTdK42igW` and isolated email-worker deployment `dpl_2A6w5AbcFb8aaq9c6MeDd9y4vbBD` are Ready Preview builds at their stable phase-branch aliases. A later OS Preview repaired only its invalid restricted runtime password; the new deployment is Ready and the credential was not retained.
 
-The controlled iCloud partner completed redemption and onboarding with exactly PROJECT-002 viewer access. Live UI checks passed for assigned-project visibility, direct PROJECT-003 and crafted-ID denial, owner Admin denial, one-project Ask scope and empty cross-project files. An exact owner approval revoked PROJECT-002; hosted PostgreSQL under the real `authenticated` role and exact partner context then returned zero projects, records, files and knowledge chunks. A second exact approval restored viewer access; hosted RLS returned exactly PROJECT-002 while PROJECT-003 and the crafted UUID remained invisible. Because all in-app tabs share one cookie jar, a simultaneous two-session HTTP revocation check still needs a genuinely isolated browser context and is not claimed by this checkpoint.
+The controlled iCloud partner completed redemption and onboarding with exactly PROJECT-002 viewer access. Live UI checks passed for assigned-project visibility, direct PROJECT-003 and crafted-ID denial, owner Admin denial and one-project Ask scope. An exact owner approval revoked PROJECT-002; hosted PostgreSQL and the isolated signed-in partner session both immediately returned zero project authority. A second exact approval restored viewer access; the same session regained exactly PROJECT-002 while PROJECT-003 and the crafted UUID remained invisible.
 
-Production and `main` remain untouched. The next evidence slice is the isolated-cookie hosted HTTP/direct-API revocation sequence. Preview WAF evidence is complete; customer release still requires the remaining provider/release evidence.
+Production and `main` remain untouched. Preview WAF and isolated-cookie hosted HTTP/direct-API revocation evidence are complete; customer release still requires the remaining provider/release evidence and a hosted cross-project file-object test once a safe staged file exists.
 
 ## Current venture-intake checkpoint
 
@@ -92,7 +100,7 @@ Vercel projects `kxra-os-staging` and `kxra-marketing-staging` are connected to 
 
 Supabase Auth uses the exact private phase-branch origin. New email signup remains disabled pending migration 0070 and the Before User Created hook; after both are verified, the provider switch can be enabled while the hook keeps registration invitation-only. Email confirmation remains enabled, TOTP is enabled and AAL1 sessions are limited to 15 minutes. The single staging Auth identity is `husainkara@hotmail.co.uk`, UUID `0d7ff2e1-3d1d-4063-a278-7213a672385c`; the guarded owner bootstrap prepared its matching KXRA owner record. The exact `/reset-password` redirect is saved. Existing obsolete reset callback and `/reset-password/verify` entries can be removed only after the new flow is proven. The default email service is fixed at two emails per hour; correct-flow attempts at 23:45 and 23:52 were rejected with 429 before the successful 00:22:57 request.
 
-The historical hosted-acceptance checkpoint is superseded: the verified AAL2 owner and bounded staging partner isolation cycle have run, and exact Preview WAF evidence now passes. The remaining hosted security item is a genuinely isolated-cookie direct-API and active-session revocation sequence.
+The historical hosted-acceptance checkpoint is superseded: the verified AAL2 owner, isolated signed-in partner revoke/restore cycle, direct-API/search checks and exact Preview WAF evidence all pass. Hosted file-object isolation remains limited by the absence of any staged file row.
 
 The first 18-probe anonymous run against `b37d30f` retained a redacted FAIL artifact because Vercel Authentication intercepted all probes with protection-layer 302/401 responses. This is a deployment-protection checkpoint, not KXRA route evidence. Each Vercel project already has a distinct automation-bypass secret. The corrected harness accepts one per project, stores neither and rejects a shared cross-project bypass. Do not disable Vercel Authentication.
 
