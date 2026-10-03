@@ -303,3 +303,13 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - The owner confirmed that KXRA is not VAT registered. The current £29 monthly/£290 annual plan does not add VAT; revisit pricing and Stripe Tax before charging VAT or after any registration-status change.
 - The long documents are script-free server HTML with one static stylesheet. This preserves readable content under the strict CSP and reduces the exact CSP from the rejected 9,549-character header to 3,717 characters with 64 hashes.
 - The complete fresh GitHub contract passes implementation commit `b0ca8fa1d1e0a0cd14f2a78d10b8ba40d6bfcb46`: full CI run `36861911207` and SHA-matched CodeQL run `36861911192`. It covers 223 core tests, 76 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart/restore, all three builds, CSP/SRI, budgets, artifact exclusion, publication/secret scanning and dependency audits.
+
+## Current public-ingress handover — 3 October 2026
+
+- Branch `codex/phase-2-completion` contains the verified public-form fallback and database TLS repair through commit `29d7600`. Do not merge or deploy Production yet.
+- Marketing Preview deployment `dpl_3YtRnnXwEZokXchG6n3LX2foYySX` is Ready at the stable phase-branch alias. Its branch-only CA secret is the official Supabase Root 2021 certificate; no credential value or certificate body is stored in Git or these records.
+- The live Preview enquiry endpoint returned `202 Accepted`. Supabase contains receipt `46d33e37-7a02-4b2b-bc13-29a130cbf069` as an owner-only `CONTACT`, status `UNVERIFIED`, source `/contact`. The record is synthetic and requires no response.
+- Root cause of the prior 503 was application-level SSL option precedence: URL `sslmode` replaced the explicit verified CA object in the marketing route. The route now uses `databaseConnectionString(...)` to strip URL SSL controls before applying `databaseSsl()`.
+- Safe diagnostics may log only bounded error class, public certificate metadata and endpoint/username mode. They do not log credentials, URLs, form content or source addresses.
+- Local acceptance is green: 234 core tests; 80 migrations and 172 RLS tables; 43 private browser journeys with five intentional skips; both 18-test public runs; restart/restore; all three optimized builds; CSP/SRI, size, artifact and secret gates; Lighthouse 1.00 performance/accessibility.
+- Remaining action: submit the same approved synthetic contact once through the ordinary protected browser and confirm Vercel Firewall increments `Logged`. Automation-bypass CLI traffic does not exercise the ordinary edge observation. Keep the rule in log mode until evidence supports any rate limit.

@@ -499,6 +499,16 @@ Apply and verify migration 0075 through the guarded hosted-staging operator. The
 
 Only application code, engineering documentation and minimum classified seed records required by the platform may enter the repository. Original Word/text sources, private Genesis research, the private business pack, archives, `.runtime`, credentials, screenshots, traces, databases/object backups and generated test artifacts remain excluded.
 
+## Preview public-ingress acceptance checkpoint — 3 October 2026
+
+- The Preview-only Vercel rule `KXRA enquiry observation` is active in log mode for exact `POST /api/enquiries` traffic. It cannot block requests and does not target Production.
+- The public form now has a safe native `POST /api/enquiries` action with hidden route fields, preventing an unhydrated browser from placing enquiry fields in a URL query. The enhanced JavaScript path retains JSON submission, idempotency and visible success/failure states.
+- Bounded runtime diagnostics classify configuration, connection and transaction failures without logging a connection string, password, certificate body, enquiry content or client address. The diagnostic contract is covered by a disclosure regression.
+- Preview initially failed at TLS verification even though it received the official Supabase Root 2021 certificate, the expected session pooler, the custom pooler username and `verify-full`. The route had passed URL-level `sslmode` alongside an explicit CA object; node-postgres URL parsing replaced the verified CA settings. Public ingress now removes URL-level SSL controls before supplying the certificate-verifying SSL object, matching the private OS connection path.
+- The corrected deployment `dpl_3YtRnnXwEZokXchG6n3LX2foYySX` is Ready. An owner-approved synthetic request returned `202 Accepted` with receipt `46d33e37-7a02-4b2b-bc13-29a130cbf069`. Independent Supabase inspection found exactly that `CONTACT` record with `UNVERIFIED` status and `/contact` source path.
+- The complete final hermetic contract passes 234 core tests, 80 migrations, 172 protected-table checks, 43 applicable private browser journeys with five intentional skips, both 18-journey marketing runs, restart and empty-target restore, all three builds, CSP/SRI, budgets, artifact/secret scans and Lighthouse performance/accessibility 1.00.
+- Vercel CLI requests use deployment-protection automation bypass and therefore do not provide ordinary edge-rule observations. One normal protected-browser submission and the resulting WAF log count remain the only open item in this checkpoint. Production and `main` remain untouched.
+
 ## Hosted staging partner-invitation checkpoint
 
 - On 29 September 2026 the verified owner used a fresh password-plus-TOTP session to create one 24-hour staging invitation for the owner-controlled `h***@icloud.com` acceptance identity.
