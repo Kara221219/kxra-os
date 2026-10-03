@@ -1,0 +1,37 @@
+{
+  "schema": "kxra-hosted-recovery-evidence-v1",
+  "environment": "staging",
+  "provider": "Supabase",
+  "sourceProjectRef": "jlebgsxcvhvpueuibekd",
+  "recoveryProjectRef": "sslsbcilxcbrbglenygg",
+  "region": "eu-west-2",
+  "backup": {
+    "type": "PHYSICAL",
+    "createdAt": "2026-10-03T06:38:46.000Z",
+    "status": "COMPLETED"
+  },
+  "restore": {
+    "projectName": "KXRA Recovery Drill 2026-10-03",
+    "completedAt": "2026-10-03T18:42:32.000Z",
+    "status": "COMPLETED",
+    "isolatedFromSource": true
+  },
+  "databaseVerification": {
+    "migrationCount": 80,
+    "latestMigration": "0080_allow_checkout_after_cancelled_subscription.sql",
+    "rlsProtectedTableCount": 172,
+    "releaseManifestCount": 1,
+    "releaseVersion": "founding-private-launch-v1",
+    "releaseState": "BLOCKED",
+    "projectRecordCount": 12,
+    "postBackupReviewTablePresent": false
+  },
+  "recoveryLimits": [
+    "Storage objects and settings require separate recovery.",
+    "Edge Functions require separate deployment.",
+    "Auth settings and API keys require separate configuration.",
+    "Database extensions and settings require separate verification.",
+    "Read replicas require separate configuration."
+  ],
+  "assertion": "Supabase completed an isolated restore of the newest hosted physical backup into a separate eu-west-2 project. Read-only verification found the expected pre-0081 migration boundary, RLS-protected KXRA schema, project register and blocked founding release manifest without altering the staging source project."
+}
