@@ -13,12 +13,14 @@ export default function ReleaseReviewForm({
   candidateSha256,
   evidenceSha256,
   recorded,
+  finalized,
 }: {
   kind: ReleaseReviewType;
   manifestId: string;
   candidateSha256: string;
   evidenceSha256: string;
   recorded?: { reviewer_name: string; attested_at: string } | null;
+  finalized: boolean;
 }) {
   const packet = releaseReviewPackets[kind];
   const router = useRouter();
@@ -35,7 +37,9 @@ export default function ReleaseReviewForm({
           {new Date(recorded.attested_at).toLocaleString("en-GB")}.
         </p>
         <p className="subtle">
-          Awaiting final evidence binding to the release manifest.
+          {finalized
+            ? "Bound to the finalized release evidence."
+            : "Awaiting final evidence binding to the release manifest."}
         </p>
       </section>
     );

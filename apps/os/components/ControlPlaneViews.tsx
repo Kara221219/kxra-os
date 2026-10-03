@@ -929,6 +929,7 @@ export function AdminView({ snapshot }: { snapshot: any }) {
               manifestId={snapshot.release_gate.id}
               candidateSha256={snapshot.release_gate.candidate_sha256}
               evidenceSha256={releaseReviewEvidenceSha256(kind)}
+              finalized={snapshot.release_gate.ready}
               recorded={
                 snapshot.release_gate.review_attestations.find(
                   (item: { review_type: string }) => item.review_type === kind,
