@@ -477,66 +477,66 @@ export async function ownerDashboard(a: Actor) {
       warningRows,
       activityCount,
       activityRows,
-    ] = await Promise.all([
-      db.query(
+    ] = [
+      await db.query(
         "select count(*)::text as n from kxra.workflow_tasks where state='assigned'",
       ),
-      db.query(`select t.id,t.title,t.acceptance_criteria,p.code as project_code,t.assigned_at
+      await db.query(`select t.id,t.title,t.acceptance_criteria,p.code as project_code,t.assigned_at
           from kxra.workflow_tasks t join kxra.projects p on p.id=t.project_id
           where t.state='assigned' order by t.assigned_at,t.id limit 10`),
-      db.query(
+      await db.query(
         "select count(*)::text as n from kxra.projects where next_gate is not null",
       ),
-      db.query(`select p.id,p.code,p.name,p.next_gate,p.next_action,p.governance_updated_at
+      await db.query(`select p.id,p.code,p.name,p.next_gate,p.next_action,p.governance_updated_at
           from kxra.projects p where p.next_gate is not null order by p.code,p.id limit 10`),
-      db.query(
+      await db.query(
         "select count(*)::text as n from kxra.approvals where state in ('REQUESTED','APPROVED')",
       ),
-      db.query(`select a.id,a.action,a.state,a.created_at,p.code as project_code,
+      await db.query(`select a.id,a.action,a.state,a.created_at,p.code as project_code,
           coalesce(a.payload->>'action_summary',a.action) as title
           from kxra.approvals a left join kxra.projects p on p.id=a.project_id
           where a.state in ('REQUESTED','APPROVED') order by a.created_at desc,a.id desc limit 10`),
-      db.query(
+      await db.query(
         "select count(*)::text as n from kxra.records where kind='decision' and status in ('draft','submitted')",
       ),
-      db.query(`select r.id,r.title,r.status,r.updated_at,p.code as project_code
+      await db.query(`select r.id,r.title,r.status,r.updated_at,p.code as project_code
           from kxra.records r left join kxra.projects p on p.id=r.project_id
           where r.kind='decision' and r.status in ('draft','submitted')
           order by r.updated_at desc,r.id desc limit 10`),
-      db.query(`select count(*)::text as n from kxra.records r where r.kind='risk'
+      await db.query(`select count(*)::text as n from kxra.records r where r.kind='risk'
           and coalesce(nullif(r.data->>'status',''),r.status) not in ('closed','archived','rejected')`),
-      db.query(`select r.id,r.title,coalesce(nullif(r.data->>'status',''),r.status) as status,
+      await db.query(`select r.id,r.title,coalesce(nullif(r.data->>'status',''),r.status) as status,
           r.data->>'rating' as rating,r.updated_at,p.code as project_code
           from kxra.records r left join kxra.projects p on p.id=r.project_id
           where r.kind='risk' and coalesce(nullif(r.data->>'status',''),r.status)
            not in ('closed','archived','rejected')
           order by case when r.data->>'rating'~'^([0-9]+)(\\.[0-9]+)?$'
            then (r.data->>'rating')::numeric end desc nulls last,r.updated_at desc,r.id limit 10`),
-      db.query(
+      await db.query(
         "select count(*)::text as n from kxra.records where kind='blocker' and status not in ('completed','archived','rejected')",
       ),
-      db.query(`select r.id,r.title,r.status,r.updated_at,p.code as project_code
+      await db.query(`select r.id,r.title,r.status,r.updated_at,p.code as project_code
           from kxra.records r left join kxra.projects p on p.id=r.project_id
           where r.kind='blocker' and r.status not in ('completed','archived','rejected')
           order by r.updated_at desc,r.id limit 10`),
-      db.query(
+      await db.query(
         "select count(*)::text as n from kxra.work_log_entries where status='FAILED'",
       ),
-      db.query(`select w.id,w.title,w.status,w.occurred_at,w.artifact_type,w.artifact_id,p.code as project_code
+      await db.query(`select w.id,w.title,w.status,w.occurred_at,w.artifact_type,w.artifact_id,p.code as project_code
           from kxra.work_log_entries w left join kxra.projects p on p.id=w.project_id
           where w.status='FAILED' order by w.occurred_at desc,w.id limit 10`),
-      db.query(`select count(*)::text as n from kxra.account_security_events
+      await db.query(`select count(*)::text as n from kxra.account_security_events
           where event_type in ('ACCOUNT_SUSPENDED','ACCOUNT_REVOKED','SESSIONS_REVOKED','MFA_STATE_CHANGED')`),
-      db.query(`select e.id,e.event_type,e.created_at,m.display_name
+      await db.query(`select e.id,e.event_type,e.created_at,m.display_name
           from kxra.account_security_events e left join kxra.members m on m.id=e.user_id and m.org_id=e.org_id
           where e.event_type in ('ACCOUNT_SUSPENDED','ACCOUNT_REVOKED','SESSIONS_REVOKED','MFA_STATE_CHANGED')
           order by e.created_at desc,e.id limit 10`),
-      db.query("select count(*)::text as n from kxra.work_log_entries"),
-      db.query(`select w.id,w.title,w.status,w.entry_type,w.occurred_at,w.artifact_type,w.artifact_id,
+      await db.query("select count(*)::text as n from kxra.work_log_entries"),
+      await db.query(`select w.id,w.title,w.status,w.entry_type,w.occurred_at,w.artifact_type,w.artifact_id,
           p.code as project_code from kxra.work_log_entries w
           left join kxra.projects p on p.id=w.project_id
           order by w.occurred_at desc,w.id desc limit 15`),
-    ]);
+    ];
 
     const todayItems: DashboardItem[] = [
       ...taskRows.rows.map((row) => ({
@@ -773,66 +773,59 @@ export async function adminSnapshot(a: Actor) {
   return scoped(a, async (db) => {
     await db.query("select kxra.record_admin_view()");
     await db.query("select kxra.refresh_expired_approvals()");
-    const [
-      accounts,
-      invitations,
-      memberships,
-      approvals,
-      email,
-      securityEvents,
-      schemaCounts,
-      projectCounts,
-      auditCount,
-      releaseGate,
-    ] = await Promise.all([
-      db.query<CountRow>(
-        "select account_state as state,count(*)::text as count from kxra.profiles group by account_state order by account_state",
-      ),
-      db.query<CountRow>(
-        "select state,count(*)::text as count from kxra.invitations group by state order by state",
-      ),
-      db.query<CountRow>(
-        "select case when active then 'ACTIVE' else 'INACTIVE' end as state,count(*)::text as count from kxra.project_memberships group by active order by active desc",
-      ),
-      db.query<CountRow>(
-        "select state,count(*)::text as count from kxra.approvals group by state order by state",
-      ),
-      db.query<CountRow>(
-        "select state,count(*)::text as count from kxra.transactional_email_outbox group by state order by state",
-      ),
-      db.query(`select e.id,e.event_type,e.user_id,e.actor_id,e.metadata,e.created_at,
+    // `scoped` owns one transaction client. PostgreSQL clients serialize one
+    // protocol stream, so keep these reads sequential instead of issuing
+    // concurrent `query()` calls on the same client.
+    const accounts = await db.query<CountRow>(
+      "select account_state as state,count(*)::text as count from kxra.profiles group by account_state order by account_state",
+    );
+    const invitations = await db.query<CountRow>(
+      "select state,count(*)::text as count from kxra.invitations group by state order by state",
+    );
+    const memberships = await db.query<CountRow>(
+      "select case when active then 'ACTIVE' else 'INACTIVE' end as state,count(*)::text as count from kxra.project_memberships group by active order by active desc",
+    );
+    const approvals = await db.query<CountRow>(
+      "select state,count(*)::text as count from kxra.approvals group by state order by state",
+    );
+    const email = await db.query<CountRow>(
+      "select state,count(*)::text as count from kxra.transactional_email_outbox group by state order by state",
+    );
+    const securityEvents = await db.query(
+      `select e.id,e.event_type,e.user_id,e.actor_id,e.metadata,e.created_at,
           m.display_name as user_name from kxra.account_security_events e
           left join kxra.members m on m.id=e.user_id and m.org_id=e.org_id
-          order by e.created_at desc,e.id desc limit 30`),
-      db.query(`select
+          order by e.created_at desc,e.id desc limit 30`,
+    );
+    const schemaCounts = await db.query(`select
           (select count(*)::text from pg_tables where schemaname='kxra') as rls_tables,
           (select count(*)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='kxra') as exposed_functions,
-          (select count(*)::text from pg_tables where schemaname='kxra' and rowsecurity) as protected_tables`),
-      db.query<CountRow>(
-        "select coalesce(disposition,'UNKNOWN') as state,count(*)::text as count from kxra.projects group by disposition order by state",
-      ),
-      db.query<{ count: string }>(
-        "select count(*)::text as count from kxra.audit_events",
-      ),
-      db.query<{
-        id: string;
-        release_name: string;
-        release_version: string;
-        state: string;
-        reviewed_at: string | null;
-        finalized_at: string | null;
-        recovery_evidence_sha256: string | null;
-        candidate_sha256: string;
-        review_attestations: Array<{
-          review_type: "ACCESSIBILITY" | "SECURITY";
-          reviewer_name: string;
-          evidence_sha256: string;
-          attested_at: string;
-        }>;
-        ready: boolean;
-        blockers: string[];
-      }>(
-        `select m.id,m.release_name,m.release_version,m.state,m.reviewed_at,
+          (select count(*)::text from pg_tables where schemaname='kxra' and rowsecurity) as protected_tables`);
+    const projectCounts = await db.query<CountRow>(
+      "select coalesce(disposition,'UNKNOWN') as state,count(*)::text as count from kxra.projects group by disposition order by state",
+    );
+    const auditCount = await db.query<{ count: string }>(
+      "select count(*)::text as count from kxra.audit_events",
+    );
+    const releaseGate = await db.query<{
+      id: string;
+      release_name: string;
+      release_version: string;
+      state: string;
+      reviewed_at: string | null;
+      finalized_at: string | null;
+      recovery_evidence_sha256: string | null;
+      candidate_sha256: string;
+      review_attestations: Array<{
+        review_type: "ACCESSIBILITY" | "SECURITY";
+        reviewer_name: string;
+        evidence_sha256: string;
+        attested_at: string;
+      }>;
+      ready: boolean;
+      blockers: string[];
+    }>(
+      `select m.id,m.release_name,m.release_version,m.state,m.reviewed_at,
           finalization.finalized_at,finalization.recovery_evidence_sha256,
           kxra.release_candidate_digest(m.id) as candidate_sha256,
           coalesce((select jsonb_agg(jsonb_build_object(
@@ -850,9 +843,8 @@ export async function adminSnapshot(a: Actor) {
            limit 1
          ) finalization on true
          where m.org_id=$1 order by m.created_at desc,m.id desc limit 1`,
-        [a.org_id],
-      ),
-    ]);
+      [a.org_id],
+    );
     const env = process.env;
     const release = releaseGate.rows[0];
     const finalizedRelease = Boolean(
