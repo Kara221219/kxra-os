@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 3 October 2026. Status: **The governed staging release evidence is finalized and `founding-private-launch-v1` is evidence-only `READY`. Authorized Supabase staging verifies 82 migrations, 174/174 RLS-protected KXRA tables, one immutable finalization record, the exact hosted-recovery digest and zero release blockers. Live charging, production, publication and `main` remain untouched.**
+Updated: 4 October 2026. Status: **The governed staging release evidence is finalized and `founding-private-launch-v1` is evidence-only `READY`. Authorized Supabase staging verifies 82 migrations, 174/174 RLS-protected KXRA tables, one immutable finalization record, the exact hosted-recovery digest and zero release blockers. The verified temporary recovery project has been deleted; only KXRA Staging remains in the Supabase organisation. Live charging, production, publication and `main` remain untouched.**
 
 ## Hosted release candidate and governed human reviews
 
@@ -12,6 +12,7 @@ Updated: 3 October 2026. Status: **The governed staging release evidence is fina
 - Each review binds the exact base-candidate SHA-256 and versioned review-packet SHA-256. Recording a review cannot change release state, deploy, publish, enable live billing, grant access or merge `main`.
 - The current complete hermetic contract passes 241/241 database/domain/HTTP/security tests, 82 migrations, 174 protected tables, 148 exposed `kxra` functions, 43 applicable private browser journeys with five intentional skips, both 18-journey public runs in development and optimized-production modes, restart persistence, a 3,037-row/15-object empty-target restore, all three optimized builds, 64 exact CSP hashes, 101 SRI references, a 476-file publication/secret scan, and Lighthouse 1.00 performance/accessibility on both measured routes.
 - Migration 0081 is applied to authorized Supabase staging and independently ledger-verified at SHA-256 `e919efce4f033c2f5b36eeee4670056f70d65196f3a78847c7313b90c46a446a` against commit `d388964ec674364cf671fdffe25ff4f851a2ea2d`. Husain Kara recorded the accessibility review at 10:05:50 and security review at 10:07:44 on 3 October 2026 after a fresh AAL2 challenge. Commit `8f23b12da10ea5b74507ce5882a162fed6d76c23` passed GitHub full CI run `37148158100` and CodeQL run `37148158092`; migration 0082 and the guarded hosted finalization are now applied and independently verified.
+- Commit `f5db9b66f0f9fdfc01908b421878b3c8210f6679` records the hosted finalization and corrects the stale Admin review wording. GitHub full CI run `37156264236` and CodeQL run `37156264228` both pass. After explicit owner confirmation, temporary recovery project `sslsbcilxcbrbglenygg` was permanently deleted; the Supabase organisation project list now contains only KXRA Staging.
 
 ## Guarded customer release candidate
 
