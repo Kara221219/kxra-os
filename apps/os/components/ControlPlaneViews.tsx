@@ -919,6 +919,21 @@ export function AdminView({ snapshot }: { snapshot: any }) {
           public-copy integrity, and accessibility and security reviews. This
           status cannot deploy or publish anything.
         </p>
+        {snapshot.release_gate.ready &&
+          snapshot.release_gate.finalized_at &&
+          snapshot.release_gate.recovery_evidence_sha256 && (
+            <dl className="definition">
+              <dt>Finalized evidence</dt>
+              <dd>{date(snapshot.release_gate.finalized_at)}</dd>
+              <dt>Recovery evidence</dt>
+              <dd>
+                Bound ·{" "}
+                {snapshot.release_gate.recovery_evidence_sha256.slice(0, 12)}…
+              </dd>
+              <dt>Production authority</dt>
+              <dd>NOT GRANTED</dd>
+            </dl>
+          )}
       </section>
       {snapshot.release_gate.id && (
         <div className="release-review-grid">

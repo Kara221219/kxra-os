@@ -182,9 +182,12 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
     release_version: null,
     state: "MISSING",
     reviewed_at: null,
+    finalized_at: null,
+    recovery_evidence_sha256: null,
     ready: false,
     blockers: ["RELEASE_MANIFEST_MISSING"],
   });
+  assert.equal(snapshot.controls.backups, "EVIDENCE_NOT_CONNECTED");
   assert.ok(
     Object.values(snapshot.integrations).every(
       (value) => typeof value === "boolean",

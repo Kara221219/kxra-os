@@ -820,6 +820,8 @@ export async function adminSnapshot(a: Actor) {
         release_version: string;
         state: string;
         reviewed_at: string | null;
+        finalized_at: string | null;
+        recovery_evidence_sha256: string | null;
         candidate_sha256: string;
         review_attestations: Array<{
           review_type: "ACCESSIBILITY" | "SECURITY";
@@ -831,6 +833,7 @@ export async function adminSnapshot(a: Actor) {
         blockers: string[];
       }>(
         `select m.id,m.release_name,m.release_version,m.state,m.reviewed_at,
+          finalization.finalized_at,finalization.recovery_evidence_sha256,
           kxra.release_candidate_digest(m.id) as candidate_sha256,
           coalesce((select jsonb_agg(jsonb_build_object(
             'review_type',r.review_type,'reviewer_name',r.reviewer_name,
@@ -840,11 +843,23 @@ export async function adminSnapshot(a: Actor) {
           checked.ready,checked.blockers
          from kxra.release_manifests m
          cross join lateral kxra.release_manifest_check(m.id) checked
+         left join lateral (
+           select f.finalized_at,f.recovery_evidence_sha256
+           from kxra.release_finalizations f
+           where f.release_manifest_id=m.id
+           limit 1
+         ) finalization on true
          where m.org_id=$1 order by m.created_at desc,m.id desc limit 1`,
         [a.org_id],
       ),
     ]);
     const env = process.env;
+    const release = releaseGate.rows[0];
+    const finalizedRelease = Boolean(
+      release?.ready &&
+      release.finalized_at &&
+      release.recovery_evidence_sha256,
+    );
     return {
       captured_at: new Date().toISOString(),
       environment: localMode() ? "local" : "hosted",
@@ -885,15 +900,19 @@ export async function adminSnapshot(a: Actor) {
         routines: "LOCAL_GOVERNED_DISABLED_BY_DEFAULT",
         external_messages: "DISABLED",
         production_deployment: "DISABLED",
-        backups: "EVIDENCE_NOT_CONNECTED",
+        backups: finalizedRelease
+          ? "HOSTED_RESTORE_EVIDENCE_BOUND"
+          : "EVIDENCE_NOT_CONNECTED",
         retention: "OWNER_APPROVED_V1",
       },
-      release_gate: releaseGate.rows[0] || {
+      release_gate: release || {
         id: null,
         release_name: null,
         release_version: null,
         state: "MISSING",
         reviewed_at: null,
+        finalized_at: null,
+        recovery_evidence_sha256: null,
         ready: false,
         blockers: ["RELEASE_MANIFEST_MISSING"],
       },
