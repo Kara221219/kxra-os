@@ -1,6 +1,16 @@
 # Engineering handover
 
-Updated: 4 October 2026.
+Updated: 5 October 2026.
+
+## Production project checkpoint
+
+Supabase project `lhbgeucifxxcdoyrnesf`, **KXRA Production**, now exists in `eu-west-2` on Micro compute and reports healthy. The owner explicitly approved the additional approximately $10 monthly compute charge after reviewing the total startup budget. Data API is enabled, automatic exposure of new tables is disabled and automatic RLS is enabled.
+
+The project is an empty production reservation. No KXRA migration, role, seed, owner account, legal record, commercial plan, provider credential or customer data has been installed. Do not point any `KXRA_STAGING_*` operator or Preview runtime at it. Read ADR 0051 and [the production bootstrap playbook](../playbooks/production-bootstrap-and-launch.md) before preparing any production operator.
+
+Vercel team `husainkara-6439s-projects` is still on Hobby. Commercial customer use requires the owner-approved Pro upgrade and separately scoped Production variables. No live Stripe object, production webhook, public domain cutover or customer onboarding is authorized by the Supabase project creation.
+
+The local Supabase CLI created `supabase/.temp/cli-latest`; the path is now ignored because it is tool cache state, not source. No credential value was read, printed or written to the repository.
 
 The first migration-0081 staging plan correctly failed closed on historical migration drift. Migration 0065 had received a one-condition edit after its original hosted application. Hosted ledger evidence proves the immutable source SHA-256 is `7af17804df2f895cbf260d5845641cd1589c0ffc225c74751366da359bd3820e` from commit `600391f4095908d1a31fffd65e0a240ad85237ae`; additive migration 0079 already carries and applies the later behavior. Migration 0065 is restored to the hosted bytes. Do not rewrite the hosted ledger.
 

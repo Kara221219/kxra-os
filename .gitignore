@@ -34,4 +34,5 @@ __pycache__/
 !/KXRA-GENESIS/registers/skills.json
 !/KXRA-GENESIS/registers/work-log.json
 /.vercel/
+supabase/.temp/
 /.env.local
