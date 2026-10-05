@@ -54,6 +54,8 @@ Stop before mutation or traffic if any item is true:
 - Apply the exact 82 immutable migrations under an advisory lock, one transaction and ledger row per migration.
 - Verify 82 exact hashes, 174 RLS-protected KXRA tables and 148 KXRA functions before continuing.
 
+The reviewed operator is `scripts/production-migrations.mjs`. It requires `KXRA_ENVIRONMENT=production`, the fixed project reference, an exact pushed source commit, a direct or session-pooler PostgreSQL URL using `sslmode=verify-full`, and a separate Base64 Supabase CA. It rejects Vercel execution, a dirty or unpushed branch, transaction-pooler DDL, an unmanaged schema and a non-empty initial target. `apply` additionally requires `KXRA_PRODUCTION_MIGRATION_CONFIRMATION=INITIALIZE:<project-ref>:<source-commit>`. Do not persist those values or run `apply` until the exact release receives production authority.
+
 ### 4. Install least-privilege identities
 
 - Create distinct runtime logins for OS, public ingress, email, billing, Storage/file processing and AI only when each capability is enabled.

@@ -12,6 +12,8 @@ Vercel team `husainkara-6439s-projects` is now on Pro. Dashboard evidence report
 
 The local Supabase CLI created `supabase/.temp/cli-latest`; the path is now ignored because it is tool cache state, not source. No credential value was read, printed or written to the repository.
 
+`scripts/production-migrations.mjs` is the prepared schema initializer. It is fixed to the production project, rejects Vercel and transaction-pooler execution, requires a clean pushed exact commit plus verified Supabase CA, and will plan only against an empty target. Its apply phrase binds the project and source SHA. It has not received a credential, connected to Production or executed an apply. Do not bypass its guards. The implementation passed the complete clean hermetic contract with 244 service/security tests, 82 migrations, 174 protected tables, 43 applicable private browser journeys with five intentional skips, both 18-journey public runs, restart/restore, all three optimized builds, security/publication scans and Lighthouse budgets. Two final TLS cases expand the suite to 246; the five focused operator tests and type checking pass, and remote CI must record the complete expanded result for the pushed commit.
+
 The first migration-0081 staging plan correctly failed closed on historical migration drift. Migration 0065 had received a one-condition edit after its original hosted application. Hosted ledger evidence proves the immutable source SHA-256 is `7af17804df2f895cbf260d5845641cd1589c0ffc225c74751366da359bd3820e` from commit `600391f4095908d1a31fffd65e0a240ad85237ae`; additive migration 0079 already carries and applies the later behavior. Migration 0065 is restored to the hosted bytes. Do not rewrite the hosted ledger.
 
 ## Current release-review checkpoint
