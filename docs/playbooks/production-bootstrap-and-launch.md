@@ -68,6 +68,8 @@ The reviewed operator is `scripts/production-migrations.mjs`. It requires `KXRA_
 - Install the exact owner-approved customer-document pack, founding plan and public snapshot hashes.
 - Do not copy staging Auth users, invitations, synthetic enquiries, test subscriptions, webhook events, run logs or provider identifiers.
 
+The guarded `scripts/production-bootstrap.mjs` operator performs this stage together with the four initially required restricted database logins and the approved legal pack. It requires the exact pushed source commit, four distinct generated role passwords and `KXRA_PRODUCTION_BOOTSTRAP_CONFIRMATION=BOOTSTRAP:<project-ref>:<source-commit>`. Its `plan` and `verify` modes never require role passwords. The role passwords must move directly into the matching production secret stores; do not save them in the repository, shell history or chat.
+
 ### 6. Bootstrap the owner
 
 - Create or invite the production owner through Supabase Auth using the intended production email.

@@ -358,3 +358,9 @@ The ignored private business pack contains the Customer Discovery Pack, tracker 
 - Local acceptance is green: 234 core tests; 80 migrations and 172 RLS tables; 43 private browser journeys with five intentional skips; both 18-test public runs; restart/restore; all three optimized builds; CSP/SRI, size, artifact and secret gates; Lighthouse 1.00 performance/accessibility.
 - Ordinary protected-browser attempts incremented Vercel Firewall `Logged` to 12 for the exact rule, host and `/api/enquiries` path. The rule stayed non-blocking. Supabase still contains exactly one matching accepted synthetic record, so the repeated/rejected observation attempts created no duplicates. Keep the rule in log mode; the synthetic sample is not sufficient evidence for a rate limit.
 - GitHub full CI run `37080911556` passed in 14m48s at documentation commit `31d8ee0`; the associated CodeQL run `37080911548` also passed.
+
+# Production foundation operator prepared
+
+The production database initializer is now followed by `scripts/production-bootstrap.mjs`. This second guarded operator imports the twelve canonical projects and registers, installs the owner-approved customer-document pack and provisions the restricted `kxra_app`, `kxra_public_ingress`, `kxra_email_runner` and `kxra_billing_runner` logins. It refuses Vercel execution, a dirty or unpushed tree, a non-production project, incomplete migrations, unmanaged canonical state, unsafe role takeover, reused/weak passwords or a mismatched source commit. Production remains unmodified until the exact release commit passes CI/CodeQL and the operator receives credentials locally.
+
+Local verification is complete: 248 database/domain/HTTP/security tests, 82 migrations, 174 protected tables, 43 applicable private browser journeys, two 18-journey public-site runs, restart/restore, all three builds, CSP/SRI, artifact and secret scans, build budgets and tested Lighthouse performance/accessibility all pass.
