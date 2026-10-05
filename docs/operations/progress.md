@@ -1,6 +1,6 @@
 # KXRA OS implementation progress
 
-Updated: 5 October 2026. Status: **The governed staging release evidence is finalized and `founding-private-launch-v1` is evidence-only `READY`. Supabase Production now exists as a separate empty, healthy London Micro project. Production schema initialization, runtime credentials, Vercel production configuration, live charging, customer traffic, publication and `main` remain untouched.**
+Updated: 5 October 2026. Status: **The governed staging release evidence is finalized and `founding-private-launch-v1` is evidence-only `READY`. Supabase Production now exists as a separate empty, healthy London Micro project and Vercel Pro is active. Production schema initialization, runtime credentials, production deployments, live charging, customer traffic, publication and `main` remain untouched.**
 
 ## Production infrastructure reservation
 
@@ -8,8 +8,9 @@ Updated: 5 October 2026. Status: **The governed staging release evidence is fina
 - Data API is enabled. Automatic exposure of new tables is disabled, and automatic RLS is enabled for new public tables.
 - Project creation did not copy staging. Production currently has no KXRA migration ledger, schema, runtime roles, owner membership, canonical seeds, legal/customer records, plans, provider credentials or application traffic.
 - ADR 0051 and the production bootstrap playbook fix the environment boundary and launch order. Existing staging operators remain prohibited from targeting Production.
-- Vercel dashboard evidence shows the KXRA team is still on Hobby. Vercel documents Hobby as personal/non-commercial, so the $20 monthly Pro upgrade is a commercial-launch blocker. No upgrade has been purchased.
-- Current expected fixed platform cost after that upgrade is approximately $55 monthly before tax and overages: $35 Supabase for Pro plus two active Micro projects after the included compute credit, and $20 Vercel Pro. Other launch providers remain on free tiers or usage-based gates.
+- The owner completed Vercel billing setup and activated Pro. Dashboard evidence reports an active 5 October–5 November billing period, $20 monthly included usage credit, zero infrastructure usage and a $20 upcoming invoice. ADR 0052 records the production boundary and cost controls; activation did not deploy Production or authorize customer traffic.
+- The default Vercel spend-management budget is $200 with alerts at 50%, 75% and 100%; pausing is off. Observability Plus is enabled at $0 on the current invoice but is normally a $10 monthly add-on after any free period, so it remains a renewal blocker unless disabled or separately owner-approved. Other paid add-ons and AI usage billing are off.
+- Current expected fixed platform cost is approximately $55 monthly before tax and overages: $35 Supabase for Pro plus two active Micro projects after the included compute credit, and $20 Vercel Pro. This estimate excludes the unapproved Observability Plus renewal and other usage-based services.
 - Supabase's 5 October changelog was reviewed. KXRA does not use the deprecated `@supabase/server` framework adapters. The new project's disabled automatic table exposure matches the announced Data API default change. The PostgreSQL 15.19/17.11 extension/index warning must be checked against the production extension inventory before initialization.
 
 ## Hosted release candidate and governed human reviews

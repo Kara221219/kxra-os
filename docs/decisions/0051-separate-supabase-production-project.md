@@ -23,5 +23,5 @@ The production project reference is not a credential. Database passwords, publis
 - Production is currently empty and healthy. No KXRA migrations, roles, owner identity, canonical seeds, customer documents, commercial plans or provider configuration have been applied.
 - The existing staging operators remain staging-only and must reject this project reference.
 - Production initialization requires a separately reviewed operator, exact target binding, immutable migration hashes, verified TLS, clean reviewed source, a dry-run plan, recovery evidence and explicit release authority.
-- Vercel remains on Hobby and cannot carry the commercial production launch. A separate owner-approved Pro upgrade and production environment configuration are required before public customer use.
+- Vercel Pro was subsequently activated under ADR 0052. Separate production environment configuration is still required before public customer use.
 - Live Stripe, external AI, WhatsApp, public email campaigns, generated-media spend and customer onboarding remain separately gated.

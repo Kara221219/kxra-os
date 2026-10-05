@@ -13,7 +13,7 @@ This playbook converts the reviewed staging evidence into a controlled productio
 - The project is empty: no KXRA migration ledger, application roles, owner membership, seeds, legal documents, plans or provider records have been installed.
 - Staging remains separate at project `jlebgsxcvhvpueuibekd`.
 - The source branch is `codex/phase-2-completion`; `main` has not been merged.
-- Vercel team `husainkara-6439s-projects` is on Hobby. Commercial production requires Pro.
+- Vercel team `husainkara-6439s-projects` is on Pro for the 5 October–5 November 2026 billing period. Production projects and Production variables are not configured.
 - Production credentials, domains, Vercel Production variables, live Stripe objects and customer traffic are absent.
 
 ## Hard stops
@@ -26,7 +26,7 @@ Stop before mutation or traffic if any item is true:
 4. migration history is unknown, altered or already contains an unmanaged KXRA schema;
 5. any KXRA table lacks RLS and an intended policy, or any privileged function has an unintended `PUBLIC`, `anon` or `authenticated` grant;
 6. the production backup and isolated restore path has not been rehearsed after initialization;
-7. Vercel is still Hobby, production environment variables are incomplete or any fixture/local-auth setting is present;
+7. Vercel is not Pro, production environment variables are incomplete, an unapproved paid add-on is enabled for renewal or any fixture/local-auth setting is present;
 8. public/private artifacts leak private markers, source maps, credentials or customer data;
 9. Stripe is in test mode when a live checkout is expected, or live mode lacks its own restricted key, webhook, portal configuration and bounded spend/reconciliation evidence;
 10. the owner has not approved the exact commit, production manifest, domain cutover and rollback target.
@@ -42,10 +42,10 @@ Stop before mutation or traffic if any item is true:
 
 ### 2. Prepare provider separation
 
-- Upgrade the Vercel team to Pro after owner approval of the $20 monthly charge.
+- Retain the owner-approved $20 monthly Vercel Pro plan; disable or separately approve Observability Plus before it becomes a paid renewal.
 - Create or configure isolated production targets for OS, marketing and the email worker.
 - Keep marketing free of private OS, database-worker, AI, billing and Storage credentials.
-- Configure spending alerts before enabling usage-based services.
+- Review the provider-created $200 spend alert before enabling usage-based services; choose a lower alert threshold if appropriate, and enable automatic pausing only with an accepted availability tradeoff.
 
 ### 3. Initialize the database
 
