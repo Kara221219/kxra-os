@@ -42,10 +42,10 @@ Stop before mutation or traffic if any item is true:
 
 ### 2. Prepare provider separation
 
-- Retain the owner-approved $20 monthly Vercel Pro plan; disable or separately approve Observability Plus before it becomes a paid renewal.
+- Retain the owner-approved $20 monthly Vercel Pro plan and keep Observability Plus disabled unless the owner separately approves its cost.
 - Create or configure isolated production targets for OS, marketing and the email worker.
 - Keep marketing free of private OS, database-worker, AI, billing and Storage credentials.
-- Review the provider-created $200 spend alert before enabling usage-based services; choose a lower alert threshold if appropriate, and enable automatic pausing only with an accepted availability tradeoff.
+- Retain the owner-approved $50 spend alert. Automatic pausing remains off and may be enabled only with an accepted availability tradeoff.
 
 ### 3. Initialize the database
 
