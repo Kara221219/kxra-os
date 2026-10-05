@@ -1,0 +1,31 @@
+# KXRA deployment allow boundary. Runtime source is limited to workspace
+# manifests, application code, shared packages and the three build wrappers.
+.git/
+.github/
+.vercel/
+.runtime/
+.sites-runtime/
+node_modules/
+**/node_modules/
+**/.next/
+**/.next-*/
+**/*.tsbuildinfo
+
+.env
+.env.*
+
+docs/
+tests/
+test-results/
+playwright-report/
+playwright*.ts
+supabase/
+KXRA-GENESIS/
+KXRA-GENESIS-PACK.zip
+*.docx
+Pasted text.txt
+
+scripts/*
+!scripts/build-os.mjs
+!scripts/build-marketing.mjs
+!scripts/build-email-worker.mjs

@@ -2,6 +2,27 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
+const deploymentIgnore = path.join(root, ".vercelignore");
+const requiredDeploymentExclusions = [
+  ".git/",
+  ".runtime/",
+  ".sites-runtime/",
+  "node_modules/",
+  "**/.next-*/",
+  ".env.*",
+  "docs/",
+  "tests/",
+  "supabase/",
+  "KXRA-GENESIS/",
+  "*.docx",
+  "Pasted text.txt",
+];
+if (!fs.existsSync(deploymentIgnore))
+  throw new Error("Production deployment boundary is missing: .vercelignore");
+const deploymentIgnoreContent = fs.readFileSync(deploymentIgnore, "utf8");
+for (const exclusion of requiredDeploymentExclusions)
+  if (!deploymentIgnoreContent.split(/\r?\n/).includes(exclusion))
+    throw new Error(`Production deployment boundary is missing: ${exclusion}`);
 const outputs = [
   path.join(root, "apps/os/.next"),
   path.join(root, "apps/marketing/.next"),
@@ -60,5 +81,5 @@ if (findings.length)
   );
 
 console.log(
-  `OS, marketing and email-worker artifacts exclude ${forbidden.length} fixture identity, selector, state and secret markers.`,
+  `OS, marketing and email-worker artifacts exclude ${forbidden.length} fixture identity, selector, state and secret markers; Vercel source boundary excludes ${requiredDeploymentExclusions.length} private/local path classes.`,
 );
