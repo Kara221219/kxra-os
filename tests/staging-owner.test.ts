@@ -177,16 +177,34 @@ test("owner bootstrap creates one exact auditable owner and rejects takeover dri
     assert.equal(auth.ready, true);
     await database.query("begin");
     try {
-      await applyOwnerBootstrap(database, input, auth);
+      await applyOwnerBootstrap(database, input, auth, {
+        profile: "KXRA-PRODUCTION-OWNER-V1",
+        grantSource: "PRODUCTION_OWNER_BOOTSTRAP",
+      });
       const state = await inspectOwnerState(database, input);
-      assert.deepEqual(ownerStateFindings(state, input, auth), []);
+      assert.deepEqual(
+        ownerStateFindings(state, input, auth, {
+          grantSource: "PRODUCTION_OWNER_BOOTSTRAP",
+        }),
+        [],
+      );
+      assert.equal(
+        (
+          await database.query(
+            "select metadata->>'profile' profile from kxra.audit_events where action='owner.bootstrap'",
+          )
+        ).rows[0].profile,
+        "KXRA-PRODUCTION-OWNER-V1",
+      );
       assert.deepEqual(ownerTakeoverFindings(state, input, []), []);
       await database.query(
         "update kxra.organisation_memberships set display_name='Drifted' where account_id=$1",
         [input.userId],
       );
       const drifted = await inspectOwnerState(database, input);
-      const exact = ownerStateFindings(drifted, input, auth);
+      const exact = ownerStateFindings(drifted, input, auth, {
+        grantSource: "PRODUCTION_OWNER_BOOTSTRAP",
+      });
       assert.ok(exact.includes("membership: mismatch"));
       assert.deepEqual(ownerTakeoverFindings(drifted, input, exact), [
         "target has conflicting KXRA identity state",

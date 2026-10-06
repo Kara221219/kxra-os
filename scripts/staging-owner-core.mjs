@@ -138,7 +138,7 @@ export function ownerStateFindings(
   state,
   input,
   auth,
-  { requireMfa = true } = {},
+  { requireMfa = true, grantSource = "STAGING_OWNER_BOOTSTRAP" } = {},
 ) {
   const findings = [];
   const digest = emailDigest(input.email);
@@ -198,7 +198,7 @@ export function ownerStateFindings(
     membership.relationship_type !== "INTERNAL" ||
     membership.state !== "ACTIVE" ||
     membership.display_name !== input.displayName ||
-    membership.grant_source !== "STAGING_OWNER_BOOTSTRAP" ||
+    membership.grant_source !== grantSource ||
     membership.revoked_at ||
     membership.version !== 1
   )
@@ -247,7 +247,15 @@ export function ownerTakeoverFindings(state, input, exactFindings = []) {
   return findings;
 }
 
-export async function applyOwnerBootstrap(database, input, auth) {
+export async function applyOwnerBootstrap(
+  database,
+  input,
+  auth,
+  {
+    profile = ownerBootstrapProfile,
+    grantSource = "STAGING_OWNER_BOOTSTRAP",
+  } = {},
+) {
   if (!auth.ready) throw Error(`OWNER_AUTH_NOT_READY:${auth.reason}`);
   const digest = emailDigest(input.email);
   await database.query(
@@ -279,9 +287,9 @@ export async function applyOwnerBootstrap(database, input, auth) {
   await database.query(
     `update kxra.organisation_memberships set security_role='KXRA_OWNER',
       relationship_type='INTERNAL',state='ACTIVE',display_name=$3,
-      grant_source='STAGING_OWNER_BOOTSTRAP',starts_at=now(),expires_at=null,
+      grant_source=$4,starts_at=now(),expires_at=null,
       revoked_at=null,version=1,updated_at=now() where org_id=$1 and account_id=$2`,
-    [kxraOrganisationId, input.userId, input.displayName],
+    [kxraOrganisationId, input.userId, input.displayName, grantSource],
   );
   await database.query(
     `insert into kxra.user_preferences(user_id,org_id,timezone)
@@ -296,13 +304,13 @@ export async function applyOwnerBootstrap(database, input, auth) {
   );
   await database.query(
     `insert into kxra.account_security_events(org_id,user_id,actor_id,event_type,metadata)
-     values($1,$2,$2,'ONBOARDING_COMPLETED','{"source":"STAGING_OWNER_BOOTSTRAP"}'::jsonb)`,
-    [kxraOrganisationId, input.userId],
+     values($1,$2,$2,'ONBOARDING_COMPLETED',jsonb_build_object('source',$3::text))`,
+    [kxraOrganisationId, input.userId, grantSource],
   );
   await database.query(
     `insert into kxra.audit_events(org_id,actor_id,action,resource_id,metadata)
      values($1,$2,'owner.bootstrap',$2,
       jsonb_build_object('profile',$3::text,'mfa_verified',$4::boolean))`,
-    [kxraOrganisationId, input.userId, ownerBootstrapProfile, auth.mfaVerified],
+    [kxraOrganisationId, input.userId, profile, auth.mfaVerified],
   );
 }

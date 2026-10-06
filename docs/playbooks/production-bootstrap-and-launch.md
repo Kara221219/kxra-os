@@ -76,6 +76,15 @@ The guarded `scripts/production-bootstrap.mjs` operator performs this stage toge
 - Enrol MFA and verify recent AAL2 before granting the owner membership.
 - Prove unauthenticated, partner, revoked, crafted-project and direct-API denial against production-like configuration before customer invitations.
 
+Use the guarded `scripts/production-owner.mjs` operator after the intended
+Supabase Auth user has confirmed their email. Its `apply` mode prepares the
+single KXRA owner identity without granting any second owner, records the exact
+source commit and requires
+`KXRA_PRODUCTION_OWNER_CONFIRMATION=OWNER:<project-ref>:<auth-user-id>:<source-commit>`.
+The final `verify` mode succeeds only after the same hosted Auth identity has a
+verified MFA factor. Supply the database password and operator values only to a
+local one-off process; never save them in Vercel, Git, shell history or chat.
+
 ### 7. Configure runtime services
 
 - Add production-only Vercel variables from provider secret stores. Never copy Preview bypass credentials.

@@ -1,6 +1,16 @@
 # KXRA OS implementation progress
 
-Updated: 5 October 2026. Status: **The governed staging release evidence is finalized and `founding-private-launch-v1` is evidence-only `READY`. Supabase Production now exists as a separate empty, healthy London Micro project and Vercel Pro is active. Production schema initialization, runtime credentials, production deployments, live charging, customer traffic, publication and `main` remain untouched.**
+Updated: 6 October 2026. Status: **The production database foundation and three same-commit Vercel services are deployed behind Vercel Authentication. Production owner enrollment, custom-domain cutover, public acceptance, live commerce and customer onboarding remain closed. The phase branch has not been merged to `main`.**
+
+## Production deployment and owner-gate checkpoint — 6 October 2026
+
+- Supabase Production `lhbgeucifxxcdoyrnesf` now has the verified 82-migration KXRA schema, 174 RLS-protected tables, canonical twelve-project/register state, approved customer documents and four separate least-privilege runtime logins. SSL enforcement and production Auth redirect restrictions are enabled.
+- Exact commit `bd7268fe2d60c6d76cbee7708a3fe97ea74c52e8` passed GitHub CI `37392427505` and CodeQL `37392427696`. Same-commit production deployments for OS, marketing and email worker are `READY` behind Vercel Authentication. No KXRA custom domain is attached and no customer traffic is enabled.
+- A hosted marketing build initially failed because query-decorated asset URLs did not resolve to the immutable SRI manifest. The build now normalizes static asset paths. Vercel's production toolbar was also disabled because its post-build injection changed the Webpack runtime after SRI generation. The final marketing deployment has seven of seven exact script-integrity hashes, correct CSP/security headers and the expected production-origin guard.
+- Anonymous OS, crafted-project, direct-context, disabled Stripe-webhook and unsigned email-worker probes fail closed. Marketing home, pricing, legal documents and origin/schema rejection paths behave as designed. A valid public enquiry remains intentionally untested because Vercel Authentication blocks all public traffic until cutover.
+- Added a production-only owner operator with plan/apply/verify modes, exact production-project and source-commit binding, clean/pushed-branch guard, confirmed Supabase Auth identity requirement, singleton-owner takeover rejection, separate production audit labels and mandatory verified MFA for final success. Shared owner persistence remains database-tested for both staging and production labels.
+- Production Auth currently has no users. The next account action is the intended owner invitation, followed by guarded identity preparation, owner sign-in, MFA enrollment and final operator verification. This must precede customer invitations and public application access.
+- Billing, email delivery, AI, WhatsApp, Storage and telemetry remain disabled. Existing Stripe objects are test-mode only; the billing implementation still rejects live mode. KXRA is therefore not yet charging customers and must not be represented as customer-live.
 
 ## Production infrastructure reservation
 
