@@ -545,6 +545,16 @@ Apply and verify migration 0075 through the guarded hosted-staging operator. The
 
 Only application code, engineering documentation and minimum classified seed records required by the platform may enter the repository. Original Word/text sources, private Genesis research, the private business pack, archives, `.runtime`, credentials, screenshots, traces, databases/object backups and generated test artifacts remain excluded.
 
+## Production domain and exact-commit release — 6 October 2026
+
+- Namecheap now preserves the existing mail records and routes web traffic with `A @ -> 216.150.1.1`, `CNAME www -> 9615c6c50afd3064.vercel-dns-016.com.` and `CNAME app -> 6300ef1703722cdf.vercel-dns-016.com.`. Cloudflare and Google public DNS return the expected records.
+- The previously verified production artifacts were first promoted to establish current production aliases. Commit `395a1509d37159916050638e75925e0437d607f5` then passed GitHub CI run `37399310301` and CodeQL run `37399310235`; both dependency audits report no vulnerability.
+- Exact-commit production deployments are OS `dpl_GGxucawiGLuBX6WYmCjMDhM4ujxK`, marketing `dpl_BZSuJJKDTkuDfhgg3Ncvdg4GKQnN` and email worker `dpl_8NBG1fSCA65PV87mYJhHsWGgFR3D`. All three reached `READY`. The local Vercel link was restored byte-for-byte to `kxra-os-staging`, and the Git working tree remained clean before this documentation update.
+- `https://app.kxra-group.com/login`, `https://kxra-group.com` and `https://www.kxra-group.com` return `200` with HTTPS and the expected security headers. Anonymous `/api/context` returns `401`; anonymous `/os` returns `307` to `/login`.
+- Production marketing rejects a wrong-origin enquiry with `403` and a malformed correct-origin request with `400`. A valid synthetic production contact returned `202` with receipt `8e37b4d2-43b4-48a6-9dce-9e399319f807`; it is explicitly test evidence and requires no response.
+- The private email-worker root remains unavailable and returns a no-indexed `404`; provider delivery stays disabled. Billing, email, AI, WhatsApp, Storage and telemetry are not live.
+- Production Supabase Auth still has no users. The invitation dialog is prepared for the intended owner identity, but no account or email has been created without the required action-time owner confirmation. After invitation acceptance, use the guarded production owner operator and complete MFA before authenticated production acceptance.
+
 ## Preview public-ingress acceptance checkpoint — 3 October 2026
 
 - The Preview-only Vercel rule `KXRA enquiry observation` is active in log mode for exact `POST /api/enquiries` traffic. It cannot block requests and does not target Production.
