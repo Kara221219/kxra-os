@@ -59,8 +59,11 @@ function applyStaticSri() {
       /<script\b([^>]*\ssrc="\/_next\/([^"]+)"[^>]*)>/g,
       (tag, attributes, asset) => {
         if (attributes.includes(" integrity=")) return tag;
-        const integrity = manifest[asset];
-        if (!integrity) throw new Error(`Missing SRI for ${asset}`);
+        // Vercel appends a deployment cache marker to static asset URLs during
+        // hosted builds. SRI manifests are keyed by the immutable asset path.
+        const assetPath = asset.split(/[?#]/, 1)[0];
+        const integrity = manifest[assetPath];
+        if (!integrity) throw new Error(`Missing SRI for ${assetPath}`);
         return `<script${attributes} integrity="${integrity}">`;
       },
     );
