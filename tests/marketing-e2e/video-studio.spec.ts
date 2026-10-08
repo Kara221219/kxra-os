@@ -71,7 +71,10 @@ test("video studio rejects invalid files and requires photo rights", async ({
   const alpha = await page
     .locator("canvas")
     .evaluate(
-      (element) => element.getContext("2d")!.getImageData(0, 0, 1, 1).data[3],
+      (element) =>
+        (element as HTMLCanvasElement)
+          .getContext("2d")!
+          .getImageData(0, 0, 1, 1).data[3],
     );
   expect(alpha).toBe(0);
 });
