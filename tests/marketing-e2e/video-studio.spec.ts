@@ -14,15 +14,13 @@ async function addPhotos(page: import("@playwright/test").Page) {
     context.fillRect(0, 0, 600, 400);
     return canvas.toDataURL().split(",")[1];
   });
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles(
-      [1, 2].map((index) => ({
-        name: `room-${index}.png`,
-        mimeType: "image/png",
-        buffer: Buffer.from(bytes, "base64"),
-      })),
-    );
+  await page.locator('input[type="file"]').setInputFiles(
+    [1, 2].map((index) => ({
+      name: `room-${index}.png`,
+      mimeType: "image/png",
+      buffer: Buffer.from(bytes, "base64"),
+    })),
+  );
   await expect(
     page.getByLabel("Photo 2 caption", { exact: true }),
   ).toBeVisible();
@@ -34,23 +32,19 @@ test("video studio rejects invalid files and requires photo rights", async ({
   await expect(
     page.getByRole("button", { name: "Create my video" }),
   ).toBeDisabled();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "bad.svg",
-      mimeType: "image/svg+xml",
-      buffer: Buffer.from('<svg onload="alert(1)"/>'),
-    });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "bad.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from('<svg onload="alert(1)"/>'),
+  });
   await expect(page.getByRole("status")).toContainText("Could not read");
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles(
-      Array.from({ length: 9 }, (_, i) => ({
-        name: `${i}.png`,
-        mimeType: "image/png",
-        buffer: photo,
-      })),
-    );
+  await page.locator('input[type="file"]').setInputFiles(
+    Array.from({ length: 9 }, (_, i) => ({
+      name: `${i}.png`,
+      mimeType: "image/png",
+      buffer: photo,
+    })),
+  );
   await expect(page.getByRole("status")).toContainText("at most eight");
   await addPhotos(page);
   await expect(
@@ -71,6 +65,15 @@ test("video studio rejects invalid files and requires photo rights", async ({
   await expect(page.getByLabel("Photo 2 caption", { exact: true })).toHaveCount(
     0,
   );
+  await page
+    .getByRole("button", { name: "Remove photo 1", exact: true })
+    .click();
+  const alpha = await page
+    .locator("canvas")
+    .evaluate(
+      (element) => element.getContext("2d")!.getImageData(0, 0, 1, 1).data[3],
+    );
+  expect(alpha).toBe(0);
 });
 test("video studio exports playable video without sending client photos", async ({
   page,

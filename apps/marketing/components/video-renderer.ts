@@ -57,7 +57,11 @@ export function drawVideoFrame(
   portrait: boolean,
 ) {
   const ctx = canvas.getContext("2d");
-  if (!ctx || !scenes.length) return;
+  if (!ctx) return;
+  if (!scenes.length) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
   const w = portrait ? 720 : 1280,
     h = portrait ? 1280 : 720;
   if (canvas.width !== w || canvas.height !== h) {
@@ -73,8 +77,8 @@ export function drawVideoFrame(
   ctx.fillStyle = "#081422";
   ctx.fillRect(0, 0, w, h);
   // Fit the full photo inside a frame: never invent, stretch or crop property details.
-  const frameY = portrait ? 210 : 125,
-    frameHeight = portrait ? 700 : 395;
+  const frameY = portrait ? 210 : 165,
+    frameHeight = portrait ? 700 : 355;
   const scale =
     Math.min((w - 80) / scene.image.width, frameHeight / scene.image.height) *
     (0.97 + phase * 0.03);
