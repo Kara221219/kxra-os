@@ -1,0 +1,90 @@
+.video-workspace {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 3rem;
+  margin: 3rem 0;
+}
+.video-controls fieldset {
+  border: 1px solid #b8ad94;
+  padding: 1.4rem;
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+.video-controls label {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+.video-controls input:not([type="checkbox"]),
+.video-controls select {
+  width: 100%;
+  padding: 0.75rem;
+  background: #fff;
+  color: #16202b;
+  border: 1px solid #777;
+  border-radius: 4px;
+}
+.video-scenes {
+  padding-left: 1.3rem;
+}
+.video-scenes li {
+  border-bottom: 1px solid #bbb;
+  padding-bottom: 1rem;
+}
+.video-scene-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.video-scene-actions button,
+.video-controls > button {
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+}
+.video-controls .video-consent {
+  display: flex;
+  align-items: flex-start;
+}
+.video-preview canvas,
+.video-preview video {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  width: auto;
+  margin: 1rem auto;
+  background: #081422;
+}
+.video-preview {
+  min-width: 0;
+}
+.video-preview p,
+.video-controls p {
+  font-size: 0.9rem;
+}
+.video-preview a {
+  display: inline-block;
+}
+.sample-video {
+  max-width: 100%;
+  max-height: 70vh;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.video-controls input[type="checkbox"] {
+  margin-top: 0.35rem;
+}
+details {
+  margin-top: 2rem;
+}
+summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+@media (max-width: 800px) {
+  .video-workspace {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

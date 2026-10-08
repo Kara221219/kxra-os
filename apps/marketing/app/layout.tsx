@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 const links = [
   ["Platform", "/platform"],
   ["Brand Studio", "/brand-studio"],
+  ["Video Studio", "/video-studio"],
   ["Pricing", "/pricing"],
   ["Custom projects", "/custom-projects"],
   ["Industries", "/industries"],
@@ -60,7 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/legal">Customer documents</Link>
           </div>
           <p className="preview-note">
-            Private build preview · publication is disabled
+            KXRA Group · Tools and services for growing businesses
           </p>
         </footer>
       </body>

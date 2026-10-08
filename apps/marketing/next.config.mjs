@@ -7,6 +7,7 @@ if (productionHashes.some((hash) => !/^[A-Za-z0-9+/]{43}=$/.test(hash)))
   throw new Error("Invalid marketing script hash");
 
 export default {
+  devIndicators: false,
   distDir:
     process.env.KXRA_NEXT_DIST_DIR ||
     (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
@@ -31,6 +32,7 @@ export default {
       "frame-ancestors 'none'",
       "object-src 'none'",
       "img-src 'self' data:",
+      "media-src 'self' blob:",
       "font-src 'self'",
       scriptPolicy,
       "script-src-attr 'none'",
