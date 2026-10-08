@@ -139,7 +139,7 @@ export async function exportVideo(
     videoBitsPerSecond: 4_000_000,
   });
   const chunks: Blob[] = [];
-  let frame = 0;
+  let frame: ReturnType<typeof setInterval> | undefined;
   let failure: Error | undefined;
   const stopped = new Promise<Blob>((resolve, reject) => {
     recorder.ondataavailable = (event) => {
@@ -181,7 +181,8 @@ export async function exportVideo(
     recorder.start(250);
     const start = performance.now();
     const duration = scenes.length * secondsPerScene;
-    const render = (now: number) => {
+    const render = () => {
+      const now = performance.now();
       if (recorder.state === "inactive") return;
       const elapsed = Math.min(duration, (now - start) / 1000);
       drawVideoFrame(
@@ -195,12 +196,11 @@ export async function exportVideo(
       );
       progress(Math.round((elapsed / duration) * 100));
       if (elapsed >= duration) recorder.stop();
-      else frame = requestAnimationFrame(render);
     };
-    frame = requestAnimationFrame(render);
+    frame = setInterval(render, 1000 / 30);
     return await stopped;
   } finally {
-    cancelAnimationFrame(frame);
+    clearInterval(frame);
     signal.removeEventListener("abort", abort);
     document.removeEventListener("visibilitychange", hidden);
     stream.getTracks().forEach((track) => track.stop());
