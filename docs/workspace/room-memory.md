@@ -1,0 +1,17 @@
+# Reviewed room memory
+
+19 October 2026. Implemented and verified locally in the full `memory-final-ci.log` run (exit 0). This bounded room-memory slice does not establish full product parity or hosted/live-provider acceptance. Exact evidence is in [verification](verification.md).
+
+Memory is an immutable, typed human proposal for one agent in one room. Supported types are preference, feedback, reference and context. It never becomes a company summary, project summary or cross-room retrieval source. Active tenant, project and explicit private-room membership are required even for organisation owners.
+
+The proposer supplies text, a title, an optional expiry and optionally a successful source run for the same agent and room. The server derives identity, room scope, version, hash and provenance type. A run source must have used no memory, preventing recursive learning chains. Its current message, file and instruction-skill authority remains necessary to read or use the entry. Human-authored provenance is labelled explicitly; the system cannot verify the truth of manually entered text.
+
+Only the room creator approves or rejects an exact version. A new version does not replace an approved version automatically. Withdraw the previous version before approving another in the same title/type family. Approval expires after 90 days by default and at most 365 days. Text is capped at 2,000 characters. The room catalog displays up to 100 entries, and opt-in thread requests retrieve up to five currently approved, unexpired entries in deterministic type/title/version/ID order. The combined message/file/memory context remains capped at 48,000 characters. Message-only requests exclude memory.
+
+The room creator or an active contributing original author can remove an entry. Removal redacts title and body, removes it from future recall, and hides derived runs. Retained internal title/body fingerprints are not granted to the authenticated role. Backups and content already received by a user or provider cannot be recalled. Removal/revocation is still available through the narrow mutation function when source withdrawal has hidden the text.
+
+Migration `0086_team_scoped_memory.sql` adds the protected table, immutable-version guard, review/proposal functions and app-session-only run admission with exact memory IDs/hashes. The existing pre-dispatch, completion and run-read gates now check memory authority and expiry as well as source files and skills. A source withdrawal, expiry, revoke or removal suppresses in-flight publication and historical room/global output. The UI filters already loaded historical receipts against current eligibility on its next authorised refresh; it is not a remote erasure mechanism.
+
+Services are `team-memory.ts`, shared `team-room.ts`, and the existing team-space API. `RoomMemory.tsx` provides review/proposal/removal controls and `TeamWorkspace.tsx` provides opt-in and provenance receipts. No automatic learning, semantic memory search, arbitrary tools, external sends or durable execution is implemented by this slice.
+
+Acceptance requires real local DB/HTTP negative-access, active second-tenant context, immutable version/replacement, exact hash, no recursive sources, expiry/removal during an admitted request, source revocation, and desktop/mobile cached-history removal tests. See [verification](verification.md) for current results. Hosted and live-provider acceptance remain unauthorised and unverified.

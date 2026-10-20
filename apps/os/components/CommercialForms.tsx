@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  sprintPackages,
+  sprintConstraints,
+} from "../../../packages/business-sprints";
 
 type LegalDocument = {
   id: string;
@@ -123,7 +127,12 @@ export function CustomProjectRequestForm() {
       await postJson("/api/custom-projects", {
         problem: form.get("problem"),
         desired_outcome: form.get("desired_outcome"),
-        constraints: form.get("constraints"),
+        constraints: form.get("sprint_package")
+          ? sprintConstraints(
+              String(form.get("sprint_package")),
+              String(form.get("constraints") || ""),
+            )
+          : form.get("constraints"),
         reuse_consent: form.get("reuse_consent") === "on",
         request_id: crypto.randomUUID(),
       });
@@ -139,7 +148,18 @@ export function CustomProjectRequestForm() {
   }
   return (
     <form method="post" className="panel form-grid" onSubmit={submit}>
-      <h2>Request a custom project</h2>
+      <h2>Request a business improvement sprint</h2>
+      <label>
+        Starting package
+        <select name="sprint_package" defaultValue="">
+          <option value="">Custom scope / help me choose</option>
+          {sprintPackages.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <p>
         A subscription does not include custom implementation. KXRA will review
         this request and, if suitable, issue a separate scoped proposal.
@@ -224,6 +244,53 @@ function ProposalForm({
   legalDocuments: LegalDocument[];
 }) {
   const hydrated = useHydrated();
+  const formRef = useRef<HTMLFormElement>(null);
+  async function loadDraft() {
+    const form = formRef.current;
+    if (!form) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const key = String(new FormData(form).get("draft_package"));
+      const response = await fetch(
+        `/api/custom-projects/${requestId}/sprint-draft?package=${encodeURIComponent(key)}`,
+      );
+      if (!response.ok) throw Error("Draft unavailable");
+      const draft = await response.json();
+      const values: Record<string, string> = {
+        scope: draft.scope,
+        exclusions: draft.exclusions,
+        assumptions: draft.assumptions,
+        milestones: draft.milestones
+          .map((item: { title: string }) => item.title)
+          .join("\n"),
+        price_minor:
+          draft.price_minor === null ? "" : String(draft.price_minor),
+        currency: draft.currency,
+        payment_gate: draft.payment_gate,
+        deposit_minor: "0",
+        tax_treatment: draft.tax_treatment,
+      };
+      for (const [name, value] of Object.entries(values)) {
+        const field = form.elements.namedItem(name);
+        if (
+          field instanceof HTMLInputElement ||
+          field instanceof HTMLTextAreaElement ||
+          field instanceof HTMLSelectElement
+        )
+          field.value = value;
+      }
+      setMessage(
+        "Draft prepared for your review. No proposal has been issued.",
+      );
+    } catch {
+      setMessage(
+        "Could not prepare the draft. Your current form is preserved.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -278,8 +345,37 @@ function ProposalForm({
       </p>
     );
   return (
-    <form method="post" className="form-grid compact-form" onSubmit={submit}>
+    <form
+      ref={formRef}
+      method="post"
+      className="form-grid compact-form"
+      onSubmit={submit}
+    >
       <h4>Issue a separate proposal</h4>
+      <div className="sprint-draft-controls">
+        <label>
+          Proposal starting point
+          <select name="draft_package" defaultValue="improvement-sprint">
+            {sprintPackages.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="secondary"
+          disabled={!hydrated || busy}
+          onClick={loadDraft}
+        >
+          Prepare sprint draft
+        </button>
+        <p>
+          Drafts save preparation time. Review the scope, evidence, price and
+          terms before issuing.
+        </p>
+      </div>
       <label>
         Scope
         <textarea name="scope" required maxLength={50000} rows={4} />
@@ -753,7 +849,13 @@ function DeliveryLifecycle({
             </h5>
             <span className="badge">{delivery.state}</span>
           </div>
-          <p>{delivery.summary}</p>
+          <p style={{ whiteSpace: "pre-wrap" }}>{delivery.summary}</p>
+          <a
+            className="button secondary"
+            href={`/api/custom-projects/deliveries/${delivery.id}/export`}
+          >
+            Download delivery text
+          </a>
           <small>Exact delivery {delivery.delivery_hash.slice(0, 12)}…</small>
           {!canManage && delivery.state === "SUBMITTED" && (
             <button
@@ -951,6 +1053,23 @@ export function CustomProjectWorkspace({
 }) {
   return (
     <>
+      <section className="sprint-workbench panel">
+        <p className="eyebrow">KXRA / BUSINESS IMPROVEMENT</p>
+        <h2>
+          {canManage ? "Your delivery desk" : "Your next business improvement"}
+        </h2>
+        <p>
+          {canManage
+            ? "Review the need, prepare a scoped proposal and track delivery. Drafts never issue quotes, confirm payment or release work automatically."
+            : "Describe one problem, review your exact proposal and follow the agreed delivery in your private workspace."}
+        </p>
+        <div className="sprint-steps">
+          <span>01 Assess</span>
+          <span>02 Agree scope</span>
+          <span>03 Confirm payment</span>
+          <span>04 Deliver & review</span>
+        </div>
+      </section>
       <CustomProjectRequestForm />
       <div className="record-list">
         {requests.map((request) => (
@@ -960,6 +1079,26 @@ export function CustomProjectWorkspace({
               <span className="badge">{request.state}</span>
             </div>
             <p>{request.desired_outcome}</p>
+            <p className="notice">
+              <strong>Next step:</strong>{" "}
+              {request.state === "SUBMITTED"
+                ? "KXRA reviews fit and missing information."
+                : request.state === "CLARIFICATION"
+                  ? "Confirm the missing inputs before a proposal is issued."
+                  : request.state === "REJECTED"
+                    ? "This request has been declined; review the agreed explanation."
+                    : request.proposals.some((item) => item.delivery_project_id)
+                      ? "Use the delivery workspace and agreed milestones below."
+                      : request.proposals.some(
+                            (item) => item.state === "ACCEPTED",
+                          )
+                        ? "Confirm the agreed payment and inputs before activating delivery."
+                        : request.proposals.some(
+                              (item) => item.state === "ISSUED",
+                            )
+                          ? "Review the exact proposal, terms and price."
+                          : "KXRA prepares the scoped proposal."}
+            </p>
             {request.constraints && (
               <p>
                 <strong>Constraints:</strong> {request.constraints}

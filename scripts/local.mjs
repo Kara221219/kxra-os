@@ -9,6 +9,13 @@ const runtime = path.resolve(
 );
 const origin = new URL(process.env.KXRA_ORIGIN || "http://127.0.0.1:3210");
 const port = Number(origin.port);
+const jobsArgument = process.argv.indexOf("--jobs");
+const jobIdentity =
+  jobsArgument >= 0 ? process.argv[jobsArgument + 1] : undefined;
+if (jobsArgument >= 0 && !["owner", "partner"].includes(jobIdentity))
+  throw Error(
+    "--jobs requires an explicit synthetic owner or partner identity",
+  );
 if (
   origin.protocol !== "http:" ||
   origin.hostname !== "127.0.0.1" ||
@@ -29,6 +36,7 @@ const environment = {
   KXRA_AUTH_MODE: "fixture",
   KXRA_ORIGIN: origin.origin,
   KXRA_RUNTIME: runtime,
+  KXRA_CI_RUN_ID: process.env.KXRA_CI_RUN_ID || crypto.randomUUID(),
 };
 execFileSync(process.execPath, ["scripts/database.mjs", "start"], {
   stdio: "inherit",
@@ -67,13 +75,36 @@ const fileWorker = spawn(
   ],
   { cwd: root, stdio: "inherit", env: environment },
 );
+const jobWorker = jobIdentity
+  ? spawn(
+      process.execPath,
+      [
+        path.join(root, "node_modules", "tsx", "dist", "cli.mjs"),
+        path.join(root, "scripts", "team-job-worker.ts"),
+        "--watch",
+        "--identity",
+        jobIdentity,
+      ],
+      {
+        cwd: root,
+        stdio: "inherit",
+        env: {
+          ...environment,
+          NODE_ENV: "development",
+          KXRA_LOCAL_SECRET: fs.readFileSync(key, "utf8"),
+        },
+      },
+    )
+  : null;
 for (const signal of ["SIGTERM", "SIGINT"])
   process.on(signal, () => {
     child.kill(signal);
     fileWorker.kill(signal);
+    jobWorker?.kill(signal);
   });
 child.on("exit", (code) => {
   if (fileWorker.exitCode === null) fileWorker.kill("SIGTERM");
+  if (jobWorker?.exitCode === null) jobWorker.kill("SIGTERM");
   process.exit(code || 0);
 });
 fileWorker.on("exit", (code) => {

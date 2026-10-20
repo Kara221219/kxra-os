@@ -1,0 +1,64 @@
+# Team workspace security boundary
+
+16 October 2026. Read with ADR 0056. Local verification only; no production activation.
+
+## Access invariants
+
+- Verified account and current organisation membership precede all room access. Organisation, project and room IDs never establish authority on their own.
+- Project rooms follow the existing active project policy. Private rooms additionally require an active explicit room-member row. Organisation owners have no private-room bypass.
+- Room creation requires contributor authority. A creator who loses project access cannot manage or read the room. The creator cannot remove their own private-room membership. Transfer/recovery requires a later audited design; do not bypass privacy to recover abandoned rooms.
+- Creating a room agent delegates a personally owned connection to current room contributors. Connections from another organisation or another person cannot be attached by guessing an ID. Revoking a project/account or room membership blocks future retrieval and run-start checks. Migration 0084 also rechecks the connection owner’s active organisation, contributor project access and private-room membership at admission and completion; loss of that delegation discards in-flight output as ACCESS_CHANGED.
+- Room-scoped composite foreign keys prevent cross-room parent, message and agent references. Messages are immutable and attributed by `auth.uid()`.
+- History retrieval validates room and cursor under the same authenticated RLS transaction. Cursors are immutable message IDs resolved only inside the requested room; ordering compares PostgreSQL `(created_at,id)` values without JavaScript timestamp conversion. Unknown/inaccessible/cross-room cursors return the same unavailable response. Query parameters cannot select account, organisation, role or an unbounded page size. Responses are private/no-store.
+- Direct authenticated table writes are denied; narrowly scoped database functions validate each mutation. Anonymous table reads/writes are denied. Credential retrieval and provider result completion require the trusted `kxra_app` database login in addition to the verified scoped principal.
+- Provider output never assigns roles, bypasses approval or directly updates business data. Task approval is a human, version-checked state transition, not permission to send externally.
+
+## Credentials and network
+
+Keys are server-encrypted using AES-256-GCM, a random per-value nonce and tenant/connection authenticated data. Credential ciphertext is not readable through the authenticated table-column grant. API responses use an explicit metadata projection. No key is saved in browser storage or added to URLs. Never log request bodies, headers or provider error bodies.
+
+The encryption master key is an environment secret, documented without a real value in `.env.example`. Backup and re-encryption/key rotation require an operational procedure before general availability. A database backup alone is insufficient to restore encrypted connections if that separate key is lost.
+
+Fixed vendors have fixed HTTPS URLs. Compatible endpoints are selected from an operator-controlled map, not arbitrary client URLs. DNS results are restricted to public IPv4 and pinned to the actual socket; redirects, IP literals, userinfo, alternate ports and query credentials are rejected. DNS lookup has a five-second deadline followed by a 25-second HTTP deadline. Response content is capped at 256 KiB. Model output is rendered as escaped text, never injected HTML. No uploaded code or external repository is executed.
+
+## Data minimisation and limits
+
+A run receives only a selected room message or thread, at most 40 messages/48,000 characters plus bounded room/agent instructions. No cross-room search, file contents, credentials or other organisation context is automatically included. Message-only mode supports an independent answer without the surrounding discussion. Logs store context identifiers/hash, status, output and reported token counts; no invented monetary costs.
+
+The database serialises admission per requester and limits attempts to 20 per rolling 24 hours with one active request. Repeated request IDs do not trigger a second provider call. No automated billing retry. Interrupted requests are displayed after 60 seconds. A provider may already have billed when a user cancels; cancellation blocks publication, not a guaranteed provider refund.
+
+## Remaining release work
+
+Real-provider failure/revocation/rotation acceptance; worker crash recovery; master-key rotation; data retention/export/deletion covering new tables; room ownership recovery; customer-plan entitlements; provider terms/region disclosure. The existing global security checks do not imply these operational tasks are complete.
+
+Tests: team-provider.test.ts, team-workspace-http.test.ts, e2e/team-workspace.spec.ts and the expanded repository table/DML/RPC inventory suites. The test matrix includes populated reads for all eight new tables across contributor, owner without private membership, viewer, revoked and unrelated identities.
+
+## Room knowledge and instruction versions — 19 October 2026
+
+Migration 0085 intersects explicit room attachment with original project/file/record RLS, shared visibility, current indexed version and chunk hash integrity. Owner-only sources cannot be attached even by their owner. Search filters before ranking; downloads recheck room/source eligibility after object retrieval through the existing guarded delivery protocol. No object key or signed URL enters search/UI responses.
+
+Migration 0086 extends provenance to typed, reviewed room memory. Room and agent are fixed per immutable version; verified server identity supplies author/reviewer. Successful source runs must belong to that same room and agent and have no memory inputs, so memory cannot form recursive summary chains. Approval, current source authority and expiry are checked at recall, trusted app admission, dispatch, publication and historical reads. New versions never silently supersede approved versions. Removal redacts title/body; authenticated column grants exclude retained internal fingerprints. Only current room members can read memory, including organisation owners. No cross-room/company summary is generated. See [the memory contract](../workspace/room-memory.md) for bounds and verification state.
+
+Migration 0087 adds fixture-only durable draft admission. Queue/attempt metadata has room RLS and explicit grants; hidden source arrays, reserved run IDs, request hashes and fencing tokens are excluded from authenticated table reads. A safe helper returns an associated run ID only under its original current-provenance RLS. Enqueue/claim/dispatch/finish/release require the existing trusted app session and verified actor; human cancellation has its own current room/requester-or-creator and exact-version checks, including NULL rejection. Account/session, current tenant/project/private membership, connection/agent and source authority are rechecked before work and publication. Job/run admission and completion are atomic, cancellation invalidates the lease, and expired post-dispatch work becomes uncertain without replay. The worker uses normal guarded loopback fixture sign-in and process-memory cookies; no new login, service key, persistent access or OS scheduler is created. Hosted execution is not activated. See [durable execution](../workspace/durable-execution.md).
+
+Instruction versions have immutable text/hash/identity and draft/approved/rejected/revoked state. Current room creators explicitly approve and attach an exact version. Same-name versions cannot silently replace each other; maximum three active bindings. No executable code, model-controlled permission, external tool or governance-library promotion is added.
+
+Trusted admission atomically validates and stores at most three chunk IDs/hashes and three skill IDs/hashes on the run. The server rechecks readiness immediately before provider generation; completion and historical run RLS recheck provenance. Source/binding withdrawal hides derived output in direct DB, room and global views; the client also filters cached old-page output on the next authorised refresh. Previously received data cannot be recalled. Redacted room audit events retain transition metadata without source text or instruction content.
+
+New tests: `team-knowledge-http.test.ts` and `e2e/team-knowledge.spec.ts`. Final full knowledge-stage CI passed: 267 service/security checks and 54 private browser journeys with six intentional skips, including active-tenant and cached-history cases. The deterministic local scanner/model is fixture evidence, not production scanning or live-provider certification. Private-room uploads, general code skills, operational retention/export, memory and durable execution remain separate work; memory is now the next active implementation stage.
+
+### Reviewed daily fixture schedules (0088; current acceptance pending)
+
+Three new tables retain authenticated RLS, with no direct authenticated DML. Exposed proposal/review/tick functions require the `kxra_app` server session, verified current tenant and applicable room/creator authority. Definitions are immutable; nullable/stale revisions fail closed. Template creation/cancellation/definition insertion are one authenticated transaction, so a worker cannot observe a queued template. No request/LLM supplies a user or role.
+
+Occurrence admission and claim use existing per-actor transaction advisory locks and current org scope. Fixed source selection, account/session version, connection, agent and source permission/approval/expiry checks remain in the publication path; `team_job_context_active` now wraps the preserved base checks with schedule state/expiry/template checks. Private cancellation reduces already-linked pending work after scope withdrawal, cancels running output and clears leases. It cannot be called by authenticated/anon roles and never admits work. Its callers authenticate current requester/tenant or current creator. No new access grant, service identity, OS persistence or hosted execution.
+
+The read-only creator receipt contains source counts and a digest only while its pinned context remains current and authorised, not hidden source IDs/text. Withdrawal/deletion returns a null aggregate digest, including after actual approved memory removal; this closes retained-fingerprint exposure. The audit CSV endpoint checks current RLS/creator on every 500-row page, rejects unexpected/duplicate/overflow cursor input, exports only allowlisted metadata and quotes/formula-protects every cell. It omits people, target/source IDs, raw details, prompts/output, credentials and fences. Client requests abort on room change/unmount. These controls do not make exported files revocable after download; authorised users retain their downloaded metadata.
+
+## 20 October additive0090 acceptance
+
+Room CRM conversion uses immutable exact source/version/hash review and explicit idempotent same-room atomic execution. Pilot entitlements are empty opt-in FIXTURE tables with frozen offer identity, immutable receipts, real membership/invitation reservations and organisation-locked admission/publication/cancellation. Trusted execution mode is transaction-local and derived by the server from verified fixture auth plus guarded loopback environment, never body/JWT metadata/profile provider. The optimized job-run lookup preserves current room and provenance checks. Full local288service/62private+6skips/42public per mode and three builds pass at90migrations/195protectedtables/184functions. See workspace contracts/verification and operations/staging-release-sequence.md; no hosted/provider/payment acceptance implied.
+
+## 20 October0091 isolated test billing acceptance
+
+Separate test-provider config/bindings/intents/immutable event receipts and one fresh-owner RPC extend opt-in pilot entitlements. A narrow existing billing-worker role records validated test-only signed facts; no table DML, service-role fallback, new hosted credential or account mutation. Customer/price/product/amount/quantity/provenance binding and org locks prevent browser grants and duplicate/out-of-order activation. Invalid signed known offers only quarantine/deny; canonical reconciliation is version-fenced, terminal cancellation cannot resurrect. Direct session URL reads require current tenant/fresh MFA/original requester. Full295service/62private+6skips/42public per mode/all3builds precedes a separate SQL-only eight-boundary session-read hardening proof; current inventory91/199/185. Provider config stays empty/disabled in the preserved preview. Actual hosted/payment/worker acceptance is pending; see workspace/pilot-stripe-test.md, verification.md and operations/staging-release-sequence.md. Applied0091 is frozen; next0092.

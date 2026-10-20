@@ -1,11 +1,15 @@
 "use client";
 
-import Link from "next/link";
+import { PlatformTour } from "./PlatformTour";
 import { useEffect, useRef, useState } from "react";
 import { drawJourneyWorld } from "./JourneyWorld";
+import { createJourneyFilm } from "./JourneyFilm";
+import type { JourneyMedia } from "../lib/journey-media";
 
 export type JourneyChapter = {
   index: string;
+  anchor: string;
+  label: string;
   eyebrow: string;
   title: string;
   copy: string;
@@ -15,11 +19,14 @@ export type JourneyChapter = {
 
 export function ImmersiveJourney({
   chapters,
+  media,
 }: {
   chapters: readonly JourneyChapter[];
+  media?: JourneyMedia | null;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [reading, setReading] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -35,7 +42,17 @@ export function ImmersiveJourney({
       section.querySelectorAll<HTMLElement>(".cinema-chapter"),
     );
     const stage = section.querySelector<HTMLElement>(".cinema-stage")!;
+    const film =
+      media && videoRef.current
+        ? createJourneyFilm(videoRef.current, media.video, (state) => {
+            stage.dataset.filmState = state;
+          })
+        : null;
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean } }
+    ).connection;
     let frame = 0;
+    let filmStarted = false;
     const update = () => {
       frame = 0;
       // Short viewports (including text zoom) use the complete readable document.
@@ -59,6 +76,13 @@ export function ImmersiveJourney({
           )
         : 0;
       stage.style.setProperty("--journey-progress", progress.toFixed(4));
+      const bounds = section.getBoundingClientRect();
+      const inView = bounds.bottom > header && bounds.top < window.innerHeight;
+      if (progress > 0 && inView) filmStarted = true;
+      film?.update(
+        enhanced && inView && filmStarted && !connection?.saveData,
+        progress,
+      );
       const position = progress * (layers.length - 1);
       const active = Math.round(position);
       layers.forEach((layer, index) => {
@@ -74,6 +98,24 @@ export function ImmersiveJourney({
           String(Math.max(0, 1 - Math.abs(delta) * 1.65)),
         );
       });
+      const contactVisible =
+        (document.getElementById("contact")?.getBoundingClientRect().top ??
+          Infinity) <
+        header + 150;
+      const activeAnchor = contactVisible
+        ? "contact"
+        : chapters[active]?.anchor;
+      document
+        .querySelectorAll<HTMLAnchorElement>(".site-header nav a")
+        .forEach((link) => {
+          const anchor = new URL(link.href).hash.slice(1);
+          const current =
+            anchor === activeAnchor ||
+            (anchor === "industries" &&
+              ["retail", "services"].includes(activeAnchor));
+          if (current) link.setAttribute("aria-current", "location");
+          else link.removeAttribute("aria-current");
+        });
       section
         .querySelectorAll<HTMLButtonElement>(".cinema-nav button")
         .forEach((button, index) =>
@@ -87,7 +129,45 @@ export function ImmersiveJourney({
     const requestUpdate = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
+    const followHash = () => {
+      const index = chapters.findIndex(
+        (item) => item.anchor === window.location.hash.slice(1),
+      );
+      if (index >= 0) goTo(index);
+    };
+    const followLink = (event: MouseEvent) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const link = (event.target as Element)?.closest<HTMLAnchorElement>(
+        "a[href]",
+      );
+      if (!link) return;
+      const destination = new URL(link.href);
+      if (
+        destination.origin !== location.origin ||
+        destination.pathname !== location.pathname
+      )
+        return;
+      const index = chapters.findIndex(
+        (item) => `#${item.anchor}` === destination.hash,
+      );
+      if (index < 0) return;
+      event.preventDefault();
+      if (location.hash !== destination.hash)
+        history.pushState(null, "", destination.hash);
+      goTo(index, true);
+    };
     update();
+    followHash();
+    document.addEventListener("click", followLink, true);
+    window.addEventListener("hashchange", followHash);
+    window.addEventListener("popstate", followHash);
     window.addEventListener("scroll", requestUpdate, { passive: true });
     window.addEventListener("resize", requestUpdate, { passive: true });
     preference.addEventListener("change", requestUpdate);
@@ -99,6 +179,10 @@ export function ImmersiveJourney({
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      document.removeEventListener("click", followLink, true);
+      window.removeEventListener("hashchange", followHash);
+      window.removeEventListener("popstate", followHash);
+      film?.dispose();
       window.removeEventListener("scroll", requestUpdate);
       window.removeEventListener("resize", requestUpdate);
       preference.removeEventListener("change", requestUpdate);
@@ -108,9 +192,9 @@ export function ImmersiveJourney({
         layer.removeAttribute("aria-hidden");
       });
     };
-  }, [reading, chapters]);
+  }, [reading, chapters, media]);
 
-  const goTo = (index: number) => {
+  const goTo = (index: number, animate = false) => {
     const section = sectionRef.current;
     if (!section) return;
     if (section.classList.contains("cinema--enhanced")) {
@@ -124,7 +208,7 @@ export function ImmersiveJourney({
             (section.offsetHeight -
               (section.querySelector<HTMLElement>(".cinema-stage")
                 ?.offsetHeight || window.innerHeight)),
-        behavior: "instant",
+        behavior: animate ? "smooth" : "instant",
       });
     } else
       section
@@ -135,12 +219,28 @@ export function ImmersiveJourney({
   return (
     <section className="cinema" ref={sectionRef} aria-label="Explore KXRA">
       <div className="cinema-stage">
+        {media ? (
+          <video
+            className="cinema-film"
+            ref={videoRef}
+            poster={media.poster}
+            muted
+            playsInline
+            preload="none"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+        ) : null}
+        <div className="cinema-depth-frames" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
         <canvas className="cinema-world" ref={canvasRef} aria-hidden="true" />
         <div className="cinema-vignette" aria-hidden="true" />
         <div className="cinema-topline">
           <span>
-            KXRA GROUP <span className="cinema-divider">/</span> POSSIBILITIES,
-            CONNECTED.
+            KXRA <span className="cinema-divider">/</span> THE WALKTHROUGH
           </span>
           {ready ? (
             <button
@@ -155,10 +255,11 @@ export function ImmersiveJourney({
         <div className="cinema-content">
           {chapters.map((chapter, index) => (
             <article
-              className="cinema-chapter"
+              className={`cinema-chapter ${chapter.anchor === "platform" ? "cinema-platform-chapter" : ""}`}
               id={`scene-${index + 1}`}
               key={chapter.index}
             >
+              <span id={chapter.anchor} className="cinema-anchor" />
               <p className="cinema-kicker">
                 {chapter.index} <span /> {chapter.eyebrow}
               </p>
@@ -173,19 +274,27 @@ export function ImmersiveJourney({
                   <li key={tag}>{tag}</li>
                 ))}
               </ul>
+              {chapter.anchor === "platform" ? <PlatformTour /> : null}
               <div className="actions">
-                <Link
+                <a
                   className="button light"
-                  href={index === 3 ? "/contact" : "/submit-opportunity"}
+                  href={
+                    index === chapters.length - 1
+                      ? "#contact"
+                      : `#${chapters[index + 1].anchor}`
+                  }
                 >
-                  {index === 3
+                  {index === chapters.length - 1
                     ? "Start a conversation"
-                    : "Bring us your business need"}{" "}
+                    : "Continue the walkthrough"}{" "}
                   <span aria-hidden="true">↗</span>
-                </Link>
-                <Link className="cinema-link" href="/platform">
-                  Explore KXRA OS →
-                </Link>
+                </a>
+                {index !== chapters.length - 1 &&
+                chapter.anchor !== "platform" ? (
+                  <a className="cinema-link" href="#contact">
+                    Bring us your business need
+                  </a>
+                ) : null}
               </div>
               <p className="cinema-note">{chapter.signal}</p>
             </article>
@@ -197,20 +306,21 @@ export function ImmersiveJourney({
           </span>
           {ready ? (
             <nav className="cinema-nav" aria-label="Journey chapters">
-              {[
-                "Possibility",
-                "Industries",
-                "Capability",
-                "Your next move",
-              ].map((label, index) => (
-                <button type="button" key={label} onClick={() => goTo(index)}>
-                  <small>0{index + 1}</small> {label}
+              {chapters.map((chapter, index) => (
+                <button
+                  type="button"
+                  key={chapter.anchor}
+                  onClick={() => goTo(index)}
+                >
+                  <small>{chapter.index}</small> {chapter.label}
                 </button>
               ))}
             </nav>
           ) : null}
           <span className="cinema-caption">
-            AN ILLUSTRATED WORLD OF OPPORTUNITY
+            {media
+              ? "SEEDANCE 2.5 / ILLUSTRATIVE ENVIRONMENTS"
+              : "AN ARCHITECTURAL WORLD OF OPPORTUNITY"}
           </span>
         </div>
         <div className="cinema-progress" aria-hidden="true">

@@ -26,7 +26,7 @@ function assertBillingEnabled() {
     throw Error("Billing is disabled");
 }
 
-async function billingTransaction<T>(
+export async function billingTransaction<T>(
   work: (database: pg.Client) => Promise<T>,
   configuration?: pg.ClientConfig,
 ) {

@@ -6,7 +6,7 @@ export const releaseReviewPackets = {
     checks: [
       [
         "customer_journeys",
-        "Complete sign-in, onboarding, billing, Brand Studio, support and custom-project journeys.",
+        "Complete sign-in, onboarding, billing, workrooms, support and custom-project journeys.",
       ],
       [
         "keyboard_navigation",

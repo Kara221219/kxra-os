@@ -1,5 +1,7 @@
 # Production bootstrap and launch playbook
 
+> **19 October reconciliation: historical bootstrap assumptions are stale.** Later deployment/initialization records and a fresh account inspection contradict the empty-project/zero-user state below. Do not execute these bootstrap/seed steps against production. First reconcile the exact live migration ledger/hashes, roles, existing data and deployed source read-only, then use a reviewed target-bound additive plan and backup/rollback approval. The current dirty development checkout is not a production release. See [launch readiness](../operations/launch-readiness.md); a separate isolated recovery task owns owner access. The approved £49 workspace pilot still has charges disabled; historical studio prices are not the launch offer.
+
 Status: prepared; execution is not authorized by this document.  
 Production Supabase project: `lhbgeucifxxcdoyrnesf` (`KXRA Production`).  
 Region and compute: `eu-west-2`, Micro.

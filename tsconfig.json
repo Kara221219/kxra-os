@@ -28,6 +28,7 @@
     "apps/os/.next",
     "apps/os/.next-dev",
     "apps/marketing/.next",
-    "apps/marketing/.next-dev"
+    "apps/marketing/.next-dev",
+    "apps/*/.next*/**"
   ]
 }

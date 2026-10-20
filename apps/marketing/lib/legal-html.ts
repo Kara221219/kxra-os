@@ -15,7 +15,6 @@ function navigation(): string {
     <a class="mark" href="/">KXRA<span>GROUP</span></a>
     <nav aria-label="Primary navigation">
       <a href="/platform">Platform</a>
-      <a href="/brand-studio">Brand Studio</a>
       <a href="/pricing">Pricing</a>
       <a href="/custom-projects">Custom projects</a>
       <a href="/industries">Industries</a>
@@ -70,6 +69,7 @@ function documentHtml(document: LegalDocument): string {
       </header>
       <article class="section prose legal-document">
         <p class="notice">Owner-approved version ${escapeHtml(String(legalPack.version))}, approved ${escapeHtml(legalApproval.approvedOn)}. Customer acceptance and live sales remain disabled until the controlled release checks pass.</p>
+        <p class="notice">Historical subscription terms: Brand Studio and Video Studio have been retired. References to those services and their prices are retained in this approved document for the record, not as a current offer. New platform subscription sales are paused; see <a href="/pricing">current pricing and scope</a>.</p>
         <dl class="legal-meta">
           <div><dt>Entity</dt><dd>${escapeHtml(legalPack.entity.legalName)} · Company ${escapeHtml(legalPack.entity.companyNumber)}</dd></div>
           <div><dt>Audience</dt><dd>${escapeHtml(document.audience)}</dd></div>

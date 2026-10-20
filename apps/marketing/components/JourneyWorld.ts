@@ -1,4 +1,4 @@
-// A deterministic architectural world. Scroll moves the camera, not a video file.
+// A light architectural fallback. Perspective projection keeps forward/reverse scroll spatial.
 export function drawJourneyWorld(canvas: HTMLCanvasElement, progress: number) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -14,131 +14,139 @@ export function drawJourneyWorld(canvas: HTMLCanvasElement, progress: number) {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, w, h);
   const sky = ctx.createLinearGradient(0, 0, w, h);
-  sky.addColorStop(0, "#07111f");
-  sky.addColorStop(0.65, "#142438");
-  sky.addColorStop(1, "#635039");
+  sky.addColorStop(0, "#ffffff");
+  sky.addColorStop(1, "#e1e6e8");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
-  const camera = progress * 126;
-  const focal = Math.min(w, h) * 0.93;
-  const horizon = h * 0.51;
-  const vanishingX = w * (w < 700 ? 0.6 : 0.7);
-  const drift = Math.sin(progress * Math.PI * 2) * 1.4;
+  const camera = progress * 120,
+    focal = Math.min(w, h) * 0.92,
+    center = w * 0.7,
+    horizon = h * 0.5;
   type Point = [number, number, number];
-  const project = ([x, y, z]: Point) => {
-    const depth = z - camera;
-    return [
-      vanishingX + ((x - drift) * focal) / depth,
-      horizon - ((y - 2.4) * focal) / depth,
-    ];
-  };
-  const polygon = (
-    points: Point[],
-    fill: string,
-    stroke = "rgba(219,185,125,.28)",
-  ) => {
-    if (points.some((point) => point[2] - camera < 0.8)) return;
+  const project = ([x, y, z]: Point) => [
+    center +
+      ((x - Math.sin(progress * Math.PI * 2) * 0.6) * focal) / (z - camera),
+    horizon - ((y - 1.6) * focal) / (z - camera),
+  ];
+  const face = (points: Point[], fill: string) => {
+    if (points.some((p) => p[2] - camera < 0.8)) return;
     ctx.beginPath();
-    points.forEach((point, i) => {
-      const [x, y] = project(point);
+    points.forEach((p, i) => {
+      const [x, y] = project(p);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.closePath();
     ctx.fillStyle = fill;
     ctx.fill();
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 0.7;
+    ctx.strokeStyle = "#9ca8af55";
+    ctx.lineWidth = 0.65;
     ctx.stroke();
   };
-  // Far-to-near opaque facades, with a clear central route through the city.
-  for (let row = 25; row >= 0; row--) {
-    const z = 10 + row * 8;
-    const depth = z - camera;
-    if (depth < 1) continue;
-    for (const side of [-1, 1]) {
-      const x = side * (5.8 + (row % 3) * 1.9);
-      const height = 5 + ((row * 7 + (side + 1) * 3) % 13);
-      const width = 2.6 + (row % 2);
-      const left = x - width / 2,
-        right = x + width / 2;
-      polygon(
-        [
-          [left, 0, z],
-          [right, 0, z],
-          [right, height, z],
-          [left, height, z],
-        ],
-        row % 2 ? "#122032" : "#1b2938",
-      );
-      polygon(
-        [
-          [right, 0, z],
-          [right, 0, z + 4],
-          [right, height, z + 4],
-          [right, height, z],
-        ],
-        "#091422",
-      );
-      polygon(
-        [
-          [left, height, z],
-          [right, height, z],
-          [right, height, z + 4],
-          [left, height, z + 4],
-        ],
-        "#344151",
-      );
-      for (let level = 1; level < height; level += 1.3) {
-        const a = project([left + 0.25, level, z]),
-          b = project([right - 0.25, level, z]);
-        ctx.strokeStyle =
-          level % 3 < 1.5 ? "rgba(240,205,143,.65)" : "rgba(149,176,194,.17)";
-        ctx.lineWidth = Math.max(0.5, (focal / depth) * 0.025);
-        ctx.beginPath();
-        ctx.moveTo(a[0], a[1]);
-        ctx.lineTo(b[0], b[1]);
-        ctx.stroke();
-      }
-    }
-  }
-  // Gold architectural ribs and floor rails establish the forward camera motion.
-  for (let i = 19; i >= 0; i--) {
-    const z = 7 + i * 11;
+  const box = (
+    x: number,
+    y: number,
+    z: number,
+    width: number,
+    height: number,
+    depth: number,
+    color = "#f6f7f7",
+  ) => {
+    face(
+      [
+        [x, y, z],
+        [x + width, y, z],
+        [x + width, y + height, z],
+        [x, y + height, z],
+      ],
+      color,
+    );
+    face(
+      [
+        [x + width, y, z],
+        [x + width, y, z + depth],
+        [x + width, y + height, z + depth],
+        [x + width, y + height, z],
+      ],
+      "#c8cfd3",
+    );
+    face(
+      [
+        [x, y + height, z],
+        [x + width, y + height, z],
+        [x + width, y + height, z + depth],
+        [x, y + height, z + depth],
+      ],
+      "#ffffff",
+    );
+  };
+  ctx.fillStyle = "#dce2e5";
+  ctx.fillRect(0, horizon, w, h - horizon);
+  for (let room = 6; room >= 0; room--) {
+    const z = 12 + room * 23;
     if (z - camera < 1) continue;
-    const points: Point[] = [
-      [-4.5, 0, z],
-      [-4.5, 6.8, z],
-      [-3.4, 8, z],
-      [3.4, 8, z],
-      [4.5, 6.8, z],
-      [4.5, 0, z],
-    ];
+    face(
+      [
+        [-7, 0, z],
+        [-7, 6, z],
+        [-7, 6, z + 20],
+        [-7, 0, z + 20],
+      ],
+      "#f6f8f8",
+    );
+    face(
+      [
+        [7, 0, z],
+        [7, 6, z],
+        [7, 6, z + 20],
+        [7, 0, z + 20],
+      ],
+      "#e8edef",
+    );
+    box(-7, 0, z, 0.25, 6, 0.4, "#d2dade");
+    box(6.75, 0, z, 0.25, 6, 0.4, "#d2dade");
+    if (room % 3 === 1) {
+      box(1.5, 0, z + 4, 3, 1.1, 2);
+      box(2, 1.1, z + 4.3, 1.5, 1.7, 1.2, "#e7ecee");
+      face(
+        [
+          [2, 2.8, z + 4.3],
+          [3.5, 2.8, z + 4.3],
+          [2.75, 3.5, z + 4.3],
+        ],
+        "#c63822",
+      );
+    } else if (room % 3 === 2) {
+      for (let i = 0; i < 3; i++) {
+        box(1 + i * 1.6, 0, z + 4 + i, 1, 1.3, 1);
+        box(
+          1.2 + i * 1.6,
+          1.3,
+          z + 4.2 + i,
+          0.6,
+          0.7,
+          0.5,
+          i === 1 ? "#c63822" : "#424c54",
+        );
+      }
+    } else {
+      box(1.3, 0.9, z + 5, 3, 0.18, 1.5, "#e7edef");
+      box(1.5, 1.1, z + 5.7, 1.2, 1, 0.15, "#39454d");
+      box(3.5, 0, z + 4.7, 0.2, 0.9, 0.2, "#747f87");
+    }
+    const [ax, ay] = project([-1.5, 0, z]),
+      [bx, by] = project([-1.5, 0, z + 20]);
     ctx.beginPath();
-    points.forEach((point, index) => {
-      const [x, y] = project(point);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = `rgba(232,195,125,${Math.min(0.8, 14 / (z - camera))})`;
-    ctx.lineWidth = Math.min(3, 25 / (z - camera));
-    ctx.stroke();
-  }
-  for (const x of [-4.5, -3.8, 3.8, 4.5]) {
-    const a = project([x, 0, camera + 1]),
-      b = project([x, 0, camera + 180]);
-    ctx.beginPath();
-    ctx.moveTo(a[0], a[1]);
-    ctx.lineTo(b[0], b[1]);
-    ctx.strokeStyle = "rgba(230,189,113,.5)";
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.strokeStyle = "#c6382270";
     ctx.lineWidth = 1;
     ctx.stroke();
   }
-  const shade = ctx.createLinearGradient(0, 0, w, 0);
-  shade.addColorStop(0, "rgba(5,12,22,.97)");
-  shade.addColorStop(0.38, "rgba(5,12,22,.86)");
-  shade.addColorStop(0.75, "rgba(5,12,22,.05)");
-  shade.addColorStop(1, "rgba(5,12,22,.12)");
-  ctx.fillStyle = shade;
+  const fade = ctx.createLinearGradient(0, 0, w, 0);
+  fade.addColorStop(0, "#ffffff");
+  fade.addColorStop(0.38, "#ffffffb0");
+  fade.addColorStop(1, "#ffffff00");
+  ctx.fillStyle = fade;
   ctx.fillRect(0, 0, w, h);
 }

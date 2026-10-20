@@ -1,3 +1,25 @@
+import { TeamWorkspace } from "../../../components/TeamWorkspace";
+import { teamKnowledge } from "../../../lib/team-knowledge";
+import { TeamTasks, TeamRuns } from "../../../components/TeamOperations";
+import {
+  teamRooms,
+  teamDetail,
+  teamConnections,
+  teamOperations,
+} from "../../../lib/team-workspace";
+import {
+  roomThreads,
+  roomThread,
+  roomMessages,
+  boardSessions,
+  boardSession,
+} from "../../../lib/workrooms";
+import {
+  RoomsView,
+  RoomView,
+  BoardView,
+  OperatingModelView,
+} from "../../../components/WorkroomViews";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import Shell from "../../../components/Shell";
@@ -29,7 +51,6 @@ import {
   CustomProjectWorkspace,
   type CustomProjectRequest,
 } from "../../../components/CommercialForms";
-import BrandStudio from "../../../components/BrandStudio";
 import CustomerService, {
   type CustomerServiceRequest,
 } from "../../../components/CustomerService";
@@ -64,7 +85,6 @@ import {
   improvementLoop,
 } from "../../../lib/control-plane";
 import { loadProjectWorkspace } from "../../../lib/project-workspaces";
-import { loadBrandStudio } from "../../../lib/brand-studio";
 import { localMode, query } from "../../../../../packages/db";
 export const dynamic = "force-dynamic";
 const modules: Record<string, [string, string]> = {
@@ -493,6 +513,7 @@ export default async function Workspace({
         </>
       );
     } else if (section === "tasks") {
+      const roomWork = await teamOperations(a);
       const loops = await Promise.all(
         projects.map((item) => operatingLoop(a, item.id)),
       );
@@ -508,6 +529,7 @@ export default async function Workspace({
                 : "Work assigned to you within your current project access."
             }
           />
+          <TeamTasks rows={roomWork.tasks} />
           {taskRows.length ? (
             <WorkflowTaskCards
               tasks={taskRows}
@@ -522,123 +544,142 @@ export default async function Workspace({
           )}
         </>
       );
+    } else if (section === "workspace") {
+      const rooms = await teamRooms(a);
+      const detail = segments[1] ? await teamDetail(a, segments[1]) : undefined;
+      const connections = await teamConnections(a);
+      const candidates = detail
+        ? await query<{ account_id: string; display_name: string }>(
+            a,
+            "select * from kxra.team_room_candidates($1)",
+            [detail.room.id],
+          )
+        : [];
+      content = (
+        <TeamWorkspace
+          knowledge={
+            detail ? await teamKnowledge(a, detail.room.id) : undefined
+          }
+          rooms={rooms}
+          detail={detail}
+          connections={connections}
+          projects={writableProjects}
+          actorId={a.id}
+          isOrgOwner={a.role === "owner"}
+          local={localMode()}
+          candidates={candidates}
+        />
+      );
+    } else if (section === "workrooms") {
+      if (segments[1]) {
+        const selected = await project(a, segments[1]);
+        const threads = await roomThreads(a, selected.id);
+        const thread = segments[2]
+          ? await roomThread(a, selected.id, segments[2])
+          : undefined;
+        const messages = thread
+          ? await roomMessages(a, selected.id, thread.id)
+          : [];
+        content = (
+          <>
+            <Heading title={selected.name} sub="Shared project workroom" />
+            <RoomView
+              project={selected}
+              threads={threads}
+              thread={thread}
+              messages={messages}
+              canWrite={writableProjects.some((p) => p.id === selected.id)}
+            />
+          </>
+        );
+      } else
+        content = (
+          <>
+            <Heading
+              title="Workrooms"
+              sub="Project conversations, context and accountable handoffs."
+            />
+            <RoomsView projects={projects} />
+          </>
+        );
+    } else if (section === "advisory-board") {
+      owner(a);
+      const sessions = await boardSessions(a);
+      const session = segments[1]
+        ? await boardSession(a, segments[1])
+        : undefined;
+      content = (
+        <>
+          <Heading
+            title="Your advisory board"
+            sub="Challenge a decision before committing time or money."
+          />
+          <BoardView sessions={sessions} session={session} />
+        </>
+      );
+    } else if (section === "operating-model") {
+      owner(a);
+      content = (
+        <>
+          <Heading
+            title="Your operating model"
+            sub="Eight connected disciplines for useful, accountable work."
+          />
+          <OperatingModelView />
+        </>
+      );
     } else if (section === "tools") {
       const customerAdministrator =
         a.organisation_kind === "CUSTOMER" && a.security_role === "ORG_ADMIN";
-      const [tools, studio, plans, billingCustomers] = await Promise.all([
-        query<{
-          tool_key: string;
-          name: string;
-          description: string;
-          activation_event: string;
-        }>(
-          a,
-          `select tool.tool_key,tool.name,tool.description,version.activation_event
-           from kxra.tool_catalogue tool
-           join kxra.tool_versions version on version.tool_id=tool.id
-            and version.state='ACTIVE'
-           where tool.state='ACTIVE' order by tool.name`,
-        ),
-        loadBrandStudio(a),
-        customerAdministrator
-          ? query<{
-              id: string;
-              name: string;
-              amount_minor: string;
-              currency: string;
-              billing_interval: string;
-              commercial_copy: string;
-            }>(
-              a,
-              `select version.id,plan.name,version.amount_minor::text,
-                version.currency,version.billing_interval,
-                coalesce(version.commercial_copy->>'summary',
-                  version.commercial_copy->>'description','') as commercial_copy
-               from kxra.plans plan join kxra.plan_versions version on version.plan_id=plan.id
-               where plan.state='ACTIVE' and version.state='ACTIVE'
-               order by plan.name,version.version`,
-            )
-          : Promise.resolve([]),
-        customerAdministrator
-          ? query<{ id: string }>(
-              a,
-              "select id from kxra.billing_customers where state='ACTIVE' limit 1",
-            )
-          : Promise.resolve([]),
-      ]);
+      const billingCustomers = customerAdministrator
+        ? await query<{ id: string }>(
+            a,
+            "select id from kxra.billing_customers where state='ACTIVE' limit 1",
+          )
+        : [];
       content = (
         <>
           <Heading
             title="Business tools"
-            sub="Entitlement-controlled tools for repeatable business work."
+            sub="Start with your project and the work you need to move forward."
           />
-          <div className="record-list">
-            {tools.map((tool) => {
-              const available =
-                tool.tool_key === "brand-studio" &&
-                studio.entitlements.access.allowed;
-              return (
-                <article className="record" key={tool.tool_key}>
-                  <div className="record-top">
-                    <h2>{tool.name}</h2>
-                    <span className={`badge${available ? "" : " amber"}`}>
-                      {available ? "Included" : "Not included"}
-                    </span>
-                  </div>
-                  <p>{tool.description}</p>
-                  <p className="subtle">
-                    Activation event: {tool.activation_event}
-                  </p>
-                  {available ? (
-                    <Link href="/os/brand-studio">Open Brand Studio ↗</Link>
-                  ) : (
-                    <p>
-                      Ask KXRA about a subscription or owner-issued free partner
-                      grant. No paid subscription is inferred from account
-                      access.
-                    </p>
-                  )}
-                </article>
-              );
-            })}
-            {!tools.length && <div className="empty">No tools are active.</div>}
+          <div className="workroom-grid">
+            <Link className="panel workroom-card" href="/os/workrooms">
+              <h2>Project workrooms</h2>
+              <p>Discuss work and prepare a scoped handoff.</p>
+            </Link>
+            <Link className="panel workroom-card" href="/os/ask">
+              <h2>Ask KXRA</h2>
+              <p>Find evidence you have permission to read.</p>
+            </Link>
+            <Link className="panel workroom-card" href="/os/custom-projects">
+              <h2>Business improvement sprints</h2>
+              <p>Submit a need for separately scoped work.</p>
+            </Link>
           </div>
+          <p className="notice">
+            The studios have been retired. New subscriptions are paused while
+            the offer is revised. Existing billing history is preserved; contact
+            support about an existing subscription.
+          </p>
           {customerAdministrator && (
             <BillingActions
               enabled={process.env.KXRA_BILLING_ENABLED === "true"}
               customerReady={billingCustomers.length > 0}
-              plans={plans}
+              plans={[]}
             />
           )}
-          <section className="panel" style={{ marginTop: 24 }}>
-            <h2>Need something specific?</h2>
-            <p>
-              A platform subscription does not include bespoke implementation.
-              Submit a private custom-project request for separate triage,
-              proposal and commercial approval.
-            </p>
-            <Link href="/os/custom-projects">Request a custom project ↗</Link>
-          </section>
         </>
       );
-    } else if (section === "brand-studio") {
-      const snapshot = await loadBrandStudio(a);
+    } else if (section === "brand-studio" || section === "video-studio") {
       content = (
         <>
-          <Heading
-            title="KXRA Brand Studio"
-            sub="Source-linked brand profiles, campaign briefs and controlled creative export."
-          >
-            <Link href="/os/tools">All tools</Link>
-          </Heading>
-          <BrandStudio
-            snapshot={snapshot}
-            projects={writableProjects.map(({ id, code, name }) => ({
-              id,
-              code,
-              name,
-            }))}
-          />
+          <Heading title="This tool has been retired" />
+          <p>
+            Existing records are retained. Please contact support if you need
+            your previous work.
+          </p>
+          <Link href="/os/tools">Available tools</Link>
         </>
       );
     } else if (section === "custom-projects") {
@@ -732,7 +773,7 @@ export default async function Workspace({
         <>
           <Heading
             title="Custom projects"
-            sub="Private requests and separately scoped KXRA proposals."
+            sub="Business improvement sprints, private proposals and agreed delivery."
           />
           <CustomProjectWorkspace
             requests={requests}
@@ -896,6 +937,7 @@ export default async function Workspace({
       );
     } else if (section === "runs") {
       owner(a);
+      const roomWork = await teamOperations(a);
       const runs = await query<
         Parameters<typeof AgentRunHistoryView>[0]["runs"][number]
       >(
@@ -933,6 +975,7 @@ export default async function Workspace({
             sub="Redacted authorization, execution, evidence, usage and delivery state."
           />
           <AgentRunHistoryView runs={runs} />
+          <TeamRuns rows={roomWork.runs} />
         </>
       );
     } else if (modules[section]) {
@@ -1124,7 +1167,10 @@ export default async function Workspace({
               ? "Deterministic fake-model synthesis is available for local acceptance testing; no external model is called."
               : "External AI synthesis and paid model calls are disabled until a provider is configured."}
           </p>
-          <AskForm projects={projects} synthesisEnabled={localMode()} />
+          <AskForm
+            projects={filter ? [await project(a, filter)] : projects}
+            synthesisEnabled={localMode()}
+          />
         </>
       );
     } else if (section === "files") {
@@ -1175,6 +1221,7 @@ export default async function Workspace({
       );
     } else if (section === "approvals") {
       owner(a);
+      const roomWork = await teamOperations(a, true);
       await query(a, "select kxra.refresh_expired_approvals()", []);
       const rows = await query<{
         id: string;
@@ -1206,6 +1253,7 @@ export default async function Workspace({
             title="Approvals"
             sub="Review the exact action. Consequential changes require owner MFA."
           />
+          <TeamTasks rows={roomWork.tasks} approvals />
           {rows.map((r) => (
             <article className="record" key={r.id} id={`approval-${r.id}`}>
               <h3>

@@ -6,7 +6,8 @@ import net from "node:net";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-const runtime = path.join(root, ".runtime", "ci");
+const focusedTeam = process.argv.includes("--team-workspace");
+const runtime = path.join(root, ".runtime", focusedTeam ? "team-ci" : "ci");
 const nextGeneratedConfigurationFiles = ["os", "marketing"].flatMap(
   (application) =>
     ["next-env.d.ts", "tsconfig.json"].map((name) => {
@@ -171,66 +172,109 @@ try {
   );
   await waitForServer(marketingOrigin, marketing, runId);
 
-  run("npm", ["run", "lint"], environment);
-  run("npm", ["run", "test:dependencies"], environment);
-  run("npm", ["test"], environment);
-  run("npm", ["run", "test:migrations"], environment);
-  run("npm", ["run", "test:publication"], environment);
-  run("npm", ["run", "test:marketing-boundary"], environment);
-  run("npm", ["run", "test:e2e"], environment);
-  run("npm", ["run", "test:marketing"], environment);
-  run("npm", ["run", "test:restart"], environment);
-  run("npm", ["run", "test:restore"], environment);
-
   const productionEnvironment = { ...environment, NODE_ENV: "production" };
   delete productionEnvironment.KXRA_AUTH_MODE;
   delete productionEnvironment.KXRA_LOCAL_SECRET;
   delete productionEnvironment.KXRA_RUNTIME;
   delete productionEnvironment.KXRA_PG_PORT;
   delete productionEnvironment.KXRA_NEXT_DIST_DIR;
-  run("npm", ["run", "build"], productionEnvironment);
-  run("npm", ["run", "test:marketing-csp"], productionEnvironment);
-  run("npm", ["run", "test:build-budgets"], productionEnvironment);
-  run("npm", ["run", "test:artifact"], productionEnvironment);
-  run("npm", ["run", "test:secrets"], productionEnvironment);
-
-  const productionTestEnvironment = {
-    ...productionEnvironment,
-    KXRA_RUNTIME: runtime,
-    KXRA_MARKETING_ORIGIN: productionMarketingOrigin,
-    KXRA_CI_RUN_ID: runId,
-    KXRA_EXPECT_PRODUCTION_CSP: "true",
-  };
-  productionMarketingLogHandle = fs.openSync(
-    path.join(runtime, "marketing-production.log"),
-    "w",
-  );
-  productionMarketing = spawn(
-    process.execPath,
-    [
-      path.join(root, "node_modules", "next", "dist", "bin", "next"),
-      "start",
-      "--hostname",
-      "127.0.0.1",
-      "--port",
-      String(productionMarketingPort),
-    ],
-    {
-      cwd: path.join(root, "apps", "marketing"),
-      env: productionTestEnvironment,
-      stdio: [
-        "ignore",
-        productionMarketingLogHandle,
-        productionMarketingLogHandle,
+  run("npm", ["run", "lint"], environment);
+  if (focusedTeam) {
+    run(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1",
+        "tests/team-knowledge-http.test.ts",
+        "tests/team-memory-http.test.ts",
+        "tests/team-jobs-http.test.ts",
+        "tests/team-schedules-http.test.ts",
+        "tests/team-audit-http.test.ts",
+        "tests/team-launch-http.test.ts",
+        "tests/pilot-stripe.test.ts",
+        "tests/team-workspace-http.test.ts",
+        "tests/team-provider.test.ts",
       ],
-    },
-  );
-  await waitForServer(productionMarketingOrigin, productionMarketing, runId);
-  run("npm", ["run", "test:marketing"], productionTestEnvironment);
-  run("npm", ["run", "test:marketing-performance"], productionTestEnvironment);
-  console.log(
-    `Hermetic CI PASS using disposable PostgreSQL ${postgresPort} and application ${applicationPort}.`,
-  );
+      environment,
+    );
+    run("npm", ["run", "test:migrations"], environment);
+    run(
+      "npm",
+      [
+        "run",
+        "test:e2e",
+        "--",
+        "tests/e2e/team-knowledge.spec.ts",
+        "tests/e2e/team-memory.spec.ts",
+        "tests/e2e/team-jobs.spec.ts",
+        "tests/e2e/team-launch.spec.ts",
+        "tests/e2e/team-workspace.spec.ts",
+      ],
+      environment,
+    );
+    run("npm", ["run", "build:os"], productionEnvironment);
+    console.log("Focused team workspace CI PASS (not the full platform CI).");
+  } else {
+    run("npm", ["run", "test:dependencies"], environment);
+    run("npm", ["test"], environment);
+    run("npm", ["run", "test:migrations"], environment);
+    run("npm", ["run", "test:publication"], environment);
+    run("npm", ["run", "test:marketing-boundary"], environment);
+    run("npm", ["run", "test:e2e"], environment);
+    run("npm", ["run", "test:marketing"], environment);
+    run("npm", ["run", "test:restart"], environment);
+    run("npm", ["run", "test:restore"], environment);
+
+    run("npm", ["run", "build"], productionEnvironment);
+    run("npm", ["run", "test:marketing-csp"], productionEnvironment);
+    run("npm", ["run", "test:build-budgets"], productionEnvironment);
+    run("npm", ["run", "test:artifact"], productionEnvironment);
+    run("npm", ["run", "test:secrets"], productionEnvironment);
+
+    const productionTestEnvironment = {
+      ...productionEnvironment,
+      KXRA_RUNTIME: runtime,
+      KXRA_MARKETING_ORIGIN: productionMarketingOrigin,
+      KXRA_CI_RUN_ID: runId,
+      KXRA_EXPECT_PRODUCTION_CSP: "true",
+    };
+    productionMarketingLogHandle = fs.openSync(
+      path.join(runtime, "marketing-production.log"),
+      "w",
+    );
+    productionMarketing = spawn(
+      process.execPath,
+      [
+        path.join(root, "node_modules", "next", "dist", "bin", "next"),
+        "start",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        String(productionMarketingPort),
+      ],
+      {
+        cwd: path.join(root, "apps", "marketing"),
+        env: productionTestEnvironment,
+        stdio: [
+          "ignore",
+          productionMarketingLogHandle,
+          productionMarketingLogHandle,
+        ],
+      },
+    );
+    await waitForServer(productionMarketingOrigin, productionMarketing, runId);
+    run("npm", ["run", "test:marketing"], productionTestEnvironment);
+    run(
+      "npm",
+      ["run", "test:marketing-performance"],
+      productionTestEnvironment,
+    );
+    console.log(
+      `Hermetic CI PASS using disposable PostgreSQL ${postgresPort} and application ${applicationPort}.`,
+    );
+  }
 } finally {
   if (application && application.exitCode === null) {
     application.kill("SIGTERM");

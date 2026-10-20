@@ -357,6 +357,31 @@ test("AT-31 HTTP tenant selection ignores forged headers/bodies and rechecks rev
   );
   assert.equal(delivered.status, 201, await delivered.clone().text());
   const delivery = await delivered.json();
+  const exported = await request(
+    jar,
+    `/api/custom-projects/deliveries/${delivery.id}/export`,
+  );
+  assert.equal(exported.status, 200);
+  assert.match(exported.headers.get("content-disposition") || "", /attachment/);
+  assert.equal(exported.headers.get("cache-control"), "private, no-store");
+  assert.match(await exported.text(), /Synthetic HTTP milestone evidence/);
+  assert.equal(
+    (
+      await fetch(
+        base + `/api/custom-projects/deliveries/${delivery.id}/export`,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await request(
+        jar,
+        `/api/custom-projects/deliveries/${crypto.randomUUID()}/export`,
+      )
+    ).status,
+    404,
+  );
   const milestoneAccepted = await jsonRequest(
     jar,
     `/api/custom-projects/deliveries/${delivery.id}/accept`,

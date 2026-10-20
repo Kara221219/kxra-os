@@ -1,11 +1,11 @@
 :root {
-  --ink: #172923;
-  --paper: #f5f3ed;
+  --ink: #142738;
+  --paper: #f3f1eb;
   --muted: #64726b;
   --line: #d9ded6;
-  --green: #315b45;
+  --green: #304b61;
   --white: #fff;
-  --soft: #e8eee7;
+  --soft: #e6ebef;
 }
 * {
   box-sizing: border-box;
@@ -1896,5 +1896,195 @@ pre {
   }
   .workspace-module {
     padding: 16px;
+  }
+}
+
+.sprint-workbench {
+  background: linear-gradient(120deg, #0b1724, #233b4e);
+  color: #f3e9d6;
+  border-color: #bda170;
+}
+.sprint-workbench .eyebrow {
+  color: #e0bd7e;
+}
+.sprint-workbench p {
+  max-width: 800px;
+}
+.sprint-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.sprint-steps span {
+  padding: 0.7rem 1rem;
+  border: 1px solid #8f886e;
+  border-radius: 8px;
+}
+.sprint-draft-controls {
+  padding: 1rem;
+  background: #edf0f2;
+  border: 1px solid #a0aebb;
+  border-radius: 8px;
+}
+.sprint-draft-controls p {
+  font-weight: 400;
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* Shared project work and private owner decision support. */
+.workroom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.workroom-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.workroom-card:hover {
+  border-color: var(--accent, #4d665d);
+}
+.workroom-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(0, 3fr);
+  gap: 20px;
+  align-items: start;
+}
+.workroom-layout .panel {
+  margin-bottom: 18px;
+}
+.workroom-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 18px 0;
+}
+.workroom-thread {
+  display: block;
+  padding: 12px 0;
+  border-bottom: 1px solid #d6ddd9;
+  overflow-wrap: anywhere;
+}
+.workroom-thread[aria-current="page"] {
+  font-weight: 700;
+}
+.workroom-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.workroom-prompt {
+  width: 100%;
+  min-height: 220px;
+  font-family: monospace;
+}
+@media (max-width: 720px) {
+  .workroom-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/* Team workspace: retain the established KXRA palette and typography. */
+.team-space-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.team-space-heading h1 {
+  margin: 0.5rem 0;
+}
+.team-space-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.team-room-list {
+  display: grid;
+  gap: 0.75rem;
+  position: sticky;
+  top: 1rem;
+}
+.team-room-list a {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.team-room-list a[aria-current] {
+  background: #e4ece7;
+  font-weight: 700;
+}
+.team-space-main {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+.team-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.team-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.team-tabs button {
+  background: #fff;
+  color: #18352b;
+  border: 1px solid #b6c7bf;
+}
+.team-tabs button[aria-selected="true"] {
+  background: #18352b;
+  color: #fff;
+}
+.team-message {
+  padding: 1.25rem 0;
+  border-top: 1px solid #dce5df;
+  overflow-wrap: anywhere;
+}
+.team-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.team-agent-output {
+  padding: 1rem;
+  border-left: 3px solid #4a6c5a;
+  margin-top: 1rem;
+  background: #f1f5f2;
+  border-radius: 0 0.7rem 0.7rem 0;
+}
+.team-space fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+.team-space input,
+.team-space textarea,
+.team-space select {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.team-space details summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+@media (max-width: 800px) {
+  .team-space-layout,
+  .team-summary {
+    grid-template-columns: 1fr;
+  }
+  .team-room-list {
+    position: static;
+  }
+  .team-space-heading {
+    display: block;
   }
 }

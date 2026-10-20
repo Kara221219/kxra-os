@@ -7,18 +7,18 @@ export const metadata: Metadata = {
   title: { default: "KXRA Group", template: "%s · KXRA Group" },
   description: publication.brand.summary,
   metadataBase: new URL("https://kxra-group.com"),
-  robots: { index: false, follow: false },
+  robots: {
+    index: process.env.KXRA_ENVIRONMENT === "production",
+    follow: process.env.KXRA_ENVIRONMENT === "production",
+  },
 };
 
 const links = [
-  ["Platform", "/platform"],
-  ["Brand Studio", "/brand-studio"],
-  ["Video Studio", "/video-studio"],
-  ["Pricing", "/pricing"],
-  ["Custom projects", "/custom-projects"],
-  ["Industries", "/industries"],
-  ["About", "/about"],
-  ["Contact", "/contact"],
+  ["KXRA", "/#overview"],
+  ["Industries", "/#industries"],
+  ["Platform", "/#platform"],
+  ["Our approach", "/#approach"],
+  ["Start a project", "/#contact"],
 ] as const;
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -55,6 +55,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <a href={`mailto:${publication.brand.email}`}>
               {publication.brand.email}
             </a>
+            <Link href="/pricing">Pricing</Link>
             <Link href="/legal/privacy">Privacy</Link>
             <Link href="/legal/terms">Terms</Link>
             <Link href="/legal/cookies">Cookies</Link>

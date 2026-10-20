@@ -1,0 +1,11 @@
+# Room CRM lead conversion
+
+20 October 2026; accepted in the current full local launch CI. Additive migration 0089 creates room-scoped workflow records and exact conversion proposals. This is a local operational template, not an external CRM connector or general app builder.
+
+Open a room's **Workflow** tab. A contributor captures a lead name/context/next step. They propose an exact account name, opportunity name and destination next step against the displayed lead version. The room creator separately approves/rejects/cancels that immutable payload. Approval alone changes no business records. **Execute conversion** then locks the proposal and source lead, rechecks current tenant/project/private-room/creator access, version, source hash and seven-day expiry, and atomically creates an account and opportunity in the same room, marks the source converted and stores both IDs in the receipt.
+
+The conversion ID is the idempotency key: concurrent/repeated execution returns the same records. A second proposal cannot reconvert the changed lead. Any lead edit invalidates existing source-version approvals; a new exact proposal/review is required. Converted leads and derived account/opportunity records cannot be rewritten by the lead editor. Direct authenticated DML is denied; user/role/organisation identity is never taken from a request body or model output. Private room owners without membership cannot read/review/execute it. No room data is copied into a broader project-shared or owner-only register.
+
+Workflow records and conversion receipts each have independent 100-row native timestamp/UUID cursor pages under current RLS. Current room access is checked on each request; clients merge IDs, abort stale room requests and clearly announce older read-time pages. Source hashes stay private. Audit event CSV includes only its existing allowlisted metadata, not workflow names, context or target identifiers.
+
+No contact is messaged, account invited, invoice created, price calculated, connector called or money transferred. In the opt-in fixture pilot, inactive billing blocks new record/proposal/admission and lead edits; already completed history stays readable. A real setup service would still need approved delivery/support terms and hosted acceptance before sale.

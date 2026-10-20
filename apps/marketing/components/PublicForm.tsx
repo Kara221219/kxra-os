@@ -1,10 +1,25 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { sprintPackages, sprintPackage } from "../lib/business-sprints";
 
 type Kind = "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
 
-export function PublicForm({ kind }: { kind: Kind }) {
+export function PublicForm({
+  kind,
+  sprintIntake = false,
+}: {
+  kind: Kind;
+  sprintIntake?: boolean;
+}) {
+  const [packageKey, setPackageKey] = useState("improvement-sprint");
+  const pending = useRef<{ body: string; key: string } | null>(null);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get(
+      "package",
+    );
+    if (requested && sprintPackage(requested)) setPackageKey(requested);
+  }, []);
   const sourcePath = {
     ENQUIRY: "/partner",
     CUSTOM_PROJECT: "/submit-opportunity",
@@ -22,18 +37,26 @@ export function PublicForm({ kind }: { kind: Kind }) {
     setMessage("Sending securely…");
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
+    const body = JSON.stringify({
+      ...payload,
+      kind,
+      sourcePath:
+        window.location.pathname === "/"
+          ? sourcePath
+          : window.location.pathname === "/business-sprints"
+            ? "/submit-opportunity"
+            : window.location.pathname,
+    });
+    if (!pending.current || pending.current.body !== body)
+      pending.current = { body, key: crypto.randomUUID() };
     try {
       const response = await fetch("/api/enquiries", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
+          "Idempotency-Key": pending.current.key,
         },
-        body: JSON.stringify({
-          ...payload,
-          kind,
-          sourcePath: window.location.pathname,
-        }),
+        body,
       });
       const result = (await response.json()) as { message?: string };
       if (!response.ok)
@@ -43,6 +66,7 @@ export function PublicForm({ kind }: { kind: Kind }) {
         "Thank you. Your request is in the private KXRA review inbox.",
       );
       target.reset();
+      pending.current = null;
     } catch {
       setState("error");
       setMessage(
@@ -60,6 +84,23 @@ export function PublicForm({ kind }: { kind: Kind }) {
     >
       <input name="kind" type="hidden" value={kind} />
       <input name="sourcePath" type="hidden" value={sourcePath} />
+      {sprintIntake && (
+        <div className="field">
+          <label htmlFor="sprint-package">Starting package</label>
+          <select
+            id="sprint-package"
+            name="sprintPackage"
+            value={packageKey}
+            onChange={(event) => setPackageKey(event.target.value)}
+          >
+            {sprintPackages.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="field">
         <label htmlFor={`${kind}-name`}>Name</label>
         <input
@@ -102,9 +143,53 @@ export function PublicForm({ kind }: { kind: Kind }) {
           name="message"
           required
           minLength={20}
-          maxLength={4000}
+          maxLength={sprintIntake ? 1800 : 4000}
         />
       </div>
+      {sprintIntake && (
+        <>
+          <div className="field">
+            <label htmlFor="sprint-outcome">
+              What would a useful outcome look like?
+            </label>
+            <textarea
+              id="sprint-outcome"
+              name="desiredOutcome"
+              required
+              minLength={10}
+              maxLength={700}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="sprint-constraints">
+              Current systems, previous attempts and constraints
+            </label>
+            <textarea
+              id="sprint-constraints"
+              name="constraints"
+              maxLength={700}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="sprint-budget">Indicative project budget</label>
+            <select id="sprint-budget" name="budget">
+              <option value="UNSURE">Not sure yet</option>
+              <option value="UNDER_500">Under £500</option>
+              <option value="500_1500">£500–£1,500</option>
+              <option value="1500_PLUS">Over £1,500</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="sprint-deadline">Desired deadline</label>
+            <input
+              id="sprint-deadline"
+              name="deadline"
+              maxLength={100}
+              placeholder="For example, within the next month"
+            />
+          </div>
+        </>
+      )}
       <div className="trap" aria-hidden="true">
         <label htmlFor={`${kind}-website`}>Website</label>
         <input

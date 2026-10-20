@@ -2,7 +2,7 @@
   "snapshotId": "KXRA-PUBLIC-LOCAL-001",
   "status": "REVIEW_REQUIRED",
   "publicationEnabled": false,
-  "reviewedAt": "2026-09-25",
+  "reviewedAt": "2026-10-16",
   "brand": {
     "name": "KXRA Group",
     "email": "info@kxra-group.com",
@@ -11,9 +11,9 @@
   },
   "capabilities": [
     {
-      "name": "KXRA Brand Studio",
-      "status": "Private preview",
-      "description": "Turn reviewed brand evidence into editable campaign concepts and export-ready copy."
+      "name": "Project workrooms",
+      "status": "Local acceptance testing",
+      "description": "Discuss assigned project work and prepare scoped context handoffs."
     },
     {
       "name": "Ask KXRA",
@@ -27,13 +27,13 @@
     }
   ],
   "commercialModel": {
-    "status": "Reviewed launch pricing · private preview",
-    "subscription": "Founding access is priced at £29 per organisation per month, with a £290 annual option. Checkout is not yet live.",
-    "subscriptionBoundary": "The founding plan includes Brand Studio, 120 generated creative variants and 120 reviewed exports per month.",
+    "status": "Offer revision \u00b7 subscriptions paused",
+    "subscription": "New platform subscriptions are paused while the offer is revised.",
+    "subscriptionBoundary": "No replacement subscription package is currently offered for purchase.",
     "customProjects": "Discovery, integrations and bespoke implementation are proposed and priced separately.",
     "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription.",
     "taxBoundary": "KXRA is not VAT registered, so VAT is not currently added to the stated price. Any future chargeable tax will be configured and shown before payment.",
-    "usageBoundary": "Unused units do not roll over. Generated media, high-cost research, integrations, Ask KXRA and custom delivery are separate unless a later accepted plan explicitly includes them."
+    "usageBoundary": "Custom engagements require an agreed scope and price. External AI execution requires configured providers and usage limits."
   },
   "industries": [
     "Professional services",

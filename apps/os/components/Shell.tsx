@@ -2,14 +2,16 @@ import Link from "next/link";
 import type { Actor } from "../lib/auth";
 const ownerNav = [
   ["Dashboard", ""],
+  ["Workspace", "workspace"],
+  ["Operating Model", "operating-model"],
   ["Improvement Loop", "improvements"],
   ["Portfolio", "portfolio"],
   ["Idea Inbox", "ideas"],
   ["Projects", "projects"],
+  ["Tasks", "tasks"],
   ["Business Tools", "tools"],
   ["Custom Projects", "custom-projects"],
   ["Support & Privacy", "support"],
-  ["Brand Studio", "brand-studio"],
   ["Research", "sources"],
   ["Experiments", "experiments"],
   ["Decisions", "decisions"],
@@ -29,9 +31,9 @@ const ownerNav = [
 ];
 const partnerNav = [
   ["Home", ""],
+  ["Workspace", "workspace"],
   ["My Projects", "projects"],
   ["Business Tools", "tools"],
-  ["Brand Studio", "brand-studio"],
   ["Ask KXRA", "ask"],
   ["Ideas", "ideas"],
   ["Custom Projects", "custom-projects"],

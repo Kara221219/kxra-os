@@ -13,7 +13,16 @@ export default function CustomProjects() {
       </PageHero>
       <section className="section split">
         <div className="prose">
-          <h2>How it works</h2>
+          <h2>Start with a focused business sprint.</h2>
+          <p>
+            Decision Review starts from £250 and Business Improvement Sprint
+            from £750. Each request is assessed before an exact proposal is
+            issued.
+          </p>
+          <Link className="button" href="/business-sprints">
+            Explore business sprints
+          </Link>
+          <h3>How it works</h3>
           <ol>
             <li>Submit the need and the outcome you are seeking.</li>
             <li>

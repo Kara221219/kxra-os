@@ -1,0 +1,11 @@
+# Scoped catalog pages
+
+20 October 2026. New job/schedule and workflow catalog acceptance is tracked in verification.md; this does not claim that every catalog has pagination.
+
+Jobs and recurring definitions keep active/pending-first ordering. Responses contain up to 100 rows plus `next_cursor:{before:<UUID>,band:<integer>}`. The server resolves the anchor's native PostgreSQL `created_at::text` and UUID under the current actor/RLS and same room; clients never round its timestamp. Queries seek by ascending band and descending `(created_at,id)`. Hidden schedule template jobs are never anchors or returned jobs. Wrong-room/inaccessible/random anchors return unavailable, malformed/duplicate/unexpected query keys are rejected, and a changed anchor band returns conflict with an explicit refresh instruction.
+
+This is a sequence of current-access read-time pages, not a frozen database snapshot. Other records may move bands while paging. Clients deduplicate IDs, preserve visible earlier pages, abort requests on room change/unmount and retain a failed page for retry. Loading history pauses the jobs' automatic refresh; explicit Refresh reloads the first page/current states. State-changing actions refresh the catalog. Each jobs page includes only its authorised attempts; each definition page includes its associated occurrence receipts. No cursor is an access grant or caller-supplied timestamp/role.
+
+Workflow records and conversion receipts use independent 100-row immutable-created-time/UUID pages (band zero); stale source/action state is checked again when acting. The UI can load all earlier pages rather than silently truncating at 100. Populated tests cover >100 records, disjoint pages, end-of-history, inaccessible anchors and changed bands, with actual desktop/mobile Load earlier controls.
+
+Still separate work: global Tasks/Approvals/Run History pagination, room/connection directory catalogs and knowledge/skill/memory catalogs; those limits must not be described as solved by this change. New CRM conversion reviews currently live in the room Workflow surface, not the global Tasks/Approvals registry. Those integrations and broader search/unread/live-update semantics remain explicit parity gaps.

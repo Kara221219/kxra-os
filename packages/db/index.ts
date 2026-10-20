@@ -88,6 +88,11 @@ export async function scoped<T>(
         actor?.organisation_id || "",
       ],
     );
+    await db.query("select set_config('request.kxra.execution_mode',$1,true)", [
+      actor?.source === "fixture" && localMode() && !process.env.VERCEL_ENV
+        ? "fixture"
+        : "hosted",
+    ]);
     const result = await work(db);
     await db.query("commit");
     return result;

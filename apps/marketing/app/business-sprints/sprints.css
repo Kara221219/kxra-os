@@ -1,0 +1,241 @@
+.sprint-site {
+  background: #0b1724;
+  color: #ede9de;
+  --ink: #0b1724;
+  --paper: #ede9de;
+  --muted: #b7c3ce;
+}
+.sprint-hero {
+  position: relative;
+  min-height: 80svh;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  max-width: 1440px;
+  margin: auto;
+  padding: 6rem max(1rem, 5vw);
+  overflow: hidden;
+  background: radial-gradient(ellipse at 85% 50%, #253642, transparent 65%);
+}
+.sprint-hero h1 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(3.2rem, 6.8vw, 7rem);
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+}
+.sprint-hero-copy {
+  position: relative;
+  z-index: 2;
+}
+.sprint-hero-copy > p {
+  max-width: 550px;
+  font-size: 1.1rem;
+  color: #d1d8df;
+}
+.sprint-hero-copy .sprint-detail,
+.sprint-detail {
+  font-size: 0.87rem;
+  color: #bdc8d1;
+  max-width: 950px;
+  margin-top: 1.6rem;
+}
+.sprint-site h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  line-height: 1.12;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+}
+.sprint-sculpture {
+  height: 460px;
+  position: relative;
+  perspective: 700px;
+  display: grid;
+  place-items: center;
+}
+.sprint-core {
+  width: 210px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  background: linear-gradient(145deg, #243847, #07111a);
+  border: 1px solid #af8b4d;
+  box-shadow:
+    25px 25px 0 #182734,
+    26px 26px 0 #b39660;
+  transform: rotateY(-18deg) rotateX(7deg);
+  letter-spacing: 0.24em;
+  color: #efcf96;
+}
+.sprint-orbit {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border: 1px solid #d1b172;
+  border-radius: 50%;
+  transform: rotateY(-25deg) rotateX(65deg);
+}
+.orbit-two {
+  width: 440px;
+  height: 440px;
+  transform: rotateY(50deg) rotateX(15deg);
+  opacity: 0.35;
+}
+.sprint-horizon {
+  position: absolute;
+  bottom: 35px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #dbb974, transparent);
+}
+.sprint-intro > p,
+.sprint-sample > p {
+  max-width: 740px;
+}
+.sprint-examples,
+.sprint-packages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin-top: 2rem;
+}
+.sprint-examples article {
+  border-top: 1px solid #6f664e;
+  padding: 1.5rem 0;
+}
+.sprint-examples p {
+  color: #bdc8d1;
+}
+.sprint-package {
+  border: 1px solid #425461;
+  padding: 2rem;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #182b3a, #0f1c28);
+  display: flex;
+  flex-direction: column;
+}
+.sprint-package.featured {
+  border-color: #d8b579;
+  background: linear-gradient(145deg, #273542, #152332);
+}
+.sprint-package h3 {
+  font-size: 1.5rem;
+  margin: 1.4rem 0 0.5rem;
+}
+.sprint-price {
+  font:
+    2.3rem Georgia,
+    serif;
+  color: #f0d5a3;
+  margin: 0.6rem 0 1.2rem;
+}
+.sprint-package ul {
+  padding-left: 1.2rem;
+  flex: 1;
+  color: #c4cfd8;
+}
+.sprint-package li {
+  margin: 0.8rem 0;
+}
+.sprint-package .button {
+  background: #ead4ac;
+  color: #111d27;
+  border-color: #ead4ac;
+}
+.sprint-method,
+.sprint-intake {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 4rem;
+  border-top: 1px solid #334555;
+}
+.sprint-method ol {
+  padding-left: 1.4rem;
+}
+.sprint-method li {
+  padding-left: 1rem;
+  margin: 0 0 2rem;
+}
+.sprint-method strong {
+  font-size: 1.2rem;
+  color: #efd5a4;
+}
+.sprint-method p {
+  color: #c4cfd8;
+  margin-top: 0.5rem;
+}
+.sprint-intake form {
+  background: #f0ede4;
+  padding: 2rem;
+  border-radius: 20px;
+  color: #172634;
+}
+.sprint-intake input,
+.sprint-intake textarea,
+.sprint-intake select {
+  width: 100%;
+  background: #fff;
+  color: #172634;
+  padding: 0.75rem;
+  border: 1px solid #73818b;
+  border-radius: 8px;
+}
+.sprint-intake .check input {
+  width: auto;
+}
+.sprint-faq details {
+  border-top: 1px solid #425461;
+  padding: 1.2rem 0;
+}
+.sprint-faq summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.sprint-faq p {
+  margin: 1rem 0 0;
+  max-width: 760px;
+}
+.sprint-site .section {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+.sprint-site :focus-visible {
+  outline-color: #f2d19b;
+}
+@media (max-width: 850px) {
+  .sprint-hero {
+    grid-template-columns: 1fr;
+    padding-top: 3rem;
+  }
+  .sprint-sculpture {
+    height: 300px;
+    opacity: 0.8;
+  }
+  .sprint-core {
+    width: 160px;
+    height: 180px;
+  }
+  .sprint-orbit {
+    width: 240px;
+    height: 240px;
+  }
+  .orbit-two {
+    width: 290px;
+    height: 290px;
+  }
+  .sprint-examples,
+  .sprint-packages,
+  .sprint-method,
+  .sprint-intake {
+    grid-template-columns: 1fr;
+  }
+  .sprint-method,
+  .sprint-intake {
+    gap: 2rem;
+  }
+  .sprint-intake form {
+    padding: 1.2rem;
+  }
+}

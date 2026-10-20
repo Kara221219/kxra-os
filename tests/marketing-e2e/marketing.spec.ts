@@ -7,6 +7,7 @@ const routes = [
   "/brand-studio",
   "/pricing",
   "/custom-projects",
+  "/business-sprints",
   "/industries",
   "/about",
   "/contact",
@@ -57,7 +58,6 @@ test("customer-document pack is complete and records exact owner approval", asyn
   page,
 }) => {
   for (const route of [
-    "/pricing",
     "/legal/privacy",
     "/legal/terms",
     "/legal/cookies",
@@ -77,19 +77,18 @@ test("customer-document pack is complete and records exact owner approval", asyn
         page.locator('link[href="/legal-documents.css"]'),
       ).toHaveCount(1);
     }
-    if (route === "/pricing") {
-      await expect(page.locator("main")).toContainText("£29");
-      await expect(page.locator("main")).toContainText("£290");
-      await expect(page.locator("main")).toContainText(
-        "120 generated creative variants",
-      );
-      await expect(page.locator("main")).toContainText("120 reviewed exports");
-      await expect(page.locator("main")).toContainText(
-        "Stripe test billing and the production release gate must pass",
-      );
-    }
   }
+  await page.goto("/pricing");
+  await expect(page.locator("main")).toContainText(
+    "Platform subscription under review",
+  );
+  await expect(page.locator("main")).not.toContainText(
+    /£29|120 generated creative variants|120 reviewed exports/,
+  );
   await page.goto("/legal/terms");
+  await expect(page.locator("main")).toContainText(
+    "Historical subscription terms",
+  );
   await expect(page.locator("main")).toContainText("£29");
   await expect(page.locator("main")).toContainText(
     "seven-calendar-day grace period",
@@ -188,7 +187,7 @@ test("AT-44 reduced motion preserves every layered section and removes sticky mo
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator(".cinema-chapter")).toHaveCount(4);
+  await expect(page.locator(".cinema-chapter")).toHaveCount(6);
   const positions = await page
     .locator(".cinema-chapter")
     .evaluateAll((elements) =>
@@ -233,9 +232,7 @@ test("depth journey advances chapters through the viewport", async ({
   await expect(page.locator('.cinema-chapter[data-active="true"]')).toHaveCount(
     1,
   );
-  await expect(
-    page.locator(".cinema-chapter").filter({ hasText: "Build reusable" }),
-  ).toHaveAttribute("data-active", "true");
+  await expect(page.locator("#scene-5")).toHaveAttribute("data-active", "true");
 });
 
 test("AT-44 320px reflow and 200 percent text preserve access", async ({
@@ -272,7 +269,7 @@ test("AT-44 content and contact fallback work without JavaScript", async ({
   });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.locator(".cinema-chapter")).toHaveCount(4);
+  await expect(page.locator(".cinema-chapter")).toHaveCount(6);
   await page.goto("/contact");
   await expect(page.locator(".form-shell .notice")).toContainText(
     "JavaScript is unavailable.",
@@ -333,8 +330,8 @@ test("cinematic camera reverses, inactive links are inert, and reading mode rest
   const firstFrame = await canvas.evaluate((element) =>
     (element as HTMLCanvasElement).toDataURL(),
   );
-  await page.getByRole("button", { name: "04 Your next move" }).click();
-  await expect(page.locator("#scene-4")).toHaveAttribute("data-active", "true");
+  await page.getByRole("button", { name: "06 Our approach" }).click();
+  await expect(page.locator("#scene-6")).toHaveAttribute("data-active", "true");
   expect(
     await page
       .locator("#scene-1")
@@ -348,7 +345,7 @@ test("cinematic camera reverses, inactive links are inert, and reading mode rest
   await expect(
     page.getByRole("link", { name: "Start a conversation" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "01 Possibility" }).click();
+  await page.getByRole("button", { name: "01 Welcome" }).click();
   await expect(page.locator("#scene-1")).toHaveAttribute("data-active", "true");
   await expect(page.locator(".cinema-stage")).toHaveCSS(
     "--journey-progress",
@@ -381,10 +378,12 @@ test("cinematic text remains inside its viewport and text zoom switches to readi
 }) => {
   await page.goto("/");
   for (const label of [
-    "01 Possibility",
-    "02 Industries",
-    "03 Capability",
-    "04 Your next move",
+    "01 Welcome",
+    "02 Property",
+    "03 Retail",
+    "04 Services",
+    "05 KXRA OS",
+    "06 Our approach",
   ]) {
     await page.getByRole("button", { name: label }).click();
     const fits = await page

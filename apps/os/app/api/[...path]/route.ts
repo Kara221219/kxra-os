@@ -1,3 +1,19 @@
+import {
+  roomThreads,
+  roomThread,
+  roomMessages,
+  createThread,
+  createMessage,
+  contextExport,
+  boardSessions,
+  boardSession,
+  createBoardSession,
+  reviewBoardSession,
+} from "../../../lib/workrooms";
+import {
+  sprintDraft,
+  sprintPackage,
+} from "../../../../../packages/business-sprints";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -35,10 +51,6 @@ import {
   workLogTypes,
 } from "../../../lib/control-plane";
 import { loadProjectWorkspace } from "../../../lib/project-workspaces";
-import {
-  executeLocalBrandGeneration,
-  loadBrandStudio,
-} from "../../../lib/brand-studio";
 import { query, localMode } from "../../../../../packages/db";
 import {
   classifications,
@@ -58,16 +70,6 @@ import {
   type ModelEvidence,
 } from "../../../../../packages/ai";
 import { executeAskAgentRun } from "../../../../../packages/ai/worker";
-import {
-  assertPublicWebsiteUrl,
-  brandChannelSchema,
-  brandProfileEvidence,
-  brandProfileSchema,
-  campaignBriefSchema,
-  creativeContentSchema,
-  inferLocalBrandProfile,
-  renderBrandExport,
-} from "../../../../../packages/brand-studio";
 import {
   privateObjectStore,
   sha256 as objectSha256,
@@ -447,6 +449,72 @@ async function handle(req: Request, ctx: Context) {
     const method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (p[0] === "workrooms") {
+      if (method === "GET" && !p[1]) return json(await listProjects(a));
+      const projectId = uuid.parse(p[1]);
+      await project(a, projectId);
+      if (method === "GET" && !p[2])
+        return json(await roomThreads(a, projectId));
+      if (p[2] === "threads") {
+        if (method === "POST" && !p[3])
+          return json(await createThread(a, projectId, await body(req)), 201);
+        if (p[3] && method === "GET" && !p[4])
+          return json({
+            thread: await roomThread(a, projectId, p[3]),
+            messages: await roomMessages(a, projectId, p[3]),
+          });
+        if (p[3] && p[4] === "messages" && !p[5] && method === "POST")
+          return json(
+            await createMessage(a, projectId, p[3], await body(req)),
+            201,
+          );
+        if (p[3] && p[4] === "context" && !p[5] && method === "GET")
+          return new NextResponse(await contextExport(a, projectId, p[3]), {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Content-Disposition": "attachment; filename=kxra-discussion.txt",
+              "Cache-Control": "private, no-store",
+              "X-Content-Type-Options": "nosniff",
+            },
+          });
+      }
+      throw new HttpError(404, "Not found");
+    }
+    if (p[0] === "advisory-board") {
+      owner(a);
+      if (method === "GET" && !p[1]) return json(await boardSessions(a));
+      if (method === "POST" && !p[1])
+        return json(await createBoardSession(a, await body(req)), 201);
+      if (p[1] && method === "GET" && !p[2])
+        return json(await boardSession(a, p[1]));
+      if (p[1] && p[2] === "review" && !p[3] && method === "POST")
+        return json(await reviewBoardSession(a, p[1], await body(req)));
+      if (p[1] && p[2] === "export" && !p[3] && method === "GET") {
+        const record = await boardSession(a, p[1]);
+        return new NextResponse(
+          JSON.stringify(
+            {
+              title: record.title,
+              version: record.version,
+              prompt: record.body,
+              ...record.data,
+            },
+            null,
+            2,
+          ),
+          {
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Content-Disposition":
+                "attachment; filename=kxra-advisory-review.json",
+              "Cache-Control": "private, no-store",
+              "X-Content-Type-Options": "nosniff",
+            },
+          },
+        );
+      }
+      throw new HttpError(404, "Not found");
+    }
     if (p[0] === "dashboard" && method === "GET")
       return json(await ownerDashboard(a));
     if (p[0] === "improvements" && method === "GET")
@@ -1039,488 +1107,13 @@ async function handle(req: Request, ctx: Context) {
       }
       throw new HttpError(404, "Not found");
     }
-    if (p[0] === "brand-studio") {
-      if (method === "GET" && !p[1]) return json(await loadBrandStudio(a));
-      if (method === "POST" && p[1] === "sources" && !p[2]) {
-        const input = z
-          .object({
-            project_id: uuid,
-            source_type: z.enum(["WEBSITE", "MANUAL", "FILE"]),
-            website_url: z.string().trim().max(2000).nullable(),
-            source_text: z.string().trim().min(1).max(50000),
-            rights_basis: z.string().trim().min(3).max(2000),
-            consent: z.literal(true),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        await project(a, input.project_id);
-        const locator =
-          input.source_type === "WEBSITE"
-            ? assertPublicWebsiteUrl(input.website_url || "")
-            : null;
-        if (input.source_type !== "WEBSITE" && input.website_url)
-          throw new HttpError(
-            400,
-            "Website URL is only valid for website sources",
-          );
-        const rows = await query<{
-          source_id: string;
-          source_version_id: string;
-          version: number;
-        }>(a, "select * from kxra.create_brand_source($1,$2,$3,$4,$5,$6,$7)", [
-          input.project_id,
-          input.source_type,
-          locator,
-          input.source_text,
-          input.rights_basis,
-          input.consent,
-          input.request_id,
-        ]);
-        return json(rows[0], 201);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "sources" &&
-        p[2] &&
-        p[3] === "refresh" &&
-        !p[4]
-      ) {
-        const sourceId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            expected_version: positiveVersion,
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{
-          acquisition_id: string;
-          state: string;
-          input_sha256: string;
-        }>(a, "select * from kxra.request_brand_source_refresh($1,$2,$3)", [
-          sourceId,
-          input.expected_version,
-          input.request_id,
-        ]);
-        return json(rows[0], 202);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "sources" &&
-        p[2] &&
-        p[3] === "revise" &&
-        !p[4]
-      ) {
-        const sourceId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            expected_version: positiveVersion,
-            source_text: z.string().trim().min(1).max(50000),
-            revision_reason: z.string().trim().min(3).max(2000),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{
-          source_version_id: string;
-          version: number;
-          content_sha256: string;
-        }>(a, "select * from kxra.revise_brand_source($1,$2,$3,$4,$5)", [
-          sourceId,
-          input.expected_version,
-          input.source_text,
-          input.revision_reason,
-          input.request_id,
-        ]);
-        return json(rows[0]);
-      }
-      if (method === "POST" && p[1] === "profiles" && !p[2]) {
-        const input = z
-          .object({
-            project_id: uuid,
-            source_version_id: uuid,
-            name: z.string().trim().min(1).max(160),
-            business_name: z.string().trim().max(160).nullable().optional(),
-            tone: z.string().max(2000).optional(),
-            audiences: z.string().max(5000).optional(),
-            offers: z.string().max(5000).optional(),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        await project(a, input.project_id);
-        const source = (
-          await query<{
-            project_id: string;
-            supplied_content: string;
-            locator: string | null;
-          }>(
-            a,
-            `select version.project_id,version.supplied_content,source.locator
-             from kxra.brand_source_versions version
-             join kxra.brand_sources source on source.id=version.source_id
-             where version.id=$1`,
-            [input.source_version_id],
-          )
-        )[0];
-        if (!source || source.project_id !== input.project_id)
-          throw new HttpError(404, "Brand source not found");
-        const profile = inferLocalBrandProfile({
-          websiteUrl: source.locator,
-          sourceText: source.supplied_content,
-          businessName: input.business_name,
-          tone: input.tone,
-          audiences: input.audiences,
-          offers: input.offers,
-        });
-        const rows = await query<{
-          profile_id: string;
-          profile_version_id: string;
-          version: number;
-        }>(a, "select * from kxra.create_brand_profile($1,$2,$3,$4,$5)", [
-          input.project_id,
-          input.name,
-          profile,
-          JSON.stringify(brandProfileEvidence(input.source_version_id)),
-          input.request_id,
-        ]);
-        return json({ ...rows[0], profile }, 201);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "profiles" &&
-        p[2] &&
-        p[3] === "revise" &&
-        !p[4]
-      ) {
-        const profileId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            expected_version: positiveVersion,
-            source_version_id: uuid,
-            profile_data: brandProfileSchema,
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{
-          profile_version_id: string;
-          version: number;
-        }>(a, "select * from kxra.revise_brand_profile($1,$2,$3,$4,$5)", [
-          profileId,
-          input.expected_version,
-          input.profile_data,
-          JSON.stringify(
-            brandProfileEvidence(
-              input.source_version_id,
-              "USER-SUPPLIED INFORMATION",
-            ),
-          ),
-          input.request_id,
-        ]);
-        return json(rows[0]);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "profiles" &&
-        p[2] &&
-        p[3] === "decision" &&
-        !p[4]
-      ) {
-        const profileId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            version: positiveVersion,
-            decision: z.enum(["APPROVE", "REJECT"]),
-            note: z.string().trim().min(1).max(5000),
-          })
-          .strict()
-          .parse(await body(req));
-        return json(
-          (
-            await query(
-              a,
-              "select result.* from kxra.decide_brand_profile($1,$2,$3,$4) result",
-              [profileId, input.version, input.decision, input.note],
-            )
-          )[0],
-        );
-      }
-      if (method === "POST" && p[1] === "campaigns" && !p[2]) {
-        const input = campaignBriefSchema
-          .extend({
-            project_id: uuid,
-            profile_id: uuid,
-            profile_version: positiveVersion,
-            name: z.string().trim().min(1).max(160),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        await project(a, input.project_id);
-        const rows = await query<{
-          brief_id: string;
-          brief_version_id: string;
-          version: number;
-        }>(
-          a,
-          "select * from kxra.create_campaign_brief($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
-          [
-            input.project_id,
-            input.profile_id,
-            input.profile_version,
-            input.name,
-            input.objective,
-            input.audience,
-            input.offer,
-            input.channels,
-            input.constraints,
-            JSON.stringify(input.claims),
-            input.success_measure,
-            input.request_id,
-          ],
-        );
-        return json(rows[0], 201);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "campaigns" &&
-        p[2] &&
-        p[3] === "revise" &&
-        !p[4]
-      ) {
-        const briefId = uuid.parse(p[2]);
-        const input = campaignBriefSchema
-          .extend({
-            expected_version: positiveVersion,
-            profile_version: positiveVersion,
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{
-          brief_version_id: string;
-          version: number;
-        }>(
-          a,
-          "select * from kxra.revise_campaign_brief($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
-          [
-            briefId,
-            input.expected_version,
-            input.profile_version,
-            input.objective,
-            input.audience,
-            input.offer,
-            input.channels,
-            input.constraints,
-            JSON.stringify(input.claims),
-            input.success_measure,
-            input.request_id,
-          ],
-        );
-        return json(rows[0]);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "campaigns" &&
-        p[2] &&
-        p[3] === "decision" &&
-        !p[4]
-      ) {
-        const briefId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            version: positiveVersion,
-            decision: z.enum(["APPROVE", "REJECT"]),
-            note: z.string().trim().min(1).max(5000),
-          })
-          .strict()
-          .parse(await body(req));
-        return json(
-          (
-            await query(
-              a,
-              "select result.* from kxra.decide_campaign_brief($1,$2,$3,$4) result",
-              [briefId, input.version, input.decision, input.note],
-            )
-          )[0],
-        );
-      }
-      if (method === "POST" && p[1] === "generate" && !p[2]) {
-        const input = z
-          .object({
-            project_id: uuid,
-            profile_id: uuid,
-            profile_version: positiveVersion,
-            brief_id: uuid,
-            brief_version: positiveVersion,
-            channels: z.array(brandChannelSchema).min(1).max(6),
-            variant_count: z.number().int().min(1).max(6),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        await project(a, input.project_id);
-        return json(
-          await executeLocalBrandGeneration(a, {
-            projectId: input.project_id,
-            profileId: input.profile_id,
-            profileVersion: input.profile_version,
-            briefId: input.brief_id,
-            briefVersion: input.brief_version,
-            channels: input.channels,
-            variantCount: input.variant_count,
-            requestId: input.request_id,
-          }),
-          201,
-        );
-      }
-      if (
-        method === "POST" &&
-        p[1] === "variants" &&
-        p[2] &&
-        p[3] === "revise" &&
-        !p[4]
-      ) {
-        const variantId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            expected_sha256: z.string().regex(/^[a-f0-9]{64}$/),
-            content: creativeContentSchema,
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{ id: string }>(
-          a,
-          "select kxra.revise_creative_variant($1,$2,$3,$4) as id",
-          [variantId, input.expected_sha256, input.content, input.request_id],
-        );
-        return json(rows[0], 201);
-      }
-      if (
-        method === "POST" &&
-        p[1] === "variants" &&
-        p[2] &&
-        p[3] === "review" &&
-        !p[4]
-      ) {
-        const variantId = uuid.parse(p[2]);
-        const input = z
-          .object({
-            expected_sha256: z.string().regex(/^[a-f0-9]{64}$/),
-            checks: z
-              .object({
-                brand: z.boolean(),
-                claims: z.boolean(),
-                rights: z.boolean(),
-                accessibility: z.boolean(),
-                compliance: z.boolean(),
-              })
-              .strict(),
-            decision: z.enum(["APPROVE_EXPORT", "REQUEST_CHANGES", "REJECT"]),
-            note: z.string().trim().min(1).max(5000),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{ id: string }>(
-          a,
-          "select kxra.review_creative_variant($1,$2,$3,$4,$5,$6) as id",
-          [
-            variantId,
-            input.expected_sha256,
-            input.checks,
-            input.decision,
-            input.note,
-            input.request_id,
-          ],
-        );
-        return json(rows[0], 201);
-      }
-      if (method === "POST" && p[1] === "exports" && !p[2]) {
-        const input = z
-          .object({
-            variant_id: uuid,
-            expected_sha256: z.string().regex(/^[a-f0-9]{64}$/),
-            review_id: uuid,
-            format: z.enum(["TEXT", "MARKDOWN", "JSON"]),
-            request_id: uuid,
-          })
-          .strict()
-          .parse(await body(req));
-        const rows = await query<{ id: string }>(
-          a,
-          "select kxra.create_brand_export($1,$2,$3,$4,$5) as id",
-          [
-            input.variant_id,
-            input.expected_sha256,
-            input.review_id,
-            input.format,
-            input.request_id,
-          ],
-        );
-        return json(rows[0], 201);
-      }
-      if (method === "GET" && p[1] === "exports" && p[2] && !p[3]) {
-        const exportId = uuid.parse(p[2]);
-        const result = (
-          await query<{
-            allowed: boolean;
-            reason_code: string;
-            export_format: "TEXT" | "MARKDOWN" | "JSON" | null;
-            filename: string | null;
-            content: unknown;
-            content_sha256: string | null;
-          }>(a, "select * from kxra.authorize_brand_export($1)", [exportId])
-        )[0];
-        if (!result?.allowed || !result.export_format || !result.filename)
-          throw new HttpError(403, "Brand export unavailable");
-        const rendered = renderBrandExport(
-          result.export_format,
-          creativeContentSchema.parse(result.content),
-        );
-        return new NextResponse(rendered, {
-          status: 200,
-          headers: {
-            "Cache-Control": "private, no-store",
-            "Content-Type":
-              result.export_format === "JSON"
-                ? "application/json; charset=utf-8"
-                : result.export_format === "MARKDOWN"
-                  ? "text/markdown; charset=utf-8"
-                  : "text/plain; charset=utf-8",
-            "Content-Disposition": `attachment; filename="${result.filename}"`,
-            "X-Content-Type-Options": "nosniff",
-          },
-        });
-      }
-      throw new HttpError(404, "Not found");
-    }
-    if (p[0] === "plans" && method === "GET") {
-      return json(
-        await query(
-          a,
-          `select plan.plan_key,plan.name,version.id as plan_version_id,
-            version.version,version.currency,version.amount_minor::text,
-            version.billing_interval,version.tax_behavior,version.commercial_copy,
-            coalesce(jsonb_agg(jsonb_build_object(
-              'feature_key',feature.feature_key,
-              'quantity_limit',feature.quantity_limit,
-              'usage_window',feature.usage_window
-            ) order by feature.feature_key) filter(where feature.id is not null),'[]'::jsonb) as features
-           from kxra.plans plan
-           join kxra.plan_versions version on version.plan_id=plan.id and version.state='ACTIVE'
-           left join kxra.plan_features feature on feature.plan_version_id=version.id
-           where plan.state='ACTIVE'
-           group by plan.plan_key,plan.name,version.id,version.version,version.currency,
-             version.amount_minor,version.billing_interval,version.tax_behavior,
-             version.commercial_copy
-           order by plan.name,version.version`,
-        ),
+    if (p[0] === "brand-studio" || p[0] === "video-studio")
+      throw new HttpError(
+        410,
+        "This studio has been retired",
+        "FEATURE_RETIRED",
       );
-    }
+    if (p[0] === "plans" && method === "GET") return json([]);
     if (p[0] === "billing-customers" && method === "POST" && !p[1]) {
       if (process.env.KXRA_BILLING_ENABLED !== "true")
         throw new HttpError(
@@ -1550,6 +1143,12 @@ async function handle(req: Request, ctx: Context) {
       return json({ customer_ready: true }, 201);
     }
     if (p[0] === "billing-sessions" && method === "POST" && !p[2]) {
+      if (p[1] === "checkout")
+        throw new HttpError(
+          410,
+          "Subscriptions are being revised following studio retirement",
+          "PLAN_RETIRED",
+        );
       if (process.env.KXRA_BILLING_ENABLED !== "true")
         throw new HttpError(
           503,
@@ -1718,6 +1317,68 @@ async function handle(req: Request, ctx: Context) {
       throw new HttpError(404, "Not found");
     }
     if (p[0] === "custom-projects") {
+      if (
+        method === "GET" &&
+        p[1] === "deliveries" &&
+        p[2] &&
+        p[3] === "export" &&
+        !p[4]
+      ) {
+        const deliveryId = uuid.parse(p[2]);
+        const rows = await query<{
+          summary: string;
+          version: number;
+          milestone_key: string;
+          delivery_hash: string;
+        }>(
+          a,
+          "select summary,version,milestone_key,delivery_hash from kxra.custom_project_milestone_deliveries where id=$1",
+          [deliveryId],
+        );
+        if (!rows[0]) throw new HttpError(404, "Delivery unavailable");
+        const delivery = rows[0];
+        return new Response(
+          `KXRA delivery / version ${delivery.version}\nMilestone: ${delivery.milestone_key}\nEvidence hash: ${delivery.delivery_hash}\n\n${delivery.summary}\n`,
+          {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Content-Disposition": `attachment; filename="kxra-delivery-v${delivery.version}.txt"`,
+              "Cache-Control": "private, no-store",
+              "X-Content-Type-Options": "nosniff",
+            },
+          },
+        );
+      }
+      if (method === "GET" && p[1] && p[2] === "sprint-draft" && !p[3]) {
+        const requestId = uuid.parse(p[1]);
+        const key = url.searchParams.get("package") || "improvement-sprint";
+        if (!sprintPackage(key))
+          throw new HttpError(400, "Unknown sprint package");
+        const authority = await query<{ can_manage: boolean }>(
+          a,
+          "select kxra.custom_project_management_status() as can_manage",
+        );
+        if (!authority[0]?.can_manage)
+          throw new HttpError(403, "Access unavailable");
+        const rows = await query<{
+          problem: string;
+          desired_outcome: string;
+          constraints: string;
+        }>(
+          a,
+          "select problem,desired_outcome,constraints from kxra.custom_project_requests where id=$1",
+          [requestId],
+        );
+        if (!rows[0]) throw new HttpError(404, "Request unavailable");
+        return json(
+          sprintDraft(
+            key,
+            rows[0].problem,
+            rows[0].desired_outcome,
+            rows[0].constraints,
+          ),
+        );
+      }
       if (method === "GET" && p[1] === "authority" && !p[2]) {
         const rows = await query<{ can_manage: boolean }>(
           a,

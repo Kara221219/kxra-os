@@ -36,3 +36,5 @@ __pycache__/
 /.vercel/
 supabase/.temp/
 /.env.local
+
+.next-sprint-preview/

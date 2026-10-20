@@ -8,18 +8,15 @@ export default function Pricing() {
     <>
       <PageHero
         eyebrow={`Commercial model · ${commercial.status}`}
-        title="Simple access for repeatable tools. Separate scope for custom work."
+        title="A workspace for your team. A clear scope for your business."
       >
-        KXRA has set its founding launch price while the platform remains in
-        private preview and checkout stays disabled.
+        Start with a defined business need. We agree the scope and price before
+        work begins.
       </PageHero>
       <section className="section split">
         <article className="card commercial-card">
           <p className="number">PLATFORM ACCESS</p>
-          <h2>Founding subscription</h2>
-          <p className="commercial-price">
-            £29 <span>/ organisation / month</span>
-          </p>
+          <h2>Platform subscription under review</h2>
           <p>{commercial.subscription}</p>
           <p>{commercial.subscriptionBoundary}</p>
           <p>{commercial.usageBoundary}</p>
@@ -30,37 +27,20 @@ export default function Pricing() {
         </article>
         <article className="card commercial-card">
           <p className="number">SEPARATE ENGAGEMENT</p>
-          <h2>Custom projects</h2>
+          <h2>Workspace setup and implementation</h2>
+          <p>
+            Bring one team and one workflow. We agree the required connections,
+            access boundaries and implementation scope before quoting.
+          </p>
           <p>{commercial.customProjects}</p>
           <p>
             Any proposal must define scope, exclusions, assumptions, milestones,
             payment gates and an exact price before work begins.
           </p>
-          <Link className="button" href="/submit-opportunity">
-            Submit a business need
+          <Link className="button" href="/#contact">
+            Discuss your workspace
           </Link>
         </article>
-      </section>
-      <section className="section">
-        <p className="eyebrow">Founding plan limits</p>
-        <h2>A bounded starting offer.</h2>
-        <div className="card-grid">
-          <article className="card">
-            <p className="number">01</p>
-            <h3>Brand Studio</h3>
-            <p>Access for one customer organisation.</p>
-          </article>
-          <article className="card">
-            <p className="number">120</p>
-            <h3>Creative variants</h3>
-            <p>Generated variants each month.</p>
-          </article>
-          <article className="card">
-            <p className="number">120</p>
-            <h3>Reviewed exports</h3>
-            <p>Controlled exports each month.</p>
-          </article>
-        </div>
       </section>
       <section className="section pricing-boundaries">
         <p className="eyebrow">Clear commercial boundaries</p>
@@ -80,9 +60,9 @@ export default function Pricing() {
           </article>
         </div>
         <p className="notice">
-          The owner approved the tax treatment, cancellation terms and exact
-          customer-document pack. Stripe test billing and the production release
-          gate must pass before public sales are activated.
+          Previous customer terms are preserved as historical documents. A
+          revised subscription scope and customer terms must be agreed before
+          new subscription sales.
         </p>
       </section>
     </>
