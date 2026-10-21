@@ -1,5 +1,5 @@
 # KXRA deployment allow boundary. Runtime source is limited to workspace
-# manifests, application code, shared packages and the three build wrappers.
+# manifests, application code, shared packages, build wrappers and staging preflight.
 .git/
 .github/
 .vercel/
@@ -29,3 +29,5 @@ scripts/*
 !scripts/build-os.mjs
 !scripts/build-marketing.mjs
 !scripts/build-email-worker.mjs
+!scripts/verify-staging-config.mjs
+!scripts/staging-config.mjs
