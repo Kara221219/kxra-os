@@ -1,0 +1,90 @@
+.root {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.root > section {
+  min-width: 0;
+}
+.scroll {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  padding: 4px 0 14px;
+  overscroll-behavior-inline: contain;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px;
+}
+.column {
+  min-width: 0;
+  background: #edf1e5;
+  border: 1px solid #d9e0d0;
+  border-radius: 14px;
+  padding: 12px;
+}
+.stage {
+  margin: 4px 0 16px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.stage span {
+  background: #fff;
+  border-radius: 20px;
+  min-width: 24px;
+  text-align: center;
+}
+.empty,
+.caption {
+  font-size: 12px;
+  color: #59634f;
+}
+.caption button {
+  padding: 4px 8px;
+  margin-left: 8px;
+  font-size: 12px;
+}
+.card {
+  border: 1px solid #dce1d5;
+  background: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.card h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.state {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.card :global(.create-form) {
+  padding: 0;
+  margin: 14px 0 0;
+  border: 0;
+  background: transparent;
+}
+.card :global(.create-form) h3 {
+  font-size: 13px;
+}
+.card :global(.create-form) button {
+  font-size: 12px;
+  padding: 10px;
+}
+.card select {
+  font-size: 12px;
+  padding: 8px;
+}
+.scroll:focus-visible {
+  outline: 3px solid #54743c;
+  outline-offset: 3px;
+}

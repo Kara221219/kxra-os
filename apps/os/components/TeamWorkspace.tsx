@@ -26,6 +26,7 @@ import { RoomKnowledge } from "./RoomKnowledge";
 import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
 import { RoomWorkflow } from "./RoomWorkflow";
+import { RoomTaskBoard } from "./RoomTaskBoard";
 import { RoomJobs } from "./RoomJobs";
 import type { teamKnowledge, RoomChunk } from "../lib/team-knowledge";
 export function TeamWorkspace({
@@ -591,65 +592,13 @@ export function TeamWorkspace({
                   </>
                 )}
                 {tab === "tasks" && (
-                  <>
-                    <section className="panel">
-                      <h2>Decide, then do</h2>
-                      <p>
-                        Proposals do not execute actions. The room creator
-                        approves work and records completion.
-                      </p>
-                      {detail.items.map((item) => (
-                        <article className="team-message" key={item.id}>
-                          <h3>{item.title}</h3>
-                          <p>{item.state}</p>
-                          {canManage &&
-                            ["PROPOSED", "APPROVED"].includes(item.state) && (
-                              <ActionForm
-                                path={`/${room!.id}/decide`}
-                                title="Record decision"
-                                build={(d) => ({
-                                  item_id: item.id,
-                                  version: item.version,
-                                  state: d.get("state"),
-                                })}
-                              >
-                                <label>
-                                  Decision
-                                  <select name="state">
-                                    {item.state === "PROPOSED" ? (
-                                      <>
-                                        <option value="APPROVED">
-                                          Approve task
-                                        </option>
-                                        <option value="REJECTED">
-                                          Reject task
-                                        </option>
-                                      </>
-                                    ) : (
-                                      <option value="DONE">
-                                        Mark completed
-                                      </option>
-                                    )}
-                                  </select>
-                                </label>
-                              </ActionForm>
-                            )}
-                        </article>
-                      ))}
-                    </section>
-                    {canWrite && (
-                      <ActionForm
-                        path={`/${room!.id}/items`}
-                        title="Propose task"
-                        build={(d) => ({ title: d.get("title") })}
-                      >
-                        <label>
-                          Outcome and responsible person
-                          <input name="title" maxLength={240} required />
-                        </label>
-                      </ActionForm>
-                    )}
-                  </>
+                  <RoomTaskBoard
+                    key={room!.id}
+                    roomId={room!.id}
+                    items={detail.items}
+                    canWrite={canWrite}
+                    canManage={canManage}
+                  />
                 )}
                 {tab === "agents" && (
                   <>
