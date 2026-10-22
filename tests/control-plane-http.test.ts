@@ -174,8 +174,8 @@ test("AT-22 Dashboard counts, Portfolio pagination and owner-only control routes
   const adminResponse = await api("admin", owner);
   assert.equal(adminResponse.status, 200, await adminResponse.clone().text());
   const snapshot = await adminResponse.json();
-  assert.equal(snapshot.database.rls_tables, 199);
-  assert.equal(snapshot.database.protected_tables, 199);
+  assert.equal(snapshot.database.rls_tables, 205);
+  assert.equal(snapshot.database.protected_tables, 205);
   assert.deepEqual(snapshot.release_gate, {
     id: null,
     release_name: null,

@@ -884,12 +884,41 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       [org, actors.owner, { marker }, otherOrg, otherOwner],
     );
 
+    // A populated receipt in each tenant proves the owner-only self-service ledger policy.
+    // This transaction rolls back; it does not provision or alter real workspaces.
+    await db.query(
+      `insert into kxra.self_service_workspaces(account_id,org_id,project_id,request_id,requested_name)
+       values($1,$2,$3,$4,'Synthetic matrix workspace'),($5,$6,$7,$8,'Other synthetic workspace')`,
+      [
+        actors.owner,
+        org,
+        p1,
+        crypto.randomUUID(),
+        otherOwner,
+        otherOrg,
+        otherProject,
+        crypto.randomUUID(),
+      ],
+    );
+
     const expectations: {
       table: string;
       sql: string;
       values: unknown[];
       expected: Expected;
     }[] = [
+      {
+        table: "self_service_workspaces",
+        sql: "select account_id::text as key from kxra.self_service_workspaces where account_id=any($1::uuid[])",
+        values: [[actors.owner, otherOwner]],
+        expected: {
+          owner: [actors.owner],
+          partner: [],
+          viewer: [],
+          revoked: [],
+          other: [otherOwner],
+        },
+      },
       {
         table: "organisations",
         sql: "select id::text as key from kxra.organisations where id=any($1::uuid[])",
@@ -1582,7 +1611,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         "select tablename from pg_tables where schemaname='kxra' order by tablename",
       )
     ).rows.map((row) => String(row.tablename));
-    // Team workspace tables have populated positive/negative policy tests in team-workspace-http.test.ts.
+    // Dedicated workspace/collaboration/case/bridge suites populate these tables and
+    // test positive access plus private-room, cross-tenant, revocation and SQL denials.
     const sliceOneTables = [
       "team_rooms",
       "team_room_members",
@@ -1603,6 +1633,11 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "team_schedule_ticks",
       "team_workflow_records",
       "team_workflow_actions",
+      "team_collaboration_records",
+      "team_collaboration_actions",
+      "team_case_records",
+      "team_case_actions",
+      "team_bridge_requests",
       "workspace_pilots",
       "workspace_pilot_events",
       "pilot_stripe_config",

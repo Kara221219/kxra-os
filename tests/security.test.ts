@@ -1279,7 +1279,11 @@ test("AT-01 separate organisation and every private table enforce RLS", () =>
       if (
         tablename.startsWith("team_") ||
         tablename.startsWith("pilot_stripe_") ||
-        ["workspace_pilots", "workspace_pilot_events"].includes(tablename)
+        [
+          "workspace_pilots",
+          "workspace_pilot_events",
+          "self_service_workspaces",
+        ].includes(tablename)
       ) {
         await deniedWithCode(db, "42501", `select * from kxra.${tablename}`);
       } else
@@ -1306,7 +1310,7 @@ test("AT-01 every private table denies unauthorized DML", () =>
          where c.table_schema='kxra' order by c.table_name`,
       )
     ).rows as { table_name: string; column_name: string }[];
-    assert.equal(tables.length, 199);
+    assert.equal(tables.length, 205);
 
     for (const { table_name: table, column_name: column } of tables) {
       await as(db, null);
@@ -1475,7 +1479,7 @@ test("AT-01 anonymous can execute only bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 185);
+    assert.equal(functions.length, 199);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)
