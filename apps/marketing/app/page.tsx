@@ -1,99 +1,348 @@
-import {
-  ImmersiveJourney,
-  type JourneyChapter,
-} from "../components/ImmersiveJourney";
+import Link from "next/link";
+import { WorkspacePreview } from "../components/WorkspacePreview";
 import { PublicForm } from "../components/PublicForm";
-import { journeyMedia } from "../lib/journey-media";
-import "./cinema.css";
-const journey: readonly JourneyChapter[] = [
-  {
-    index: "01",
-    anchor: "overview",
-    label: "Welcome",
-    eyebrow: "KXRA / YOUR BUSINESS WORKSPACE",
-    title: "Your team. Amplified.",
-    copy: "Step inside KXRA. Bring your team, your chosen AI models and the work that matters into one accountable workspace.",
-    tags: ["Collaborate", "Decide", "Deliver"],
-    signal:
-      "Scroll to move through the story. Use the tabs to choose where you go.",
-  },
-  {
-    index: "02",
-    anchor: "industries",
-    label: "Property",
-    eyebrow: "PROPERTY & HOSPITALITY",
-    title: "Make the experience clearer.",
-    copy: "Give each property team a shared room. Discuss enquiries, organise the evidence and ask an agent to draft the next step for review.",
-    tags: ["Listing content", "Customer journeys", "Enquiry handoffs"],
-    signal:
-      "Illustrative application. These environments are not client premises or completed case studies.",
-  },
-  {
-    index: "03",
-    anchor: "retail",
-    label: "Retail",
-    eyebrow: "RETAIL & E-COMMERCE",
-    title: "Bring the moving parts together.",
-    copy: "Bring the campaign brief, the customer question and the operations team into the same conversation. Compare ideas without scattering the context.",
-    tags: ["Brand consistency", "Campaign planning", "Practical workflows"],
-    signal:
-      "Proposed use cases, with scope and suitability assessed for each business.",
-  },
-  {
-    index: "04",
-    anchor: "services",
-    label: "Services",
-    eyebrow: "PROFESSIONAL SERVICES",
-    title: "Give good work more room.",
-    copy: "Keep client work scoped to the right people. Give an agent a clear role, challenge its draft and approve the work that follows.",
-    tags: ["Process discovery", "Knowledge organisation", "Clearer ownership"],
-    signal:
-      "Recommendations depend on your evidence, constraints and agreed scope.",
-  },
-  {
-    index: "05",
-    anchor: "platform",
-    label: "KXRA OS",
-    eyebrow: "INSIDE THE PLATFORM",
-    title: "Work, connected.",
-    copy: "Team rooms. Your choice of model. Visible decisions and recorded agent runs. Explore the sample workflow.",
-    tags: [],
-    signal:
-      "Sample workflow. Provider features require connection and verification.",
-  },
-  {
-    index: "06",
-    anchor: "approach",
-    label: "Our approach",
-    eyebrow: "FROM CONVERSATION TO ACCOUNTABLE WORK",
-    title: "Connect. Collaborate. Decide.",
-    copy: "Start with one team and one workflow. Choose the context your agent can use, review its response and turn the next step into an approved task.",
-    tags: ["Scoped access", "Model choice", "Human approval"],
-    signal:
-      "Workspace rollout is being verified. Custom setup is scoped separately; model usage is billed by your provider.",
-  },
+const faq = [
+  [
+    "What is KXRA?",
+    "A shared working environment for teams, context, decisions and reviewed agent work. Start with a specific workflow and agree what operational acceptance requires.",
+  ],
+  [
+    "Can I bring my own model?",
+    "Provider choice and costs are separate from workspace access. A real provider connection, permission and usage boundary must be verified before execution is offered.",
+  ],
+  [
+    "Is this a live agent demonstration?",
+    "No. The public preview uses sample records and local interaction state. It does not call an agent, connect an account or send a message.",
+  ],
+  [
+    "Can I use KXRA with my team?",
+    "Request access so we can agree workspace setup, membership and the workflow you want to verify. New platform subscriptions remain paused while the offer is revised.",
+  ],
+  [
+    "What happens to private information?",
+    "Access should follow verified identity, workspace membership and room scope. Share confidential material through your private workspace after onboarding, rather than a public enquiry.",
+  ],
+  [
+    "How does pricing work?",
+    "Platform subscriptions are under review. Decision Review starts from £250 and Business Improvement Sprint from £750; implementation is separately scoped and quoted.",
+  ],
 ];
 export default function Home() {
   return (
-    <>
-      <ImmersiveJourney chapters={journey} media={journeyMedia} />
-      <section id="contact" className="journey-contact">
-        <div>
-          <p className="eyebrow">YOUR NEXT CHAPTER</p>
-          <h2>What would make your business work better?</h2>
-          <p>
-            Tell us which team and workflow you want to bring together. Request
-            workspace access or a scoped implementation here.
-          </p>
-          <p>
-            No payment or project commitment is created by this form. Share
-            confidential material through your private workspace after
-            onboarding.
-          </p>
-          <a href="mailto:info@kxra-group.com">info@kxra-group.com</a>
+    <div className="ref-home">
+      <section
+        className="ref-artwork"
+        aria-label="KXRA architectural workspace illustration"
+      >
+        <div className="ref-artwork-caption">
+          A shared place for the work ahead.
         </div>
-        <PublicForm kind="CONTACT" />
       </section>
-    </>
+      <section className="ref-hero ref-wrap">
+        <h1>
+          Your team.
+          <br />
+          Amplified.
+        </h1>
+        <div>
+          <p>
+            Bring your team, your chosen AI models and the work that matters
+            into <strong>one accountable workspace.</strong>
+          </p>
+          <div className="ref-hero-actions">
+            <span
+              className="ref-avatar-strip"
+              aria-label="People and agents, illustrated"
+            >
+              <span>M</span>
+              <span>✣</span>
+              <span>A</span>
+              <span>◈</span>
+              <span>+</span>
+            </span>
+            <Link className="ref-button" href="#request-access">
+              Request workspace access ↗
+            </Link>
+          </div>
+          <p className="ref-hero-secondary">
+            Or <Link href="/login">open your workspace</Link>
+          </p>
+        </div>
+      </section>
+      <section id="workspace-preview" className="ref-preview-section ref-wrap">
+        <WorkspacePreview />
+        <p className="ref-caption">
+          Explore the sample workspace. Changes here stay in this page; no live
+          account or external system is connected.
+        </p>
+      </section>
+      <section className="ref-section ref-wrap">
+        <p className="ref-kicker">PEOPLE, CONTEXT, WORK</p>
+        <h2>
+          From separate conversations
+          <br />
+          to a shared next step.
+        </h2>
+        <p className="ref-lead">
+          Keep the evidence, the discussion and the decision together, so the
+          next teammate can pick up where the work left off.
+        </p>
+        <div className="ref-comparison">
+          <article>
+            <span>One person · Separate conversations</span>
+            <h3>
+              Useful answers.
+              <br />
+              Scattered context.
+            </h3>
+            <p>
+              Research in one place, decisions in another and the handoff left
+              to you.
+            </p>
+          </article>
+          <article className="ref-comparison-team">
+            <span>Your team · Shared context</span>
+            <h3>
+              Bring the work.
+              <br />
+              Keep the thread.
+            </h3>
+            <p>
+              People, selected context and reviewed drafts around the same task.
+            </p>
+            <Link href="/product/workspace">Explore the workspace ↗</Link>
+          </article>
+        </div>
+      </section>
+      <section className="ref-principles">
+        <div className="ref-wrap">
+          <p className="ref-kicker">A PRACTICAL START</p>
+          <h2>
+            One team.
+            <br />
+            One useful workflow.
+          </h2>
+          <p className="ref-lead">
+            A product preview is a starting point, not customer proof. Agree the
+            outcome, test the boundaries and review the actual result.
+          </p>
+          <div className="ref-three">
+            <article>
+              <span>01</span>
+              <h3>Agree the work</h3>
+              <p>A clear problem, scope and responsible person.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Bring the evidence</h3>
+              <p>Selected context with a source and access boundary.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Review the result</h3>
+              <p>A recorded decision before an external action.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section className="ref-section ref-wrap ref-split">
+        <div>
+          <p className="ref-kicker">YOUR CHOICE OF AGENT</p>
+          <h2>
+            Your tools.
+            <br />
+            Working as a team.
+          </h2>
+          <p className="ref-lead">
+            Give external agents a deliberate task, selected context and a
+            visible handoff. Keep the final call with your team.
+          </p>
+          <Link className="ref-button" href="/bring-your-own-agent">
+            Explore the approach ↗
+          </Link>
+        </div>
+        <div className="ref-collaboration">
+          <div>
+            team-plan <span>SAMPLE ROOM</span>
+          </div>
+          <p>
+            <strong>Maya</strong> Let’s agree the scope before we start.
+          </p>
+          <p>
+            <strong>Research agent</strong> Here are the evidence gaps to
+            review.
+          </p>
+          <p>
+            <strong>Implementation agent</strong> I’ll work from the approved
+            version.
+          </p>
+          <footer>
+            Proposed collaboration pattern. No live pairing or execution in this
+            preview.
+          </footer>
+        </div>
+      </section>
+      <section className="ref-section ref-wrap ref-centered">
+        <p className="ref-kicker">CONNECTIONS WITH CONTEXT</p>
+        <h2>
+          The tools you use.
+          <br />
+          The access you choose.
+        </h2>
+        <p className="ref-lead">
+          Connect only what the task needs. Review the provider, permissions and
+          data boundary before any external work.
+        </p>
+        <div className="ref-integration-wall">
+          {[
+            "Email",
+            "Team chat",
+            "Knowledge",
+            "CRM",
+            "Calendars",
+            "Project tracking",
+            "Files",
+            "Models",
+            "Billing",
+            "Business records",
+            "Research",
+            "Your tools",
+          ].map((s, i) => (
+            <Link key={s} href="/integrations">
+              <span>{["✉", "◈", "▧", "◎"][i % 4]}</span>
+              {s}
+            </Link>
+          ))}
+        </div>
+        <p className="ref-caption">
+          Capability categories, not a claim that accounts or providers are
+          connected.
+        </p>
+      </section>
+      <section className="ref-section ref-wrap">
+        <p className="ref-kicker">ONE WORKSPACE, DIFFERENT WORK</p>
+        <h2>
+          Start where your team
+          <br />
+          needs a better next step.
+        </h2>
+        <div className="ref-scenario-grid">
+          {[
+            [
+              "01",
+              "Finance",
+              "Review the next invoice action.",
+              "Keep the customer record, evidence and follow-up decision in one room.",
+            ],
+            [
+              "02",
+              "Hiring",
+              "Keep a considered shortlist.",
+              "Organise applications and human reviews without automated hiring decisions.",
+            ],
+            [
+              "03",
+              "Sales",
+              "Know the next conversation.",
+              "Give each opportunity an owner, stage and a deliberate next action.",
+            ],
+            [
+              "04",
+              "Operations",
+              "Turn a question into a record.",
+              "Validate the input, keep the evidence and review a change before it becomes live.",
+            ],
+          ].map(([n, title, h, copy]) => (
+            <article key={n}>
+              <span>
+                {n} / {title}
+              </span>
+              <h3>{h}</h3>
+              <p>{copy}</p>
+              <Link href="#workspace-preview">
+                Explore the sample workspace ↑
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="ref-security ref-wrap">
+        <div>
+          <p className="ref-kicker">CLEAR BOUNDARIES</p>
+          <h2>
+            Shared work.
+            <br />
+            Deliberate access.
+          </h2>
+        </div>
+        <div>
+          {[
+            [
+              "Scoped context",
+              "Workspace membership and room permissions determine what a request can use.",
+            ],
+            [
+              "Human review",
+              "Keep the proposed action, evidence and decision version connected.",
+            ],
+            [
+              "Recorded decisions",
+              "Review work history without inventing certifications or provider acceptance.",
+            ],
+          ].map(([h, p]) => (
+            <article key={h}>
+              <span>✓</span>
+              <div>
+                <h3>{h}</h3>
+                <p>{p}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section id="faq" className="ref-section ref-wrap ref-faq">
+        <div>
+          <p className="ref-kicker">A FEW USEFUL ANSWERS</p>
+          <h2>
+            Questions?
+            <br />
+            Start here.
+          </h2>
+          <Link href="/help">Visit the help center ↗</Link>
+        </div>
+        <div>
+          {faq.map(([q, a]) => (
+            <details key={q}>
+              <summary>
+                {q}
+                <span aria-hidden="true">+</span>
+              </summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+      <section id="request-access" className="ref-conversion">
+        <div className="ref-wrap ref-split">
+          <div>
+            <p className="ref-kicker">YOUR NEXT CHAPTER</p>
+            <h2>
+              Bring one team.
+              <br />
+              Start one workflow.
+            </h2>
+            <p className="ref-lead">
+              Tell us what would make your work clearer. We’ll agree the right
+              next step before any project or payment commitment.
+            </p>
+            <p>
+              No confidential files, credentials or private customer data in
+              this form.
+            </p>
+          </div>
+          <PublicForm kind="ENQUIRY" />
+        </div>
+      </section>
+    </div>
   );
 }
