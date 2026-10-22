@@ -1,4 +1,6 @@
 import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
 import { chromium } from "@playwright/test";
 import lighthouse, { desktopConfig } from "lighthouse";
 
@@ -103,6 +105,16 @@ try {
       profile.config,
     );
     if (!result) throw Error(`Lighthouse returned no ${profile.name} result`);
+    const reportDirectory = path.join(
+      process.env.KXRA_RUNTIME || ".runtime",
+      "marketing-performance",
+    );
+    fs.mkdirSync(reportDirectory, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(
+      path.join(reportDirectory, `${profile.name}.json`),
+      JSON.stringify(result.lhr, null, 2) + "\n",
+      { mode: 0o600 },
+    );
     const metrics = {
       performance: score(result, "performance"),
       accessibility: score(result, "accessibility"),

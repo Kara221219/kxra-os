@@ -1,88 +1,62 @@
 import { expect, test } from "@playwright/test";
-test("top navigation travels within the homepage and history returns to the scene", async ({
+
+test("product navigation opens a real route and browser history returns to the homepage", async ({
   page,
-}) => {
+}, info) => {
   await page.goto("/");
-  await expect(page.locator(".cinema")).toHaveClass(/cinema--enhanced/);
-  const documents: string[] = [];
-  page.on("request", (request) => {
-    if (request.isNavigationRequest() && request.frame() === page.mainFrame())
-      documents.push(request.url());
-  });
+  if (info.project.name === "mobile")
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
   const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  for (const [label, anchor] of [
-    ["Industries", "industries"],
-    ["Platform", "platform"],
-    ["Our approach", "approach"],
-  ]) {
-    await nav.getByRole("link", { name: label, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/#${anchor}$`));
-    await expect(page.locator(`#${anchor}`).locator("..")).toHaveAttribute(
-      "data-active",
-      "true",
-    );
-  }
+  await nav.getByRole("button", { name: "Product", exact: true }).click();
+  await nav.getByRole("link", { name: "Workspace", exact: true }).click();
+  await expect(page).toHaveURL(/\/product\/workspace$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.goBack();
-  await expect(page).toHaveURL(/\/#platform$/);
-  await expect(page.locator("#scene-5")).toHaveAttribute("data-active", "true");
-  await nav.getByRole("link", { name: "Start a project" }).click();
-  await expect(page).toHaveURL(/\/#contact$/);
-  await expect(
-    page.getByRole("heading", {
-      name: "What would make your business work better?",
-    }),
-  ).toBeVisible();
-  expect(documents).toEqual([]);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Your team.",
+  );
+  await page.getByRole("link", { name: "Request workspace access" }).click();
+  await expect(page).toHaveURL(/#request-access$/);
+  await expect(page.getByLabel("How can KXRA help?")).toBeVisible();
 });
-test("direct platform link opens the demo without retrieving or generating private data", async ({
+
+test("direct sample link stays illustrative and does not submit external work", async ({
   page,
 }) => {
-  const outbound: string[] = [];
+  const posts: string[] = [];
   page.on("request", (request) => {
-    if (request.method() === "POST") outbound.push(request.url());
+    if (request.method() === "POST") posts.push(request.url());
   });
-  await page.goto("/#platform");
-  await expect(page.locator("#scene-5")).toHaveAttribute("data-active", "true");
-  const demo = page.getByRole("complementary", {
-    name: "Interactive KXRA OS demonstration",
-  });
-  await demo.getByRole("button", { name: "Agents", exact: true }).click();
-  await demo.getByRole("button", { name: "Show sample answer" }).click();
-  await expect(demo).toContainText("Source: sample project brief");
-  await demo.getByRole("button", { name: "Decisions", exact: true }).click();
-  await expect(demo).toContainText("Your approval.");
-  await demo.getByRole("button", { name: "Rooms", exact: true }).click();
-  await expect(demo).toContainText("Customer operations room");
-  expect(outbound).toEqual([]);
+  await page.goto("/#workspace-preview");
+  const sample = page.locator(".ref-workspace");
+  await sample.getByRole("button", { name: /hiring/i }).click();
+  await sample.getByRole("button", { name: /Sample candidate/ }).click();
+  await expect(sample.locator(".ref-stage-columns>div").nth(1)).toContainText(
+    "Sample candidate",
+  );
+  await page.getByText("Is this a live agent demonstration?").click();
+  await expect(page.locator("#faq details[open]")).toContainText(
+    "does not call an agent",
+  );
+  expect(posts).toEqual([]);
 });
-test("all top-level marketing tabs are same-page anchors and reflow at 320 pixels", async ({
+
+test("mobile nested navigation reflows and leads to the actual product catalogue", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/");
-  const links = page
-    .getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link");
-  expect(
-    await links.evaluateAll((elements) =>
-      elements.every((element) =>
-        element.getAttribute("href")?.startsWith("/#"),
-      ),
-    ),
-  ).toBe(true);
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  const nav = page.getByRole("navigation", { name: "Primary navigation" });
+  await nav.getByRole("button", { name: "Product", exact: true }).click();
+  await nav.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(page).toHaveURL(/\/product$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page
-    .getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: "Platform", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Work, connected." }),
-  ).toBeVisible();
 });
 
 test("homepage workspace enquiry replaces package sales and reaches the private inbox", async ({
@@ -91,7 +65,7 @@ test("homepage workspace enquiry replaces package sales and reaches the private 
   await page.setExtraHTTPHeaders({
     "user-agent": `KXRA-workspace-acceptance-${crypto.randomUUID()}`,
   });
-  await page.goto("/#contact");
+  await page.goto("/#request-access");
   await expect(page.getByLabel("Starting package")).toHaveCount(0);
   await page.getByLabel("Name", { exact: true }).fill("Workspace Browser Test");
   await page

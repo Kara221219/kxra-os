@@ -182,57 +182,38 @@ test("AT-18 public contact exposes loading, safe failure and retry states", asyn
   await expect(page.getByLabel("Name")).toHaveValue("");
 });
 
-test("AT-44 reduced motion preserves every layered section and removes sticky movement", async ({
+test("AT-44 reduced motion preserves all static homepage sections", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator(".cinema-chapter")).toHaveCount(6);
-  const positions = await page
-    .locator(".cinema-chapter")
-    .evaluateAll((elements) =>
-      elements.map((element) => getComputedStyle(element).position),
-    );
-  expect(positions.every((position) => position === "relative")).toBe(true);
+  await expect(page.locator(".ref-home>section")).toHaveCount(11);
+  await expect(page.locator(".cinema, video, canvas")).toHaveCount(0);
+  await page.locator("#request-access").scrollIntoViewIfNeeded();
+  await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
+      () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
 });
 
-test("depth journey advances chapters through the viewport", async ({
+test("static homepage scroll preserves content without a cinematic active-scene gate", async ({
   page,
 }) => {
   await page.goto("/");
-  const journey = page.locator(".cinema");
-  await expect(journey).toHaveClass(/cinema--enhanced/);
-
-  await journey.evaluate((element) => {
-    const viewport = window.innerHeight;
-    const destination =
-      (element as HTMLElement).offsetTop +
-      (element.scrollHeight - viewport) * 0.72;
-    window.scrollTo(0, destination);
-  });
-
-  await expect
-    .poll(() =>
-      page
-        .locator(".cinema-stage")
-        .evaluate((stage) =>
-          Number(
-            getComputedStyle(stage)
-              .getPropertyValue("--journey-progress")
-              .trim(),
-          ),
-        ),
-    )
-    .toBeGreaterThan(0.65);
-  await expect(page.locator('.cinema-chapter[data-active="true"]')).toHaveCount(
-    1,
+  await page.locator("#faq").scrollIntoViewIfNeeded();
+  await page.getByText("Is this a live agent demonstration?").click();
+  await expect(page.locator("#faq details[open]")).toContainText(
+    "does not call an agent",
   );
-  await expect(page.locator("#scene-5")).toHaveAttribute("data-active", "true");
+  await page.locator(".ref-hero").scrollIntoViewIfNeeded();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.locator(
+      '.ref-home>section[inert], .ref-home>section[aria-hidden="true"]',
+    ),
+  ).toHaveCount(0);
 });
 
 test("AT-44 320px reflow and 200 percent text preserve access", async ({
@@ -269,7 +250,10 @@ test("AT-44 content and contact fallback work without JavaScript", async ({
   });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.locator(".cinema-chapter")).toHaveCount(6);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Your team.",
+  );
+  await expect(page.locator("#faq details")).toHaveCount(6);
   await page.goto("/contact");
   await expect(page.locator(".form-shell .notice")).toContainText(
     "JavaScript is unavailable.",
@@ -285,6 +269,8 @@ test("AT-44 representative accessibility tree exposes landmarks and labelled con
   context,
 }) => {
   await page.goto("/contact");
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if (await menu.isVisible()) await menu.click();
   const session = await context.newCDPSession(page);
   const tree = await session.send("Accessibility.getFullAXTree");
   const nodes = tree.nodes.filter((node) => !node.ignored);
@@ -321,84 +307,25 @@ test("AT-44 representative accessibility tree exposes landmarks and labelled con
   await session.detach();
 });
 
-test("cinematic camera reverses, inactive links are inert, and reading mode restores content", async ({
+test("all static homepage headings remain accessible after text zoom", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator(".cinema")).toHaveClass(/cinema--enhanced/);
-  const canvas = page.locator(".cinema-world");
-  const firstFrame = await canvas.evaluate((element) =>
-    (element as HTMLCanvasElement).toDataURL(),
-  );
-  await page.getByRole("button", { name: "06 Our approach" }).click();
-  await expect(page.locator("#scene-6")).toHaveAttribute("data-active", "true");
-  expect(
-    await page
-      .locator("#scene-1")
-      .evaluate((element) => (element as HTMLElement).inert),
-  ).toBe(true);
-  expect(
-    await canvas.evaluate((element) =>
-      (element as HTMLCanvasElement).toDataURL(),
-    ),
-  ).not.toBe(firstFrame);
-  await expect(
-    page.getByRole("link", { name: "Start a conversation" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "01 Welcome" }).click();
-  await expect(page.locator("#scene-1")).toHaveAttribute("data-active", "true");
-  await expect(page.locator(".cinema-stage")).toHaveCSS(
-    "--journey-progress",
-    "0.0000",
-  );
-  await page.getByRole("button", { name: "Read without motion" }).click();
-  await expect(page.locator(".cinema")).not.toHaveClass(/cinema--enhanced/);
-  expect(
-    await page
-      .locator(".cinema-chapter")
-      .evaluateAll((elements) =>
-        elements.every(
-          (element) =>
-            !(element as HTMLElement).inert &&
-            getComputedStyle(element).position === "relative",
-        ),
-      ),
-  ).toBe(true);
-  await page.getByRole("button", { name: "Enable journey" }).click();
-  await expect(page.locator(".cinema")).toHaveClass(/cinema--enhanced/);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.locator(".cinema")).not.toHaveClass(/cinema--enhanced/);
-  await expect(page.locator('.cinema-chapter[aria-hidden="true"]')).toHaveCount(
-    0,
-  );
-});
-
-test("cinematic text remains inside its viewport and text zoom switches to reading layout", async ({
-  page,
-}) => {
-  await page.goto("/");
-  for (const label of [
-    "01 Welcome",
-    "02 Property",
-    "03 Retail",
-    "04 Services",
-    "05 KXRA OS",
-    "06 Our approach",
-  ]) {
-    await page.getByRole("button", { name: label }).click();
-    const fits = await page
-      .locator('.cinema-chapter[data-active="true"]')
-      .evaluate((element) => {
-        const bounds = element.getBoundingClientRect();
-        return Array.from(element.children).every((child) => {
-          const rect = child.getBoundingClientRect();
-          return rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1;
-        });
-      });
-    expect(fits, label).toBe(true);
-  }
+  const headings = await page.locator("main h1, main h2").allTextContents();
+  expect(headings.length).toBeGreaterThan(8);
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
-  await expect(page.locator(".cinema")).not.toHaveClass(/cinema--enhanced/);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect(await page.locator("main h1, main h2").allTextContents()).toEqual(
+    headings,
+  );
+  await page.locator("#request-access").scrollIntoViewIfNeeded();
+  await expect(
+    page.getByRole("button", { name: "Send to KXRA" }),
+  ).toBeVisible();
 });

@@ -31,7 +31,7 @@ export function WorkspacePreview({
         <p>
           ◎ Unread <small>2</small>
         </p>
-        <h3>TEAM ROOMS</h3>
+        <h2>TEAM ROOMS</h2>
         {["Finance", "Hiring", "Sales", "Operations"].map((name, i) => (
           <button
             key={name}
