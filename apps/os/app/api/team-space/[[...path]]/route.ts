@@ -1,3 +1,4 @@
+import { caseCatalog, caseMutation } from "../../../../lib/team-cases";
 import { actor, sameOrigin, HttpError } from "../../../../lib/auth";
 import { privateJson, readJson, safeHttpError } from "../../../../lib/http";
 import {
@@ -59,6 +60,41 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (
+      p.length === 2 &&
+      /^(remodel|role|application|travel)-(records|actions|save|propose|review|execute)$/.test(
+        p[1],
+      )
+    ) {
+      const [prefix, operation] = p[1].split("-");
+      const kind = (
+        {
+          remodel: "REMODEL",
+          role: "ROLE",
+          application: "APPLICATION",
+          travel: "TRAVEL",
+        } as const
+      )[prefix as "remodel" | "role" | "application" | "travel"];
+      if (
+        method === "GET" &&
+        (operation === "records" || operation === "actions")
+      )
+        return privateJson(
+          await caseCatalog(
+            a,
+            p[0],
+            kind,
+            operation,
+            catalogInput(new URL(req.url).searchParams),
+          ),
+        );
+      if (method === "POST" && !["records", "actions"].includes(operation))
+        return privateJson(
+          await caseMutation(a, p[0], kind, operation, await readJson(req)),
+          201,
+        );
+      throw new HttpError(405, "Method unavailable");
+    }
     if (
       p.length === 2 &&
       /^(creator|sample)-(records|actions|save|propose|review|execute)$/.test(
