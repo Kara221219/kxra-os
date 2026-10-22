@@ -53,7 +53,9 @@ export async function middleware(request: NextRequest) {
   }
   response.headers.set("Content-Security-Policy", policy);
   response.headers.set("X-Content-Type-Options", "nosniff");
-  const invitationPath = request.nextUrl.pathname.startsWith("/join");
+  const invitationPath =
+    request.nextUrl.pathname.startsWith("/join") ||
+    request.nextUrl.pathname.startsWith("/signup");
   response.headers.set(
     "Referrer-Policy",
     invitationPath ? "no-referrer" : "same-origin",

@@ -93,6 +93,17 @@ export async function scoped<T>(
         ? "fixture"
         : "hosted",
     ]);
+    // Local-only self-service preparation cannot be enabled by request input/JWT metadata.
+    await db.query(
+      "select set_config('request.kxra.local_self_service',$1,true)",
+      [
+        localMode() &&
+        !process.env.VERCEL_ENV &&
+        actor?.source === "fake-provider"
+          ? "on"
+          : "off",
+      ],
+    );
     const result = await work(db);
     await db.query("commit");
     return result;

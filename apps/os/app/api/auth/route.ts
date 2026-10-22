@@ -132,10 +132,19 @@ export async function POST(req: Request) {
         "select account_state,session_version from kxra.profiles where user_id=$1",
         [identity.id],
       );
-      if (
-        !profile[0] ||
-        ["SUSPENDED", "REVOKED"].includes(profile[0].account_state)
-      )
+      if (!profile[0]) {
+        // A verified local provider identity can recover the still-unprovisioned
+        // self-service flow. No organisation, role or paid state is granted.
+        const eligible = await query<{ allowed: boolean }>(
+          principal,
+          "select kxra_private.self_service_identity_available() allowed",
+        );
+        if (!eligible[0]?.allowed) throw Error("SIGN_IN_UNAVAILABLE");
+        await clearOrganisationContext();
+        await issueLocalProviderSession(identity, 1);
+        return redirect(req, "/signup");
+      }
+      if (["SUSPENDED", "REVOKED"].includes(profile[0].account_state))
         throw Error();
       await issueLocalProviderSession(identity, profile[0].session_version);
       const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
