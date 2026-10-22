@@ -1,0 +1,73 @@
+.root {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.root section,
+.root article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.stages li {
+  background: #edf1e4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.card {
+  border: 1px solid #dce0d3;
+  border-radius: 14px;
+  padding: 18px;
+  margin: 16px 0;
+  background: #fff;
+}
+.card h3 {
+  font-size: 19px;
+  margin-top: 0;
+}
+.meta {
+  font-size: 13px;
+  color: #59634f;
+}
+.body {
+  white-space: pre-wrap;
+}
+.snapshot {
+  background: #f0f4e7;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.root summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 0;
+}
+.root :global(.create-form) {
+  max-width: 100%;
+  margin: 14px 0 0;
+  box-shadow: none;
+}
+@media (max-width: 600px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .card {
+    padding: 12px;
+  }
+}

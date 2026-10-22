@@ -43,6 +43,10 @@ import {
   workspacePilotEvent,
 } from "../../../../lib/workspace-pilot";
 import { pilotBilling } from "../../../../lib/pilot-billing";
+import {
+  collaborationCatalog,
+  collaborationMutation,
+} from "../../../../lib/team-collaboration";
 import { workspaceStart } from "../../../../lib/workspace-start";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -55,6 +59,40 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (
+      p.length === 2 &&
+      /^(creator|sample)-(records|actions|save|propose|review|execute)$/.test(
+        p[1],
+      )
+    ) {
+      const [app, operation] = p[1].split("-");
+      const kind = app === "creator" ? "CREATOR" : "SAMPLE";
+      if (
+        method === "GET" &&
+        (operation === "records" || operation === "actions")
+      )
+        return privateJson(
+          await collaborationCatalog(
+            a,
+            p[0],
+            kind,
+            operation,
+            catalogInput(new URL(req.url).searchParams),
+          ),
+        );
+      if (method === "POST" && !["records", "actions"].includes(operation))
+        return privateJson(
+          await collaborationMutation(
+            a,
+            p[0],
+            kind,
+            operation,
+            await readJson(req),
+          ),
+          201,
+        );
+      throw new HttpError(405, "Method unavailable");
+    }
     if (method === "GET" && p.length === 1 && p[0] === "start")
       return privateJson(await workspaceStart(a));
     if (

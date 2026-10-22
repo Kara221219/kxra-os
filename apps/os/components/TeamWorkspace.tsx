@@ -10,6 +10,8 @@ const roomViews = [
   "memory",
   "jobs",
   "workflow",
+  "creators",
+  "samples",
   "settings",
 ] as const;
 type RoomView = (typeof roomViews)[number];
@@ -25,6 +27,7 @@ import { ActionForm } from "./TeamActionForm";
 import { RoomKnowledge } from "./RoomKnowledge";
 import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
+import { RoomCollaboration } from "./RoomCollaboration";
 import { RoomWorkflow } from "./RoomWorkflow";
 import { RoomTaskBoard } from "./RoomTaskBoard";
 import { RoomJobs } from "./RoomJobs";
@@ -775,6 +778,15 @@ export function TeamWorkspace({
                     memory={knowledge.memory}
                     agents={detail.agents}
                     actorId={actorId}
+                    canWrite={canWrite}
+                    canManage={canManage}
+                  />
+                )}
+                {(tab === "creators" || tab === "samples") && (
+                  <RoomCollaboration
+                    key={room!.id + tab}
+                    roomId={room!.id}
+                    kind={tab === "creators" ? "CREATOR" : "SAMPLE"}
                     canWrite={canWrite}
                     canManage={canManage}
                   />
