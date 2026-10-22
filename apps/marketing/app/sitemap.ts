@@ -3,6 +3,11 @@ import { productPages } from "../lib/reference-content";
 import { appKeys } from "../lib/app-examples";
 import { helpArticles } from "../lib/help-content";
 import { partnerPages } from "../lib/partner-content";
+import { solutionKeys } from "../lib/solution-content";
+import { integrationKeys } from "../lib/integration-content";
+import { articleKeys } from "../lib/editorial-content";
+import { resourceGuides } from "../lib/resource-guides";
+import { useCases } from "../lib/use-case-content";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     "",
@@ -12,8 +17,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/apps",
     ...appKeys.map((s) => "/apps/" + s),
     "/solutions",
+    ...solutionKeys.map((key) => "/solutions/" + key),
     "/use-cases",
+    ...Object.keys(useCases).map((key) => "/use-cases/" + key),
     "/integrations",
+    ...integrationKeys.map((key) => "/integrations/" + key),
+    "/resources",
+    ...Object.keys(resourceGuides).map((key) => "/resources/" + key),
+    "/blog",
+    ...articleKeys.map((key) => "/blog/" + key),
+    "/alternatives",
     "/help",
     ...helpArticles.map((a) => "/help/" + a.slug),
     "/partner",

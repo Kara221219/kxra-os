@@ -67,9 +67,11 @@ test("reference baseline shell, samples and catalog stay local and usable", asyn
   });
   await page.goto("/integrations");
   await page.getByLabel("SEARCH INTEGRATIONS").fill("nothing-matches");
-  await expect(page.getByRole("heading", { name: /No results/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /No matching connections/ }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(page.getByRole("status")).toContainText("6 results");
+  await expect(page.getByRole("status")).toContainText("9 results");
   for (const route of [
     "/product",
     "/product/workspace",

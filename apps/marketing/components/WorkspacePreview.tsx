@@ -6,8 +6,12 @@ const initial = [
   { customer: "Willow Works", amount: 4200, status: "Paid" },
   { customer: "Field & Form", amount: 3100, status: "Review" },
 ];
-export function WorkspacePreview() {
-  const [scenario, setScenario] = useState("Finance"),
+export function WorkspacePreview({
+  initialScenario = "Finance",
+}: {
+  initialScenario?: "Finance" | "Hiring" | "Sales" | "Operations";
+}) {
+  const [scenario, setScenario] = useState<string>(initialScenario),
     [rows, setRows] = useState(initial),
     [ascending, setAscending] = useState(true),
     [stage, setStage] = useState("Review"),

@@ -169,10 +169,7 @@ test("partner learning and local scope planning lead to a validated application 
   );
   expect(posts).toBe(0);
 });
-test("authored sitemap routes and responsive guide layouts are reachable", async ({
-  page,
-  request,
-}, info) => {
+test("authored sitemap routes are reachable", async ({ request }, info) => {
   test.skip(
     info.project.name === "mobile",
     "Inventory is identical across viewports.",
@@ -191,6 +188,9 @@ test("authored sitemap routes and responsive guide layouts are reachable", async
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
   }
+});
+test("responsive guide layouts stay within the viewport", async ({ page }) => {
+  test.setTimeout(120000);
   for (const route of [
     "/",
     "/partner",

@@ -4,6 +4,7 @@ import { partnerPages, type PartnerKey } from "../../../lib/partner-content";
 import { PartnerWorksheet } from "../../../components/PartnerWorksheet";
 import { PublicForm } from "../../../components/PublicForm";
 import { NoScriptContact } from "../../../components/NoScriptContact";
+export const dynamicParams = false;
 export function generateStaticParams() {
   return [...Object.keys(partnerPages), "apply"].map((guide) => ({ guide }));
 }
@@ -49,7 +50,9 @@ export default async function Guide({
         </div>
       </section>
     );
-  const p = partnerPages[guide as PartnerKey];
+  const p = Object.hasOwn(partnerPages, guide)
+    ? partnerPages[guide as PartnerKey]
+    : undefined;
   if (!p) notFound();
   return (
     <section className="ref-section ref-wrap ref-inner">

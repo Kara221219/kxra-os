@@ -958,3 +958,9 @@ The clarified brief prioritises the new reference layout/format/context, not com
 ##22October2026 — dedicated reference journeys, local batch2
 
 Six app-specific sample journeys, seven partner child pages and13 help articles are now locally accepted, with full16-page product taxonomy and57 authored sitemap destinations. Production-mode browser acceptance9PASS/1duplicate inventory skip; exact per-route CSP/SRI64pages/534scripts/max1095chars PASS, including negative checks. Screenshot saved to Library. See `docs/workspace/reference-journeys-2026-10-22.md`; no push/deploy or hosted change. Remaining product depth/private operations and staging recovery gates stay explicit.
+
+##22October2026 — illustrated reference families batch3
+
+Original collaborative cutaway hero and differentiated solutions/integrations/use-cases/resources/blog/comparison families implemented locally.86 authored destinations,93 static pages. Dev browser19PASS/1duplicate skip, strict CSP/SRI810scripts/max1203chars, type/build and4synthetic provider tests pass. Updated existing Library preview to version1. Scope/evidence: `docs/workspace/reference-families-2026-10-22.md`; next real-platform slices: `docs/workspace/real-platform-next-slices-2026-10-22.md`. No push/deploy or hosted/data/security/billing action; staging holds/recovery gate preserved.
+
+Final corrected build/CSP/typecheck pass; production controls18PASS, then affected hero/inventory/responsive checks5PASS/1duplicate skip after splitting the combined test budget without reducing assertions. Temporary3278test server stopped;3277dev preview retained.

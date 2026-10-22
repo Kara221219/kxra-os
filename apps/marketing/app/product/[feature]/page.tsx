@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { productPages } from "../../../lib/reference-content";
+export const dynamicParams = false;
 export function generateStaticParams() {
   return Object.keys(productPages).map((feature) => ({ feature }));
 }

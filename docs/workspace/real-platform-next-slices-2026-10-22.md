@@ -1,0 +1,46 @@
+# Real platform: existing implementation and executable local slices
+
+22October2026. This is a code-grounded implementation map, not another visual mismatch audit. Public samples remain distinct from operational state. This batch changes marketing only; no real provider, account, payment, database or deployment was activated.
+
+## Existing code, evidence and limits
+
+| Capability                               | Concrete source already present                                                                                                                   | What can proceed locally                                                                                                                                                              | Hosted boundary                                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Verified identity and tenant/room access | `apps/os/lib/auth.ts`, `packages/db`, `apps/os/app/api/team-space/[[...path]]/route.ts` calls `actor()` per request; non-GET calls `sameOrigin()` | Use synthetic users in a fresh fixture store; exercise cross-tenant/private-room denial and removal before adapting the new workspace shell                                           | Real session/MFA, accepted schema/config and two-user hosted checks remain necessary                                             |
+| Rooms/messages/history                   | `apps/os/lib/team-workspace.ts`, `team-room.ts`, `TeamWorkspace.tsx`; history pagination and eight-second visible-tab refresh                     | Rework the private navigation/list/thread/context layout against these existing endpoints, retaining loading/error/retry and permission behavior                                      | Do not advertise realtime presence or hosted reconnection until accepted                                                         |
+| Agent/context/provider path              | `packages/workspace/provider.ts`, `apps/os/lib/team-workspace.ts`, `tests/team-provider.test.ts`                                                  | Provider protocol, endpoint validation, synthetic vault binding and error contracts run without a real key;4tests passed in this batch                                                | A real provider success/error/rotation/revocation path, data terms and authorised usage remain unaccepted                        |
+| Knowledge/memory/skills                  | `team-knowledge.ts`, `team-memory.ts`, `RoomKnowledge.tsx`, `RoomMemory.tsx`; migrations0085/0086 and corresponding HTTP/browser suites           | Exercise source withdrawal, recall opt-in, reviewed versions and denied retrieval using fixtures; reuse these models in the redesigned context pane                                   | Private uploads/scanning/object recovery and actual hosted source paths require acceptance                                       |
+| Tasks/jobs/schedules                     | `team-jobs.ts`, `team-schedules.ts`, `scripts/team-job-worker.ts`, `packages/workspace/execution-readiness.ts`                                    | Local authenticated fixture drain, cancellation/retry/lease tests and daily recurrence contracts; preserve readiness response                                                         | Readiness explicitly says hosted worker/scheduler unavailable. No environment-key presence can turn that into accepted execution |
+| Persistent CRM conversion                | `team-workflow.ts`, `RoomWorkflow.tsx`, migration0089: records/actions, source/version review, `team_crm_review` and `team_crm_execute`           | First real-app vertical slice: lead -> reviewed conversion -> account/opportunity -> reload/new session; keep owner, source, version and idempotency under existing RLS               | Public CRM sample is not this database. Hosted release remains schema/recovery/config gated                                      |
+| Agent bridge/native apps                 | Public explanation only; no accepted local coding-agent bridge in the completion matrix                                                           | Next implementation: bounded protocol/data model, single-use expiring pairing, synthetic signed callback/replay/revocation tests. No native installer or ambient filesystem authority | Device pairing, credentials, external execution and actual distribution are separate acceptance tasks                            |
+| Other five app templates                 | Public sample-specific records and transitions in `app-examples.ts`/`AppExamplePreview.tsx`; no claim of operational data models                  | After CRM, select one next template and define entities/permissions/versioned transactions plus fixtures. Reuse the platform contract, not public React state                         | Do not turn previews into fake persistence or universal connector claims                                                         |
+| Billing                                  | `pilot-billing.ts`, `workspace-pilot.ts`, `packages/integrations/pilot-stripe.ts`, webhook route and protocol tests                               | Synthetic lifecycle/signature/entitlement contracts remain available as test-only code                                                                                                | Provider config, signed real test-mode delivery/accounting and commercial decisions are not satisfied; no live activation        |
+
+## The next local slices, in order
+
+1. **Establish a fresh disposable platform fixture baseline.** Use the existing focused CI runner, not any preserved preview/recovery store. The current deep checkout would create a106-character Unix socket pathname; macOS socket limits make that unsuitable. A short, newly created `/tmp` snapshot avoids changing global links, preserved data or the runner's schema behavior.
+2. **Adapt the private workspace shell to existing verified APIs.** Start with room list, selected thread, context pane and the existing tab/routes. Prove URL selection, older history, reload/error/retry, keyboard/mobile behavior, removal and private-room denial. This is UI work over implemented server/RLS contracts, not a new browser-state mock.
+3. **Make CRM the first complete persistent app journey.** Exercise the existing0089 transaction through the actual local API and database, then add the new app UI. Acceptance: qualification, exact-version review, conversion once, stale/replayed denial, owner/tenant isolation and persistence across a new session.
+4. **Expose agent work honestly.** Keep fixture worker results labelled synthetic and readiness unavailable for hosted execution. Improve context/source/run-history UX and failure reconciliation locally. Do not add a fake successful connector or arbitrary code runner.
+5. **Only then broaden app records and bridge protocols.** Pick one app's real data model and one bounded operation at a time. The public catalog is a planning aid, not evidence of a general app builder.
+
+### Executable credential-free focused baseline
+
+The existing `scripts/ci.mjs --team-workspace` creates a disposable `.runtime/team-ci`, generates synthetic local session material, allocates loopback ports, runs HTTP/browser negative-access suites and builds the OS. It deletes that disposable directory before use. Run it only from a newly created short snapshot, never a preserved store. It is not run as part of this marketing batch.
+
+```sh
+# Run from the isolated candidate after choosing its exact committed version.
+task_ci_dir=$(mktemp -d /tmp/kxra-team-ci.XXXXXX)
+git archive HEAD | tar -x -C "$task_ci_dir"
+ln -s "$PWD/node_modules" "$task_ci_dir/node_modules"
+cd "$task_ci_dir"
+env -i PATH="$PATH" HOME="$HOME" USER="$USER" TMPDIR="${TMPDIR:-/tmp}" \
+  KXRA_PG_BIN=/opt/homebrew/opt/postgresql@17/bin \
+  NEXT_TELEMETRY_DISABLED=1 node scripts/ci.mjs --team-workspace
+```
+
+This uses installed tooling and synthetic fixtures, not an account/database/provider password. The short snapshot and its generated fixture material are private local artifacts; preserve the test log and verify child shutdown. Do not copy `.runtime`, `.env`, `.vercel`, hosted credentials or existing database files into it. Schema91 here means a new local fixture database only.
+
+## Gates that remain unchanged
+
+Staging is still at the separately reported82 migrations; the additive83–91 release needs the accepted recovery scope and fresh restore/configuration/apply approval. The token-record exclusion remains unanswered. Keep the three staging build holds until their release sequence permits restoration. Production owner verification does not bypass these gates. Marketing publication, OS deployment, provider connection and billing activation are separate actions; none is performed here.

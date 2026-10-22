@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { appExamples, appKeys, type AppKey } from "../../../lib/app-examples";
 import { AppExamplePreview } from "../../../components/AppExamplePreview";
+export const dynamicParams = false;
 export function generateStaticParams() {
   return appKeys.map((template) => ({ template }));
 }
@@ -11,7 +12,9 @@ export default async function App({
   params: Promise<{ template: string }>;
 }) {
   const { template } = await params;
-  const e = appExamples[template as AppKey];
+  const e = Object.hasOwn(appExamples, template)
+    ? appExamples[template as AppKey]
+    : undefined;
   if (!e) notFound();
   return (
     <section className="ref-section ref-wrap ref-inner">

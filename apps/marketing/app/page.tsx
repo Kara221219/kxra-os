@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { WorkspacePreview } from "../components/WorkspacePreview";
 import { PublicForm } from "../components/PublicForm";
 const faq = [
@@ -32,8 +33,16 @@ export default function Home() {
     <div className="ref-home">
       <section
         className="ref-artwork"
-        aria-label="KXRA architectural workspace illustration"
+        aria-label="An illustrated shared workplace"
       >
+        <Image
+          src="/media/workspace/kxra-collaborative-cutaway-v1.png"
+          alt="Original illustration of people collaborating in a multi-level cutaway workspace beside a river."
+          fill
+          priority
+          sizes="(max-width: 760px) 1200px, 100vw"
+          className="ref-hero-illustration"
+        />
         <div className="ref-artwork-caption">
           A shared place for the work ahead.
         </div>

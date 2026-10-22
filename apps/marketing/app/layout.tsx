@@ -49,6 +49,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               ],
               Resources: [
                 ["About", "/about"],
+                ["Resources", "/resources"],
+                ["KXRA notes", "/blog"],
+                ["Compare approaches", "/alternatives"],
                 ["Help center", "/help"],
                 ["Pricing", "/pricing"],
                 ["Contact", "/contact"],

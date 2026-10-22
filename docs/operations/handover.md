@@ -721,3 +721,9 @@ Continue in `/Users/kara/Documents/Codex/2026-10-19/task/kxra-reference-baseline
 ##22October2026 — reference journeys batch2
 
 Continue in the same isolated candidate/branch. App gallery now leads to six dedicated interactive sample details; partners have an actual learning/toolkit/application path; help has searchable category/article/related journeys.57 authored routes tested200. Expanded static catalog required per-route CSP hashes instead of one oversized global policy; strict CSP/SRI and negative checks pass without hosted setting changes. Local production-mode browser9PASS/1skip;3278test server stopped,3277preview retained. Representative Library screenshot `libfile_4d47971056988191b2b602cb5621402e` is available for parent inspection/delivery. Full scope/evidence/remaining work in `docs/workspace/reference-journeys-2026-10-22.md`. No actual persistent app/provider work is claimed by samples; no hosted mutations or staging-hold restoration.
+
+##22October2026 — illustrated reference families batch3
+
+Original collaborative cutaway hero and differentiated solutions/integrations/use-cases/resources/blog/comparison families implemented locally.86 authored destinations,93 static pages. Dev browser19PASS/1duplicate skip, strict CSP/SRI810scripts/max1203chars, type/build and4synthetic provider tests pass. Updated existing Library preview to version1. Scope/evidence: `docs/workspace/reference-families-2026-10-22.md`; next real-platform slices: `docs/workspace/real-platform-next-slices-2026-10-22.md`. No push/deploy or hosted/data/security/billing action; staging holds/recovery gate preserved.
+
+Final corrected build/CSP/typecheck pass; production controls18PASS, then affected hero/inventory/responsive checks5PASS/1duplicate skip after splitting the combined test budget without reducing assertions. Temporary3278test server stopped;3277dev preview retained.

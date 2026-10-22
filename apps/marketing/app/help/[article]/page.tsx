@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { helpArticles, helpBySlug } from "../../../lib/help-content";
+export const dynamicParams = false;
 export function generateStaticParams() {
   return helpArticles.map((a) => ({ article: a.slug }));
 }
