@@ -16,6 +16,7 @@ const roomViews = [
   "roles",
   "recruiting",
   "travel",
+  "bridge",
   "settings",
 ] as const;
 type RoomView = (typeof roomViews)[number];
@@ -31,6 +32,7 @@ import { ActionForm } from "./TeamActionForm";
 import { RoomKnowledge } from "./RoomKnowledge";
 import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
+import { RoomBridge } from "./RoomBridge";
 import { RoomCases } from "./RoomCases";
 import { RoomCollaboration } from "./RoomCollaboration";
 import { RoomWorkflow } from "./RoomWorkflow";
@@ -784,6 +786,15 @@ export function TeamWorkspace({
                     agents={detail.agents}
                     actorId={actorId}
                     canWrite={canWrite}
+                    canManage={canManage}
+                  />
+                )}
+                {tab === "bridge" && (
+                  <RoomBridge
+                    key={room!.id}
+                    roomId={room!.id}
+                    messages={messages}
+                    local={local}
                     canManage={canManage}
                   />
                 )}

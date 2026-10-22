@@ -1,5 +1,7 @@
 # Native-agent bridge: protocol foundation
 
+> Follow-on local manual storage/API/UI acceptance is now documented in `local-manual-bridge-2026-10-22.md`. This original foundation checkpoint remains historical; native device pairing/transport is still unavailable.
+
 22 October 2026. Local code only; no device, provider, transport, pairing credential, host tool, executable download or API route is activated. This starts the bridge implementation after the accepted case-app commit `2c31bddf6419a5bacfa51fe236dc3dc44ec8e4a3`; it does not complete a connected native bridge.
 
 `packages/workspace/native-bridge-contract.ts` defines a strict draft-only request/packet/result contract. Server-resolved actor, organisation, room, creator, active access, entitlement and session revision bind an exact selection of up to ten messages. Sources are marked untrusted quoted data, limited to 24 KB and pinned by content digest. A ten-minute deadline, exact creator approval, unchanged source and current scope are checked again. Request JSON cannot supply identity, tenant, path, command, endpoint, tools, expiry or execution authority. A returned draft binds the request and stored packet digest, remains `MANUAL_UNVERIFIED`/`REVIEW_REQUIRED`, and cannot claim external action or verified provider provenance. No model financial arithmetic or automatic consequential execution is introduced.

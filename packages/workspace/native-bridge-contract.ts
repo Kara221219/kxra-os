@@ -185,6 +185,9 @@ export function parseNativeDraftResult(
   packet: NativeDraftPacket,
   trustedPacketDigest: string,
 ) {
+  // JSONB/transport can reorder keys. Hash the same strict canonical shape used
+  // for preparation, never incidental object insertion order.
+  const canonicalPacket = packetSchema.parse(packet);
   const result = z
     .object({
       request_id: id,
@@ -194,9 +197,9 @@ export function parseNativeDraftResult(
     .strict()
     .parse(input);
   if (
-    result.request_id !== packet.request_id ||
+    result.request_id !== canonicalPacket.request_id ||
     result.packet_sha256 !== digest.parse(trustedPacketDigest) ||
-    result.packet_sha256 !== hash(packet)
+    result.packet_sha256 !== hash(canonicalPacket)
   )
     throw Error("BRIDGE_RESULT_BINDING_MISMATCH");
   if (Buffer.byteLength(result.draft_text, "utf8") > 24000)

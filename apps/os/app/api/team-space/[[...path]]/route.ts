@@ -1,3 +1,9 @@
+import {
+  bridgeCatalog,
+  bridgeView,
+  createBridgeRequest,
+  bridgeMutation,
+} from "../../../../lib/team-bridge";
 import { caseCatalog, caseMutation } from "../../../../lib/team-cases";
 import { actor, sameOrigin, HttpError } from "../../../../lib/auth";
 import { privateJson, readJson, safeHttpError } from "../../../../lib/http";
@@ -60,6 +66,30 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (p.length >= 2 && p[1] === "bridge") {
+      if (p.length === 2 && method === "GET")
+        return privateJson(
+          await bridgeCatalog(
+            a,
+            p[0],
+            catalogInput(new URL(req.url).searchParams),
+          ),
+        );
+      if (p.length === 2 && method === "POST")
+        return privateJson(
+          await createBridgeRequest(a, p[0], await readJson(req)),
+          201,
+        );
+      if (p.length === 3 && method === "GET")
+        return privateJson(await bridgeView(a, p[0], p[2]));
+      if (p.length === 4 && method === "POST")
+        return privateJson(
+          await bridgeMutation(a, p[0], p[2], p[3], await readJson(req)),
+          201,
+        );
+      throw new HttpError(405, "Method unavailable");
+    }
+
     if (
       p.length === 2 &&
       /^(remodel|role|application|travel)-(records|actions|save|propose|review|execute)$/.test(

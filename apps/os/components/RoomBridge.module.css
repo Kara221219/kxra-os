@@ -1,0 +1,16 @@
+.root {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.packet {
+  width: 100%;
+  min-height: 16rem;
+  max-width: 100%;
+  font-family: monospace;
+}

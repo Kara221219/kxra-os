@@ -231,6 +231,20 @@ test("returned drafts are bound, bounded and unverified; actions or provider att
       draft_text: "Synthetic draft for human review",
     };
   const result = parseNativeDraftResult(input, f.packet, f.packet_sha256);
+  const reordered: Record<string, unknown> = Object.fromEntries(
+    Object.entries(f.packet).reverse(),
+  );
+  reordered.sources = f.packet.sources.map((source) =>
+    Object.fromEntries(Object.entries(source).reverse()),
+  );
+  assert.deepEqual(
+    parseNativeDraftResult(
+      input,
+      reordered as unknown as typeof f.packet,
+      f.packet_sha256,
+    ),
+    result,
+  );
   assert.equal(result.provenance, "MANUAL_UNVERIFIED");
   assert.equal(result.state, "REVIEW_REQUIRED");
   assert.equal(result.execution_permitted, false);
