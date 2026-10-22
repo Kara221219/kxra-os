@@ -89,6 +89,66 @@ export const productPages = {
       "Verify real acceptance before calling it operational.",
     ],
   },
+  credentials: {
+    title: "Connections stay within their boundary.",
+    summary:
+      "A provider secret is authority. Keep it out of prompts, public pages and source control.",
+    steps: [
+      "Review the provider, account and required scope.",
+      "Use an authorised secure handoff for credentials.",
+      "Rotate or revoke access and verify subsequent use is denied.",
+    ],
+  },
+  sandbox: {
+    title: "Try a change before it becomes live.",
+    summary:
+      "Keep drafts, preview records and release decisions separate from operational data.",
+    steps: [
+      "Prepare a candidate with a clear data and execution boundary.",
+      "Test the intended result and the denied or uncertain cases.",
+      "Review the exact version, recovery and rollback before release.",
+    ],
+  },
+  "build-and-ship": {
+    title: "From an idea to a reviewed release.",
+    summary:
+      "Keep the specification, implementation evidence and release decision connected.",
+    steps: [
+      "Define the smallest useful outcome and acceptance checks.",
+      "Build in an isolated candidate and verify real persistence where required.",
+      "Approve the exact artifact and configuration before publication.",
+    ],
+  },
+  "run-history": {
+    title: "See what happened, and why.",
+    summary:
+      "Keep the request, permitted evidence, review events and actual outcome in view.",
+    steps: [
+      "Locate the request or run without broadening private access.",
+      "Distinguish planned, queued, dispatched, completed and uncertain states.",
+      "Reconcile an external outcome before repeating a potentially completed action.",
+    ],
+  },
+  usage: {
+    title: "Know the boundary before work starts.",
+    summary:
+      "Keep provider costs, workspace scope and actual usage distinct from a proposed subscription.",
+    steps: [
+      "Review the approved scope and the provider’s own terms.",
+      "Agree the usage boundary and any authorised spend before execution.",
+      "Reconcile actual work; an estimate is not an invoice or entitlement.",
+    ],
+  },
+  "data-scoping": {
+    title: "Context follows permission.",
+    summary:
+      "A task may use only the room and source material its requester is allowed to access.",
+    steps: [
+      "Confirm the verified workspace and room membership.",
+      "Select permitted sources and keep their provenance.",
+      "Recheck access after membership removal, source withdrawal or scope changes.",
+    ],
+  },
 } as const;
 export const appTemplates = [
   {

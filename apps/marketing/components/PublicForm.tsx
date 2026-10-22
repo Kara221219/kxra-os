@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { sprintPackages, sprintPackage } from "../lib/business-sprints";
+import { appExamples, type AppKey } from "../lib/app-examples";
 
 type Kind = "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
 
@@ -13,13 +14,26 @@ export function PublicForm({
   sprintIntake?: boolean;
 }) {
   const [packageKey, setPackageKey] = useState("improvement-sprint");
+  const messageField = useRef<HTMLTextAreaElement>(null);
   const pending = useRef<{ body: string; key: string } | null>(null);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get(
       "package",
     );
     if (requested && sprintPackage(requested)) setPackageKey(requested);
-  }, []);
+    const workflow = new URLSearchParams(window.location.search).get(
+      "workflow",
+    );
+    if (
+      kind === "CONTACT" &&
+      workflow &&
+      Object.hasOwn(appExamples, workflow) &&
+      messageField.current &&
+      !messageField.current.value
+    ) {
+      messageField.current.value = `I would like to discuss the ${appExamples[workflow as AppKey].name} workflow.\n\nThe outcome I need is: `;
+    }
+  }, [kind]);
   const sourcePath = {
     ENQUIRY: "/partner",
     CUSTOM_PROJECT: "/submit-opportunity",
@@ -139,6 +153,7 @@ export function PublicForm({
             : "How can KXRA help?"}
         </label>
         <textarea
+          ref={messageField}
           id={`${kind}-message`}
           name="message"
           required

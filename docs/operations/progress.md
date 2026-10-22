@@ -954,3 +954,7 @@ Full-run restore: **199 tables / 7,349 synthetic rows / 51 objects / RTO3s**. OS
 ##22October2026 — reference-led local baseline
 
 The clarified brief prioritises the new reference layout/format/context, not comparison against the current KXRA site. Isolated branch `codex/reference-baseline` starts at5ed7401. First local shell/homepage/sample/catalog slice and fixed reference inspection are documented in `docs/workspace/reference-baseline-2026-10-22.md`. Typecheck, focused desktop/mobile controls/routes/width checks and marketing production-mode build pass. No push/deploy/hosted migration or credential/provider action. Exact full visual/content/journey coverage is not complete. Live marketing and the three staging holds remain unchanged; recovery scope is still pending.
+
+##22October2026 — dedicated reference journeys, local batch2
+
+Six app-specific sample journeys, seven partner child pages and13 help articles are now locally accepted, with full16-page product taxonomy and57 authored sitemap destinations. Production-mode browser acceptance9PASS/1duplicate inventory skip; exact per-route CSP/SRI64pages/534scripts/max1095chars PASS, including negative checks. Screenshot saved to Library. See `docs/workspace/reference-journeys-2026-10-22.md`; no push/deploy or hosted change. Remaining product depth/private operations and staging recovery gates stay explicit.

@@ -2,20 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReferenceCatalog } from "../../components/ReferenceCatalog";
 const pages = {
-  apps: [
-    "KXRA APPS",
-    "A starting point for useful internal tools.",
-    "Explore independently designed sample workflows. A public preview is separate from a persistent, operational app.",
-  ],
   integrations: [
     "CONNECTIONS",
     "Your tools. Your access boundary.",
     "Directory entries explain capability categories. They do not mean an account is connected or a provider has passed acceptance.",
-  ],
-  help: [
-    "KXRA HELP",
-    "Find your next step.",
-    "Start with workspace access, rooms, agents and the review boundaries behind shared work.",
   ],
   solutions: [
     "WAYS TO WORK",

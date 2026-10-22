@@ -2,68 +2,89 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-
-const build = path.resolve(import.meta.dirname, "../apps/marketing/.next");
-
-function files(directory) {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const target = path.join(directory, entry.name);
-    return entry.isDirectory()
-      ? files(target)
-      : entry.name.endsWith(".html")
-        ? [target]
-        : [];
-  });
+const build = path.resolve(import.meta.dirname, "../apps/marketing/.next"),
+  base = path.join(build, "server", "app");
+function files(dir) {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) =>
+      e.isDirectory()
+        ? files(path.join(dir, e.name))
+        : e.name.endsWith(".html")
+          ? [path.join(dir, e.name)]
+          : [],
+    );
 }
-
 const manifest = JSON.parse(
   fs.readFileSync(path.join(build, "routes-manifest.json"), "utf8"),
 );
-const policy = manifest.headers
-  .flatMap((entry) => entry.headers)
-  .find(
-    (header) => header.key.toLowerCase() === "content-security-policy",
-  )?.value;
-assert.ok(policy, "Marketing CSP header is missing");
-const script = policy
-  .split(";")
-  .map((directive) => directive.trim())
-  .find((directive) => directive.startsWith("script-src "));
-assert.ok(script, "Marketing script-src is missing");
-assert.doesNotMatch(script, /'unsafe-inline'|'unsafe-eval'/);
-assert.match(policy, /script-src-attr 'none'/);
-
-const allowed = new Set(
-  [...script.matchAll(/'sha256-([^']+)'/g)].map((match) => match[1]),
+const policies = manifest.headers.flatMap((e) =>
+  e.headers
+    .filter((h) => h.key.toLowerCase() === "content-security-policy")
+    .map((h) => ({ source: e.source, value: h.value })),
 );
-const actual = new Set();
-let externalScripts = 0;
-for (const file of files(path.join(build, "server", "app"))) {
-  const html = fs.readFileSync(file, "utf8");
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
-    if (match[1].includes("src=")) {
-      externalScripts += 1;
-      assert.match(match[1], /integrity="sha256-[A-Za-z0-9+/]+=*"/);
-      continue;
-    }
-    const hash = crypto.createHash("sha256").update(match[2]).digest("base64");
-    actual.add(hash);
-    assert.ok(allowed.has(hash), `${path.relative(build, file)} hash missing`);
-  }
+assert(policies.length, "Missing marketing CSP");
+let maxLength = 0,
+  externalScripts = 0,
+  pages = 0;
+for (const p of policies) {
+  assert(
+    !/'unsafe-inline'|'unsafe-eval'/.test(
+      p.value.split(";").find((s) => s.trim().startsWith("script-src ")),
+    ),
+  );
+  assert.match(p.value, /script-src-attr 'none'/);
+  assert(
+    p.value.length < 6000,
+    `CSP too large for ${p.source}: ${p.value.length}`,
+  );
+  maxLength = Math.max(maxLength, p.value.length);
 }
-assert.ok(
-  externalScripts > 0,
-  "No external scripts found for SRI verification",
-);
-assert.deepEqual(
-  allowed,
-  actual,
-  "CSP contains stale or missing script hashes",
-);
-assert.ok(
-  policy.length < 6_000,
-  `Marketing CSP is too large (${policy.length})`,
-);
+for (const file of files(base)) {
+  const rel = path
+    .relative(base, file)
+    .split(path.sep)
+    .join("/")
+    .replace(/\.html$/, "");
+  const route = rel === "index" ? "/" : "/" + rel;
+  const policy =
+    policies.findLast((p) => p.source === route)?.value ||
+    policies.find((p) => p.source === "/:path*")?.value;
+  assert(policy, "No policy for " + route);
+  const allowed = new Set(
+      [...policy.matchAll(/'sha256-([^']+)'/g)].map((m) => m[1]),
+    ),
+    actual = new Set();
+  for (const m of fs
+    .readFileSync(file, "utf8")
+    .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (m[1].includes("src=")) {
+      const src = m[1].match(/src="\/_next\/([^\"]+)"/),
+        sri = m[1].match(/integrity="(sha256-[A-Za-z0-9+/]+=*)"/);
+      assert(src && sri, "Missing local script SRI at " + route);
+      const asset = decodeURIComponent(src[1].split(/[?#]/, 1)[0]);
+      const digest =
+        "sha256-" +
+        crypto
+          .createHash("sha256")
+          .update(fs.readFileSync(path.join(build, asset)))
+          .digest("base64");
+      assert.equal(sri[1], digest, "SRI mismatch at " + route);
+      externalScripts++;
+    } else {
+      const digest = crypto.createHash("sha256").update(m[2]).digest("base64");
+      actual.add(digest);
+      assert(allowed.has(digest), "Missing inline hash for " + route);
+    }
+  }
+  assert.deepEqual(
+    allowed,
+    actual,
+    "Stale or unrelated inline hashes for " + route,
+  );
+  pages++;
+}
+assert(externalScripts > 0);
 console.log(
-  `Marketing CSP PASS (${actual.size} exact inline hashes, ${externalScripts} SRI script references, ${policy.length} header characters).`,
+  `Marketing CSP/SRI PASS (${pages} static routes, ${externalScripts} verified script references, maximum ${maxLength} header characters).`,
 );

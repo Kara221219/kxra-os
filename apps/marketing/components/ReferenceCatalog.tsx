@@ -145,10 +145,20 @@ export function ReferenceCatalog({
               <span>{i.topic}</span>
               <h2>{i.name}</h2>
               <p>{i.summary}</p>
-              <Link href={kind === "help" ? "/contact" : "/#workspace-preview"}>
+              <Link
+                href={
+                  kind === "apps"
+                    ? "/apps/" + i.name.toLowerCase().replaceAll(" ", "-")
+                    : kind === "help"
+                      ? "/help"
+                      : "/#workspace-preview"
+                }
+              >
                 {kind === "help"
                   ? "Ask a question ↗"
-                  : "Explore the sample workflow ↗"}
+                  : kind === "apps"
+                    ? "Open app preview ↗"
+                    : "Explore the sample workflow ↗"}
               </Link>
             </article>
           ))}

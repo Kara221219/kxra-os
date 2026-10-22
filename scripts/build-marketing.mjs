@@ -33,17 +33,28 @@ function htmlFiles(directory) {
   });
 }
 
-function inlineHashes() {
-  const hashes = new Set();
-  for (const file of htmlFiles(path.join(output, "server", "app"))) {
-    const html = fs.readFileSync(file, "utf8");
-    for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))
-      if (!match[1].includes("src="))
-        hashes.add(
-          crypto.createHash("sha256").update(match[2]).digest("base64"),
-        );
-  }
-  return [...hashes].sort();
+function inlineHashesByRoute() {
+  const base = path.join(output, "server", "app");
+  const entries = htmlFiles(base)
+    .sort()
+    .map((file) => {
+      const relative = path
+        .relative(base, file)
+        .split(path.sep)
+        .join("/")
+        .replace(/\.html$/, "");
+      const route = relative === "index" ? "/" : "/" + relative;
+      const hashes = new Set();
+      for (const match of fs
+        .readFileSync(file, "utf8")
+        .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))
+        if (!match[1].includes("src="))
+          hashes.add(
+            crypto.createHash("sha256").update(match[2]).digest("base64"),
+          );
+      return [route, [...hashes].sort()];
+    });
+  return Object.fromEntries(entries);
 }
 
 function applyStaticSri() {
@@ -77,21 +88,25 @@ build(
   {
     KXRA_MARKETING_BUILD_ID: buildId,
     KXRA_MARKETING_CSP_MODE: "collect",
+    KXRA_MARKETING_ROUTE_SCRIPT_HASHES: "",
   },
   ["ignore", "ignore", "inherit"],
 );
-const hashes = inlineHashes();
-if (hashes.length === 0) throw new Error("No inline marketing scripts found");
-console.log(`Building marketing with ${hashes.length} exact script hashes...`);
+const hashes = inlineHashesByRoute();
+if (!Object.keys(hashes).length)
+  throw new Error("No static marketing pages found");
+console.log(
+  `Building marketing with exact hashes for ${Object.keys(hashes).length} static routes...`,
+);
 build(
   {
     KXRA_MARKETING_BUILD_ID: buildId,
     KXRA_MARKETING_CSP_MODE: "enforce",
-    KXRA_MARKETING_SCRIPT_HASHES: hashes.join(","),
+    KXRA_MARKETING_SCRIPT_HASHES: "",
+    KXRA_MARKETING_ROUTE_SCRIPT_HASHES: JSON.stringify(hashes),
   },
   "inherit",
 );
-const finalHashes = inlineHashes();
-if (JSON.stringify(finalHashes) !== JSON.stringify(hashes))
-  throw new Error("Marketing inline scripts changed between CSP build passes");
+if (JSON.stringify(inlineHashesByRoute()) !== JSON.stringify(hashes))
+  throw new Error("Marketing route script hashes changed between build passes");
 applyStaticSri();

@@ -21,10 +21,12 @@ export const navigation = {
   ],
   Partners: [
     ["Join", "Partner program", "/partner"],
-    ["Join", "Apply", "/partner#apply"],
-    ["Learn", "Our approach", "/approach"],
-    ["Deliver", "Business sprints", "/business-sprints"],
-    ["Deliver", "Custom implementation", "/custom-projects"],
+    ["Join", "Apply", "/partner/apply"],
+    ["Learn", "Learning path", "/partner/learn"],
+    ["Learn", "Toolkit", "/partner/toolkit"],
+    ["Learn", "Materials", "/partner/materials"],
+    ["Deliver", "Client workshop", "/partner/workshop"],
+    ["Deliver", "Embedded delivery", "/partner/fde"],
   ],
   Integrations: [
     ["Your connected tools", "Connection boundaries", "/integrations"],
