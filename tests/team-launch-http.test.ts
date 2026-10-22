@@ -666,3 +666,122 @@ test("approved five-person pilot enforces real held seats and fixture billing ca
     [membership],
   );
 });
+
+test("one verified actor cannot read or convert CRM records across two real tenant contexts", async (t) => {
+  const f = await knowledgeFixture(false, "owner"),
+    tenantB = uuid(),
+    projectB = uuid();
+  await admin.query(
+    "insert into kxra.organisations(id,name,slug) values($1,'Second CRM fixture tenant',$2)",
+    [tenantB, "crm-" + uuid()],
+  );
+  await admin.query(
+    "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'ORG_ADMIN','CUSTOMER','ACTIVE','Synthetic CRM owner','AT_PILOT')",
+    [tenantB, owner],
+  );
+  await admin.query(
+    "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'CRM','Second CRM fixture','TEST','ACTIVE','Review')",
+    [projectB, tenantB],
+  );
+  t.after(() =>
+    admin.query(
+      "update kxra.organisation_memberships set state='REVOKED',revoked_at=now() where org_id=$1 and account_id=$2",
+      [tenantB, owner],
+    ),
+  );
+  const cookieA = await selectTenant(f.cookie, org);
+  const cookieB = await selectTenant(await knowledgeLogin("owner"), tenantB);
+  const roomB = (
+    await ok("", cookieB, {
+      project_id: projectB,
+      name: "Second tenant private CRM",
+      guidelines: "Synthetic isolation only",
+      access: "PRIVATE",
+    })
+  ).id;
+  const leadA = uuid(),
+    leadB = uuid(),
+    actionA = uuid();
+  await ok(`/${f.room}/lead`, cookieA, {
+    request_id: leadA,
+    title: "Only tenant A",
+    next_step: "Review A",
+  });
+  await ok(`/${roomB}/lead`, cookieB, {
+    request_id: leadB,
+    title: "Only tenant B",
+    next_step: "Review B",
+  });
+  await ok(`/${f.room}/conversion`, cookieA, {
+    request_id: actionA,
+    source_id: leadA,
+    source_version: 1,
+    account_name: "A account",
+    opportunity_name: "A opportunity",
+    next_step: "A handover",
+  });
+  assert.equal((await req(`/${f.room}/workflow-records`, cookieB)).status, 404);
+  assert.equal((await req(`/${roomB}/workflow-records`, cookieA)).status, 404);
+  assert.equal(
+    (
+      await req(`/${f.room}/conversion-review`, cookieB, {
+        action_id: actionA,
+        version: 1,
+        decision: "APPROVED",
+      })
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await req(`/${roomB}/conversion`, cookieB, {
+        request_id: uuid(),
+        source_id: leadA,
+        source_version: 1,
+        account_name: "Cross tenant",
+        opportunity_name: "Denied",
+        next_step: "Denied",
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await as(
+        owner,
+        "select id from kxra.team_workflow_records where id=$1",
+        [leadA],
+        tenantB,
+      )
+    ).length,
+    0,
+  );
+  assert.equal(
+    (
+      await as(
+        owner,
+        "select id from kxra.team_workflow_records where id=$1",
+        [leadB],
+        org,
+      )
+    ).length,
+    0,
+  );
+  await assert.rejects(
+    as(
+      owner,
+      "select kxra.team_crm_execute($1,$2,2)",
+      [f.room, actionA],
+      tenantB,
+    ),
+    { code: "42501" },
+  );
+  assert.equal(
+    (await ok(`/${roomB}/workflow-records`, cookieB)).records.length,
+    1,
+  );
+  assert.equal(
+    (await ok(`/${f.room}/workflow-actions`, cookieA)).actions[0].state,
+    "PROPOSED",
+  );
+});

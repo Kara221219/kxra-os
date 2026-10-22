@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { ActionForm } from "./TeamActionForm";
 import { useRoomCatalog } from "./useRoomCatalog";
 import type { WorkflowRecord, WorkflowAction } from "../lib/team-workflow";
@@ -13,6 +14,8 @@ export function RoomWorkflow({
   canWrite: boolean;
   canManage: boolean;
 }) {
+  const [query, setQuery] = useState(""),
+    [kind, setKind] = useState("ALL");
   const records = useRoomCatalog(roomId, "workflow-records", noRecords),
     actions = useRoomCatalog(roomId, "workflow-actions", noActions);
   const refresh = () => {
@@ -21,7 +24,14 @@ export function RoomWorkflow({
   };
   return (
     <section className="panel" aria-label="Room CRM workflow">
+      <p className="eyebrow">ROOM APP · CRM</p>
       <h2>Lead conversion</h2>
+      <ol className="crm-stages" aria-label="Conversion process">
+        <li>Capture a lead</li>
+        <li>Propose exact destinations</li>
+        <li>Review the source version</li>
+        <li>Execute once · retain receipt</li>
+      </ol>
       <p>
         Room-scoped operational template. Capture a lead, propose exact
         account/opportunity names and next step, have the room creator review,
@@ -31,65 +41,125 @@ export function RoomWorkflow({
       <button type="button" onClick={refresh}>
         Refresh workflow
       </button>
-      <p role="status">{records.notice || actions.notice}</p>
-      {records.data.records.map((r) => (
-        <article
-          key={r.id}
-          className="team-message"
-          aria-label={`Workflow record ${r.id}`}
-        >
-          <h3>
-            {r.kind} · {r.title}
-          </h3>
-          <p>
-            {r.state} · Version {r.version} · Record {r.id}
+      <p role="status">{records.notice}</p>
+      <p role="status">{actions.notice}</p>
+      <div className="crm-summary" aria-label="Loaded CRM records">
+        {(["LEAD", "ACCOUNT", "OPPORTUNITY"] as const).map((type) => (
+          <div key={type}>
+            <strong>
+              {records.data.records.filter((r) => r.kind === type).length}
+            </strong>
+            <span>{type.toLowerCase()} records loaded</span>
+          </div>
+        ))}
+      </div>
+      <div className="crm-filters">
+        <label>
+          Search CRM records
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label>
+          Record type
+          <select
+            aria-label="Record type"
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+          >
+            <option value="ALL">All records</option>
+            <option value="LEAD">Leads</option>
+            <option value="ACCOUNT">Accounts</option>
+            <option value="OPPORTUNITY">Opportunities</option>
+          </select>
+        </label>
+      </div>
+      {!records.busy &&
+        !records.data.records.some(
+          (r) =>
+            (kind === "ALL" || r.kind === kind) &&
+            (r.title + " " + r.body + " " + r.next_step)
+              .toLowerCase()
+              .includes(query.toLowerCase()),
+        ) && (
+          <p role="status">
+            {records.data.records.length
+              ? "No matching loaded records."
+              : "No CRM records yet. Capture your first lead."}
           </p>
-          <p>{r.body}</p>
-          <p>Next step: {r.next_step}</p>
-          {r.source_id && (
+        )}
+      {records.data.records
+        .filter(
+          (r) =>
+            (kind === "ALL" || r.kind === kind) &&
+            (r.title + " " + r.body + " " + r.next_step)
+              .toLowerCase()
+              .includes(query.toLowerCase()),
+        )
+        .map((r) => (
+          <article
+            key={r.id}
+            className="team-message"
+            aria-label={`Workflow record ${r.id}`}
+          >
+            <h3>
+              {r.kind} · {r.title}
+            </h3>
             <p>
-              Converted from lead {r.source_id}. Receipt {r.action_id}.
+              {r.state} · Version {r.version} · Record {r.id}
             </p>
-          )}
-          {canWrite && r.kind === "LEAD" && r.state === "OPEN" && (
-            <ActionForm
-              path={`/${roomId}/lead`}
-              title={`Update lead ${r.title}`}
-              onSaved={refresh}
-              build={(d) => ({
-                request_id: r.id,
-                version: r.version,
-                title: d.get("title"),
-                body: d.get("body"),
-                next_step: d.get("next_step"),
-              })}
-            >
-              <label>
-                Updated lead name
-                <input
-                  name="title"
-                  required
-                  defaultValue={r.title}
-                  maxLength={160}
-                />
-              </label>
-              <label>
-                Updated lead context
-                <textarea name="body" defaultValue={r.body} maxLength={4000} />
-              </label>
-              <label>
-                Updated next step
-                <input
-                  name="next_step"
-                  required
-                  defaultValue={r.next_step}
-                  maxLength={500}
-                />
-              </label>
-            </ActionForm>
-          )}
-        </article>
-      ))}
+            <p>{r.body}</p>
+            <p>Next step: {r.next_step}</p>
+            {r.source_id && (
+              <p>
+                Converted from lead {r.source_id}. Receipt {r.action_id}.
+              </p>
+            )}
+            {canWrite && r.kind === "LEAD" && r.state === "OPEN" && (
+              <ActionForm
+                path={`/${roomId}/lead`}
+                title={`Update lead ${r.title}`}
+                onSaved={refresh}
+                build={(d) => ({
+                  request_id: r.id,
+                  version: r.version,
+                  title: d.get("title"),
+                  body: d.get("body"),
+                  next_step: d.get("next_step"),
+                })}
+              >
+                <label>
+                  Updated lead name
+                  <input
+                    name="title"
+                    required
+                    defaultValue={r.title}
+                    maxLength={160}
+                  />
+                </label>
+                <label>
+                  Updated lead context
+                  <textarea
+                    name="body"
+                    defaultValue={r.body}
+                    maxLength={4000}
+                  />
+                </label>
+                <label>
+                  Updated next step
+                  <input
+                    name="next_step"
+                    required
+                    defaultValue={r.next_step}
+                    maxLength={500}
+                  />
+                </label>
+              </ActionForm>
+            )}
+          </article>
+        ))}
       {records.next && (
         <button type="button" disabled={records.busy} onClick={records.more}>
           Load earlier workflow records

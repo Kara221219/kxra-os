@@ -2088,3 +2088,212 @@ pre {
     display: block;
   }
 }
+
+/* Reference-led private workbench; operational APIs and permission checks retained. */
+.team-workbench {
+  --ink: #22251f;
+  --paper: #f5f1e5;
+  color: var(--ink);
+}
+.team-workbench .panel {
+  border-radius: 18px;
+  box-shadow: none;
+  border: 1px solid #dce0d3;
+}
+.team-workbench .team-space-layout:has(.team-context) {
+  grid-template-columns: 190px minmax(0, 1fr) 215px;
+  gap: 16px;
+}
+.team-workbench .team-space-heading {
+  margin-bottom: 24px;
+}
+.team-workbench .team-space-heading h1 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  letter-spacing: -0.055em;
+}
+.team-workbench .team-room-list {
+  background: #edf1e4;
+  padding: 18px;
+  gap: 10px;
+}
+.team-rail-brand {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.05em;
+}
+.team-rail-brand span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  font-weight: 400;
+  margin: 6px 0 20px;
+}
+.team-workbench .team-room-list h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.team-workbench .team-room-list label {
+  font-size: 12px;
+}
+.team-workbench .team-room-list input {
+  padding: 9px;
+  border-radius: 8px;
+  min-width: 0;
+}
+.team-workbench .team-room-list a {
+  font-size: 14px;
+  padding: 10px;
+}
+.team-workbench .team-room-list a[aria-current] {
+  background: #dce6ca;
+}
+.team-workbench .team-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0 0 10px;
+  gap: 4px;
+}
+.team-workbench .team-tabs button {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.team-workbench .team-tabs button[aria-selected="true"] {
+  background: #24271f;
+  color: #fff;
+}
+.team-view-panel {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.team-workbench .team-message {
+  padding: 20px 0;
+}
+.team-workbench .team-agent-output {
+  background: #f0f4e7;
+}
+.team-context {
+  color: #22251f;
+  height: auto;
+  max-height: calc(100vh - 32px);
+  display: block;
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+  font-size: 13px;
+  padding: 18px;
+}
+.team-context h2 {
+  font-size: 19px;
+}
+.team-context h3 {
+  font-size: 14px;
+}
+.team-context dl {
+  margin: 20px 0;
+}
+.team-context dl > div {
+  border-bottom: 1px solid #e0e4d8;
+  padding: 10px 0;
+}
+.team-context dt {
+  color: #66705c;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.team-context dd {
+  margin: 5px 0 0;
+}
+.team-context button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 12px;
+  padding: 10px;
+}
+.team-context-boundary {
+  border-radius: 10px;
+  background: #edf2e3;
+  padding: 12px;
+  margin-top: 20px;
+}
+.crm-stages {
+  display: flex;
+  gap: 12px;
+  padding: 0;
+  list-style-position: inside;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.crm-stages li {
+  padding: 10px;
+  background: #edf2e3;
+  border-radius: 8px;
+}
+.crm-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.crm-summary > div {
+  padding: 14px;
+  background: #f3f5ec;
+  border-radius: 12px;
+}
+.crm-summary strong {
+  display: block;
+  font-size: 26px;
+}
+.crm-summary span {
+  font-size: 12px;
+}
+.crm-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+.team-workbench :focus-visible {
+  outline: 3px solid #54743c;
+  outline-offset: 3px;
+}
+@media (max-width: 1200px) {
+  .team-workbench .team-space-layout:has(.team-context) {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+  .team-context {
+    grid-column: 2;
+    position: static;
+  }
+}
+@media (max-width: 800px) {
+  .team-workbench .team-space-layout:has(.team-context) {
+    grid-template-columns: 1fr;
+  }
+  .team-context {
+    grid-column: 1;
+  }
+  .team-workbench .team-room-list {
+    max-height: 290px;
+    overflow: auto;
+  }
+  .crm-filters {
+    grid-template-columns: 1fr;
+  }
+  .crm-summary > div {
+    padding: 8px;
+  }
+  .crm-summary span {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .team-context {
+    max-height: none;
+  }
+}
