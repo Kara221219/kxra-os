@@ -20,7 +20,20 @@ async function freePort(preferred = 0) {
     });
   });
 }
-const port = await freePort(3279),
+const activation = process.argv.includes("--activation");
+const portArgument = process.argv.find((a) => a.startsWith("--port="));
+const preferredPort = portArgument
+  ? Number(portArgument.slice(7))
+  : activation
+    ? 3280
+    : 3279;
+if (
+  !Number.isInteger(preferredPort) ||
+  preferredPort < 1024 ||
+  preferredPort > 65535
+)
+  throw Error("Fixture port must be an integer from 1024 to 65535");
+const port = await freePort(preferredPort),
   pgPort = await freePort();
 const runId = crypto.randomUUID(),
   origin = `http://127.0.0.1:${port}`;
@@ -40,7 +53,9 @@ const environment = {
   KXRA_PG_BIN: "/opt/homebrew/opt/postgresql@17/bin",
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
   KXRA_CI_RUN_ID: runId,
-  KXRA_NEXT_DIST_DIR: ".next-reference-workbench-dev",
+  KXRA_NEXT_DIST_DIR: activation
+    ? ".next-reference-activation-dev"
+    : ".next-reference-workbench-dev",
 };
 const metadata = {
   mode: "synthetic local fixture; no provider calls",
@@ -73,6 +88,7 @@ const app = spawn(
   [
     path.join(root, "node_modules/next/dist/bin/next"),
     "dev",
+    ...(process.argv.includes("--turbo") ? ["--turbopack"] : []),
     "--hostname",
     "127.0.0.1",
     "--port",
@@ -132,6 +148,14 @@ console.log(
 );
 if (process.argv.includes("--verify")) {
   try {
+    // Fail fast on provider/entitlement contracts before the longer compatibility set.
+    await run([
+      "--import",
+      "tsx",
+      "--test",
+      "--test-concurrency=1",
+      "tests/pilot-stripe.test.ts",
+    ]);
     await run([
       "--import",
       "tsx",
@@ -143,10 +167,10 @@ if (process.argv.includes("--verify")) {
       "tests/team-schedules-http.test.ts",
       "tests/team-audit-http.test.ts",
       "tests/team-launch-http.test.ts",
-      "tests/pilot-stripe.test.ts",
       "tests/team-workspace-http.test.ts",
       "tests/team-provider.test.ts",
     ]);
+    await run(["scripts/verify-migrations.mjs"]);
     await run([
       "node_modules/@playwright/test/cli.js",
       "test",
@@ -156,6 +180,9 @@ if (process.argv.includes("--verify")) {
       "tests/e2e/team-jobs.spec.ts",
       "tests/e2e/team-launch.spec.ts",
       "tests/e2e/reference-workbench.spec.ts",
+      ...(activation
+        ? ["tests/e2e/accounts.spec.ts", "tests/e2e/workspace-start.spec.ts"]
+        : []),
       "--reporter=line",
     ]);
     metadata.verification = "HTTP and browser PASS";

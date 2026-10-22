@@ -197,11 +197,11 @@ export async function createPilotSession(
     }
     values.set("client_reference_id", intent.id);
     values.set("subscription_data[metadata][kxra_pilot_intent_id]", intent.id);
-    values.set("success_url", `${origin}/os/workspace?pilot=returned`);
-    values.set("cancel_url", `${origin}/os/workspace?pilot=cancelled`);
+    values.set("success_url", `${origin}/os/start?pilot=returned`);
+    values.set("cancel_url", `${origin}/os/start?pilot=cancelled`);
   } else if (intent.kind === "PORTAL") {
     values.set("configuration", config.portal_config);
-    values.set("return_url", `${origin}/os/workspace?pilot=returned`);
+    values.set("return_url", `${origin}/os/start?pilot=returned`);
   } else throw Error("PILOT_SESSION_KIND");
   const data = await request(
     intent.kind === "CHECKOUT"

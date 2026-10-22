@@ -12,6 +12,13 @@ type Pilot = {
   test_billing: {
     requests_available: boolean;
     bound: boolean;
+    pending_binding?: boolean;
+    recovery?: {
+      request_id: string;
+      include_setup: boolean;
+      expired: boolean;
+      state: string;
+    } | null;
     reconciliation_required: boolean;
   };
   seats_reserved: number;
@@ -88,7 +95,9 @@ export function WorkspacePilot({ local }: { local: boolean }) {
           <p>
             {data.assigned
               ? `${state} · Revision ${data.subscription!.version} · Period ends ${new Date(data.subscription!.period_end).toISOString()}${data.subscription!.cancel_at_period_end ? " · Cancellation scheduled at period end" : ""}`
-              : "Unassigned: existing workspace behaviour retained."}
+              : data.test_billing.pending_binding
+                ? "Pending provider checkout: no subscription or paid access established."
+                : "Unassigned: existing workspace behaviour retained."}
           </p>
           <p>
             Reserved people/invitations: {data.seats_reserved} / 5.{" "}
@@ -96,9 +105,11 @@ export function WorkspacePilot({ local }: { local: boolean }) {
               ? data.entitled
                 ? "Pilot work enabled under the current recorded test period."
                 : "Pilot new work disabled; existing history remains readable."
-              : local
-                ? "Five-person pilot enforcement starts only after explicit fixture activation."
-                : "Five-person pilot enforcement starts with an accepted test subscription."}
+              : data.test_billing.pending_binding
+                ? "New work is disabled while the checkout awaits an accepted subscription."
+                : local
+                  ? "Five-person pilot enforcement starts only after explicit fixture activation."
+                  : "Five-person pilot enforcement starts with an accepted test subscription."}
           </p>
           <p>
             Unapproved capacity proposals: {data.proposed_capacity.rooms.value}{" "}
@@ -106,26 +117,45 @@ export function WorkspacePilot({ local }: { local: boolean }) {
             drafts. Configurable internal proposals, not enforced or published
             entitlements. Existing safety limits continue to apply.
           </p>
-          {!local && data.test_billing?.requests_available && (
-            <>
-              <p>
-                {data.test_billing.reconciliation_required
-                  ? "Conflicting event order: new work paused until reconciliation."
-                  : "Configuration will be verified with the test provider before continuing."}
-              </p>
-              {(data.test_billing.bound
-                ? (["portal", "reconcile"] as const)
-                : (["checkout"] as const)
-              ).map((kind) => (
-                <TestBillingRequest
-                  key={kind}
-                  kind={kind}
-                  onSaved={() => setVersion((n) => n + 1)}
-                />
-              ))}
-            </>
+          {data.test_billing?.pending_binding && (
+            <p className="notice">
+              {data.test_billing.recovery?.expired
+                ? "Earlier checkout expired. Operator reconciliation is required before any new attempt."
+                : data.test_billing.recovery
+                  ? "An earlier checkout request is retained on the server. A verified test checkout resumes that exact request after configuration is accepted; reloading never creates a new subscription."
+                  : "The original checkout requester or an operator must resolve the pending request."}
+            </p>
           )}
+          {!local &&
+            data.test_billing?.requests_available &&
+            !data.test_billing.recovery?.expired && (
+              <>
+                <p>
+                  {data.test_billing.reconciliation_required
+                    ? "Conflicting event order: new work paused until reconciliation."
+                    : "Configuration will be verified with the test provider before continuing."}
+                </p>
+                {(data.test_billing.bound
+                  ? (["portal", "reconcile"] as const)
+                  : (["checkout"] as const)
+                ).map((kind) => (
+                  <TestBillingRequest
+                    key={
+                      kind +
+                      ":" +
+                      (data.test_billing.recovery?.request_id || "new")
+                    }
+                    kind={kind}
+                    recovery={
+                      kind === "checkout" ? data.test_billing.recovery : null
+                    }
+                    onSaved={() => setVersion((n) => n + 1)}
+                  />
+                ))}
+              </>
+            )}
           {local &&
+            !data.test_billing?.pending_binding &&
             data.subscription?.mode !== "TEST_STRIPE" &&
             actions.map((action) => (
               <ActionForm
@@ -155,12 +185,20 @@ export function WorkspacePilot({ local }: { local: boolean }) {
 function TestBillingRequest({
   kind,
   onSaved,
+  recovery,
 }: {
+  recovery?: {
+    request_id: string;
+    include_setup: boolean;
+    expired: boolean;
+  } | null;
   kind: "checkout" | "portal" | "reconcile";
   onSaved: () => void;
 }) {
-  const [nonce, setNonce] = useState<string | null>(null),
-    [setup, setSetup] = useState(false),
+  const [nonce, setNonce] = useState<string | null>(
+      recovery?.request_id ?? null,
+    ),
+    [setup, setSetup] = useState(recovery?.include_setup ?? false),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
   return (

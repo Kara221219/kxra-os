@@ -43,6 +43,7 @@ import {
   workspacePilotEvent,
 } from "../../../../lib/workspace-pilot";
 import { pilotBilling } from "../../../../lib/pilot-billing";
+import { workspaceStart } from "../../../../lib/workspace-start";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 async function handle(
@@ -54,6 +55,8 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (method === "GET" && p.length === 1 && p[0] === "start")
+      return privateJson(await workspaceStart(a));
     if (
       method === "POST" &&
       p.length === 3 &&

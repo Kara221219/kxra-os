@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Actor } from "../lib/auth";
 const ownerNav = [
   ["Dashboard", ""],
+  ["Getting started", "start"],
   ["Workspace", "workspace"],
   ["Operating Model", "operating-model"],
   ["Improvement Loop", "improvements"],
@@ -31,6 +32,7 @@ const ownerNav = [
 ];
 const partnerNav = [
   ["Home", ""],
+  ["Getting started", "start"],
   ["Workspace", "workspace"],
   ["My Projects", "projects"],
   ["Business Tools", "tools"],
@@ -120,7 +122,16 @@ export default function Shell({
             Local development · synthetic accounts · external services disabled
           </div>
         )}
-        <main id="content">{children}</main>
+        <main id="content">
+          {active === "" && (
+            <p className="notice">
+              <Link href="/os/start">
+                Getting started: check recorded access and open your workspace ↗
+              </Link>
+            </p>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

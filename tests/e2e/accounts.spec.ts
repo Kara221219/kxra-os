@@ -267,6 +267,44 @@ async function completeStepsFiveToNine(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Your project workspace" }),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Getting started", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Active account", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Workspace administrator manages billing",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Create or open a room ↗", exact: true })
+    .click();
+  const roomName = "First onboarded workspace " + marker();
+  await page.getByLabel("Room name").fill(roomName);
+  await page.getByRole("button", { name: "Create room", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: roomName, exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Message", { exact: true })
+    .fill("First persistent work after invitation registration and onboarding");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(
+    page.locator(".team-message p.team-text").filter({
+      hasText:
+        "First persistent work after invitation registration and onboarding",
+    }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.locator(".team-message p.team-text").filter({
+      hasText:
+        "First persistent work after invitation registration and onboarding",
+    }),
+  ).toBeVisible();
 }
 
 async function approveLifecycle(

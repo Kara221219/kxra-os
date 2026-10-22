@@ -63,6 +63,7 @@ async function as(
   sql: string,
   values: unknown[] = [],
   ageSeconds = 0,
+  executionMode = "hosted",
 ) {
   const db = await app.connect();
   try {
@@ -80,6 +81,9 @@ async function as(
         tenant,
       ],
     );
+    await db.query("select set_config('request.kxra.execution_mode',$1,true)", [
+      executionMode,
+    ]);
     const r = (await db.query(sql, values)).rows;
     await db.query("commit");
     return r;
@@ -90,7 +94,10 @@ async function as(
     db.release();
   }
 }
-async function fixture(includeSetup = false) {
+async function fixture(
+  includeSetup = false,
+  beforeCheckout?: (org: string) => Promise<void>,
+) {
   const org = uuid(),
     customer = sid("cus");
   await admin.query(
@@ -106,6 +113,12 @@ async function fixture(includeSetup = false) {
     [org, customer],
   );
   fixtureOrgs.push(org);
+  const project = uuid();
+  await admin.query(
+    "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'BASE','Synthetic pilot project','TEST','ACTIVE','Review')",
+    [project, org],
+  );
+  await beforeCheckout?.(org);
   const rows = await as(
     owner,
     org,
@@ -114,6 +127,7 @@ async function fixture(includeSetup = false) {
   );
   return {
     org,
+    project,
     customer,
     intent: rows[0].value.intent as PilotIntent,
     sub: sid("sub"),
@@ -517,9 +531,10 @@ test("signed pilot events replay exactly, isolate tenant/customer/provenance and
     as(
       owner,
       f.org,
-      "select kxra.team_room_create($1,'PRIVATE',null,'Forbidden','')",
-      [uuid()],
+      "select kxra.team_room_create($1,'Forbidden','','PRIVATE')",
+      [f.project],
     ),
+    /admission/,
   );
   await assert.rejects(
     admin.query(
@@ -791,24 +806,53 @@ test("execution readiness never treats environment keys as hosted worker/provide
   assert.equal(r.provider_acceptance.accepted, false);
   assert.equal(r.fixture_draft_worker.available, false);
 });
-test("pending checkout reserves the five-person boundary before the first provider event; changed billing customer fails closed", async () => {
-  const f = await fixture(),
-    project = uuid();
-  await admin.query(
-    "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'PILOT','Pending checkout seats','TEST','ACTIVE','Review')",
-    [project, f.org],
+test("pending checkout reserves existing seats but cannot admit new work before an accepted event", async () => {
+  const project = uuid();
+  const f = await fixture(false, async (org) => {
+    await admin.query(
+      "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'PILOT','Pending checkout seats','TEST','ACTIVE','Review')",
+      [project, org],
+    );
+    for (let n = 0; n < 3; n++)
+      await as(
+        owner,
+        org,
+        "select * from kxra.create_invitation($1,$2,'contributor',$3,now()+interval '1 day')",
+        [
+          project,
+          `pre-checkout-${n}-${uuid()}@fixture.invalid`,
+          crypto.randomBytes(32).toString("hex"),
+        ],
+      );
+  });
+  assert.equal(
+    (await as(owner, f.org, "select kxra_private.pilot_status() s"))[0].s
+      .entitled,
+    false,
   );
-  for (let n = 0; n < 3; n++)
-    await as(
+  await assert.rejects(
+    as(
+      owner,
+      f.org,
+      "select kxra.team_room_create($1,'Pending denied','','PRIVATE')",
+      [project],
+    ),
+    /admission/,
+  );
+  await assert.rejects(
+    as(
       owner,
       f.org,
       "select * from kxra.create_invitation($1,$2,'contributor',$3,now()+interval '1 day')",
       [
         project,
-        `pre-checkout-${n}-${uuid()}@fixture.invalid`,
+        `pending-denied-${uuid()}@fixture.invalid`,
         crypto.randomBytes(32).toString("hex"),
       ],
-    );
+    ),
+    /admission/,
+  );
+  await recordPilotEvent(event(f), worker);
   const race = await Promise.allSettled(
     [0, 1].map((n) =>
       as(
@@ -817,7 +861,7 @@ test("pending checkout reserves the five-person boundary before the first provid
         "select * from kxra.create_invitation($1,$2,'contributor',$3,now()+interval '1 day')",
         [
           project,
-          `pre-race-${n}-${uuid()}@fixture.invalid`,
+          `accepted-race-${n}-${uuid()}@fixture.invalid`,
           crypto.randomBytes(32).toString("hex"),
         ],
       ),
@@ -825,8 +869,6 @@ test("pending checkout reserves the five-person boundary before the first provid
   );
   assert.equal(race.filter((x) => x.status === "fulfilled").length, 1);
   assert.equal(race.filter((x) => x.status === "rejected").length, 1);
-  const e = event(f);
-  await recordPilotEvent(e, worker);
   assert.equal(
     (await as(owner, f.org, "select kxra_private.pilot_status() s"))[0].s
       .entitled,
@@ -843,7 +885,7 @@ test("pending checkout reserves the five-person boundary before the first provid
   );
   await assert.rejects(
     recordPilotEvent(
-      { ...e, event_id: sid("evt"), hash: "9".repeat(64) },
+      { ...event(f), event_id: sid("evt"), hash: "9".repeat(64) },
       worker,
     ),
     /changed pilot customer/,
@@ -903,4 +945,186 @@ test("stored pilot sessions require the current fresh MFA requester even through
     await db.query("rollback");
     db.release();
   }
+});
+
+test("failed or abandoned checkout and forged success returns cannot grant the pending tenant", async () =>
+  withProvider(async () => {
+    const project = uuid();
+    const f = await fixture(false, async (org) => {
+      await admin.query(
+        "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'FLOW','Pending flow','TEST','ACTIVE','Review')",
+        [project, org],
+      );
+    });
+    await assert.rejects(
+      as(
+        owner,
+        f.org,
+        "select kxra.workspace_pilot_event($1,0,'ACTIVATE')",
+        [uuid()],
+        0,
+        "fixture",
+      ),
+      /Provider pilot/,
+    );
+    const unavailable: StripeTransport = async () =>
+      new Response(
+        JSON.stringify({ error: "Synthetic provider unavailable" }),
+        { status: 503 },
+      );
+    await assert.rejects(
+      createPilotSession(config, f.intent, unavailable),
+      /PROVIDER_UNAVAILABLE/,
+    );
+    const retry = (
+      await as(
+        owner,
+        f.org,
+        "select kxra.request_pilot_stripe($1,'CHECKOUT',false) value",
+        [f.intent.id],
+      )
+    )[0].value.intent;
+    assert.equal(retry.id, f.intent.id);
+    assert.equal(retry.state, "REQUESTED");
+    const m = mock(retry);
+    const session = await createPilotSession(config, retry, m.transport);
+    const values = m.calls.at(-1)!.init!.body as URLSearchParams;
+    assert.equal(
+      values.get("success_url"),
+      "https://pilot.invalid/os/start?pilot=returned",
+    );
+    assert.equal(
+      values.get("cancel_url"),
+      "https://pilot.invalid/os/start?pilot=cancelled",
+    );
+    await recordPilotSession(retry, session, worker);
+    assert.equal(
+      (await as(owner, f.org, "select kxra_private.pilot_status() s"))[0].s
+        .entitled,
+      false,
+    );
+    await assert.rejects(
+      as(
+        owner,
+        f.org,
+        "select kxra.team_room_create($1,'Return URL cannot grant','','PRIVATE')",
+        [project],
+      ),
+      /admission/,
+    );
+    assert.equal(
+      (await as(owner, f.org, "select org_id from kxra.workspace_pilots"))
+        .length,
+      0,
+    );
+  }));
+
+test("signed delayed, duplicate, older and terminal events preserve server-owned access", async () => {
+  const project = uuid();
+  const f = await fixture(false, async (org) => {
+    await admin.query(
+      "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'SIGNED','Signed event flow','TEST','ACTIVE','Review')",
+      [project, org],
+    );
+  });
+  const now = Math.floor(Date.now() / 1000);
+  const payload = (status: string, stamp: number, id = sid("evt")) =>
+    Buffer.from(
+      JSON.stringify({
+        id,
+        type: "customer.subscription.updated",
+        created: stamp,
+        livemode: false,
+        data: {
+          object: {
+            id: f.sub,
+            object: "subscription",
+            livemode: false,
+            customer: f.customer,
+            status,
+            cancel_at_period_end: false,
+            metadata: { kxra_pilot_intent_id: f.intent.id },
+            items: {
+              data: [
+                {
+                  id: sid("si"),
+                  quantity: 1,
+                  current_period_start: now - 60,
+                  current_period_end: now + 86400,
+                  price: {
+                    id: config.monthly_price,
+                    object: "price",
+                    livemode: false,
+                    product: config.monthly_product,
+                    unit_amount: 4900,
+                    currency: "gbp",
+                    billing_scheme: "per_unit",
+                    type: "recurring",
+                    tax_behavior: config.tax_behavior,
+                    recurring: {
+                      interval: "month",
+                      interval_count: 1,
+                      usage_type: "licensed",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      }),
+    );
+  const deliver = (body: Buffer) =>
+    webhook(
+      new Request("https://pilot.invalid/api/webhooks/workspace-pilot", {
+        method: "POST",
+        headers: { "stripe-signature": signFakeBillingWebhook(body, secret) },
+        body: new Uint8Array(body),
+      }),
+    );
+  const access = async () =>
+    (await as(owner, f.org, "select kxra_private.pilot_status() s"))[0].s
+      .entitled;
+  assert.equal(await access(), false);
+  const accepted = payload("active", now);
+  assert.equal((await deliver(accepted)).status, 200);
+  assert.equal(await access(), true);
+  const room = (
+    await as(
+      owner,
+      f.org,
+      "select kxra.team_room_create($1,'Accepted signed-event room','','PRIVATE') id",
+      [project],
+    )
+  )[0].id;
+  assert.ok(room);
+  assert.equal(
+    (
+      await as(owner, f.org, "select id from kxra.team_rooms where id=$1", [
+        room,
+      ])
+    ).length,
+    1,
+  );
+  assert.equal((await deliver(accepted)).status, 200);
+  assert.equal(await access(), true);
+  const older = await deliver(payload("past_due", now - 1));
+  assert.equal((await older.json()).state, "STALE");
+  assert.equal(await access(), true);
+  const tie = await deliver(payload("past_due", now));
+  assert.equal((await tie.json()).state, "RECONCILE_REQUIRED");
+  assert.equal(await access(), false);
+  await deliver(payload("canceled", now + 1));
+  assert.equal(await access(), false);
+  await deliver(payload("active", now + 2));
+  assert.equal(await access(), false);
+  await assert.rejects(
+    as(
+      owner,
+      f.org,
+      "select kxra.team_room_create($1,'Cancelled denied','','PRIVATE')",
+      [project],
+    ),
+    /admission/,
+  );
 });

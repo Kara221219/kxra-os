@@ -1,3 +1,4 @@
+import { WorkspaceStart } from "../../../components/WorkspaceStart";
 import { TeamWorkspace } from "../../../components/TeamWorkspace";
 import { teamKnowledge } from "../../../lib/team-knowledge";
 import { TeamTasks, TeamRuns } from "../../../components/TeamOperations";
@@ -218,6 +219,7 @@ export default async function Workspace({
     status?: string;
     from?: string;
     to?: string;
+    tour?: string;
   }>;
 }) {
   let a: Actor;
@@ -255,7 +257,9 @@ export default async function Workspace({
     writable.some((w) => w.id === p.id),
   );
   try {
-    if (!section && a.role === "owner") {
+    if (section === "start") {
+      content = <WorkspaceStart local={localMode()} />;
+    } else if (!section && a.role === "owner") {
       const dashboard = await ownerDashboard(a);
       content = (
         <>
