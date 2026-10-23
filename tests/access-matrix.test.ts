@@ -1641,6 +1641,7 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "workspace_pilots",
       "workspace_pilot_events",
       "pilot_stripe_config",
+      "pilot_stripe_catalogue_config",
       "pilot_stripe_bindings",
       "pilot_stripe_intents",
       "pilot_stripe_events",
@@ -1791,6 +1792,14 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         actor === "other" ? otherOwner : actors[actor],
         actor === "other" ? otherOrg : org,
       );
+      await db.query("savepoint sandbox_mapping_visibility");
+      await assert.rejects(
+        db.query("select * from kxra.pilot_stripe_catalogue_config"),
+        { code: "42501" },
+        `${actor}:sandbox mapping must remain server-only`,
+      );
+      await db.query("rollback to savepoint sandbox_mapping_visibility");
+      await db.query("release savepoint sandbox_mapping_visibility");
       for (const check of expectations) {
         const actual = (await db.query(check.sql, check.values)).rows
           .map((row) => String(row.key))

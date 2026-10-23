@@ -30,11 +30,12 @@ export async function workspacePilot(a: Actor) {
       await query<{
         request_id: string;
         include_setup: boolean;
+        catalogue_offer_key: string | null;
         expired: boolean;
         state: string;
       }>(
         a,
-        `select i.id request_id,i.include_setup,i.state,
+        `select i.id request_id,i.include_setup,i.state,i.catalogue_offer_key,
       (i.created_at<now()-interval '23 hours' or coalesce(i.expires_at<=now(),false)) expired
      from kxra.pilot_stripe_intents i join kxra.pilot_stripe_bindings b on b.org_id=i.org_id
      where i.org_id=$1 and i.actor_id=$2 and i.kind='CHECKOUT'

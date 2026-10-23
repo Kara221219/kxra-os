@@ -36,7 +36,7 @@ const secret = "whsec_" + crypto.randomBytes(32).toString("hex");
 process.env.KXRA_PILOT_STRIPE_ENABLED = "true";
 process.env.KXRA_PILOT_STRIPE_WEBHOOK_SECRET = secret;
 process.env.KXRA_BILLING_WORKER_DATABASE_URL = `postgresql://${encodeURIComponent(os.userInfo().username)}@localhost:${cfg.port}/${cfg.database}?host=${encodeURIComponent(cfg.host)}`;
-const config: PilotConfig = {
+const config: Extract<PilotConfig, { version: 1 }> = {
   version: 1,
   enabled: true,
   account_id: sid("acct"),
@@ -119,6 +119,11 @@ async function fixture(
     [project, org],
   );
   await beforeCheckout?.(org);
+  // Existing legacy subscription provenance, not a new catalogue conversion.
+  await admin.query(
+    "insert into kxra.pilot_stripe_bindings(org_id,customer_id) values($1,$2)",
+    [org, customer],
+  );
   const rows = await as(
     owner,
     org,
@@ -309,6 +314,25 @@ test("pilot mapping starts absent and requires fresh current tenant owner; fixtu
     503,
   );
   await setup();
+  const unbound = uuid();
+  fixtureOrgs.push(unbound);
+  await admin.query(
+    "insert into kxra.organisations(id,name,slug) values($1,'Unbound legacy rejection',$2)",
+    [unbound, "legacy-deny-" + uuid()],
+  );
+  await admin.query(
+    "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'ORG_ADMIN','CUSTOMER','ACTIVE','Synthetic owner','LEGACY_DENY_TEST')",
+    [unbound, owner],
+  );
+  await assert.rejects(
+    as(
+      owner,
+      unbound,
+      "select kxra.request_pilot_stripe($1,'CHECKOUT',false)",
+      [uuid()],
+    ),
+    /New legacy checkout closed/,
+  );
   const f = await fixture();
   await assert.rejects(
     as(

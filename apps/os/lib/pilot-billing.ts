@@ -9,18 +9,22 @@ import {
   reconcilePilot,
   recordPilotEvent,
   recordPilotSession,
+  catalogueOfferKey,
 } from "../../../packages/integrations/pilot-stripe";
 export async function pilotBilling(a: Actor, kind: string, input: unknown) {
   const v = z
     .object({
       request_id: z.string().uuid(),
       include_setup: z.boolean().optional(),
+      offer_key: catalogueOfferKey.optional(),
     })
     .strict()
     .parse(input);
   if (
     !["CHECKOUT", "PORTAL", "RECONCILE"].includes(kind) ||
-    (kind !== "CHECKOUT" && v.include_setup !== undefined)
+    (kind !== "CHECKOUT" &&
+      (v.include_setup !== undefined || v.offer_key !== undefined)) ||
+    (v.offer_key !== undefined && v.include_setup === true)
   )
     throw new HttpError(400, "Invalid pilot billing request");
   // No fall-through to the legacy checkout, fixture simulation or arbitrary provider.
@@ -36,8 +40,16 @@ export async function pilotBilling(a: Actor, kind: string, input: unknown) {
     const value = (
       await query<{ value: unknown }>(
         a,
-        "select kxra.request_pilot_stripe($1,$2,$3) value",
-        [v.request_id, kind, v.include_setup || false],
+        v.offer_key !== undefined || kind !== "CHECKOUT"
+          ? "select kxra.request_catalogue_stripe($1,$2,$3) value"
+          : "select kxra.request_pilot_stripe($1,$2,$3) value",
+        [
+          v.request_id,
+          kind,
+          v.offer_key !== undefined || kind !== "CHECKOUT"
+            ? (v.offer_key ?? null)
+            : v.include_setup || false,
+        ],
       )
     )[0]?.value;
     return z

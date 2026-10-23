@@ -16,6 +16,7 @@ type Pilot = {
     recovery?: {
       request_id: string;
       include_setup: boolean;
+      catalogue_offer_key?: string | null;
       expired: boolean;
       state: string;
     } | null;
@@ -193,6 +194,7 @@ export function WorkspacePilot({ local }: { local: boolean }) {
                       (data.test_billing.recovery?.request_id || "new")
                     }
                     kind={kind}
+                    plans={data.approved_catalogue}
                     recovery={
                       kind === "checkout" ? data.test_billing.recovery : null
                     }
@@ -233,19 +235,24 @@ function TestBillingRequest({
   kind,
   onSaved,
   recovery,
+  plans,
 }: {
   recovery?: {
     request_id: string;
     include_setup: boolean;
+    catalogue_offer_key?: string | null;
     expired: boolean;
   } | null;
   kind: "checkout" | "portal" | "reconcile";
+  plans: Pilot["approved_catalogue"];
   onSaved: () => void;
 }) {
   const [nonce, setNonce] = useState<string | null>(
       recovery?.request_id ?? null,
     ),
-    [setup, setSetup] = useState(recovery?.include_setup ?? false),
+    [offer, setOffer] = useState(
+      recovery?.catalogue_offer_key ?? plans[0]?.offer_key ?? "",
+    ),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
   return (
@@ -263,7 +270,11 @@ function TestBillingRequest({
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               request_id: id,
-              ...(kind === "checkout" ? { include_setup: setup } : {}),
+              ...(kind === "checkout"
+                ? recovery && !recovery.catalogue_offer_key
+                  ? { include_setup: recovery.include_setup }
+                  : { offer_key: offer }
+                : {}),
             }),
           });
           const result = await r.json();
@@ -298,13 +309,27 @@ function TestBillingRequest({
     >
       {kind === "checkout" && (
         <label>
-          <input
-            type="checkbox"
-            checked={setup}
-            disabled={!!nonce || busy}
-            onChange={(e) => setSetup(e.target.checked)}
-          />{" "}
-          Include optional £199 one-time workflow onboarding in test checkout
+          {recovery && !recovery.catalogue_offer_key ? (
+            "Resume the existing legacy test request without changing its offer."
+          ) : (
+            <>
+              Sandbox workspace plan
+              <select
+                value={offer}
+                disabled={!!nonce || busy}
+                required
+                onChange={(e) => setOffer(e.target.value)}
+              >
+                {plans.map((plan) => (
+                  <option key={plan.offer_key} value={plan.offer_key}>
+                    {plan.name} · £
+                    {(plan.monthly_amount_minor / 100).toFixed(2)}/month ·{" "}
+                    {plan.people} users
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </label>
       )}
       <p>

@@ -20,7 +20,10 @@ test("staging migration manifest is contiguous and hash-bound", () => {
   const manifest = migrationManifest(root);
   assert.equal(manifest.length, expectedStagingDatabase.migrations);
   assert.match(manifest[0].sha256, /^[a-f0-9]{64}$/);
-  assert.equal(manifest.at(-1)?.name, "0097_approved_workspace_catalogue.sql");
+  assert.equal(
+    manifest.at(-1)?.name,
+    "0098_approved_catalogue_sandbox_billing.sql",
+  );
 });
 
 test("staging migrator accepts only the declared Supabase direct or session target", () => {

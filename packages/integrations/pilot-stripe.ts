@@ -6,10 +6,14 @@ import {
 } from "./billing";
 import { billingTransaction } from "./billing-worker";
 import type pg from "pg";
+import {
+  approvedCatalogue,
+  approvedPlan,
+} from "../workspace/approved-catalogue";
 
 const id = (prefix: string) =>
   z.string().regex(new RegExp(`^${prefix}_[A-Za-z0-9]{6,}$`));
-export const pilotConfigSchema = z.object({
+const legacyPilotConfigSchema = z.object({
   version: z.literal(1),
   enabled: z.literal(true),
   account_id: id("acct"),
@@ -21,6 +25,30 @@ export const pilotConfigSchema = z.object({
   tax_behavior: z.enum(["inclusive", "exclusive"]),
   terms_review: z.string().min(10).max(200),
 });
+export const catalogueOfferKey = z.enum([
+  "KXRA_STARTER_V1",
+  "KXRA_TEAM_V1",
+  "KXRA_BUSINESS_V1",
+]);
+export const sandboxPilotConfigSchema = z
+  .object({
+    version: z.literal(2),
+    mode: z.literal("sandbox"),
+    enabled: z.literal(true),
+    offer_key: catalogueOfferKey,
+    mapping_revision: z.number().int().positive(),
+    account_id: id("acct"),
+    monthly_price: id("price"),
+    monthly_product: id("prod"),
+    portal_config: id("bpc"),
+    tax_behavior: z.enum(["inclusive", "exclusive"]),
+    terms_review: z.string().min(10).max(200),
+  })
+  .strict();
+export const pilotConfigSchema = z.discriminatedUnion("version", [
+  legacyPilotConfigSchema,
+  sandboxPilotConfigSchema,
+]);
 export type PilotConfig = z.infer<typeof pilotConfigSchema>;
 export const pilotIntentSchema = z.object({
   id: z.string().uuid(),
@@ -36,6 +64,8 @@ export const pilotIntentSchema = z.object({
   redirect_url: z.string().nullable(),
   expires_at: z.string().nullable(),
   created_at: z.string(),
+  catalogue_offer_key: catalogueOfferKey.nullable().optional(),
+  catalogue_revision: z.number().int().positive().nullable().optional(),
 });
 export type PilotIntent = z.infer<typeof pilotIntentSchema>;
 export type StripeTransport = (
@@ -126,20 +156,37 @@ export async function validatePilotProvider(
 ) {
   pilotConfigSchema.parse(config);
   pilotIntentSchema.parse(intent);
+  if (
+    config.version === 2 &&
+    (intent.catalogue_offer_key !== config.offer_key ||
+      intent.catalogue_revision !== config.mapping_revision ||
+      intent.include_setup)
+  )
+    throw Error("PILOT_CATALOGUE_BINDING_MISMATCH");
+  if (config.version === 1 && intent.catalogue_offer_key)
+    throw Error("PILOT_LEGACY_CONVERSION_PROHIBITED");
   const account = z
     .object({ id: id("acct"), object: z.literal("account") })
     .parse(await request("account", transport));
   if (account.id !== config.account_id) throw Error("PILOT_ACCOUNT_MISMATCH");
   for (const setup of [false, ...(intent.include_setup ? [true] : [])]) {
-    const priceId = setup ? config.setup_price : config.monthly_price;
+    const priceId =
+      setup && config.version === 1 ? config.setup_price : config.monthly_price;
     const price = priceSchema.parse(
       await request(`prices/${priceId}?expand[]=product`, transport),
     );
     if (
       price.id !== priceId ||
       price.product.id !==
-        (setup ? config.setup_product : config.monthly_product) ||
-      price.unit_amount !== (setup ? 19900 : 4900) ||
+        (setup && config.version === 1
+          ? config.setup_product
+          : config.monthly_product) ||
+      price.unit_amount !==
+        (config.version === 2
+          ? approvedPlan(config.offer_key).monthly_amount_minor
+          : setup
+            ? 19900
+            : 4900) ||
       price.tax_behavior !== config.tax_behavior ||
       price.type !== (setup ? "one_time" : "recurring") ||
       (!setup && !price.recurring) ||
@@ -191,12 +238,22 @@ export async function createPilotSession(
     values.set("mode", "subscription");
     values.set("line_items[0][price]", config.monthly_price);
     values.set("line_items[0][quantity]", "1");
-    if (intent.include_setup) {
+    if (intent.include_setup && config.version === 1) {
       values.set("line_items[1][price]", config.setup_price);
       values.set("line_items[1][quantity]", "1");
     }
     values.set("client_reference_id", intent.id);
     values.set("subscription_data[metadata][kxra_pilot_intent_id]", intent.id);
+    if (config.version === 2) {
+      values.set(
+        "subscription_data[metadata][kxra_catalogue_offer]",
+        config.offer_key,
+      );
+      values.set(
+        "subscription_data[metadata][kxra_catalogue_revision]",
+        String(config.mapping_revision),
+      );
+    }
     values.set("success_url", `${origin}/os/start?pilot=returned`);
     values.set("cancel_url", `${origin}/os/start?pilot=cancelled`);
   } else if (intent.kind === "PORTAL") {
@@ -269,7 +326,14 @@ export function normalizePilotEvent(verified: VerifiedBillingWebhook) {
       data: z.object({
         object: z.object({
           livemode: z.literal(false),
-          metadata: z.object({ kxra_pilot_intent_id: z.string().uuid() }),
+          metadata: z.object({
+            kxra_pilot_intent_id: z.string().uuid(),
+            kxra_catalogue_offer: catalogueOfferKey.optional(),
+            kxra_catalogue_revision: z
+              .string()
+              .regex(/^[1-9][0-9]{0,8}$/)
+              .optional(),
+          }),
           items: z.object({
             data: z
               .array(
@@ -279,7 +343,18 @@ export function normalizePilotEvent(verified: VerifiedBillingWebhook) {
                     object: z.literal("price"),
                     livemode: z.literal(false),
                     currency: z.literal("gbp"),
-                    unit_amount: z.literal(4900),
+                    // The database binds exact price/product/amount to the recorded plan.
+                    // 4900 is retained only for pre-existing legacy bindings.
+                    unit_amount: z
+                      .number()
+                      .int()
+                      .refine(
+                        (amount) =>
+                          amount === 4900 ||
+                          approvedCatalogue.some(
+                            (plan) => plan.monthly_amount_minor === amount,
+                          ),
+                      ),
                     billing_scheme: z.literal("per_unit"),
                     type: z.literal("recurring"),
                     tax_behavior: z.enum(["inclusive", "exclusive"]),
@@ -301,6 +376,9 @@ export function normalizePilotEvent(verified: VerifiedBillingWebhook) {
     })
     .parse(verified.payload);
   const p = payload.data.object.items.data[0].price;
+  const metadata = payload.data.object.metadata;
+  if (!!metadata.kxra_catalogue_offer !== !!metadata.kxra_catalogue_revision)
+    throw Error("PILOT_CATALOGUE_METADATA_INVALID");
   if (base.quantity !== 1 || !base.periodStart || !base.periodEnd)
     throw Error("PILOT_SUBSCRIPTION_INVALID");
   if (
@@ -329,6 +407,20 @@ export function normalizePilotEvent(verified: VerifiedBillingWebhook) {
     intent_id: payload.data.object.metadata.kxra_pilot_intent_id,
     hash: base.rawSha256,
     reconcile: false,
+    ...(payload.data.object.metadata.kxra_catalogue_offer
+      ? {
+          catalogue_offer_key:
+            payload.data.object.metadata.kxra_catalogue_offer,
+          catalogue_revision: Number(
+            payload.data.object.metadata.kxra_catalogue_revision,
+          ),
+        }
+      : {}),
+    ...(verified.payload.account !== undefined
+      ? {
+          account: id("acct").parse(verified.payload.account),
+        }
+      : {}),
   };
 }
 export async function reconcilePilot(
