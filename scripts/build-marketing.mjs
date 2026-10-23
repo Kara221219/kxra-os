@@ -2,6 +2,10 @@ import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  applyScriptIntegrity,
+  scriptElements,
+} from "./marketing-script-elements.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const application = path.join(root, "apps", "marketing");
@@ -45,12 +49,10 @@ function inlineHashesByRoute() {
         .replace(/\.html$/, "");
       const route = relative === "index" ? "/" : "/" + relative;
       const hashes = new Set();
-      for (const match of fs
-        .readFileSync(file, "utf8")
-        .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi))
-        if (!/(?:^|\s)src\s*=/i.test(match[1]))
+      for (const script of scriptElements(fs.readFileSync(file, "utf8")))
+        if (!script.attributes.has("src"))
           hashes.add(
-            crypto.createHash("sha256").update(match[2]).digest("base64"),
+            crypto.createHash("sha256").update(script.body).digest("base64"),
           );
       return [route, [...hashes].sort()];
     });
@@ -66,19 +68,7 @@ function applyStaticSri() {
   );
   for (const file of htmlFiles(path.join(output, "server", "app"))) {
     const html = fs.readFileSync(file, "utf8");
-    const secured = html.replace(
-      /<script\b([^>]*\ssrc\s*=\s*["']\/_next\/([^"']+)["'][^>]*)>/gi,
-      (tag, attributes, asset) => {
-        if (/(?:^|\s)integrity\s*=/i.test(attributes)) return tag;
-        // Vercel appends a deployment cache marker to static asset URLs during
-        // hosted builds. SRI manifests are keyed by the immutable asset path.
-        const assetPath = asset.split(/[?#]/, 1)[0];
-        const integrity =
-          manifest[assetPath] || manifest[decodeURIComponent(assetPath)];
-        if (!integrity) throw new Error(`Missing SRI for ${assetPath}`);
-        return `<script${attributes} integrity="${integrity}">`;
-      },
-    );
+    const secured = applyScriptIntegrity(html, manifest);
     fs.writeFileSync(file, secured);
   }
 }

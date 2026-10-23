@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { scriptElements } from "./marketing-script-elements.mjs";
 const build = path.resolve(import.meta.dirname, "../apps/marketing/.next"),
   base = path.join(build, "server", "app");
 function files(dir) {
@@ -55,26 +56,30 @@ for (const file of files(base)) {
       [...policy.matchAll(/'sha256-([^']+)'/g)].map((m) => m[1]),
     ),
     actual = new Set();
-  for (const m of fs
-    .readFileSync(file, "utf8")
-    .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
-    if (/(?:^|\s)src\s*=/i.test(m[1])) {
-      const src = m[1].match(/(?:^|\s)src\s*=\s*["']\/_next\/([^"']+)["']/i),
-        sri = m[1].match(
-          /(?:^|\s)integrity\s*=\s*["'](sha256-[A-Za-z0-9+/]+=*)["']/i,
-        );
-      assert(src && sri, "Missing local script SRI at " + route);
-      const asset = decodeURIComponent(src[1].split(/[?#]/, 1)[0]);
+  for (const script of scriptElements(fs.readFileSync(file, "utf8"))) {
+    if (script.attributes.has("src")) {
+      const src = script.attributes.get("src"),
+        sri = script.attributes.get("integrity");
+      assert(
+        src.startsWith("/_next/") && sri,
+        "Missing local script SRI at " + route,
+      );
+      const asset = decodeURIComponent(
+        src.slice("/_next/".length).split(/[?#]/, 1)[0],
+      );
       const digest =
         "sha256-" +
         crypto
           .createHash("sha256")
           .update(fs.readFileSync(path.join(build, asset)))
           .digest("base64");
-      assert.equal(sri[1], digest, "SRI mismatch at " + route);
+      assert.equal(sri, digest, "SRI mismatch at " + route);
       externalScripts++;
     } else {
-      const digest = crypto.createHash("sha256").update(m[2]).digest("base64");
+      const digest = crypto
+        .createHash("sha256")
+        .update(script.body)
+        .digest("base64");
       actual.add(digest);
       assert(allowed.has(digest), "Missing inline hash for " + route);
     }
