@@ -24,6 +24,7 @@ async function reviewed(
   title: string,
   target: string,
   path?: string,
+  holdProposal = false,
 ) {
   const card = page.getByRole("article", { name: title, exact: true });
   const proposal = card.locator("details").filter({
@@ -35,9 +36,57 @@ async function reviewed(
   await card
     .getByLabel("Human review reason", { exact: true })
     .fill("Synthetic human-reviewed record; no external action");
-  await card
-    .getByRole("button", { name: "Propose reviewed case step", exact: true })
-    .click();
+  const isProposal = (request: import("@playwright/test").Request) =>
+    request.method() === "POST" &&
+    new URL(request.url()).pathname.startsWith("/api/team-space/") &&
+    new URL(request.url()).pathname.endsWith("-propose") &&
+    request.postDataJSON().target_stage === target;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const routePattern = "**/api/team-space/*/*-propose";
+  if (holdProposal)
+    await page.route(routePattern, async (route) => {
+      if (isProposal(route.request())) await gate;
+      await route.continue();
+    });
+  try {
+    if (holdProposal) {
+      const requested = page.waitForRequest(isProposal, { timeout: 5000 });
+      await card
+        .getByRole("button", {
+          name: "Propose reviewed case step",
+          exact: true,
+        })
+        .click();
+      await requested;
+      await expect(
+        card.getByRole("button", { name: "Working…", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("article", { name: "Review " + title, exact: true }),
+      ).toHaveCount(0);
+    }
+    const acknowledged = page.waitForResponse(
+      (response) => isProposal(response.request()),
+      { timeout: 5000 },
+    );
+    if (holdProposal) release();
+    else
+      await card
+        .getByRole("button", {
+          name: "Propose reviewed case step",
+          exact: true,
+        })
+        .click();
+    const response = await acknowledged;
+    expect(response.status()).toBe(201);
+    expect((await response.json()).action_id).toMatch(/^[0-9a-f-]{36}$/i);
+  } finally {
+    release();
+    if (holdProposal) await page.unroute(routePattern);
+  }
   const review = page
     .getByRole("article", { name: "Review " + title, exact: true })
     .first();
@@ -160,7 +209,7 @@ test("private recruiting keeps an application attached to its role and records o
     card.getByRole("link", { name: role, exact: true }),
   ).toBeVisible();
   for (const target of ["REVIEW", "INTERVIEW", "DECISION_RECORDED"])
-    await reviewed(page, candidate, target);
+    await reviewed(page, candidate, target, undefined, target === "REVIEW");
   await page.reload();
   await expect(card).toContainText("Stage DECISION_RECORDED · Revision 4");
   await expect(
