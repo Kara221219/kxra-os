@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import { knowledgeLogin, knowledgeOk } from "../support/team-knowledge";
 import crypto from "node:crypto";
 test("conversation history loads older threads, retries failures and survives refresh", async ({
   page,
@@ -83,119 +84,212 @@ test("conversation history loads older threads, retries failures and survives re
     ),
   ).toBe(true);
 });
-test("workspace browser flow: connect synthetic model, create room, message agent and approve task", async ({
-  page,
-}) => {
+
+async function signInOwner(page: Page) {
   await page.goto("/login");
   await page.getByText("Local fixture identities", { exact: true }).click();
   await page.getByLabel("Synthetic identity").selectOption("owner");
   await page.getByRole("button", { name: "Use fixture" }).click();
   await expect(page).toHaveURL(/\/os/);
-  await page.goto("/os/workspace");
-  await page.getByText(/Model connections \(/).click();
-  const suffix = Date.now().toString();
-  await page.getByLabel("Connection name").fill("Browser model " + suffix);
-  await page
-    .getByRole("button", { name: "Connect model", exact: true })
-    .click();
-  await expect(
-    page.getByText("Browser model " + suffix + " · fixture-draft", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page.getByLabel("Room name").fill("Browser workspace " + suffix);
-  await page
-    .getByLabel("Project", { exact: true })
-    .selectOption("30000000-0000-4000-8000-000000000002");
-  await page
-    .getByLabel("Room guidelines")
-    .fill("Review the evidence before proposing work.");
-  await page.getByRole("button", { name: "Create room", exact: true }).click();
-  await expect(
-    page.getByRole("heading", {
-      name: "Browser workspace " + suffix,
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Agents", exact: true }).click();
-  await page.getByLabel("Name", { exact: true }).fill("Delivery analyst");
-  await page
-    .getByLabel("Model connection", { exact: true })
-    .selectOption({ label: "Browser model " + suffix + " · fixture-draft" });
-  await page
-    .getByLabel("Role and objective")
-    .fill("Identify the main bottleneck and propose a next step.");
-  await page.getByRole("button", { name: "Add agent", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Delivery analyst", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Conversation", exact: true }).click();
-  await page
-    .getByLabel("Message", { exact: true })
-    .fill("Help improve our customer handoff.");
-  await page.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(
-    page
-      .getByText("Help improve our customer handoff.", { exact: true })
-      .first(),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Ask agent", exact: true }).click();
-  await expect(page.locator(".team-agent-output")).toContainText("SUCCEEDED");
-  await expect(page.locator(".team-agent-output")).toContainText(
-    "LOCAL DEMONSTRATION",
+}
+async function roomFixture(page: Page, withAgent: boolean) {
+  const cookie = await knowledgeLogin("owner"),
+    suffix = crypto.randomUUID();
+  const room = await knowledgeOk("", cookie, {
+    project_id: "30000000-0000-4000-8000-000000000002",
+    name: "Browser workspace " + suffix,
+    guidelines: "Review evidence before proposing work.",
+    access: "PRIVATE",
+  });
+  if (withAgent) {
+    const connection = await knowledgeOk("/connections", cookie, {
+      name: "Browser model " + suffix,
+      provider: "FIXTURE",
+      model: "fixture-draft",
+      key: "local-fixture",
+    });
+    await knowledgeOk(`/${room.id}/agents`, cookie, {
+      connection_id: connection.id,
+      name: "Delivery analyst",
+      instructions: "Identify the main bottleneck and propose a next step.",
+    });
+    await knowledgeOk(`/${room.id}/messages`, cookie, {
+      request_id: crypto.randomUUID(),
+      body: "Help improve our customer handoff.",
+    });
+  }
+  await signInOwner(page);
+  await page.goto("/os/workspace/" + room.id);
+  return { suffix, room };
+}
+async function measured<T>(name: string, work: () => Promise<T>) {
+  const start = Date.now();
+  try {
+    return await test.step(name, work);
+  } finally {
+    console.log(
+      `[${test.info().project.name}] ${name}: ${Date.now() - start}ms`,
+    );
+  }
+}
+test("workspace creation, agent conversation and run history persist", async ({
+  page,
+}) => {
+  await measured(
+    "Create connection, room and draft through the UI",
+    async () => {
+      await page.goto("/login");
+      await page.getByText("Local fixture identities", { exact: true }).click();
+      await page.getByLabel("Synthetic identity").selectOption("owner");
+      await page.getByRole("button", { name: "Use fixture" }).click();
+      await expect(page).toHaveURL(/\/os/);
+      await page.goto("/os/workspace");
+      await page.getByText(/Model connections \(/).click();
+      const suffix = crypto.randomUUID();
+      await page.getByLabel("Connection name").fill("Browser model " + suffix);
+      await page
+        .getByRole("button", { name: "Connect model", exact: true })
+        .click();
+      await expect(
+        page.getByText("Browser model " + suffix + " · fixture-draft", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.getByLabel("Room name").fill("Browser workspace " + suffix);
+      await page
+        .getByLabel("Project", { exact: true })
+        .selectOption("30000000-0000-4000-8000-000000000002");
+      await page
+        .getByLabel("Room guidelines")
+        .fill("Review the evidence before proposing work.");
+      await page
+        .getByRole("button", { name: "Create room", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", {
+          name: "Browser workspace " + suffix,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.getByRole("tab", { name: "Agents", exact: true }).click();
+      await page.getByLabel("Name", { exact: true }).fill("Delivery analyst");
+      await page.getByLabel("Model connection", { exact: true }).selectOption({
+        label: "Browser model " + suffix + " · fixture-draft",
+      });
+      await page
+        .getByLabel("Role and objective")
+        .fill("Identify the main bottleneck and propose a next step.");
+      await page
+        .getByRole("button", { name: "Add agent", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Delivery analyst", exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("tab", { name: "Conversation", exact: true })
+        .click();
+      await page
+        .getByLabel("Message", { exact: true })
+        .fill("Help improve our customer handoff.");
+      await page
+        .getByRole("button", { name: "Send message", exact: true })
+        .click();
+      await expect(
+        page
+          .getByText("Help improve our customer handoff.", { exact: true })
+          .first(),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Ask agent", exact: true })
+        .click();
+      await expect(page.locator(".team-agent-output")).toContainText(
+        "SUCCEEDED",
+      );
+      await expect(page.locator(".team-agent-output")).toContainText(
+        "LOCAL DEMONSTRATION",
+      );
+      await page.goto("/os/runs");
+      await expect(
+        page
+          .getByRole("region", { name: "Room agent runs" })
+          .locator("article")
+          .filter({ hasText: "Browser workspace " + suffix }),
+      ).toContainText("SUCCEEDED");
+    },
   );
-  const roomUrl = page.url();
-  await page.getByRole("tab", { name: "Tasks", exact: true }).click();
-  await page
-    .getByLabel("Outcome and responsible person")
-    .fill("Owner: interview one customer " + suffix);
-  await page.getByRole("button", { name: "Propose task", exact: true }).click();
-  await expect(
-    page.getByRole("heading", {
-      name: "Owner: interview one customer " + suffix,
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page.goto("/os/approvals");
-  const approval = page
-    .getByRole("region", { name: "Room task approvals" })
-    .locator("article")
-    .filter({ hasText: "Owner: interview one customer " + suffix });
-  await approval
-    .getByRole("button", { name: "Approve task", exact: true })
-    .click();
-  await expect(approval).toHaveCount(0);
-  await page.goto("/os/tasks");
-  const task = page
-    .getByRole("region", { name: "Room tasks", exact: true })
-    .locator("article")
-    .filter({ hasText: "Owner: interview one customer " + suffix });
-  await expect(task).toContainText("APPROVED");
-  await task.getByRole("button", { name: "Mark task complete" }).click();
-  await expect(task).toContainText("DONE");
-  await page.goto("/os/runs");
-  await expect(
-    page
-      .getByRole("region", { name: "Room agent runs" })
+});
+test("room task proposal, owner approval and completion persist across pages", async ({
+  page,
+}) => {
+  await measured("Review and complete a room task", async () => {
+    const { suffix } = await roomFixture(page, false);
+    const roomUrl = page.url();
+    await page.getByRole("tab", { name: "Tasks", exact: true }).click();
+    await page
+      .getByLabel("Outcome and responsible person")
+      .fill("Owner: interview one customer " + suffix);
+    await page
+      .getByRole("button", { name: "Propose task", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "Owner: interview one customer " + suffix,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.goto("/os/approvals");
+    const approval = page
+      .getByRole("region", { name: "Room task approvals" })
       .locator("article")
-      .filter({ hasText: "Browser workspace " + suffix }),
-  ).toContainText("SUCCEEDED");
-  await page.goto(roomUrl);
-  await page.getByRole("tab", { name: "Tasks", exact: true }).click();
-  await expect(page.getByText("DONE", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "Agents", exact: true }).click();
-  await page.getByRole("button", { name: "Pause agent", exact: true }).click();
-  await expect(page.getByText("Paused", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "Conversation", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Ask agent", exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole("tab", { name: "Agents", exact: true }).click();
-  await page.getByRole("button", { name: "Resume agent", exact: true }).click();
-  await expect(page.getByText("Active", { exact: true })).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1,
-    ),
-  ).toBe(true);
+      .filter({ hasText: "Owner: interview one customer " + suffix });
+    await approval
+      .getByRole("button", { name: "Approve task", exact: true })
+      .click();
+    await expect(approval).toHaveCount(0);
+    await page.goto("/os/tasks");
+    const task = page
+      .getByRole("region", { name: "Room tasks", exact: true })
+      .locator("article")
+      .filter({ hasText: "Owner: interview one customer " + suffix });
+    await expect(task).toContainText("APPROVED");
+    await task.getByRole("button", { name: "Mark task complete" }).click();
+    await expect(task).toContainText("DONE");
+    await page.goto(roomUrl);
+    await page.getByRole("tab", { name: "Tasks", exact: true }).click();
+    await expect(page.getByText("DONE", { exact: true })).toBeVisible();
+  });
+});
+test("paused agents cannot draft and resuming restores their controls", async ({
+  page,
+}) => {
+  await measured(
+    "Pause and resume one independently seeded room agent",
+    async () => {
+      await roomFixture(page, true);
+      await expect(
+        page.getByRole("button", { name: "Ask agent", exact: true }),
+      ).toHaveCount(1);
+      await page.getByRole("tab", { name: "Agents", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Pause agent", exact: true })
+        .click();
+      await expect(page.getByText("Paused", { exact: true })).toBeVisible();
+      await page
+        .getByRole("tab", { name: "Conversation", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Ask agent", exact: true }),
+      ).toHaveCount(0);
+      await page.getByRole("tab", { name: "Agents", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Resume agent", exact: true })
+        .click();
+      await expect(page.getByText("Active", { exact: true })).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBe(true);
+    },
+  );
 });

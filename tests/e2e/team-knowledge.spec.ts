@@ -116,9 +116,51 @@ test("room knowledge and reviewed skill versions produce scoped drafts and revok
   await page.getByRole("tab", { name: "Conversation", exact: true }).click();
   await expect(page.locator(".team-agent-output")).toHaveCount(0);
   await page.getByRole("tab", { name: "Knowledge", exact: true }).click();
-  await page
-    .getByRole("button", { name: `Detach ${f.filename}`, exact: true })
-    .click();
+  // Hold delivery rather than assuming a click means the mutation committed.
+  // This exercises the truthful pending state without an arbitrary sleep.
+  let releaseDetach!: () => void;
+  const detachGate = new Promise<void>((resolve) => {
+    releaseDetach = resolve;
+  });
+  const endpoint = `/api/team-space/${f.room}/files`;
+  await page.route(`**${endpoint}`, async (route) => {
+    if (
+      route.request().method() === "POST" &&
+      route.request().postDataJSON().active === false
+    )
+      await detachGate;
+    await route.continue();
+  });
+  const acknowledged = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === endpoint &&
+      response.request().method() === "POST" &&
+      response.request().postDataJSON().active === false,
+  );
+  const detachStart = Date.now();
+  try {
+    await page
+      .getByRole("button", { name: `Detach ${f.filename}`, exact: true })
+      .click();
+    await expect(
+      fileRegion.getByRole("button", { name: "Working…", exact: true }),
+    ).toBeVisible();
+    await expect(
+      fileRegion.getByRole("link", { name: f.filename + " · v1", exact: true }),
+    ).toBeVisible();
+    expect(
+      (
+        await page.request.get(`/api/team-space/${f.room}/files/${f.version}`)
+      ).status(),
+    ).toBe(200);
+    releaseDetach();
+    expect((await acknowledged).status()).toBe(201);
+  } finally {
+    releaseDetach();
+    console.log(
+      `[${test.info().project.name}] Confirm file detach response: ${Date.now() - detachStart}ms`,
+    );
+  }
   await expect(
     fileRegion.getByText("No eligible files attached.", { exact: true }),
   ).toBeVisible();
