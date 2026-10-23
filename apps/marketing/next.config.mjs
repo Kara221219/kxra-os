@@ -17,7 +17,8 @@ if (
   throw new Error("Invalid marketing route hash map");
 for (const [route, hashes] of Object.entries(routeHashes)) {
   if (
-    !/^\/(?:[a-zA-Z0-9_-]+\/?)*$/.test(route) ||
+    !/^\/[a-zA-Z0-9_/-]*$/.test(route) ||
+    route.includes("//") ||
     !Array.isArray(hashes) ||
     hashes.some((hash) => !/^[A-Za-z0-9+/]{43}=$/.test(hash))
   )

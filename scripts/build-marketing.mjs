@@ -47,8 +47,8 @@ function inlineHashesByRoute() {
       const hashes = new Set();
       for (const match of fs
         .readFileSync(file, "utf8")
-        .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))
-        if (!match[1].includes("src="))
+        .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi))
+        if (!/(?:^|\s)src\s*=/i.test(match[1]))
           hashes.add(
             crypto.createHash("sha256").update(match[2]).digest("base64"),
           );
@@ -67,9 +67,9 @@ function applyStaticSri() {
   for (const file of htmlFiles(path.join(output, "server", "app"))) {
     const html = fs.readFileSync(file, "utf8");
     const secured = html.replace(
-      /<script\b([^>]*\ssrc="\/_next\/([^"]+)"[^>]*)>/g,
+      /<script\b([^>]*\ssrc\s*=\s*["']\/_next\/([^"']+)["'][^>]*)>/gi,
       (tag, attributes, asset) => {
-        if (attributes.includes(" integrity=")) return tag;
+        if (/(?:^|\s)integrity\s*=/i.test(attributes)) return tag;
         // Vercel appends a deployment cache marker to static asset URLs during
         // hosted builds. SRI manifests are keyed by the immutable asset path.
         const assetPath = asset.split(/[?#]/, 1)[0];

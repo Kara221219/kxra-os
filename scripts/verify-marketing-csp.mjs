@@ -57,10 +57,12 @@ for (const file of files(base)) {
     actual = new Set();
   for (const m of fs
     .readFileSync(file, "utf8")
-    .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
-    if (m[1].includes("src=")) {
-      const src = m[1].match(/src="\/_next\/([^\"]+)"/),
-        sri = m[1].match(/integrity="(sha256-[A-Za-z0-9+/]+=*)"/);
+    .matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    if (/(?:^|\s)src\s*=/i.test(m[1])) {
+      const src = m[1].match(/(?:^|\s)src\s*=\s*["']\/_next\/([^"']+)["']/i),
+        sri = m[1].match(
+          /(?:^|\s)integrity\s*=\s*["'](sha256-[A-Za-z0-9+/]+=*)["']/i,
+        );
       assert(src && sri, "Missing local script SRI at " + route);
       const asset = decodeURIComponent(src[1].split(/[?#]/, 1)[0]);
       const digest =
