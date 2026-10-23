@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { WorkspacePreview } from "../components/WorkspacePreview";
 import { PublicForm } from "../components/PublicForm";
+const heroSources = (format: "avif" | "webp") =>
+  [640, 960, 1280, 2055]
+    .map(
+      (width) =>
+        `/media/workspace/kxra-collaborative-cutaway-v1-${width}.${format} ${width}w`,
+    )
+    .join(", ");
+const heroAvif = heroSources("avif");
+const heroWebp = heroSources("webp");
 const faq = [
   [
     "What is KXRA?",
@@ -30,16 +39,21 @@ const faq = [
 export default function Home() {
   return (
     <div className="ref-home">
+      <link
+        rel="preload"
+        as="image"
+        type="image/avif"
+        imageSrcSet={heroAvif}
+        imageSizes="100vw"
+        fetchPriority="high"
+      />
       <section
         className="ref-artwork"
         aria-label="An illustrated shared workplace"
       >
         <picture>
-          <source
-            type="image/webp"
-            srcSet="/media/workspace/kxra-collaborative-cutaway-v1-640.webp 640w, /media/workspace/kxra-collaborative-cutaway-v1-960.webp 960w, /media/workspace/kxra-collaborative-cutaway-v1-1280.webp 1280w, /media/workspace/kxra-collaborative-cutaway-v1-2055.webp 2055w"
-            sizes="100vw"
-          />
+          <source type="image/avif" srcSet={heroAvif} sizes="100vw" />
+          <source type="image/webp" srcSet={heroWebp} sizes="100vw" />
           <img
             src="/media/workspace/kxra-collaborative-cutaway-v1.png"
             alt="Original illustration of people collaborating in a multi-level cutaway workspace beside a river."
