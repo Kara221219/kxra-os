@@ -43,6 +43,7 @@ export default function Home() {
         rel="preload"
         as="image"
         type="image/avif"
+        href="/media/workspace/kxra-collaborative-cutaway-v1-960.avif"
         imageSrcSet={heroAvif}
         imageSizes="100vw"
         fetchPriority="high"
