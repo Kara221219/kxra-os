@@ -48,6 +48,7 @@ import { teamWorkflow, workflowMutation } from "../../../../lib/team-workflow";
 import {
   workspacePilot,
   workspacePilotEvent,
+  workspaceCatalogueSelect,
 } from "../../../../lib/workspace-pilot";
 import { pilotBilling } from "../../../../lib/pilot-billing";
 import {
@@ -169,6 +170,15 @@ async function handle(
     )
       return privateJson(
         await pilotBilling(a, p[2].toUpperCase(), await readJson(req)),
+      );
+    if (
+      method === "POST" &&
+      p.length === 2 &&
+      p[0] === "pilot" &&
+      p[1] === "catalogue"
+    )
+      return privateJson(
+        await workspaceCatalogueSelect(a, await readJson(req)),
       );
     if (method === "GET" && p.length === 1 && p[0] === "pilot")
       return privateJson(await workspacePilot(a));

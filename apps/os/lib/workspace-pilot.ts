@@ -1,3 +1,4 @@
+import { approvedPlan } from "../../../packages/workspace/approved-catalogue";
 import { workspaceExecutionReadiness } from "../../../packages/workspace/execution-readiness";
 import { z } from "zod";
 import { localMode, query } from "../../../packages/db";
@@ -101,6 +102,28 @@ export async function workspacePilotEvent(a: Actor, value: unknown) {
     v.request_id,
     v.version,
     v.action,
+  ]);
+  return workspacePilot(a);
+}
+
+export async function workspaceCatalogueSelect(a: Actor, value: unknown) {
+  if (!localMode() || process.env.VERCEL_ENV)
+    throw new HttpError(
+      503,
+      "Catalogue simulation requires the guarded local fixture runtime",
+    );
+  const v = z
+    .object({ request_id: z.string().uuid(), offer_key: z.string() })
+    .strict()
+    .parse(value);
+  try {
+    approvedPlan(v.offer_key);
+  } catch {
+    throw new HttpError(400, "Approved catalogue plan required");
+  }
+  await query(a, "select kxra.workspace_catalogue_select($1,$2)", [
+    v.request_id,
+    v.offer_key,
   ]);
   return workspacePilot(a);
 }

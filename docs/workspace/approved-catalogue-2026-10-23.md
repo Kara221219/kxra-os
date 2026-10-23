@@ -1,0 +1,35 @@
+# Approved catalogue — local acceptance and provider boundary
+
+23 October 2026. The owner approved separate KXRA Starter **£29 GBP/month/workspace, one user**, Team **£79, up to five users**, and Business **£199, up to 15 users**. This approval does not include AI credit budgets, trial/refund/VAT terms, provider activation or live checkout. Existing FinanceVision products, prices, customer records/subscriptions and banking/legal/tax/security settings must remain unchanged.
+
+## Actual Stripe outcome
+
+The verified Safari account was KXRA Group `acct_1Rv3KdC84VkhhIRz`; its product list contained only FinanceVision.Pro Professional. The first Add product submission for Starter was rejected by automatic approval review **before execution**, citing retained approval-pending evidence. The unsaved form was cancelled; no retry, alternative creation route, product, price, payment link or subscription change occurred. The parent requested fresh explicit confirmation after explaining this rejection. This document is not itself authority to retry a denied write.
+
+## Local implementation
+
+`packages/workspace/approved-catalogue-v1.json` is the versioned price/seat contract. The server validates only its three exact keys; caller-supplied price, seats, tenant or entitlement fields are rejected. Additive `0097_approved_workspace_catalogue.sql` embeds the same catalogue; tests compare the database response with the canonical JSON. No historical migration is edited. This repository's ordered four-digit migration manifest and guarded operator remain authoritative.
+
+The new `/api/team-space/pilot/catalogue` mutation is guarded by the existing explicit local fixture configuration. SQL independently requires the application login, server-owned fixture execution mode, current scoped tenant administration and fresh MFA. An immutable request receipt makes retries idempotent and rejects changed keys/cross-tenant reuse. A shared workspace advisory lock serializes selection with membership/invitation admission. Selection records a **PENDING** fixture plan; it grants no work until an explicit synthetic lifecycle activation. Existing work-admission/cancellation fences are reused.
+
+Seat capacity comes from the recorded immutable offer key/version: 1/5/15 for the approved plans, five for the retained legacy pilot. Existing active people and unique held invitation emails use the same authoritative union/count and lock. Over-cap growth is denied; removing/revoking seats remains possible. No existing pilot or provider-bound workspace can be converted through selection, and the existing identity trigger prevents overwriting its offer. New approved keys are constrained to FIXTURE mode. The legacy Stripe test adapter remains on its old reviewed contract and cannot silently charge a new catalogue price.
+
+The private UI exposes approved prices and the recorded capacity, marks selection/activation as simulation and states that checkout remains disabled. Public marketing and live pricing have not changed. There is no seeded provider price mapping, real provider call, new credential, trial, AI credit balance or automatic overage. The existing test-only provider flag remains off in the application fixture.
+
+## Acceptance evidence
+
+- Seven focused catalogue checks passed: approved exact prices, pending/retry persistence, concurrent seat admission for all tiers, work/cancellation gates, strict input, tenant/MFA/hosted/owner/provider-bound denial and legacy immutability.
+- Fresh compatibility run: **52 PASS / zero failures**, including the seven catalogue checks, legacy Stripe protocol fixtures, self-service, exhaustive RPC/RLS and CRM/legacy-seat regressions. These are synthetic provider contracts, not real Stripe acceptance.
+- Seven schedule API checks passed to establish the existing browser pagination prerequisite.
+- Desktop/mobile browser batch: **12 PASS**, including all three plans per viewport, lost-acknowledgement retry with the original UUID, reload persistence, pending denial, actual local room persistence, cancellation/readable history, responsive layout and existing billing-return/session boundaries.
+- TypeScript and whitespace checks passed; migration/RLS verification reports 97 migrations and 205 protected tables.
+
+Earlier failures are retained under task `release-artifacts/approved-catalogue-20261023/`: the first run exposed missing cleanup of new synthetic memberships; cleanup now revokes only that test's memberships. Repeating stateful Stripe contract tests in the used fixture then correctly failed its empty-mapping prerequisite. The old store was stopped gracefully and retained; a fresh disposable store passed without deleting mappings or weakening guards. The first focused browser run omitted the schedule contract prerequisite used in full CI; after running it, all 12 browsers passed. These diagnoses are not hidden or counted as passes.
+
+All three production builds passed. OS bundle budget: 194.0 KiB gzip against 200 KiB; marketing: 124.0 against 140 KiB. Artifact checks exclude all 21 fixture markers and 12 private/local source classes. The original Git checkout publication/secret scan passes for 725 candidates / six patterns; the archive harness correctly rejected that scan because it has no Git metadata, and that diagnostic remains retained. Built marketing CSP/SRI passes for 93 routes / 795 script references. Exact committed candidate and source hashes are recorded in the task acceptance receipt. This focused local acceptance is not a complete fresh full-CI/CodeQL result or hosted acceptance.
+
+## Recovery and next release gate
+
+The approved narrow recovery helper is separately retained at `release-artifacts/staging-recovery-approved-20261023/`. Its four guard tests and 82-migration synthetic limited restore pass: exactly three consumed synthetic invitation-secret rows omitted, schema restored empty, ordinary data matched and another populated credential column still rejected. No hosted backup has run. The user privately runs `staging_recovery.py plan-exclusion`; a digest-bound metadata review is required before `backup-restore <reviewed-digest>`. No ciphertext, nonce, authentication tag or token fingerprint is read into the metadata proposal. The strict original frozen/pushed baseline-source guard, TLS and Unix-socket-only recovery target remain intact. First 82 migration hashes match preserved candidate 8c97e5c; this does not authorize the newer pending migrations.
+
+A real limited staging recovery PASS is still required, with its exclusions/limitations explicit. Then review exact source/configuration and the latest pending migration range, complete exact-source remote CI/CodeQL, and obtain separately scoped hosted rollout authority. Managed Auth/Storage/provider recovery is outside this application SQL rehearsal. The three staging build holds and their later restoration obligation remain. No private deployment, migration, billing activation or production replacement follows automatically from these tests.

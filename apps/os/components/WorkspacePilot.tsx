@@ -21,6 +21,19 @@ type Pilot = {
     } | null;
     reconciliation_required: boolean;
   };
+  approved_catalogue: {
+    offer_key: string;
+    name: string;
+    monthly_amount_minor: number;
+    people: number;
+  }[];
+  seat_capacity: number;
+  offer: {
+    name?: string;
+    offer_key: string;
+    monthly_amount_minor: number;
+    people: number;
+  };
   seats_reserved: number;
   entitled: boolean;
   assigned: boolean;
@@ -54,7 +67,7 @@ export function WorkspacePilot({ local }: { local: boolean }) {
   const state = data?.subscription?.state;
   const actions = !state
     ? ["ACTIVATE"]
-    : state === "CANCELLED"
+    : state === "CANCELLED" || state === "PENDING"
       ? ["ACTIVATE", "RECONCILE"]
       : state === "PAST_DUE"
         ? ["RECOVER", "CANCEL_NOW", "RECONCILE"]
@@ -77,11 +90,10 @@ export function WorkspacePilot({ local }: { local: boolean }) {
           : "Workspace pilot · test billing"}
       </h2>
       <p>
-        Approved offer direction: £49/month per workspace for five people
-        including the owner. Customers pay their AI provider separately.
-        Optional £199 setup for one workflow and onboarding. VAT,
-        cancellation/refund terms and service details remain unapproved. No
-        annual tier.
+        Approved monthly workspace catalogue: Starter £29 for one user, Team £79
+        for up to five users, Business £199 for up to 15 users. Tax, AI usage,
+        trial/refund and service terms remain unapproved. Existing legacy pilot
+        assignments retain their original offer; no subscription is converted.
       </p>
       <p>
         {local
@@ -100,7 +112,8 @@ export function WorkspacePilot({ local }: { local: boolean }) {
                 : "Unassigned: existing workspace behaviour retained."}
           </p>
           <p>
-            Reserved people/invitations: {data.seats_reserved} / 5.{" "}
+            Reserved people/invitations: {data.seats_reserved} /{" "}
+            {data.seat_capacity}.{" "}
             {data.assigned
               ? data.entitled
                 ? "Pilot work enabled under the current recorded test period."
@@ -108,8 +121,8 @@ export function WorkspacePilot({ local }: { local: boolean }) {
               : data.test_billing.pending_binding
                 ? "New work is disabled while the checkout awaits an accepted subscription."
                 : local
-                  ? "Five-person pilot enforcement starts only after explicit fixture activation."
-                  : "Five-person pilot enforcement starts with an accepted test subscription."}
+                  ? "Recorded plan seat enforcement starts only after explicit fixture activation."
+                  : "Recorded plan seat enforcement starts with an accepted test subscription."}
           </p>
           <p>
             Unapproved capacity proposals: {data.proposed_capacity.rooms.value}{" "}
@@ -117,6 +130,40 @@ export function WorkspacePilot({ local }: { local: boolean }) {
             drafts. Configurable internal proposals, not enforced or published
             entitlements. Existing safety limits continue to apply.
           </p>
+          <p>
+            Recorded offer: {data.offer.name || "Legacy workspace pilot"} · £
+            {(data.offer.monthly_amount_minor / 100).toFixed(2)}
+            /workspace/month. Checkout remains disabled.
+          </p>
+          {local && !data.assigned && !data.test_billing?.pending_binding && (
+            <ActionForm
+              path="/pilot/catalogue"
+              title="Select local simulation plan"
+              onSaved={() => setVersion((n) => n + 1)}
+              build={(d, id) => ({
+                request_id: id,
+                offer_key: d.get("offer_key"),
+              })}
+            >
+              <label>
+                Approved workspace plan
+                <select name="offer_key" required>
+                  {data.approved_catalogue.map((p) => (
+                    <option key={p.offer_key} value={p.offer_key}>
+                      {p.name} · £{(p.monthly_amount_minor / 100).toFixed(2)}
+                      /month · {p.people} users
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p>
+                Selection records a pending local fixture plan and reserves its
+                seat limit. A separate simulated activation is required for
+                work. No checkout, charge, AI credits or provider connection is
+                created.
+              </p>
+            </ActionForm>
+          )}
           {data.test_billing?.pending_binding && (
             <p className="notice">
               {data.test_billing.recovery?.expired

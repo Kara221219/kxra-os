@@ -1,0 +1,50 @@
+[
+  {
+    "offer_key": "KXRA_STARTER_V1",
+    "version": 1,
+    "name": "KXRA Starter",
+    "currency": "GBP",
+    "monthly_amount_minor": 2900,
+    "people": 1,
+    "billing_unit": "WORKSPACE",
+    "interval": "month",
+    "live_charges": false,
+    "checkout_enabled": false,
+    "tax_behavior": "UNSPECIFIED",
+    "ai_credit_budget": null,
+    "trial_terms": null,
+    "refund_terms": null
+  },
+  {
+    "offer_key": "KXRA_TEAM_V1",
+    "version": 1,
+    "name": "KXRA Team",
+    "currency": "GBP",
+    "monthly_amount_minor": 7900,
+    "people": 5,
+    "billing_unit": "WORKSPACE",
+    "interval": "month",
+    "live_charges": false,
+    "checkout_enabled": false,
+    "tax_behavior": "UNSPECIFIED",
+    "ai_credit_budget": null,
+    "trial_terms": null,
+    "refund_terms": null
+  },
+  {
+    "offer_key": "KXRA_BUSINESS_V1",
+    "version": 1,
+    "name": "KXRA Business",
+    "currency": "GBP",
+    "monthly_amount_minor": 19900,
+    "people": 15,
+    "billing_unit": "WORKSPACE",
+    "interval": "month",
+    "live_charges": false,
+    "checkout_enabled": false,
+    "tax_behavior": "UNSPECIFIED",
+    "ai_credit_budget": null,
+    "trial_terms": null,
+    "refund_terms": null
+  }
+]
