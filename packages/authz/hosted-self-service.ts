@@ -1,13 +1,16 @@
 import { z } from "zod";
 
-/** Server configuration only. No request/JWT metadata can enable admission. */
+/** Server configuration only. No request/JWT metadata can enable admission.
+ * Production-only gating keeps this module outside development fixtures. The
+ * compiled local-runtime/guard boundary removes fixture selectors from shipping
+ * artifacts; do not import development selector checks into this module.
+ */
 export function hostedSelfServiceConfiguration(
   environment: Record<string, string | undefined> = process.env,
 ) {
   if (
     environment.KXRA_HOSTED_SELF_SERVICE_ENABLED !== "true" ||
     environment.NODE_ENV !== "production" ||
-    environment.KXRA_AUTH_MODE === "fixture" ||
     !environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   )
     return null;

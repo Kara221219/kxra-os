@@ -37,6 +37,7 @@ test("hosted signup configuration is server-owned, project-bound and disabled by
   assert.equal(
     hostedSelfServiceConfiguration({
       ...environment,
+      NODE_ENV: "development",
       KXRA_AUTH_MODE: "fixture",
     }),
     null,
