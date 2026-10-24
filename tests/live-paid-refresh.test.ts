@@ -8,31 +8,13 @@ import {
 import { readPaidRefreshPreflight } from "../packages/integrations/live-paid-refresh-preflight";
 import { checkoutTermsPresentationDigest } from "../packages/integrations/live-checkout-consent";
 import { modernBillingFixture } from "./support/modern-billing-scope";
-import {
-  modernScopeDigest,
-  type ModernExecutionMode,
-} from "../packages/integrations/modern-billing-scope";
+import { type ModernExecutionMode } from "../packages/integrations/modern-billing-scope";
 const now = 1_800_000_000,
   hash = "a".repeat(64),
   uuid = (d: string) =>
     `${d.repeat(8)}-${d.repeat(4)}-4${d.repeat(3)}-8${d.repeat(3)}-${d.repeat(12)}`;
 function fixture(mode: ModernExecutionMode = "STAGING_SANDBOX") {
   const modern = modernBillingFixture(mode);
-  // Explicit production fixture remains compatible with strict LIVE/project split.
-  if (mode === "LIVE") {
-    modern.execution.execution_scope.project_ref = "lhbgeucifxxcdoyrnesf";
-    const { scope_sha256: _, ...material } = modern.execution.execution_scope;
-    modern.execution.execution_scope.scope_sha256 = modernScopeDigest(
-      material,
-      modern.execution.review_sha256,
-      modern.execution.catalogue,
-    );
-    Object.assign(modern.runtimeIdentity, {
-      environment: "production",
-      project_ref: material.project_ref,
-      supabase_url: `https://${material.project_ref}.supabase.co`,
-    });
-  }
   const scope = modern.execution.execution_scope,
     row = modern.execution.catalogue[0];
   const presentation = {
