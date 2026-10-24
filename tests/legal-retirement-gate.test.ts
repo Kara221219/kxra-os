@@ -71,11 +71,14 @@ async function assertPrivateAccess(
     allowed ? [{ id: project }] : [],
   );
   const status = (
-    await db.query("select allowed,code from kxra.legal_gate_status()")
+    await db.query(
+      "select allowed,code,missing_count from kxra.legal_gate_status()",
+    )
   ).rows[0];
   assert.deepEqual(status, {
     allowed,
     code: allowed ? "ALLOWED" : "AGREEMENT_REQUIRED",
+    missing_count: allowed ? 0 : 1,
   });
 }
 

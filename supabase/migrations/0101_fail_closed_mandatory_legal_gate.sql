@@ -29,4 +29,40 @@ language sql stable security definer set search_path='' as $$
  )
 $$;
 
+-- Keep the existing diagnostic count consistent with the eligibility predicate.
+create or replace function kxra.legal_gate_status()
+returns table(allowed boolean,code text,missing_count integer)
+language sql stable security definer set search_path='' as $$
+ select
+  kxra_private.private_access_allowed(kxra_private.requested_org()),
+  case
+   when not kxra_private.has_active_membership(kxra_private.requested_org()) then 'ACCESS_UNAVAILABLE'
+   when not exists(select 1 from kxra.account_identities where account_id=auth.uid() and state='ACTIVE') then 'ACCOUNT_NOT_ACTIVE'
+   when not kxra_private.legal_requirements_satisfied(kxra_private.requested_org()) then 'AGREEMENT_REQUIRED'
+   else 'ALLOWED'
+  end,
+ (
+  select count(*)::integer from kxra.organisation_memberships m
+  join kxra.legal_document_requirements r on r.org_id=m.org_id
+   and r.state='ACTIVE' and r.mandatory
+   and (r.membership_id is null or r.membership_id=m.id)
+   and (r.relationship_type is null or r.relationship_type=m.relationship_type)
+  where m.account_id=auth.uid() and m.org_id=kxra_private.requested_org() and m.state='ACTIVE'
+   and not exists(
+    select 1 from kxra.legal_documents d
+    join kxra.legal_acceptances a on a.org_id=r.org_id
+     and a.account_id=m.account_id and a.membership_id=m.id
+     and a.requirement_id=r.id and a.document_id=r.document_id
+     and a.document_version=r.document_version
+     and a.document_sha256=r.document_sha256 and a.response='ACCEPTED'
+     and a.acceptance_wording=r.acceptance_wording
+     and a.acceptance_wording_version=r.acceptance_wording_version
+     and a.acceptance_wording_sha256=r.acceptance_wording_sha256
+    where d.org_id=r.org_id and d.id=r.document_id
+     and d.version=r.document_version and d.content_sha256=r.document_sha256
+     and d.status='APPROVED'
+   )
+ )
+$$;
+
 commit;
