@@ -91,7 +91,7 @@ begin
  if to_jsonb(new) ? 'account_id' and to_jsonb(new)->>'account_id' is not null and to_jsonb(new)->>'account_id'<>c.account_id then raise exception 'Provider account scope mismatch';end if;
  if to_jsonb(new) ? 'project_ref' and to_jsonb(new)->>'project_ref' is not null and to_jsonb(new)->>'project_ref'<>c.project_ref then raise exception 'Provider project scope mismatch';end if;
  if to_jsonb(new) ? 'livemode' and (to_jsonb(new)->>'livemode')::boolean is distinct from (c.execution_mode='LIVE') then raise exception 'Provider livemode scope mismatch';end if;
- if tg_table_name='live_billing_mappings' and to_jsonb(new)->>'mode' is distinct from case when c.execution_mode='LIVE' then 'live' else 'staging_sandbox' end then raise exception 'Mapping mode scope mismatch';end if;
+ if tg_table_name='live_billing_mappings' and to_jsonb(new)->>'mode' is distinct from (case when c.execution_mode='LIVE' then 'live' else 'staging_sandbox' end) then raise exception 'Mapping mode scope mismatch';end if;
  if tg_table_name='live_billing_mappings' and not exists(select 1 from kxra_private.modern_billing_scope_catalogue p where p.scope_id=c.scope_id and p.offer_key=to_jsonb(new)->>'offer_key' and p.price_id=to_jsonb(new)->>'price_id' and p.product_id=to_jsonb(new)->>'product_id') then raise exception 'Unreviewed execution catalogue';end if;
  return new;
 end $$;
@@ -425,7 +425,7 @@ begin
  perform kxra_private.live_billing_gate();
  if e is null or jsonb_typeof(e)<>'object' or e-'event_id'-'payload_sha256'-'account_id'-'mode'-'customer_id'-'subscription_id'-'checkout_intent_id'-'offer_key'-'mapping_revision'<>'{}'::jsonb
  or e->>'event_id' is null or e->>'event_id'!~'^evt_[A-Za-z0-9]{6,}$' or e->>'payload_sha256' is null or e->>'payload_sha256'!~'^[a-f0-9]{64}$'
- or e->>'account_id' is distinct from (kxra_private.modern_billing_scope_tag()->>'account_id') or e->>'mode' is distinct from case when kxra_private.modern_billing_scope_tag()->>'execution_mode'='LIVE' then 'live' else 'staging_sandbox' end
+ or e->>'account_id' is distinct from (kxra_private.modern_billing_scope_tag()->>'account_id') or e->>'mode' is distinct from (case when kxra_private.modern_billing_scope_tag()->>'execution_mode'='LIVE' then 'live' else 'staging_sandbox' end)
  or e->>'subscription_id' is null or e->>'subscription_id'!~'^sub_[A-Za-z0-9]{6,}$' then raise exception 'Invalid verified live receipt';end if;
  -- Global receipt lock then event-ID then tenant lock: conflicting cross-tenant IDs cannot deadlock each other. No created-time ordering.
  perform pg_advisory_xact_lock(hashtext('live-receipts'));
