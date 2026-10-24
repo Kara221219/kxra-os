@@ -108,8 +108,8 @@ test("0112 eligibility before LIMIT, checked policy digest and worker-only disco
       [review],
     );
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-    values($1,$2,true,$3,$4,$5,'bpc_syntheticPresentation',$6,$7,$6,'inclusive',false,'card')`,
+      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method,mode)
+    values($1,$2,true,$3,$4,$5,'bpc_syntheticPresentation',$6,$7,$6,'inclusive',false,'card',$8)`,
       [
         row.offer_key,
         revision,
@@ -118,6 +118,7 @@ test("0112 eligibility before LIMIT, checked policy digest and worker-only disco
         row.product_id,
         review,
         termsHash,
+        tag.livemode ? "live" : "staging_sandbox",
       ],
     );
     const customer = `cus_${crypto.randomBytes(12).toString("hex")}`;
@@ -403,7 +404,7 @@ test("0112 simultaneous discovery permits one canonical CUSTOMER claim", async (
     ).rows[0].v;
     owned = { offer_key: row.offer_key, revision };
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method) values($1,$2,true,$3,$4,$5,'bpc_syntheticDispatchRace',$6,$6,$6,'inclusive',false,'card')`,
+      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method,mode) values($1,$2,true,$3,$4,$5,'bpc_syntheticDispatchRace',$6,$6,$6,'inclusive',false,'card',$7)`,
       [
         row.offer_key,
         revision,
@@ -411,6 +412,7 @@ test("0112 simultaneous discovery permits one canonical CUSTOMER claim", async (
         row.price_id,
         row.product_id,
         review,
+        tag.livemode ? "live" : "staging_sandbox",
       ],
     );
     await db.query(
