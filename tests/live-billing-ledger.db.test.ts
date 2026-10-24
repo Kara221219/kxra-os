@@ -151,6 +151,25 @@ test(
         "owner",
         true,
       );
+      // Requirement was added after the canonical request. Retirement is a supported
+      // transition; an ACTIVE requirement must still block claim, not vanish in a join.
+      await db.query("savepoint retired_legal_fixture");
+      const document = crypto.randomUUID(),
+        requirement = crypto.randomUUID(),
+        legalHash = crypto.createHash("sha256").update("Synthetic only").digest("hex");
+      await db.query(`insert into kxra.legal_documents(id,org_id,document_type,audience,version,title,rendered_content,content_sha256,status,effective_at,immutable_object_key,owner_approval_reference,owner_approved_at)
+        values($1,$2,'TERMS','CUSTOMER',1,'Synthetic ledger terms','Synthetic only',$3,'APPROVED',now(),'synthetic/ledger-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())`, [document, org, legalHash]);
+      await db.query(`insert into kxra.legal_document_requirements(id,org_id,document_id,document_version,document_sha256,state,effective_at,acceptance_wording,acceptance_wording_version,acceptance_wording_sha256)
+        values($1,$2,$3,1,$4,'ACTIVE',now(),'Synthetic accept',1,encode(sha256(convert_to('Synthetic accept','UTF8')),'hex'))`, [requirement, org, document, legalHash]);
+      await call("select kxra_private.claim_live_billing_intent($1)", [intent], "worker", true);
+      await db.query("update kxra.legal_documents set status='RETIRED',retired_at=now() where id=$1", [document]);
+      await call("select kxra_private.claim_live_billing_intent($1)", [intent], "worker", true);
+      await call("select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')", [intent], "owner", true);
+      // The composite FK also prevents normally reachable missing/hash-drift records.
+      await call("delete from kxra.legal_documents where id=$1", [document], "admin", true);
+      await call("update kxra.legal_document_requirements set document_sha256=$2 where id=$1", [requirement, "c".repeat(64)], "admin", true);
+      await db.query("rollback to savepoint retired_legal_fixture");
+      await db.query("release savepoint retired_legal_fixture");
       const claim = await call(
         "select kxra_private.claim_live_billing_intent($1) value",
         [intent],
@@ -228,6 +247,10 @@ test(
         ).rows[0].quarantined,
         true,
       );
+      const conflictVersion = (await db.query("select version from kxra_private.live_billing_bindings where org_id=$1", [org])).rows[0].version;
+      assert.equal(await record({ ...receipt, payload_sha256: "b".repeat(64) }), "CONFLICT");
+      assert.equal((await db.query("select version from kxra_private.live_billing_bindings where org_id=$1", [org])).rows[0].version, conflictVersion);
+      assert.equal((await db.query("select count(*)::integer n from kxra_private.live_billing_event_conflicts where event_id=$1", [receipt.event_id])).rows[0].n, 1);
       await call(
         "delete from kxra_private.live_billing_event_receipts where event_id=$1",
         [receipt.event_id],

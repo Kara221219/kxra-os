@@ -118,12 +118,29 @@ begin
   raise exception 'Live billing is disabled';end if;
 end $$;
 
+-- Unlike the legacy shared gate, evaluate EVERY active mandatory requirement first.
+-- A retired/missing/drifted document cannot disappear through an inner APPROVED join.
+create function kxra_private.live_billing_legal_allowed(o uuid,actor uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+ select o is not null and actor is not null and not exists(
+ select 1 from kxra.organisation_memberships m
+ join kxra.legal_document_requirements q on q.org_id=m.org_id and q.state='ACTIVE' and q.mandatory
+ and (q.membership_id is null or q.membership_id=m.id) and (q.relationship_type is null or q.relationship_type=m.relationship_type)
+ where m.org_id=o and m.account_id=actor and m.state='ACTIVE'
+ and not exists(select 1 from kxra.legal_documents d
+ join kxra.legal_acceptances a on a.org_id=q.org_id and a.account_id=m.account_id and a.membership_id=m.id and a.requirement_id=q.id
+ and a.document_id=q.document_id and a.document_version=q.document_version and a.document_sha256=q.document_sha256 and a.response='ACCEPTED'
+ where d.org_id=q.org_id and d.id=q.document_id and d.version=q.document_version and d.content_sha256=q.document_sha256 and d.status='APPROVED')
+ )
+$$;
+
 create function kxra_private.request_live_billing_intent(i uuid,k text,offer text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare o uuid=kxra_private.member_org();b kxra_private.live_billing_bindings;c kxra_private.live_billing_mappings;r kxra_private.live_billing_intents;
 begin
  if session_user<>'kxra_app' or not coalesce(kxra_private.mfa_owner(o),false) then raise insufficient_privilege;end if;
  perform kxra_private.live_billing_gate();
+ if not kxra_private.live_billing_legal_allowed(o,auth.uid()) then raise insufficient_privilege;end if;
  if i is null or k is null or k not in ('CHECKOUT','PORTAL','RECONCILE') then raise exception 'Invalid live intent';end if;
  perform pg_advisory_xact_lock(hashtext('live-billing:'||o::text));
  select * into b from kxra_private.live_billing_bindings where org_id=o for update;
@@ -171,14 +188,7 @@ begin
  and (m.expires_at is null or m.expires_at>now()) and m.security_role in ('KXRA_OWNER','ORG_ADMIN') and a.state='ACTIVE' and a.email_verified_at is not null
  and exists(select 1 from kxra.organisations o where o.id=r.org_id and o.state='ACTIVE'))
  then raise insufficient_privilege;end if;
- if exists(select 1 from kxra.organisation_memberships m
- join kxra.legal_document_requirements q on q.org_id=m.org_id and q.state='ACTIVE' and q.mandatory
- and (q.membership_id is null or q.membership_id=m.id) and (q.relationship_type is null or q.relationship_type=m.relationship_type)
- join kxra.legal_documents d on d.org_id=q.org_id and d.id=q.document_id and d.version=q.document_version and d.content_sha256=q.document_sha256 and d.status='APPROVED'
- where m.org_id=r.org_id and m.account_id=r.actor_id and m.state='ACTIVE'
- and not exists(select 1 from kxra.legal_acceptances a where a.account_id=m.account_id and a.membership_id=m.id and a.requirement_id=q.id
- and a.document_id=q.document_id and a.document_version=q.document_version and a.document_sha256=q.document_sha256 and a.response='ACCEPTED'))
- then raise insufficient_privilege;end if;
+ if not kxra_private.live_billing_legal_allowed(r.org_id,r.actor_id) then raise insufficient_privilege;end if;
  update kxra_private.live_billing_intents set state='INFLIGHT',consumed_at=now() where id=i;
  return jsonb_build_object('intent',jsonb_build_object('id',r.id,'org_id',r.org_id,'actor_id',r.actor_id,'kind',r.kind,'state','REQUESTED',
  'customer_id',r.customer_id,'subscription_id',r.subscription_id,'offer_key',r.offer_key,'mapping_revision',r.mapping_revision,'terms_review_sha256',r.terms_review_sha256,
@@ -208,7 +218,7 @@ end $$;
 
 create function kxra_private.record_live_billing_event(e jsonb) returns text
 language plpgsql security definer set search_path='' as $$
-declare b kxra_private.live_billing_bindings;r kxra_private.live_billing_event_receipts;c kxra_private.live_billing_mappings;
+declare b kxra_private.live_billing_bindings;r kxra_private.live_billing_event_receipts;c kxra_private.live_billing_mappings;new_conflict boolean;
 begin
  perform kxra_private.live_billing_gate();
  if e is null or jsonb_typeof(e)<>'object' or e-'event_id'-'payload_sha256'-'account_id'-'mode'-'customer_id'-'subscription_id'-'checkout_intent_id'-'offer_key'-'mapping_revision'<>'{}'::jsonb
@@ -230,8 +240,10 @@ begin
  select * into r from kxra_private.live_billing_event_receipts where event_id=e->>'event_id';
  if found then
   if r.org_id=b.org_id and r.payload_sha256=e->>'payload_sha256' and r.subscription_id=e->>'subscription_id' then return 'DUPLICATE';end if;
-  insert into kxra_private.live_billing_event_conflicts(event_id,org_id,observed_sha256) values(r.event_id,b.org_id,e->>'payload_sha256') on conflict do nothing;
-  update kxra_private.live_billing_bindings set quarantined=true,reconcile_required=true,version=version+1 where org_id in (b.org_id,r.org_id);
+  insert into kxra_private.live_billing_event_conflicts(event_id,org_id,observed_sha256) values(r.event_id,b.org_id,e->>'payload_sha256') on conflict do nothing returning true into new_conflict;
+  if coalesce(new_conflict,false) then
+   update kxra_private.live_billing_bindings set quarantined=true,reconcile_required=true,version=version+1 where org_id in (b.org_id,r.org_id);
+  end if;
   return 'CONFLICT';
  end if;
  if b.checkout_intent_id is null or not exists(select 1 from kxra_private.live_billing_intents where id=b.checkout_intent_id and org_id=b.org_id and kind='CHECKOUT' and state in ('INFLIGHT','CONSUMED','UNCERTAIN'))
@@ -242,7 +254,7 @@ begin
 end $$;
 
 revoke all on function kxra_private.live_billing_mapping_immutable(),kxra_private.live_billing_binding_immutable(),kxra_private.live_billing_receipt_immutable(),kxra_private.live_billing_gate(),
- kxra_private.request_live_billing_intent(uuid,text,text),kxra_private.claim_live_billing_intent(uuid),
+ kxra_private.live_billing_legal_allowed(uuid,uuid),kxra_private.request_live_billing_intent(uuid,text,text),kxra_private.claim_live_billing_intent(uuid),
  kxra_private.finish_live_billing_intent(uuid,text,text,text),kxra_private.record_live_billing_event(jsonb) from public,anon,authenticated,kxra_billing_worker;
 grant execute on function kxra_private.request_live_billing_intent(uuid,text,text) to authenticated;
 grant execute on function kxra_private.claim_live_billing_intent(uuid),kxra_private.finish_live_billing_intent(uuid,text,text,text),
