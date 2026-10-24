@@ -82,7 +82,6 @@ export function liveWebhookConfiguration(
   if (
     env.KXRA_LIVE_WEBHOOK_ENABLED !== "true" ||
     env.NODE_ENV !== "production" ||
-    env.KXRA_AUTH_MODE === "fixture" ||
     !project ||
     env.KXRA_LIVE_WEBHOOK_PROJECT_REF !== project ||
     env.NEXT_PUBLIC_SUPABASE_URL !== `https://${project}.supabase.co` ||

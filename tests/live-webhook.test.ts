@@ -73,10 +73,17 @@ function request(raw: Buffer, signature: string) {
 test("endpoint configuration is disabled by default and exact live account/project/Basil bound", () => {
   assert.equal(liveWebhookConfiguration({}), null);
   assert.deepEqual(liveWebhookConfiguration(env), endpoint);
+  assert.equal(
+    liveWebhookConfiguration({
+      ...env,
+      NODE_ENV: "development",
+      KXRA_AUTH_MODE: "fixture",
+    }),
+    null,
+  );
   for (const [key, value] of Object.entries({
     KXRA_LIVE_WEBHOOK_ENABLED: "false",
     NODE_ENV: "development",
-    KXRA_AUTH_MODE: "fixture",
     KXRA_LIVE_WEBHOOK_PROJECT_REF: "lhbgeucifxxcdoyrnesf",
     NEXT_PUBLIC_SUPABASE_URL: "https://foreign.supabase.co",
     KXRA_LIVE_WEBHOOK_ACCOUNT_ID: "acct_foreignAccount",
