@@ -2,23 +2,37 @@ import {
   billingTransaction,
   billingWorkerDatabaseConfiguration,
 } from "./billing-worker";
-import { liveWakeupSchema, type LiveWakeup } from "./live-webhook";
+import {
+  liveWakeupSchema,
+  stagingSandboxWakeupSchema,
+  type LiveWakeup,
+  type StagingSandboxWakeup,
+} from "./live-webhook";
 import { requireLiveBillingWorkerIdentity } from "./live-worker-identity";
-
-/** No provider calls. Receipts are accepted only through the existing worker capability. */
-export async function recordLiveWebhookWakeup(input: LiveWakeup) {
-  const event = liveWakeupSchema.parse(input);
+import type { ModernExecutionMode } from "./modern-billing-scope";
+/** Existing genuine LOGIN runner -> SET ROLE worker pair remains mandatory; no new access. */
+async function recordCore(input: unknown, mode: ModernExecutionMode) {
+  const event =
+    mode === "LIVE"
+      ? liveWakeupSchema.parse(input)
+      : stagingSandboxWakeupSchema.parse(input);
   return billingTransaction(
     async (db) => {
-      const identity = (await db.query("select session_user,current_user"))
-        .rows[0];
-      requireLiveBillingWorkerIdentity(identity);
+      requireLiveBillingWorkerIdentity(
+        (await db.query("select session_user,current_user")).rows[0],
+      );
       const result = await db.query(
-        "select kxra_private.record_live_billing_wakeup($1::jsonb) state",
+        `select kxra_private.${mode === "LIVE" ? "" : "staging_sandbox_"}record_live_billing_wakeup($1::jsonb) state`,
         [JSON.stringify(event)],
       );
       return result.rows[0]?.state;
     },
     { ...billingWorkerDatabaseConfiguration(), connectionTimeoutMillis: 3000 },
   );
+}
+export function recordLiveWebhookWakeup(input: LiveWakeup) {
+  return recordCore(input, "LIVE");
+}
+export function recordStagingSandboxWebhookWakeup(input: StagingSandboxWakeup) {
+  return recordCore(input, "STAGING_SANDBOX");
 }

@@ -1,9 +1,16 @@
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import {
+  modernScopeMetadata,
+  type ModernExecutionMode,
+} from "../packages/integrations/modern-billing-scope";
 import assert from "node:assert/strict";
 import { checkoutTermsPresentationDigest } from "../packages/integrations/live-checkout-consent";
 import test from "node:test";
 import { createHmac } from "node:crypto";
 import {
   createLiveCatalogueSession,
+  createStagingSandboxCatalogueSession,
+  verifyStagingSandboxCatalogueEvent,
   reconcileLiveCatalogue,
   verifyLiveCatalogueEvent,
   liveReceiptDecision,
@@ -42,16 +49,22 @@ const plans = [
     15,
   ],
 ] as const;
-function fixture(plan = plans[0] as (typeof plans)[number]) {
+function fixture(
+  plan = plans[0] as (typeof plans)[number],
+  mode: ModernExecutionMode = "LIVE",
+) {
+  const scoped = modernBillingFixture(mode),
+    scope = scoped.execution.execution_scope,
+    row = scoped.execution.catalogue.find((r) => r.offer_key === plan[0])!;
   const mapping = {
     version: 1,
-    mode: "live",
+    mode: scope.livemode ? "live" : "staging_sandbox",
     enabled: true,
-    account_id: "acct_1Rv3KdC84VkhhIRz",
+    account_id: scope.account_id,
     offer_key: plan[0],
     revision: 1,
-    price_id: String(plan[1]),
-    product_id: String(plan[2]),
+    price_id: row.price_id,
+    product_id: row.product_id,
     portal_configuration_id: "bpc_synthetic123",
     activation_review_sha256: hash,
     terms_review_sha256: hash,
@@ -74,9 +87,9 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
     expires_at: now + 1000,
   };
   const price = {
-    id: plan[1],
+    id: row.price_id,
     object: "price",
-    livemode: true,
+    livemode: scope.livemode,
     active: true,
     currency: "gbp",
     unit_amount: Number(plan[3]),
@@ -87,20 +100,21 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
     transform_quantity: null,
     custom_unit_amount: null,
     product: {
-      id: String(plan[2]),
+      id: row.product_id,
       object: "product",
-      livemode: true,
+      livemode: scope.livemode,
       active: true,
     },
   };
   const subscription = {
     id: "sub_synthetic123",
     object: "subscription",
-    livemode: true,
+    livemode: scope.livemode,
     customer: intent.customer_id,
     status: "active",
     cancel_at_period_end: false,
     metadata: {
+      ...modernScopeMetadata(scope),
       kxra_live_intent_id: intentId,
       kxra_catalogue_offer: plan[0],
       kxra_mapping_revision: "1",
@@ -125,22 +139,22 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
   const customer = {
     id: intent.customer_id,
     object: "customer",
-    livemode: true,
+    livemode: scope.livemode,
   };
   const portalConfig = {
     id: mapping.portal_configuration_id,
     object: "billing_portal.configuration",
     active: true,
-    livemode: true,
+    livemode: scope.livemode,
     features: {
       subscription_update: { enabled: false },
       subscription_cancel: { enabled: true },
     },
   };
   const session: Record<string, unknown> = {
-    id: "cs_live_synthetic123",
+    id: scope.livemode ? "cs_live_synthetic123" : "cs_test_synthetic123",
     object: "checkout.session",
-    livemode: true,
+    livemode: scope.livemode,
     customer: intent.customer_id,
     url: "https://checkout.stripe.com/c/pay/synthetic",
     created: now,
@@ -158,6 +172,8 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
     message: `Synthetic reviewed fixture [terms](https://kxra.example/legal/terms?sha256=${hash})`,
   };
   const deps: LiveBillingDependencies = {
+    ...scoped,
+    stillCurrent: async () => true,
     checkoutTerms: {
       ...terms,
       presentation_sha256: checkoutTermsPresentationDigest(terms),
@@ -165,11 +181,13 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
     runtime: {
       enabled: true,
       nodeEnv: "production",
-      secretKey: "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000",
+      secretKey: scope.livemode
+        ? "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000"
+        : "sk_test_SYNTHETIC_NOT_A_CREDENTIAL_000000",
       origin: "https://kxra.example",
     },
     nowSeconds: () => now,
-    resolveIntent: async () => ({ intent, mapping }),
+    resolveIntent: async () => ({ intent, mapping, execution_scope: scope }),
     transport: async (url, init) => {
       calls.push({ url, init });
       let result: unknown;
@@ -190,6 +208,7 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
       terms_of_service_acceptance: { message: deps.checkoutTerms!.message },
     },
     metadata: {
+      ...modernScopeMetadata(scope),
       kxra_live_intent_id: intentId,
       kxra_catalogue_offer: mapping.offer_key,
       kxra_mapping_revision: String(mapping.revision),
@@ -209,14 +228,15 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
       api_version: LIVE_STRIPE_API_VERSION,
       created: now - 10,
       type: "customer.subscription.updated",
-      livemode: true,
+      livemode: scope.livemode,
       data: { object: subscription },
       ...overrides,
     };
   }
   const endpoint = {
+    ...scoped,
     enabled: true,
-    mode: "live",
+    mode: scope.livemode ? "live" : "staging_sandbox",
     account_id: mapping.account_id,
     api_version: LIVE_STRIPE_API_VERSION,
     signing_secret: "SYNTHETIC_ENDPOINT_SECRET_NOT_REAL_00000",
@@ -227,6 +247,7 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
     return { raw, signature };
   }
   return {
+    mode,
     mapping,
     intent,
     price,
@@ -247,7 +268,9 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
 }
 const input = { intent_id: intentId };
 const run = (f: ReturnType<typeof fixture>, data: unknown = input) =>
-  createLiveCatalogueSession(f.deps, data, principal);
+  (f.mode === "LIVE"
+    ? createLiveCatalogueSession
+    : createStagingSandboxCatalogueSession)(f.deps, data, principal);
 
 for (const plan of plans)
   test(`${plan[0]}: canonical monthly workspace checkout, no access granted`, async () => {
@@ -652,5 +675,48 @@ test("live checkout cannot redirect without reviewed terms configuration and pro
   });
   await assert.rejects(run(g), {
     message: "LIVE_BILLING_SESSION_CONSENT_INVALID",
+  });
+});
+
+for (const plan of plans)
+  test(`${plan[0]} modern sandbox session uses same core with false provider mode`, async () => {
+    const f = fixture(plan, "STAGING_SANDBOX");
+    const r = await run(f);
+    assert.equal(r.execution_scope.livemode, false);
+    assert.ok(r.id.startsWith("cs_test_"));
+    const signed = f.signed();
+    const event = verifyStagingSandboxCatalogueEvent(
+      signed.raw,
+      signed.signature,
+      f.endpoint,
+      f.mapping,
+      f.binding,
+      now,
+    );
+    assert.equal(event.execution_scope.execution_mode, "STAGING_SANDBOX");
+    await assert.rejects(createLiveCatalogueSession(f.deps, input, principal));
+    assert.throws(() =>
+      verifyLiveCatalogueEvent(
+        signed.raw,
+        signed.signature,
+        f.endpoint,
+        f.mapping,
+        f.binding,
+        now,
+      ),
+    );
+  });
+test("session authority loss before POST and after response is fenced", async () => {
+  const f = fixture();
+  f.deps.stillCurrent = async () => false;
+  await assert.rejects(run(f), {
+    message: "LIVE_BILLING_INTENT_CHANGED_BEFORE_POST",
+  });
+  assert.ok(f.calls.every((c) => c.init.method === "GET"));
+  let checks = 0;
+  const g = fixture();
+  g.deps.stillCurrent = async () => ++checks === 1;
+  await assert.rejects(run(g), {
+    message: "LIVE_BILLING_INTENT_CHANGED_AFTER_POST",
   });
 });

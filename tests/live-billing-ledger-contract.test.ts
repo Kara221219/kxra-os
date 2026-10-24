@@ -1,3 +1,4 @@
+import { modernBillingFixture } from "./support/modern-billing-scope";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -14,6 +15,7 @@ const receipt = {
   payload_sha256: "a".repeat(64),
   account_id: "acct_1Rv3KdC84VkhhIRz",
   mode: "live",
+  execution_scope: modernBillingFixture().execution.execution_scope,
   customer_id: "cus_synthetic123",
   subscription_id: "sub_synthetic123",
   checkout_intent_id: intent,

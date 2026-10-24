@@ -1,3 +1,14 @@
+import {
+  bindModernExecution,
+  modernExecution,
+  assertModernScopeTag,
+  assertModernProviderMode,
+  modernCatalogueRow,
+  modernScopeMetadata,
+  type ModernExecutionDependencies,
+  type ModernExecutionMode,
+  type ModernBillingConfiguration,
+} from "./modern-billing-scope";
 import crypto from "node:crypto";
 import {
   validateCheckoutTermsPresentation,
@@ -25,9 +36,9 @@ const catalogueIds = {
 const mappingSchema = z
   .object({
     version: z.literal(1),
-    mode: z.literal("live"),
+    mode: z.enum(["live", "staging_sandbox"]),
     enabled: z.literal(true),
-    account_id: z.literal(account),
+    account_id: id("acct"),
     offer_key: offer,
     revision: z.number().int().positive(),
     price_id: id("price"),
@@ -41,13 +52,7 @@ const mappingSchema = z
     automatic_tax: z.boolean(),
     payment_method: z.literal("card"),
   })
-  .strict()
-  .refine(
-    (m) =>
-      m.price_id === catalogueIds[m.offer_key][0] &&
-      m.product_id === catalogueIds[m.offer_key][1],
-    "APPROVED_CATALOGUE_IDS_REQUIRED",
-  );
+  .strict();
 export type LiveCatalogueMapping = z.infer<typeof mappingSchema>;
 const principalSchema = z
   .object({ actor_id: z.uuid(), org_id: z.uuid() })
@@ -74,7 +79,7 @@ export type LiveBillingTransport = (
   url: string,
   init: RequestInit,
 ) => Promise<Response>;
-export type LiveBillingDependencies = {
+export type LiveBillingDependencies = ModernExecutionDependencies & {
   checkoutTerms?: CheckoutTermsPresentation;
   // Must come from private server runtime, independently of HTTP input. Missing means disabled.
   runtime?: {
@@ -91,19 +96,37 @@ export type LiveBillingDependencies = {
   ) => Promise<{
     intent: unknown;
     mapping: unknown;
+    execution_scope?: unknown;
   } | null>;
+  stillCurrent: (
+    intent: Readonly<LiveBillingIntent>,
+    mapping: Readonly<LiveCatalogueMapping>,
+  ) => Promise<boolean>;
   nowSeconds?: () => number;
 };
 function fail(code: string): never {
   throw new Error(`LIVE_BILLING_${code}`);
 }
-function parseMapping(input: unknown) {
-  return mappingSchema.parse(input);
+function parseMapping(
+  input: unknown,
+  execution: Readonly<ModernBillingConfiguration>,
+) {
+  const m = mappingSchema.parse(input),
+    scope = execution.execution_scope,
+    row = modernCatalogueRow(execution, m.offer_key);
+  if (
+    m.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
+    m.account_id !== scope.account_id ||
+    m.price_id !== row.price_id ||
+    m.product_id !== row.product_id
+  )
+    fail("MAPPING_SCOPE_MISMATCH");
+  return m;
 }
 function runtime(deps: LiveBillingDependencies) {
   const r = deps.runtime;
   if (!r?.enabled || r.nodeEnv !== "production") fail("DISABLED");
-  if (!/^(sk|rk)_live_[A-Za-z0-9_]{20,}$/.test(r.secretKey))
+  if (!/^(sk|rk)_(live|test)_[A-Za-z0-9_]{20,}$/.test(r.secretKey))
     fail("LIVE_KEY_REQUIRED");
   let origin: URL;
   try {
@@ -177,7 +200,9 @@ async function request(
     reader.releaseLock();
   }
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+    assertModernProviderMode(raw, modernExecution(deps).execution_scope);
+    return raw;
   } catch {
     fail("PROVIDER_JSON");
   }
@@ -185,7 +210,7 @@ async function request(
 const priceSchema = z.object({
   id: id("price"),
   object: z.literal("price"),
-  livemode: z.literal(true),
+  livemode: z.boolean(),
   active: z.literal(true),
   currency: z.literal("gbp"),
   unit_amount: z.number().int(),
@@ -204,7 +229,7 @@ const priceSchema = z.object({
     z.object({
       id: id("prod"),
       object: z.literal("product"),
-      livemode: z.literal(true),
+      livemode: z.boolean(),
       active: z.literal(true),
     }),
   ]),
@@ -234,7 +259,7 @@ async function providerBinding(
 ) {
   const a = z
     .object({
-      id: z.literal(account),
+      id: id("acct"),
       object: z.literal("account"),
       charges_enabled: z.literal(true),
     })
@@ -249,7 +274,7 @@ async function providerBinding(
     .object({
       id: id("cus"),
       object: z.literal("customer"),
-      livemode: z.literal(true),
+      livemode: z.boolean(),
       deleted: z.literal(false).optional(),
     })
     .parse(await request(deps, `customers/${intent.customer_id}`));
@@ -266,7 +291,11 @@ async function canonical(
   const resolved = await deps.resolveIntent(intent_id, principal);
   if (!resolved) fail("INTENT_NOT_AUTHORIZED");
   const intent = intentSchema.parse(resolved.intent);
-  const mapping = parseMapping(resolved.mapping);
+  assertModernScopeTag(
+    resolved.execution_scope,
+    modernExecution(deps).execution_scope,
+  );
+  const mapping = parseMapping(resolved.mapping, modernExecution(deps));
   const now = (deps.nowSeconds || (() => Math.floor(Date.now() / 1000)))();
   if (
     intent.id !== intent_id ||
@@ -289,11 +318,14 @@ async function canonical(
   return { intent, mapping, now };
 }
 
-export async function createLiveCatalogueSession(
+async function createCatalogueSessionCore(
   deps: LiveBillingDependencies,
   input: unknown,
   principal: LiveBillingPrincipal,
+  expectedMode: ModernExecutionMode,
 ) {
+  deps = bindModernExecution(deps, deps.runtime?.secretKey || "", expectedMode);
+  const scope = modernExecution(deps).execution_scope;
   const { intent, mapping, now } = await canonical(deps, input, principal);
   if (intent.kind === "RECONCILE") fail("SESSION_KIND");
   if (intent.kind === "CHECKOUT" && intent.subscription_id)
@@ -328,6 +360,7 @@ export async function createLiveCatalogueSession(
     body.set("success_url", `${r.origin}/os/start?billing=returned`);
     body.set("cancel_url", `${r.origin}/os/start?billing=cancelled`);
     for (const [k, v] of Object.entries({
+      ...modernScopeMetadata(scope),
       kxra_live_intent_id: intent.id,
       kxra_catalogue_offer: mapping.offer_key,
       kxra_mapping_revision: String(mapping.revision),
@@ -343,7 +376,7 @@ export async function createLiveCatalogueSession(
         id: id("bpc"),
         object: z.literal("billing_portal.configuration"),
         active: z.literal(true),
-        livemode: z.literal(true),
+        livemode: z.boolean(),
         features: z.object({
           subscription_update: z.object({ enabled: z.literal(false) }),
           subscription_cancel: z.object({ enabled: z.literal(true) }),
@@ -360,16 +393,25 @@ export async function createLiveCatalogueSession(
     body.set("configuration", mapping.portal_configuration_id);
     body.set("return_url", `${r.origin}/os/start?billing=returned`);
   }
+  if (!(await deps.stillCurrent(intent, mapping)))
+    fail("INTENT_CHANGED_BEFORE_POST");
   // Retry only the same durable canonical intent within its lifetime. No automatic retries.
   const nonce = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ intent, mapping, body: body.toString() }))
+    .update(
+      JSON.stringify({
+        execution_scope: scope,
+        intent,
+        mapping,
+        body: body.toString(),
+      }),
+    )
     .digest("hex");
   const session = z
     .object({
       id: z.string(),
       object: z.string(),
-      livemode: z.literal(true),
+      livemode: z.boolean(),
       customer: id("cus"),
       url: z.string().url(),
       created: z.number().int(),
@@ -413,7 +455,11 @@ export async function createLiveCatalogueSession(
     fail("SESSION_INVALID");
   if (
     checkout
-      ? !/^cs_live_[A-Za-z0-9_]{6,}$/.test(session.id) ||
+      ? !(
+          scope.livemode
+            ? /^cs_live_[A-Za-z0-9_]{6,}$/
+            : /^cs_test_[A-Za-z0-9_]{6,}$/
+        ).test(session.id) ||
         session.object !== "checkout.session" ||
         session.mode !== "subscription" ||
         session.status !== "open" ||
@@ -436,7 +482,10 @@ export async function createLiveCatalogueSession(
         terms!.presentation_sha256)
   )
     fail("SESSION_CONSENT_INVALID");
+  if (!(await deps.stillCurrent(intent, mapping)))
+    fail("INTENT_CHANGED_AFTER_POST");
   return {
+    execution_scope: scope,
     id: session.id,
     url: session.url,
     expires_at: expiry,
@@ -449,7 +498,7 @@ export async function createLiveCatalogueSession(
 const subscriptionSchema = z.object({
   id: id("sub"),
   object: z.literal("subscription"),
-  livemode: z.literal(true),
+  livemode: z.boolean(),
   customer: id("cus"),
   status: z.enum([
     "incomplete",
@@ -466,6 +515,10 @@ const subscriptionSchema = z.object({
     kxra_live_intent_id: z.uuid(),
     kxra_catalogue_offer: offer,
     kxra_mapping_revision: z.string().regex(/^[1-9][0-9]*$/),
+    kxra_execution_scope: z.uuid(),
+    kxra_execution_mode: z.enum(["LIVE", "STAGING_SANDBOX"]),
+    kxra_execution_sha256: digest,
+    kxra_execution_project: z.string(),
   }),
   items: z.object({
     data: z
@@ -485,6 +538,7 @@ function subscriptionSnapshot(
   input: unknown,
   mapping: LiveCatalogueMapping,
   binding: LiveSubscriptionBinding,
+  scope: ReturnType<typeof modernExecution>["execution_scope"],
 ) {
   const s = subscriptionSchema.parse(input);
   const item = s.items.data[0];
@@ -495,6 +549,9 @@ function subscriptionSnapshot(
     s.metadata.kxra_live_intent_id !== binding.checkout_intent_id ||
     s.metadata.kxra_catalogue_offer !== mapping.offer_key ||
     s.metadata.kxra_mapping_revision !== String(mapping.revision) ||
+    !Object.entries(modernScopeMetadata(scope)).every(([k, v]) =>
+      Object.entries(s.metadata).some(([a, b]) => a === k && b === v),
+    ) ||
     item.current_period_end <= item.current_period_start
   )
     fail("SUBSCRIPTION_BINDING_MISMATCH");
@@ -524,7 +581,7 @@ export type LiveSubscriptionBinding = z.infer<typeof bindingSchema>;
  * The signing secret must be server-bound to this exact account/mode/version endpoint.
  * Parent must atomically insert event-ID+hash receipts and enqueue reconciliation under RLS.
  */
-export function verifyLiveCatalogueEvent(
+function verifyCatalogueEventCore(
   raw: Buffer,
   signature: string,
   endpoint: {
@@ -533,19 +590,23 @@ export function verifyLiveCatalogueEvent(
     mode: string;
     api_version: string;
     signing_secret: string;
-  },
+  } & ModernExecutionDependencies,
   mappingInput: unknown,
   bindingInput: LiveSubscriptionBinding,
   nowSeconds: number,
+  expectedMode: ModernExecutionMode,
 ) {
+  endpoint = bindModernExecution(endpoint, undefined, expectedMode);
+  const execution = modernExecution(endpoint),
+    scope = execution.execution_scope;
   if (
     !endpoint.enabled ||
-    endpoint.account_id !== account ||
-    endpoint.mode !== "live" ||
+    endpoint.account_id !== scope.account_id ||
+    endpoint.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
     endpoint.api_version !== LIVE_STRIPE_API_VERSION
   )
     fail("ENDPOINT_DISABLED_OR_MISMATCH");
-  const mapping = parseMapping(mappingInput);
+  const mapping = parseMapping(mappingInput, execution);
   const binding = bindingSchema.parse(bindingInput);
   const verified = verifyBillingWebhook(
     raw,
@@ -553,6 +614,7 @@ export function verifyLiveCatalogueEvent(
     endpoint.signing_secret,
     nowSeconds,
   );
+  assertModernProviderMode(verified.payload, scope);
   const event = z
     .object({
       id: id("evt"),
@@ -566,8 +628,8 @@ export function verifyLiveCatalogueEvent(
         "customer.subscription.resumed",
       ]),
       created: z.number().int().positive(),
-      livemode: z.literal(true),
-      account: z.literal(account).optional(),
+      livemode: z.boolean(),
+      account: z.literal(scope.account_id).optional(),
       data: z.object({ object: subscriptionSchema }),
     })
     .parse(verified.payload);
@@ -578,12 +640,13 @@ export function verifyLiveCatalogueEvent(
   )
     fail("EVENT_STATUS_MISMATCH");
   return {
+    execution_scope: scope,
     event_id: verified.id,
     raw_sha256: verified.rawSha256,
     event_created: event.created,
     account_id: mapping.account_id,
     requires_reconciliation: true as const,
-    snapshot: subscriptionSnapshot(event.data.object, mapping, binding),
+    snapshot: subscriptionSnapshot(event.data.object, mapping, binding, scope),
   };
 }
 
@@ -609,12 +672,14 @@ export function liveReceiptDecision(
 /** Current provider read for a separately authorized reconciliation intent. Caller must recheck
  * the DB row version/tenant binding after the read; this is not a paid invoice/entitlement proof.
  */
-export async function reconcileLiveCatalogue(
+async function reconcileCatalogueCore(
   deps: LiveBillingDependencies,
   input: unknown,
   principal: LiveBillingPrincipal,
   bindingInput: LiveSubscriptionBinding,
+  expectedMode: ModernExecutionMode,
 ) {
+  deps = bindModernExecution(deps, deps.runtime?.secretKey || "", expectedMode);
   const { intent, mapping } = await canonical(deps, input, principal);
   const binding = bindingSchema.parse(bindingInput);
   if (
@@ -625,9 +690,86 @@ export async function reconcileLiveCatalogue(
   )
     fail("RECONCILE_BINDING_MISMATCH");
   await providerBinding(deps, mapping, intent);
-  return subscriptionSnapshot(
-    await request(deps, `subscriptions/${intent.subscription_id}`),
+  return {
+    execution_scope: modernExecution(deps).execution_scope,
+    ...subscriptionSnapshot(
+      await request(deps, `subscriptions/${intent.subscription_id}`),
+      mapping,
+      binding,
+      modernExecution(deps).execution_scope,
+    ),
+  };
+}
+
+export function createLiveCatalogueSession(
+  deps: LiveBillingDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return createCatalogueSessionCore(deps, input, principal, "LIVE");
+}
+export function createStagingSandboxCatalogueSession(
+  deps: LiveBillingDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return createCatalogueSessionCore(deps, input, principal, "STAGING_SANDBOX");
+}
+export function verifyLiveCatalogueEvent(
+  raw: Buffer,
+  signature: string,
+  endpoint: Parameters<typeof verifyCatalogueEventCore>[2],
+  mapping: unknown,
+  binding: LiveSubscriptionBinding,
+  now: number,
+) {
+  return verifyCatalogueEventCore(
+    raw,
+    signature,
+    endpoint,
     mapping,
     binding,
+    now,
+    "LIVE",
+  );
+}
+export function verifyStagingSandboxCatalogueEvent(
+  raw: Buffer,
+  signature: string,
+  endpoint: Parameters<typeof verifyCatalogueEventCore>[2],
+  mapping: unknown,
+  binding: LiveSubscriptionBinding,
+  now: number,
+) {
+  return verifyCatalogueEventCore(
+    raw,
+    signature,
+    endpoint,
+    mapping,
+    binding,
+    now,
+    "STAGING_SANDBOX",
+  );
+}
+export function reconcileLiveCatalogue(
+  deps: LiveBillingDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+  binding: LiveSubscriptionBinding,
+) {
+  return reconcileCatalogueCore(deps, input, principal, binding, "LIVE");
+}
+export function reconcileStagingSandboxCatalogue(
+  deps: LiveBillingDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+  binding: LiveSubscriptionBinding,
+) {
+  return reconcileCatalogueCore(
+    deps,
+    input,
+    principal,
+    binding,
+    "STAGING_SANDBOX",
   );
 }

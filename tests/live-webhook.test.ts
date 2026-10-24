@@ -3,6 +3,9 @@ import crypto from "node:crypto";
 import test from "node:test";
 import {
   createLiveWebhookHandler,
+  createStagingSandboxWebhookHandler,
+  stagingSandboxWebhookConfiguration,
+  normalizeStagingSandboxWebhook,
   liveWebhookConfiguration,
   normalizeLiveWebhook,
   LIVE_WEBHOOK_TYPES,
@@ -10,16 +13,20 @@ import {
   LIVE_WEBHOOK_ACCOUNT,
   type LiveWakeup,
 } from "../packages/integrations/live-webhook";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+const scoped = modernBillingFixture();
 const now = 1_790_000_000;
 const secret = "whsec_" + "synthetic".repeat(8);
 const endpoint = {
-  project: "jlebgsxcvhvpueuibekd" as const,
-  origin: "https://staging.example.test",
+  ...scoped,
+  project: "lhbgeucifxxcdoyrnesf" as const,
+  origin: "https://production.example.test",
   secret,
+  account_id: LIVE_WEBHOOK_ACCOUNT,
 };
 const env = {
   NODE_ENV: "production",
-  KXRA_ENVIRONMENT: "staging",
+  KXRA_ENVIRONMENT: "production",
   KXRA_LIVE_WEBHOOK_ENABLED: "true",
   KXRA_LIVE_WEBHOOK_PROJECT_REF: endpoint.project,
   NEXT_PUBLIC_SUPABASE_URL: `https://${endpoint.project}.supabase.co`,
@@ -72,19 +79,18 @@ function request(raw: Buffer, signature: string) {
 
 test("endpoint configuration is disabled by default and exact live account/project/Basil bound", () => {
   assert.equal(liveWebhookConfiguration({}), null);
-  assert.deepEqual(liveWebhookConfiguration(env), endpoint);
+  assert.deepEqual(liveWebhookConfiguration(env, scoped.execution), endpoint);
   assert.equal(
-    liveWebhookConfiguration({
-      ...env,
-      NODE_ENV: "development",
-      KXRA_AUTH_MODE: "fixture",
-    }),
+    liveWebhookConfiguration(
+      { ...env, NODE_ENV: "development", KXRA_AUTH_MODE: "fixture" },
+      scoped.execution,
+    ),
     null,
   );
   for (const [key, value] of Object.entries({
     KXRA_LIVE_WEBHOOK_ENABLED: "false",
     NODE_ENV: "development",
-    KXRA_LIVE_WEBHOOK_PROJECT_REF: "lhbgeucifxxcdoyrnesf",
+    KXRA_LIVE_WEBHOOK_PROJECT_REF: "jlebgsxcvhvpueuibekd",
     NEXT_PUBLIC_SUPABASE_URL: "https://foreign.supabase.co",
     KXRA_LIVE_WEBHOOK_ACCOUNT_ID: "acct_foreignAccount",
     KXRA_LIVE_WEBHOOK_MODE: "test",
@@ -105,6 +111,7 @@ test("signed live payload stores only safe identifiers/hash, never body authorit
       "api_version",
       "customer_id",
       "event_id",
+      "execution_scope",
       "event_type",
       "invoice_id",
       "livemode",
@@ -257,4 +264,83 @@ test("raw size/deadline gates run before signature parsing or persistence and ca
   const declared = request(Buffer.from("{}"), "invalid");
   declared.headers.set("content-length", "1000001");
   assert.equal((await handler(declared)).status, 400);
+});
+
+test("modern sandbox verifies original false mode through the same webhook engine; production rejects it", async () => {
+  const f = modernBillingFixture("STAGING_SANDBOX");
+  const ep = {
+    ...f,
+    project: "jlebgsxcvhvpueuibekd" as const,
+    origin: "https://sandbox.example.test",
+    secret,
+    account_id: f.execution.execution_scope.account_id,
+  };
+  const e = { ...fixture(), livemode: false, account: ep.account_id };
+  const s = signed(e);
+  const n = normalizeStagingSandboxWebhook(s.raw, s.signature, ep, now)!;
+  assert.equal(n.livemode, false);
+  assert.equal(n.execution_scope.execution_mode, "STAGING_SANDBOX");
+  assert.equal(e.livemode, false);
+  assert.throws(() => normalizeLiveWebhook(s.raw, s.signature, endpoint, now));
+  let stored = 0;
+  const handler = createStagingSandboxWebhookHandler({
+    configuration: () => ep,
+    now: () => now,
+    record: async (w) => {
+      assert.equal(w.livemode, false);
+      stored++;
+      return { outcome: "HELD" };
+    },
+  });
+  const response = await handler(
+    new Request(ep.origin + "/api/webhooks/workspace-sandbox", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": s.signature,
+      },
+      body: new Uint8Array(s.raw),
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(stored, 1);
+  const stageEnv = {
+    NODE_ENV: "production",
+    KXRA_ENVIRONMENT: "staging",
+    NEXT_PUBLIC_SUPABASE_URL: f.runtimeIdentity.supabase_url,
+    KXRA_ORIGIN: ep.origin,
+    KXRA_MODERN_SANDBOX_WEBHOOK_ENABLED: "true",
+    KXRA_MODERN_SANDBOX_WEBHOOK_PROJECT_REF: ep.project,
+    KXRA_MODERN_SANDBOX_WEBHOOK_MODE: "staging_sandbox",
+    KXRA_MODERN_SANDBOX_WEBHOOK_ACCOUNT_ID: ep.account_id,
+    KXRA_MODERN_SANDBOX_WEBHOOK_API_VERSION: LIVE_WEBHOOK_API_VERSION,
+    KXRA_MODERN_SANDBOX_WEBHOOK_SECRET: secret,
+  };
+  assert.ok(stagingSandboxWebhookConfiguration(stageEnv, f.execution));
+  assert.equal(
+    stagingSandboxWebhookConfiguration(
+      { ...stageEnv, KXRA_ENVIRONMENT: "production" },
+      f.execution,
+    ),
+    null,
+  );
+});
+test("invalid HMAC cannot trigger private scope lookup", async () => {
+  let loaded = 0;
+  const { execution, ...shell } = endpoint;
+  const handler = createLiveWebhookHandler({
+    configuration: () => shell,
+    loadExecutionScope: async () => {
+      loaded++;
+      return execution;
+    },
+    record: async () => ({ outcome: "HELD" }),
+    now: () => now,
+  });
+  const s = signed(fixture());
+  const response = await handler(
+    request(s.raw, s.signature.replace(/v1=.*/, "v1=" + "0".repeat(64))),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(loaded, 0);
 });
