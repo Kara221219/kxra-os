@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { rootCertificates } from "node:tls";
 import test from "node:test";
 import {
-  runLiveCustomerWorkerOnce,
+  runCustomerWorkerOnce,
   type LiveCustomerExecute,
 } from "../packages/integrations/live-customer-worker";
 import { boundedLiveCustomerTransport } from "../packages/integrations/live-customer-dispatch-transport";
@@ -13,9 +13,9 @@ const now = 1_800_000_000,
   org = "22222222-2222-4222-8222-222222222222",
   hash = "a".repeat(64);
 const project = "jlebgsxcvhvpueuibekd",
-  secret = "sk_live_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000";
+  secret = "sk_test_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000";
 const env = {
-  KXRA_LIVE_CUSTOMER_DISPATCH_ENABLED: "true",
+  KXRA_MODERN_BILLING_DISPATCH_ENABLED: "true",
   NODE_ENV: "production",
   KXRA_ENVIRONMENT: "staging",
   NEXT_PUBLIC_SUPABASE_URL: `https://${project}.supabase.co`,
@@ -25,8 +25,8 @@ const env = {
     "base64",
   ),
 };
-function fixture() {
-  const scope = modernBillingFixture();
+function fixture(mode: "LIVE" | "STAGING_SANDBOX" = "STAGING_SANDBOX") {
+  const scope = modernBillingFixture(mode);
   const row = scope.execution.catalogue[0];
   const canonical = {
     intent: {
@@ -44,7 +44,7 @@ function fixture() {
     },
     mapping: {
       version: 1,
-      mode: "live",
+      mode: mode === "LIVE" ? "live" : "staging_sandbox",
       enabled: true,
       account_id: scope.execution.execution_scope.account_id,
       offer_key: row.offer_key,
@@ -75,8 +75,10 @@ function fixture() {
   let postThrows = false,
     finishThrows = false;
   const order: string[] = [];
+  const sql: string[] = [];
   let attestation: unknown = scope.execution;
   const execute: LiveCustomerExecute = async (command) => {
+    sql.push(command.text);
     assert.equal(active, false);
     active = true;
     order.push("BEGIN");
@@ -116,7 +118,7 @@ function fixture() {
     order.push(`HTTP:${init?.method}`);
     assert.equal(
       new Headers(init?.headers).get("authorization"),
-      `Bearer ${secret}`,
+      `Bearer ${mode === "LIVE" ? secret.replace("_test_", "_live_") : secret}`,
     );
     if (url.endsWith("/account"))
       return Response.json({
@@ -129,7 +131,7 @@ function fixture() {
         id: row.price_id,
         object: "price",
         active: true,
-        livemode: true,
+        livemode: scope.execution.execution_scope.livemode,
         currency: "gbp",
         unit_amount: amount,
         type: "recurring",
@@ -146,7 +148,7 @@ function fixture() {
           id: row.product_id,
           object: "product",
           active: true,
-          livemode: true,
+          livemode: scope.execution.execution_scope.livemode,
         },
       });
     if (init?.method === "POST") {
@@ -158,7 +160,7 @@ function fixture() {
       customer = {
         id: "cus_syntheticWorker",
         object: "customer",
-        livemode: true,
+        livemode: scope.execution.execution_scope.livemode,
         created: now,
         balance: 0,
         currency: null,
@@ -173,14 +175,22 @@ function fixture() {
   };
   return {
     run: () =>
-      runLiveCustomerWorkerOnce(id, {
-        environment: env,
+      runCustomerWorkerOnce(id, {
+        environment: {
+          ...env,
+          KXRA_ENVIRONMENT: scope.runtimeIdentity.environment,
+          NEXT_PUBLIC_SUPABASE_URL: scope.runtimeIdentity.supabase_url,
+          STRIPE_SECRET_KEY:
+            mode === "LIVE" ? secret.replace("_test_", "_live_") : secret,
+          KXRA_BILLING_WORKER_DATABASE_URL: `postgresql://kxra_billing_runner.${scope.runtimeIdentity.project_ref}:synthetic@aws-0-eu-west-2.pooler.supabase.com:5432/postgres`,
+        },
         execute,
         fetch: fetcher,
         nowSeconds: () => now,
       }),
     canonical,
     order,
+    sql,
     count: () => ({ claimCount, postCount, currentCount, finishCount }),
     receipt: () => receipt,
     current: (value: typeof current) => {
@@ -223,7 +233,7 @@ test("real customer adapter is wired through attestation, one claim, pre/post fe
 test("scope attestation defaults fail closed and sandbox/test identity never dispatches LIVE", async () => {
   for (const attestation of [
     null,
-    modernBillingFixture("STAGING_SANDBOX").execution,
+    modernBillingFixture("LIVE").execution,
     { ...modernBillingFixture().execution, enabled: false },
   ]) {
     const f = fixture();
@@ -243,7 +253,7 @@ test("canonical scope mismatch is not repaired or converted", async () => {
   const f = fixture();
   f.canonical.execution_scope = {
     ...f.canonical.execution_scope,
-    scope_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    scope_id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
   };
   await assert.rejects(f.run(), {
     message: "LIVE_CUSTOMER_DISPATCH_RECONCILIATION_REQUIRED",
@@ -294,7 +304,7 @@ test("lost SQL completion response never reclaims or repeats provider creation",
   assert.equal(f.count().finishCount, 1);
 });
 test("default-off real facade never opens DB or calls injected provider", async () => {
-  const result = await runLiveCustomerWorkerOnce(id, {
+  const result = await runCustomerWorkerOnce(id, {
     environment: { KXRA_BILLING_ENABLED: "true" },
     execute: async () => assert.fail("No DB"),
     fetch: async () => assert.fail("No HTTP"),
@@ -373,11 +383,11 @@ test("transport body cap rejects oversized response before adapter JSON and neve
 test("real transaction adapter checks genuine identity before command and commits/closes", async () => {
   const { liveCustomerDatabaseExecutor } =
     await import("../packages/integrations/live-customer-worker");
-  const { liveCustomerDispatchConfiguration } =
+  const { customerDispatchConfiguration } =
     await import("../packages/integrations/live-customer-dispatch-config");
   const commands: string[] = [];
   const execute = liveCustomerDatabaseExecutor(
-    liveCustomerDispatchConfiguration(env)!,
+    customerDispatchConfiguration(env)!,
     async () => ({
       connect: async () => {
         commands.push("CONNECT");
@@ -413,12 +423,12 @@ test("real transaction adapter checks genuine identity before command and commit
 test("transaction adapter refuses admin/capability LOGIN despite SET ROLE and rolls back", async () => {
   const { liveCustomerDatabaseExecutor } =
     await import("../packages/integrations/live-customer-worker");
-  const { liveCustomerDispatchConfiguration } =
+  const { customerDispatchConfiguration } =
     await import("../packages/integrations/live-customer-dispatch-config");
   for (const session of ["postgres", "owner", "kxra_billing_worker"]) {
     const commands: string[] = [];
     const execute = liveCustomerDatabaseExecutor(
-      liveCustomerDispatchConfiguration(env)!,
+      customerDispatchConfiguration(env)!,
       async () => ({
         connect: async () => {},
         query: async (text) => {
@@ -496,4 +506,45 @@ test("four-request/one-POST transport budget cannot be reused for a second mutat
   await transport("https://api.stripe.com/v1/customers", init);
   await assert.rejects(transport("https://api.stripe.com/v1/customers", init));
   assert.equal(posts, 1);
+});
+
+for (const mode of ["STAGING_SANDBOX", "LIVE"] as const)
+  test(`${mode}: deployment identity chooses the same customer engine and fixed SQL wrappers`, async () => {
+    const f = fixture(mode);
+    const r = await f.run();
+    assert.equal(r.state, "RECORDED");
+    assert.equal(f.receipt()?.livemode, mode === "LIVE");
+    const scope = f.receipt()?.execution_scope as {
+      execution_mode: string;
+      project_ref: string;
+    };
+    assert.equal(scope.execution_mode, mode);
+    assert.equal(
+      scope.project_ref,
+      mode === "LIVE" ? "lhbgeucifxxcdoyrnesf" : "jlebgsxcvhvpueuibekd",
+    );
+    const calls = f.sql.filter(
+      (sql) => !sql.includes("modern_billing_scope_attestation"),
+    );
+    assert.ok(calls.length >= 4);
+    assert.ok(
+      calls.every((sql) =>
+        mode === "LIVE"
+          ? !sql.includes("staging_sandbox_")
+          : sql.includes("staging_sandbox_"),
+      ),
+    );
+    assert.equal(f.count().postCount, 1);
+  });
+test("retained LIVE facade rejects staging rather than routing it through LIVE", async () => {
+  const { runLiveCustomerWorkerOnce } =
+    await import("../packages/integrations/live-customer-worker");
+  await assert.rejects(
+    runLiveCustomerWorkerOnce(id, {
+      environment: env,
+      execute: async () => assert.fail("No DB"),
+      fetch: async () => assert.fail("No provider"),
+    }),
+    { message: "LIVE_CUSTOMER_DISPATCH_CONFIGURATION_INVALID" },
+  );
 });

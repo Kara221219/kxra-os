@@ -5,10 +5,10 @@ import { databaseSsl } from "../db/ssl";
  * STRIPE_SECRET_KEY, worker DSN and CA settings are reused; nothing is provisioned.
  * Returned configuration contains credentials and MUST NEVER be logged/serialized.
  */
-export function liveCustomerDispatchConfiguration(
+export function customerDispatchConfiguration(
   env: Record<string, string | undefined> = process.env,
 ) {
-  if (env.KXRA_LIVE_CUSTOMER_DISPATCH_ENABLED !== "true") return null;
+  if (env.KXRA_MODERN_BILLING_DISPATCH_ENABLED !== "true") return null;
   try {
     const environment = env.KXRA_ENVIRONMENT;
     const project =
@@ -22,7 +22,11 @@ export function liveCustomerDispatchConfiguration(
       env.KXRA_AUTH_MODE === "fixture" ||
       !project ||
       env.NEXT_PUBLIC_SUPABASE_URL !== `https://${project}.supabase.co` ||
-      !/^(sk|rk)_live_[A-Za-z0-9_]{20,}$/.test(env.STRIPE_SECRET_KEY || "")
+      !(
+        environment === "production"
+          ? /^(sk|rk)_live_[A-Za-z0-9_]{20,}$/
+          : /^(sk|rk)_test_[A-Za-z0-9_]{20,}$/
+      ).test(env.STRIPE_SECRET_KEY || "")
     )
       throw Error();
     const url = new URL(env.KXRA_BILLING_WORKER_DATABASE_URL || "");
@@ -48,9 +52,16 @@ export function liveCustomerDispatchConfiguration(
       if (key !== "sslmode" || !["require", "verify-full"].includes(value))
         throw Error();
     return {
+      executionMode:
+        environment === "production"
+          ? ("LIVE" as const)
+          : ("STAGING_SANDBOX" as const),
       runtime: {
         enabled: true as const,
-        mode: "live" as const,
+        mode:
+          environment === "production"
+            ? ("live" as const)
+            : ("staging_sandbox" as const),
         nodeEnv: "production",
         secretKey: env.STRIPE_SECRET_KEY!,
       },
@@ -74,9 +85,19 @@ export function liveCustomerDispatchConfiguration(
     throw Error("LIVE_CUSTOMER_DISPATCH_CONFIGURATION_INVALID");
   }
 }
-export type LiveCustomerDispatchConfiguration = NonNullable<
-  ReturnType<typeof liveCustomerDispatchConfiguration>
+export type CustomerDispatchConfiguration = NonNullable<
+  ReturnType<typeof customerDispatchConfiguration>
 >;
+/** Retained strict LIVE facade; staging must use the shared modern dispatcher. */
+export function liveCustomerDispatchConfiguration(
+  env: Record<string, string | undefined> = process.env,
+) {
+  const config = customerDispatchConfiguration(env);
+  if (config && config.executionMode !== "LIVE")
+    throw Error("LIVE_CUSTOMER_DISPATCH_CONFIGURATION_INVALID");
+  return config;
+}
+export type LiveCustomerDispatchConfiguration = CustomerDispatchConfiguration;
 
 /** Exactly one explicit canonical UUID; no watch, discovery, mode or actor override. */
 export function parseLiveCustomerDispatchArguments(args: readonly string[]) {

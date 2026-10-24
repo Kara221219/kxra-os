@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  customerDispatchConfiguration,
   liveCustomerDispatchConfiguration,
   type LiveCustomerDispatchConfiguration,
 } from "./live-customer-dispatch-config";
@@ -12,6 +13,10 @@ import {
   currentLiveCustomerCommand,
   finishLiveCustomerCommand,
   createLiveStripeCustomer,
+  createStagingSandboxStripeCustomer,
+  claimStagingSandboxCustomerCommand,
+  currentStagingSandboxCustomerCommand,
+  finishStagingSandboxCustomerCommand,
   type LiveCustomerCommand,
 } from "./live-stripe-customer";
 
@@ -69,7 +74,7 @@ export function liveCustomerDatabaseExecutor(
  * The LIVE public customer adapter itself validates107 attestation and canonical
  * tags; no sandbox IDs/modes are converted or inferred here.
  */
-export async function runLiveCustomerWorkerOnce(
+export async function runCustomerWorkerOnce(
   intentId: unknown,
   ports: {
     environment?: Record<string, string | undefined>;
@@ -79,7 +84,7 @@ export async function runLiveCustomerWorkerOnce(
   } = {},
 ) {
   const id = z.uuid().parse(intentId);
-  const config = liveCustomerDispatchConfiguration(ports.environment);
+  const config = customerDispatchConfiguration(ports.environment);
   if (!config)
     return {
       state: "DISABLED" as const,
@@ -97,12 +102,36 @@ export async function runLiveCustomerWorkerOnce(
       attestation,
       config.runtimeIdentity,
       config.runtime.secretKey,
-      "LIVE",
+      config.executionMode,
     );
   } catch {
     throw Error("LIVE_CUSTOMER_DISPATCH_SCOPE_UNAVAILABLE");
   }
-  const live = { enabled: true, mode: "live" as const };
+  const claim = (input: unknown) =>
+    config.executionMode === "LIVE"
+      ? claimLiveCustomerCommand(input, { enabled: true, mode: "live" })
+      : claimStagingSandboxCustomerCommand(input, {
+          enabled: true,
+          mode: "staging_sandbox",
+        });
+  const current = (input: unknown) =>
+    config.executionMode === "LIVE"
+      ? currentLiveCustomerCommand(input, { enabled: true, mode: "live" })
+      : currentStagingSandboxCustomerCommand(input, {
+          enabled: true,
+          mode: "staging_sandbox",
+        });
+  const finish = (input: unknown) =>
+    config.executionMode === "LIVE"
+      ? finishLiveCustomerCommand(input, { enabled: true, mode: "live" })
+      : finishStagingSandboxCustomerCommand(input, {
+          enabled: true,
+          mode: "staging_sandbox",
+        });
+  const create =
+    config.executionMode === "LIVE"
+      ? createLiveStripeCustomer
+      : createStagingSandboxStripeCustomer;
   const transport = boundedLiveCustomerTransport(
     ports.fetch ?? globalThis.fetch,
     config.runtime.secretKey,
@@ -110,10 +139,9 @@ export async function runLiveCustomerWorkerOnce(
   );
   return dispatchLiveCustomerOnce(id, {
     enabled: true,
-    claim: (request) =>
-      execute(claimLiveCustomerCommand({ intent_id: request }, live)),
+    claim: (request) => execute(claim({ intent_id: request })),
     create: (canonical) =>
-      createLiveStripeCustomer(
+      create(
         {
           execution,
           runtimeIdentity: config.runtimeIdentity,
@@ -128,10 +156,7 @@ export async function runLiveCustomerWorkerOnce(
               : null,
           stillCurrent: async (intent) =>
             (await execute(
-              currentLiveCustomerCommand(
-                { intent_id: intent.id, intent_version: intent.version },
-                live,
-              ),
+              current({ intent_id: intent.id, intent_version: intent.version }),
             )) === true,
         },
         { intent_id: id },
@@ -140,6 +165,15 @@ export async function runLiveCustomerWorkerOnce(
           org_id: canonical.intent.org_id,
         },
       ),
-    finish: (receipt) => execute(finishLiveCustomerCommand(receipt, live)),
+    finish: (receipt) => execute(finish(receipt)),
   });
+}
+
+/** Preserved LIVE-only public facade; never routes staging sandbox through LIVE. */
+export async function runLiveCustomerWorkerOnce(
+  intentId: unknown,
+  ports: Parameters<typeof runCustomerWorkerOnce>[1] = {},
+) {
+  liveCustomerDispatchConfiguration(ports.environment);
+  return runCustomerWorkerOnce(intentId, ports);
 }

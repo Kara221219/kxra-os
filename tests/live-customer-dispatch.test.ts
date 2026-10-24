@@ -6,7 +6,7 @@ import {
   type LiveCustomerOncePorts,
 } from "../packages/integrations/live-customer-dispatch";
 import {
-  liveCustomerDispatchConfiguration,
+  customerDispatchConfiguration,
   parseLiveCustomerDispatchArguments,
 } from "../packages/integrations/live-customer-dispatch-config";
 const id = "33333333-3333-4333-8333-333333333333";
@@ -14,11 +14,11 @@ const actor = "11111111-1111-4111-8111-111111111111",
   org = "22222222-2222-4222-8222-222222222222";
 const endpoint = "jlebgsxcvhvpueuibekd";
 const env = {
-  KXRA_LIVE_CUSTOMER_DISPATCH_ENABLED: "true",
+  KXRA_MODERN_BILLING_DISPATCH_ENABLED: "true",
   NODE_ENV: "production",
   KXRA_ENVIRONMENT: "staging",
   NEXT_PUBLIC_SUPABASE_URL: `https://${endpoint}.supabase.co`,
-  STRIPE_SECRET_KEY: "sk_live_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000",
+  STRIPE_SECRET_KEY: "sk_test_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000",
   KXRA_BILLING_WORKER_DATABASE_URL: `postgresql://kxra_billing_runner.${endpoint}:synthetic-password@aws-0-eu-west-2.pooler.supabase.com:5432/postgres?sslmode=verify-full`,
   KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(rootCertificates[0]).toString(
     "base64",
@@ -62,38 +62,38 @@ function harness() {
 
 test("explicit LIVE gate is off despite legacy flags and absent new flag", () => {
   assert.equal(
-    liveCustomerDispatchConfiguration({
+    customerDispatchConfiguration({
       KXRA_BILLING_ENABLED: "true",
       KXRA_PILOT_STRIPE_ENABLED: "true",
     }),
     null,
   );
   assert.equal(
-    liveCustomerDispatchConfiguration({
+    customerDispatchConfiguration({
       ...env,
-      KXRA_LIVE_CUSTOMER_DISPATCH_ENABLED: "false",
+      KXRA_MODERN_BILLING_DISPATCH_ENABLED: "false",
     }),
     null,
   );
 });
 test("target configuration pins project/runner/session port and verified TLS without adding credentials", () => {
-  const config = liveCustomerDispatchConfiguration(env)!;
+  const config = customerDispatchConfiguration(env)!;
   assert.equal(config.database.user, `kxra_billing_runner.${endpoint}`);
   assert.equal(config.database.ssl.rejectUnauthorized, true);
   assert.equal(config.database.port, 5432);
-  assert.equal(config.runtime.mode, "live");
+  assert.equal(config.runtime.mode, "staging_sandbox");
   assert.equal(config.runtimeIdentity.project_ref, endpoint);
-  const direct = liveCustomerDispatchConfiguration({
+  const direct = customerDispatchConfiguration({
     ...env,
     KXRA_BILLING_WORKER_DATABASE_URL: `postgresql://kxra_billing_runner:synthetic@db.${endpoint}.supabase.co/postgres`,
   })!;
   assert.equal(direct.database.host, `db.${endpoint}.supabase.co`);
 });
-test("test keys, fixture auth, wrong project/login/host/port/DSN overrides and missing CA fail before execution", () => {
+test("LIVE keys in staging, fixture auth, wrong project/login/host/port/DSN overrides and missing CA fail before execution", () => {
   for (const patch of [
     { NODE_ENV: "development" },
     { KXRA_AUTH_MODE: "fixture" },
-    { STRIPE_SECRET_KEY: "sk_test_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000" },
+    { STRIPE_SECRET_KEY: "sk_live_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000" },
     { NEXT_PUBLIC_SUPABASE_URL: "https://lhbgeucifxxcdoyrnesf.supabase.co" },
     { KXRA_DATABASE_CA_CERT_BASE64: "" },
     ...[
@@ -106,10 +106,9 @@ test("test keys, fixture auth, wrong project/login/host/port/DSN overrides and m
       `postgresql://kxra_billing_runner:synthetic@db.${endpoint}.supabase.co/postgres?sslmode=disable`,
     ].map((url) => ({ KXRA_BILLING_WORKER_DATABASE_URL: url })),
   ])
-    assert.throws(
-      () => liveCustomerDispatchConfiguration({ ...env, ...patch }),
-      { message: "LIVE_CUSTOMER_DISPATCH_CONFIGURATION_INVALID" },
-    );
+    assert.throws(() => customerDispatchConfiguration({ ...env, ...patch }), {
+      message: "LIVE_CUSTOMER_DISPATCH_CONFIGURATION_INVALID",
+    });
 });
 test("CLI accepts one explicit UUID, never watch/actor/mode/discovery flags", () => {
   assert.equal(
