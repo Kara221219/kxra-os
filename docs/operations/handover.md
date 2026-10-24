@@ -894,3 +894,11 @@ Owner should apply/review 0107 before 0110, then run sequential local DB concurr
 RLS, lease-expiry, generation-race and full migration checks. This handover is source
 readiness only; no migrations, provider calls, approval records or activation were
 applied here. Pure regression command: `node --import tsx --test tests/live-paid-refresh.test.ts`.
+
+### Workspace terms publication prerequisite
+
+The new `/legal/workspace-terms?sha256=...` route has an empty published catalogue
+and returns uncached 404 until the owner approves exact text bytes and their public
+release in an explicit source commit. No legal content, VAT decision, agreement,
+provider setting or billing activation was supplied. See
+[workspace terms publication](workspace-terms-publication.md).

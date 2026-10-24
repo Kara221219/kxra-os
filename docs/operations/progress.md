@@ -1122,3 +1122,10 @@ transport, mode rejection, refunds, stale claims and older-wakeup no-ACK. No DB,
 server, browser, provider or hosted verification was performed by this worker.
 Activation remains false and policy tables remain empty; terms/VAT approvals and
 owner sequential DB/browser/build verification remain required.
+
+### 2026-10-24 — empty public workspace terms delivery source
+
+Added `/legal/workspace-terms` with an empty immutable publication catalogue and
+exact UTF-8 SHA-256 validation. No terms text or approval was added. Seven handler
+source tests and full TypeScript checking pass; owner build/browser checks remain.
+See [publication prerequisites](workspace-terms-publication.md).
