@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validatedPortalDeliveryUrl } from "./portal-url";
 
 const ready = z
   .object({
@@ -37,12 +38,13 @@ export function billingResultDestination(
     url.port ||
     url.hostname !==
       (kind === "CHECKOUT" ? "checkout.stripe.com" : "billing.stripe.com") ||
-    (kind === "CHECKOUT"
-      ? !/^\/c\/pay\/cs_(live|test)_[A-Za-z0-9_]{6,}$/.test(url.pathname)
-      : !url.pathname.startsWith("/p/session/") || url.pathname.length <= 11)
+    (kind === "CHECKOUT" &&
+      !/^\/c\/pay\/cs_(live|test)_[A-Za-z0-9_]{6,}$/.test(url.pathname))
   )
     throw Error("BILLING_RESULT_UNAVAILABLE");
-  return url.toString();
+  return kind === "PORTAL"
+    ? validatedPortalDeliveryUrl(url.toString())
+    : url.toString();
 }
 
 export function openBillingResult(

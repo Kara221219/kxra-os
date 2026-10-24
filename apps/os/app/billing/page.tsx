@@ -1,4 +1,5 @@
 import { checkoutResultConfiguration } from "../../../../packages/authz/checkout-result-controller";
+import { portalDeliveryConfiguration } from "../../../../packages/authz/portal-delivery";
 import Link from "next/link";
 import LiveBillingEntry from "../../components/LiveBillingEntry";
 import { liveEntryController } from "../../lib/live-billing-entry";
@@ -14,6 +15,7 @@ export default async function BillingPage() {
         <LiveBillingEntry
           initial={status}
           checkoutResultAvailable={Boolean(checkoutResultConfiguration())}
+          portalAvailable={Boolean(portalDeliveryConfiguration())}
         />
         <p>
           <Link href="/os">Return to workspace</Link>

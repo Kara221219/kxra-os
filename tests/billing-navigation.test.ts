@@ -112,3 +112,34 @@ test("phishing hosts, credentials, ports, schemes and wrong product paths are re
       ),
     );
 });
+
+test("documented portal query-secret form and token path are transient validated destinations", () => {
+  for (const url of [
+    "https://billing.stripe.com/p/session?secret=test_SYNTHETICsession",
+    "https://billing.stripe.com/p/session?secret=live_SYNTHETICsession",
+    "https://billing.stripe.com/p/session/test_SYNTHETICsession",
+  ])
+    assert.equal(
+      billingResultDestination(
+        { ...packet("PORTAL"), url },
+        request_id,
+        "PORTAL",
+        now,
+      ),
+      url,
+    );
+  for (const url of [
+    "https://billing.stripe.com/p/session?secret=test_SYNTHETICsession&secret=test_other",
+    "https://billing.stripe.com/p/session?secret=test_SYNTHETICsession&redirect=https://evil.invalid",
+    "https://billing.stripe.com/p/session?secret=unknown_SYNTHETICsession",
+    "https://billing.stripe.com/p/session?secret=test_SYNTHETICsession#fragment",
+  ])
+    assert.throws(() =>
+      billingResultDestination(
+        { ...packet("PORTAL"), url },
+        request_id,
+        "PORTAL",
+        now,
+      ),
+    );
+});
