@@ -61,7 +61,10 @@ export function modernBillingFixture(mode: ModernExecutionMode = "LIVE") {
         ? "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
         : "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     execution_mode: mode,
-    project_ref: "jlebgsxcvhvpueuibekd" as const,
+    project_ref:
+      mode === "LIVE"
+        ? ("lhbgeucifxxcdoyrnesf" as const)
+        : ("jlebgsxcvhvpueuibekd" as const),
     account_id:
       mode === "LIVE" ? "acct_1Rv3KdC84VkhhIRz" : "acct_SYNTHETICsandbox123",
     api_version: "2025-07-30.basil" as const,
@@ -80,7 +83,8 @@ export function modernBillingFixture(mode: ModernExecutionMode = "LIVE") {
   return {
     execution,
     runtimeIdentity: {
-      environment: "staging" as const,
+      environment:
+        mode === "LIVE" ? ("production" as const) : ("staging" as const),
       project_ref: material.project_ref,
       supabase_url: `https://${material.project_ref}.supabase.co`,
     },

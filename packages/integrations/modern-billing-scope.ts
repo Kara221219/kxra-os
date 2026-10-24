@@ -34,10 +34,10 @@ const rowSchema = z
   .strict();
 export type ModernCatalogueRow = z.infer<typeof rowSchema>;
 export type ModernBillingConfiguration = {
-  execution_scope: ModernScopeTag;
+  execution_scope: Readonly<ModernScopeTag>;
   enabled: true;
   review_sha256: string;
-  catalogue: ModernCatalogueRow[];
+  catalogue: readonly Readonly<ModernCatalogueRow>[];
 };
 export type ModernRuntimeIdentity = {
   environment: "production" | "staging";
@@ -52,7 +52,7 @@ const liveIds = {
 export function modernScopeDigest(
   scope: Omit<ModernScopeTag, "scope_sha256">,
   review: string,
-  catalogue: ModernCatalogueRow[],
+  catalogue: readonly Readonly<ModernCatalogueRow>[],
 ) {
   const rows = [...catalogue].sort((a, b) =>
     a.offer_key.localeCompare(b.offer_key),
@@ -126,7 +126,12 @@ export function validateModernBillingConfiguration(
     ).test(secretKey)
   )
     throw Error("MODERN_BILLING_KEY_MODE_MISMATCH");
-  if (expected === "LIVE" && s.account_id !== "acct_1Rv3KdC84VkhhIRz")
+  if (
+    expected === "LIVE" &&
+    (s.account_id !== "acct_1Rv3KdC84VkhhIRz" ||
+      s.project_ref !== MODERN_PRODUCTION_PROJECT ||
+      runtime.environment !== "production")
+  )
     throw Error("MODERN_LIVE_ACCOUNT_MISMATCH");
   for (const r of c.catalogue) {
     const p = approvedPlan(r.offer_key);
@@ -154,7 +159,7 @@ export function validateModernBillingConfiguration(
   return Object.freeze({
     ...c,
     execution_scope: Object.freeze({ ...s }),
-    catalogue: c.catalogue.map((r) => Object.freeze({ ...r })),
+    catalogue: Object.freeze(c.catalogue.map((r) => Object.freeze({ ...r }))),
   });
 }
 export function assertModernScopeTag(
@@ -229,7 +234,9 @@ export function assertModernModeTag(input: unknown, mode: ModernExecutionMode) {
     s.execution_mode !== mode ||
     s.livemode !== (mode === "LIVE") ||
     (mode === "STAGING_SANDBOX" && s.project_ref !== MODERN_STAGING_PROJECT) ||
-    (mode === "LIVE" && s.account_id !== "acct_1Rv3KdC84VkhhIRz")
+    (mode === "LIVE" &&
+      (s.account_id !== "acct_1Rv3KdC84VkhhIRz" ||
+        s.project_ref !== MODERN_PRODUCTION_PROJECT))
   )
     throw Error("MODERN_EXECUTION_MODE_MISMATCH");
   return s;
