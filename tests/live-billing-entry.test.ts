@@ -285,7 +285,9 @@ test("private status migration has fixed context, verified membership and explic
   );
 });
 test("runtime adapter reserves existing SQL functions and UI preserves truthful approved labels", () => {
-  const adapter = fs.readFileSync("apps/os/lib/live-billing-entry.ts", "utf8");
+  const adapter =
+    fs.readFileSync("apps/os/lib/live-billing-entry.ts", "utf8") +
+    fs.readFileSync("packages/authz/live-billing-reservation.ts", "utf8");
   assert.match(adapter, /request_live_customer_intent\(\$1,\$2\)/);
   assert.match(adapter, /request_live_billing_intent\(\$1,\$2,\$3\)/);
   assert.ok(
@@ -362,4 +364,111 @@ test("replayed consumed request is recorded, never advertised as newly queued", 
   assert.equal(result.state, "RECORDED");
   assert.equal(result.request_state, "BOUND");
   assert.equal(result.entitlement_authority, false);
+});
+
+test("real reservation service consumes shared 8/900 server-identity budget before intent", async () => {
+  const { reserveLiveBillingEntry } =
+    await import("../packages/authz/live-billing-reservation");
+  const calls: { sql: string; values: unknown[]; actor: LiveEntryIdentity }[] =
+    [];
+  const query = async <T>(
+    actor: LiveEntryIdentity,
+    sql: string,
+    values: unknown[],
+  ): Promise<T[]> => {
+    calls.push({ actor, sql, values });
+    return (
+      sql.includes("consume_rate_limit")
+        ? [{ allowed: true }]
+        : [
+            {
+              value: {
+                intent_id: request.request_id,
+                state: "REQUESTED",
+                entitlement_authority: false,
+              },
+            },
+          ]
+    ) as T[];
+  };
+  await reserveLiveBillingEntry(who, request, query);
+  assert.match(
+    calls[0].sql,
+    /consume_rate_limit\('live-billing-entry',\$1,8,900\)/,
+  );
+  assert.match(String(calls[0].values[0]), /^[a-f0-9]{64}$/);
+  assert.equal(calls[0].actor, who);
+  assert.match(calls[1].sql, /request_live_customer_intent/);
+  const originalSubject = calls[0].values[0];
+  calls.length = 0;
+  await reserveLiveBillingEntry(
+    who,
+    { ...request, action: "PORTAL", offer_key: "KXRA_TEAM_V1" },
+    query,
+  );
+  assert.equal(calls[0].values[0], originalSubject);
+  assert.match(calls[1].sql, /request_live_billing_intent/);
+  calls.length = 0;
+  await reserveLiveBillingEntry(
+    { ...who, organisation_id: "20000000-0000-4000-8000-000000000002" },
+    request,
+    query,
+  );
+  assert.notEqual(calls[0].values[0], originalSubject);
+  let attempted = 0;
+  const denied = async <T>(): Promise<T[]> => {
+    attempted++;
+    return [{ allowed: false }] as T[];
+  };
+  await assert.rejects(
+    reserveLiveBillingEntry(who, request, denied),
+    (e: unknown) => e instanceof LiveEntryError && e.status === 429,
+  );
+  assert.equal(attempted, 1);
+});
+
+test("real rate reservation is reached only after verified MFA/legal checks", async () => {
+  const { reserveLiveBillingEntry } =
+    await import("../packages/authz/live-billing-reservation");
+  let consumed = 0;
+  const events: string[] = [];
+  const query = async <T>(
+    _actor: LiveEntryIdentity,
+    sql: string,
+  ): Promise<T[]> => {
+    if (sql.includes("consume_rate_limit")) {
+      consumed++;
+      events.push("rate");
+      return [{ allowed: true }] as T[];
+    }
+    events.push("intent");
+    return [
+      {
+        value: {
+          intent_id: request.request_id,
+          state: "REQUESTED",
+          entitlement_authority: false,
+        },
+      },
+    ] as T[];
+  };
+  const make = (identity = who, legal = true) =>
+    harness({
+      account: async () => {
+        events.push("account");
+        return identity;
+      },
+      legalAllowed: async () => {
+        events.push("legal");
+        return legal;
+      },
+      reserve: (a, r) => reserveLiveBillingEntry(a, r, query),
+    }).controller;
+  await assert.rejects(make({ ...who, source: "fixture" }).write(request));
+  await assert.rejects(make({ ...who, aal: "aal1" }).write(request));
+  await assert.rejects(make(who, false).write(request));
+  assert.equal(consumed, 0);
+  events.length = 0;
+  await make().write(request);
+  assert.deepEqual(events, ["account", "legal", "rate", "intent"]);
 });

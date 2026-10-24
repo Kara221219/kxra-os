@@ -9,7 +9,7 @@ declare
  b kxra_private.live_billing_bindings;
  c kxra_private.live_customer_intents;
  r kxra_private.live_billing_intents;
- state text='FRESH';actions jsonb='[]'::jsonb;enabled boolean=false;
+ state text='FRESH';actions jsonb='[]'::jsonb;billing_enabled boolean=false;
 begin
  if session_user<>'kxra_app' or o is null or auth.uid() is null then raise insufficient_privilege;end if;
  -- Derive tenant and actor solely from the verified server transaction context.
@@ -23,11 +23,11 @@ begin
  and organisation.state='ACTIVE' and organisation.organisation_kind='CUSTOMER';
  if not found then raise insufficient_privilege;end if;
 
- select exists(select 1 from kxra_private.live_billing_activation where singleton and enabled and review_sha256 is not null) into enabled;
+ select exists(select 1 from kxra_private.live_billing_activation a where a.singleton and a.enabled and a.review_sha256 is not null) into billing_enabled;
  select * into b from kxra_private.live_billing_bindings where org_id=o;
  select * into c from kxra_private.live_customer_intents where org_id=o;
  select * into r from kxra_private.live_billing_intents where org_id=o order by created_at desc,id desc limit 1;
- if not enabled then state='DISABLED';
+ if not billing_enabled then state='DISABLED';
  elsif coalesce(b.quarantined,false) or c.state in ('UNCERTAIN','QUARANTINED') or r.state='UNCERTAIN'
  or exists(select 1 from kxra.workspace_pilots where org_id=o)
  or exists(select 1 from kxra.pilot_stripe_bindings where org_id=o)
