@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 import type { z } from "zod";
 import { LiveEntryError, type LiveEntryIdentity } from "./live-billing-entry";
 import type { liveEntryRequest } from "./live-billing-entry-contract";
+import type { ModernExecutionMode } from "../integrations/modern-billing-scope";
+import { modernEntrySql } from "./modern-billing-entry-scope";
 
 type Query = <T>(
   actor: LiveEntryIdentity,
@@ -16,7 +18,10 @@ export async function reserveLiveBillingEntry(
   actor: LiveEntryIdentity,
   request: z.infer<typeof liveEntryRequest>,
   query: Query,
+  mode: ModernExecutionMode,
 ) {
+  // Reject invalid private configuration before consuming a rate bucket or touching SQL.
+  const sql = modernEntrySql(request.action, mode);
   const subject = crypto
     .createHash("sha256")
     .update(`live-billing-entry:${actor.organisation_id}:${actor.id}`)
@@ -35,9 +40,7 @@ export async function reserveLiveBillingEntry(
   return (
     await query<{ value: unknown }>(
       actor,
-      request.action === "CUSTOMER"
-        ? "select kxra_private.request_live_customer_intent($1,$2) value"
-        : "select kxra_private.request_live_billing_intent($1,$2,$3) value",
+      sql,
       request.action === "CUSTOMER"
         ? [request.request_id, request.offer_key]
         : [request.request_id, request.action, request.offer_key],

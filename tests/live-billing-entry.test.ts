@@ -42,6 +42,7 @@ function harness(change: Partial<LiveEntryPorts> = {}) {
     configuration: () => ({
       origin: "https://app.kxra-group.com",
       project: "lhbgeucifxxcdoyrnesf",
+      mode: "LIVE",
     }),
     account: async () => who,
     sameOrigin: () => {},
@@ -117,6 +118,9 @@ test("request body never accepts client identity, tenant, role, paid state or pr
     "source",
     "customer_id",
     "price_id",
+    "mode",
+    "execution_scope",
+    "environment",
     "url",
   ]) {
     const { controller, calls } = harness();
@@ -287,7 +291,8 @@ test("private status migration has fixed context, verified membership and explic
 test("runtime adapter reserves existing SQL functions and UI preserves truthful approved labels", () => {
   const adapter =
     fs.readFileSync("apps/os/lib/live-billing-entry.ts", "utf8") +
-    fs.readFileSync("packages/authz/live-billing-reservation.ts", "utf8");
+    fs.readFileSync("packages/authz/live-billing-reservation.ts", "utf8") +
+    fs.readFileSync("packages/authz/modern-billing-entry-scope.ts", "utf8");
   assert.match(adapter, /request_live_customer_intent\(\$1,\$2\)/);
   assert.match(adapter, /request_live_billing_intent\(\$1,\$2,\$3\)/);
   assert.ok(
@@ -391,7 +396,7 @@ test("real reservation service consumes shared 8/900 server-identity budget befo
           ]
     ) as T[];
   };
-  await reserveLiveBillingEntry(who, request, query);
+  await reserveLiveBillingEntry(who, request, query, "LIVE");
   assert.match(
     calls[0].sql,
     /consume_rate_limit\('live-billing-entry',\$1,8,900\)/,
@@ -405,6 +410,7 @@ test("real reservation service consumes shared 8/900 server-identity budget befo
     who,
     { ...request, action: "PORTAL", offer_key: "KXRA_TEAM_V1" },
     query,
+    "LIVE",
   );
   assert.equal(calls[0].values[0], originalSubject);
   assert.match(calls[1].sql, /request_live_billing_intent/);
@@ -413,6 +419,7 @@ test("real reservation service consumes shared 8/900 server-identity budget befo
     { ...who, organisation_id: "20000000-0000-4000-8000-000000000002" },
     request,
     query,
+    "LIVE",
   );
   assert.notEqual(calls[0].values[0], originalSubject);
   let attempted = 0;
@@ -421,7 +428,7 @@ test("real reservation service consumes shared 8/900 server-identity budget befo
     return [{ allowed: false }] as T[];
   };
   await assert.rejects(
-    reserveLiveBillingEntry(who, request, denied),
+    reserveLiveBillingEntry(who, request, denied, "LIVE"),
     (e: unknown) => e instanceof LiveEntryError && e.status === 429,
   );
   assert.equal(attempted, 1);
@@ -462,7 +469,7 @@ test("real rate reservation is reached only after verified MFA/legal checks", as
         events.push("legal");
         return legal;
       },
-      reserve: (a, r) => reserveLiveBillingEntry(a, r, query),
+      reserve: (a, r) => reserveLiveBillingEntry(a, r, query, "LIVE"),
     }).controller;
   await assert.rejects(make({ ...who, source: "fixture" }).write(request));
   await assert.rejects(make({ ...who, aal: "aal1" }).write(request));

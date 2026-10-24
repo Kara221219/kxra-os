@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ModernExecutionMode } from "../integrations/modern-billing-scope";
 import {
   liveEntryRequest,
   liveEntryStatus,
@@ -9,11 +10,15 @@ import {
 export function liveBillingEntryConfiguration(
   env: Record<string, string | undefined> = process.env,
 ) {
-  if (
-    env.KXRA_LIVE_BILLING_ENTRY_ENABLED !== "true" ||
-    env.NODE_ENV !== "production"
-  )
-    return null;
+  if (env.KXRA_LIVE_BILLING_ENTRY_ENABLED !== "true") return null;
+  return modernBillingViewConfiguration(env);
+}
+
+/** Current customers can read their state while new billing entry is paused. */
+export function modernBillingViewConfiguration(
+  env: Record<string, string | undefined> = process.env,
+) {
+  if (env.NODE_ENV !== "production") return null;
   const project =
     env.KXRA_ENVIRONMENT === "staging"
       ? "jlebgsxcvhvpueuibekd"
@@ -47,7 +52,9 @@ export function liveBillingEntryConfiguration(
       !/^kxra-os-staging(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin.hostname)
     )
       return null;
-    return { origin: origin.origin, project };
+    const mode: ModernExecutionMode =
+      env.KXRA_ENVIRONMENT === "production" ? "LIVE" : "STAGING_SANDBOX";
+    return { origin: origin.origin, project, mode };
   } catch {
     return null;
   }

@@ -1,3 +1,8 @@
+import { modernBillingViewConfiguration } from "../../../packages/authz/live-billing-entry";
+import {
+  modernEntrySql,
+  unwrapModernEntryReceipt,
+} from "../../../packages/authz/modern-billing-entry-scope";
 import { z } from "zod";
 import { query } from "../../../packages/db";
 import type { Actor } from "./auth";
@@ -57,13 +62,18 @@ export async function workspaceStart(a: Actor) {
       a.source === "supabase";
     const ownerProjection =
       customerAdmin && access.lane === "LIVE"
-        ? (
-            await query<{ value: unknown }>(
-              a,
-              "select kxra_private.live_paid_access_status() value",
-              [],
-            )
-          )[0]?.value
+        ? await (async () => {
+            const c = modernBillingViewConfiguration();
+            if (!c) throw Error("WORKSPACE_BILLING_SCOPE_UNAVAILABLE");
+            const value = (
+              await query<{ value: unknown }>(
+                a,
+                modernEntrySql("PAID_STATUS", c.mode),
+                [],
+              )
+            )[0]?.value;
+            return value == null ? null : unwrapModernEntryReceipt(value, c);
+          })()
         : null;
     return {
       account_state: a.account_state,
