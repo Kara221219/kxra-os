@@ -958,3 +958,23 @@ comment/text and marker-containing lookalike cases fail that privacy assertion;
 no URL host allowlist is implemented by this helper. Only three rendering test/
 helper files plus these documents changed after 8604816; native fixture source and
 all application, schema and workflow files remain identical.
+
+### CRM review test synchronization — awaiting owner browser acceptance
+
+This combined local candidate inherits test-only CodeQL repair b2d88b4 and adds
+exact approval-acknowledgement regression coverage. Approval click completion is
+not HTTP transaction completion. The browser test therefore checks an intentionally
+held request's pending state, then exact 201 acknowledgement and persisted action
+revision before applying its unchanged five-second UI assertion. The controlled
+six-second network hold is not a rendering-settle sleep or a production latency
+claim. All original 90-second test, execution/reload/one-receipt/three-record and
+viewport assertions remain. No automatic retries or application changes were added.
+
+The actual remote failure mechanism remains unproven: the terminal log exposes
+a missing Execute control, while mutation status/timing and browser trace were
+not uploaded. Three fresh local baseline mobile cases passed. Do not claim this
+local synchronization change has resolved remote CI before exact-source rerun.
+Root must run the gated case on desktop/mobile, then full private browser
+acceptance and review any failures without weakening authority/version checks.
+No public publication, hosted data/security/billing/deployment or staging-hold
+change is authorized by this handover.

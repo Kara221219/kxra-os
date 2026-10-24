@@ -1180,3 +1180,21 @@ and additionally forbids literal `checkout.stripe.com` UTF8 marker bytes anywher
 in the complete HTML, including comments, protocol-relative URLs and slash-escaped
 JSON. This is byte absence, not URL authorization. The focused rendering/signup/
 billing set passes 28 checks; fixture file/DB sources are unchanged from 8604816.
+
+### 2026-10-24 — exact CRM approval acknowledgement regression
+
+Remote CI 40134517628 at 856621a passed 847 services and 91 private browser cases
+with six existing skips, then failed the mobile CRM Execute-button visibility
+assertion five seconds after the Approve click. Root verified no uploaded CI
+artifacts and three fresh local runs of the original mobile case passed. These
+observations do not prove a runtime defect or establish remote request timing.
+
+The test-only repair now gates the exact room/action/version/APPROVED POST, holds
+it for six seconds and verifies truthful Working/pending state plus no premature
+Execute control. After release it requires 201 `{saved:true}` and the authoritative
+APPROVED/version+1 row before the original five-second Execute visibility check.
+The 90-second test limit, explicit execution, reload, single receipt, three-record
+and mobile-overflow assertions remain. This separates commit acknowledgement
+from UI convergence rather than extending a blanket timeout or retrying a failure.
+Root owns targeted browser and combined acceptance of this source; none was run
+by the implementation worker. Application/SQL/workflows remain unchanged.
