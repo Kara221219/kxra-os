@@ -4,10 +4,13 @@ import { LIVE_STRIPE_API_VERSION } from "./live-catalogue-stripe";
 /** One customer job only. Pin credential destination, four requests/one POST,
  * decoded response bytes and complete body deadline. Never retries a POST.
  */
-export function boundedLiveCustomerTransport(
+export function boundedDispatchTransport(
   fetcher: typeof fetch,
   secretKey: string,
-  prices: readonly string[],
+  policy: {
+    authorize: (url: URL, init: RequestInit) => void;
+    inspect?: (url: URL, body: Buffer) => void;
+  },
   options: { deadlineMs?: number; now?: () => number } = {},
 ): LiveBillingTransport {
   const milliseconds = options.deadlineMs ?? 30_000,
@@ -25,28 +28,12 @@ export function boundedLiveCustomerTransport(
     const target = new URL(url),
       headers = new Headers(init.headers),
       method = init.method || "GET";
-    const price = target.pathname.startsWith("/v1/prices/")
-      ? target.pathname.slice("/v1/prices/".length)
-      : null;
-    const allowedGet =
-      method === "GET" &&
-      ((target.pathname === "/v1/account" && !target.search) ||
-        (/^\/v1\/customers\/cus_[A-Za-z0-9]{6,}$/.test(target.pathname) &&
-          !target.search) ||
-        (price !== null &&
-          prices.includes(price) &&
-          [...target.searchParams].length === 1 &&
-          target.searchParams.get("expand[]") === "product"));
-    const allowedPost =
-      method === "POST" &&
-      target.pathname === "/v1/customers" &&
-      !target.search;
     if (
       target.origin !== "https://api.stripe.com" ||
       target.username ||
       target.password ||
       target.hash ||
-      !(allowedGet || allowedPost) ||
+      !["GET", "POST"].includes(method) ||
       headers.get("authorization") !== `Bearer ${secretKey}` ||
       headers.get("stripe-version") !== LIVE_STRIPE_API_VERSION ||
       headers.has("stripe-account") ||
@@ -54,33 +41,9 @@ export function boundedLiveCustomerTransport(
       clock() >= deadline
     )
       throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
-    if (allowedPost) {
-      if (
-        ++posts > 1 ||
-        typeof init.body !== "string" ||
-        !headers.get("idempotency-key")?.startsWith("kxra-customer-")
-      )
-        throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
-      const body = new URLSearchParams(init.body);
-      const keys = [
-        "kxra_customer_intent",
-        "kxra_org",
-        "kxra_actor",
-        "kxra_offer",
-        "kxra_mapping_revision",
-        "kxra_intent_version",
-        "kxra_terms_sha256",
-        "kxra_execution_scope",
-        "kxra_execution_mode",
-        "kxra_execution_sha256",
-        "kxra_execution_project",
-      ];
-      if (
-        [...body].length !== keys.length ||
-        keys.some((key) => body.getAll(`metadata[${key}]`).length !== 1)
-      )
-        throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
-    }
+    if (method === "POST" && ++posts > 1)
+      throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
+    policy.authorize(target, init);
     const controller = new AbortController();
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     let reject!: (error: unknown) => void;
@@ -137,7 +100,9 @@ export function boundedLiveCustomerTransport(
             if (total > 100_000 || clock() >= deadline) throw Error();
             chunks.push(next.value.slice());
           }
-          return new Response(Buffer.concat(chunks, total), {
+          const bytes = Buffer.concat(chunks, total);
+          policy.inspect?.(target, bytes);
+          return new Response(bytes, {
             status: response.status,
             statusText: response.statusText,
             headers: response.headers,
@@ -158,4 +123,68 @@ export function boundedLiveCustomerTransport(
       init.signal?.removeEventListener("abort", abort);
     }
   };
+}
+
+/** Strict customer-only capability retained for existing callers. */
+export function boundedLiveCustomerTransport(
+  fetcher: typeof fetch,
+  secretKey: string,
+  prices: readonly string[],
+  options: { deadlineMs?: number; now?: () => number } = {},
+) {
+  return boundedDispatchTransport(
+    fetcher,
+    secretKey,
+    {
+      authorize: (target, init) => {
+        const method = init.method || "GET",
+          headers = new Headers(init.headers);
+        const price = target.pathname.startsWith("/v1/prices/")
+          ? target.pathname.slice("/v1/prices/".length)
+          : null;
+        const get =
+          method === "GET" &&
+          !init.body &&
+          ((target.pathname === "/v1/account" && !target.search) ||
+            (/^\/v1\/customers\/cus_[A-Za-z0-9]{6,}$/.test(target.pathname) &&
+              !target.search) ||
+            (price !== null &&
+              prices.includes(price) &&
+              [...target.searchParams].length === 1 &&
+              target.searchParams.get("expand[]") === "product"));
+        const post =
+          method === "POST" &&
+          target.pathname === "/v1/customers" &&
+          !target.search;
+        if (!get && !post) throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
+        if (post) {
+          if (
+            typeof init.body !== "string" ||
+            !headers.get("idempotency-key")?.startsWith("kxra-customer-")
+          )
+            throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
+          const body = new URLSearchParams(init.body),
+            keys = [
+              "kxra_customer_intent",
+              "kxra_org",
+              "kxra_actor",
+              "kxra_offer",
+              "kxra_mapping_revision",
+              "kxra_intent_version",
+              "kxra_terms_sha256",
+              "kxra_execution_scope",
+              "kxra_execution_mode",
+              "kxra_execution_sha256",
+              "kxra_execution_project",
+            ];
+          if (
+            [...body].length !== keys.length ||
+            keys.some((key) => body.getAll(`metadata[${key}]`).length !== 1)
+          )
+            throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
+        }
+      },
+    },
+    { deadlineMs: options.deadlineMs, now: options.now },
+  );
 }

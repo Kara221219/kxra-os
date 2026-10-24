@@ -4,6 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import pg from "pg";
+import { rootCertificates } from "node:tls";
+import { customerDispatchConfiguration } from "../packages/integrations/live-customer-dispatch-config";
+import { liveCustomerDatabaseExecutor } from "../packages/integrations/live-customer-worker";
 import { localModeConfiguration } from "../packages/authz/local-guard";
 import { requireLiveBillingWorkerIdentity } from "../packages/integrations/live-worker-identity";
 
@@ -76,6 +79,18 @@ test("fresh private fixture accepts a genuine runner login followed by worker SE
   let owned = false;
   await admin.connect();
   try {
+    const isolation = (
+      await admin.query(
+        "select current_setting('listen_addresses') listen,current_setting('unix_socket_directories') socket,current_database() db",
+      )
+    ).rows[0];
+    assert.equal(
+      isolation.listen,
+      "",
+      "Transient no-password role requires a TCP-disabled fixture",
+    );
+    assert.equal(fs.realpathSync(isolation.socket), config.host);
+    assert.equal(isolation.db, config.database);
     await admin.query(
       "select pg_advisory_lock(hashtext('local-fixture-billing-runner-identity'))",
     );
@@ -155,6 +170,39 @@ test("fresh private fixture accepts a genuine runner login followed by worker SE
     });
     assert.doesNotThrow(() => requireLiveBillingWorkerIdentity(actual));
     await runner.query("commit");
+    assert.equal(
+      (await runner.query("select current_user")).rows[0].current_user,
+      "kxra_billing_runner",
+    );
+    // Exercise the real short-transaction adapter with a genuine second runner
+    // connection. Only the transport is injected to the private fixture socket;
+    // this proves transaction/identity handling, NOT hosted TLS/provider readiness.
+    const project = "jlebgsxcvhvpueuibekd";
+    const target = customerDispatchConfiguration({
+      KXRA_MODERN_BILLING_DISPATCH_ENABLED: "true",
+      NODE_ENV: "production",
+      KXRA_ENVIRONMENT: "staging",
+      NEXT_PUBLIC_SUPABASE_URL: `https://${project}.supabase.co`,
+      STRIPE_SECRET_KEY: "sk_test_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000",
+      KXRA_BILLING_WORKER_DATABASE_URL: `postgresql://kxra_billing_runner.${project}:synthetic@aws-0-eu-west-2.pooler.supabase.com:5432/postgres`,
+      KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(rootCertificates[0]).toString(
+        "base64",
+      ),
+    })!;
+    const execute = liveCustomerDatabaseExecutor(target, async () => {
+      const client = new pg.Client({ ...config, user: "kxra_billing_runner" });
+      return {
+        connect: async () => {
+          await client.connect();
+        },
+        query: (text, values) => client.query(text, values),
+        end: () => client.end(),
+      };
+    });
+    assert.equal(
+      await execute({ text: "select current_user::text value", values: [] }),
+      "kxra_billing_worker",
+    );
     assert.equal(
       (await runner.query("select current_user")).rows[0].current_user,
       "kxra_billing_runner",
