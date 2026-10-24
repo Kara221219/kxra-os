@@ -1,3 +1,16 @@
+import {
+  bindModernExecution,
+  modernExecution,
+  assertModernScopeTag,
+  assertModernProviderMode,
+  assertModernModeTag,
+  modernCatalogueRow,
+  modernScopeMetadata,
+  modernScopeTagSchema,
+  type ModernExecutionDependencies,
+  type ModernExecutionMode,
+  type ModernScopeTag,
+} from "./modern-billing-scope";
 import crypto from "node:crypto";
 import { z } from "zod";
 import { approvedPlan } from "../workspace/approved-catalogue";
@@ -23,9 +36,9 @@ const ids = {
 const mappingSchema = z
   .object({
     version: z.literal(1),
-    mode: z.literal("live"),
+    mode: z.enum(["live", "staging_sandbox"]),
     enabled: z.literal(true),
-    account_id: z.literal("acct_1Rv3KdC84VkhhIRz"),
+    account_id: id("acct"),
     offer_key: offer,
     revision: z.number().int().positive(),
     price_id: id("price"),
@@ -38,13 +51,7 @@ const mappingSchema = z
     automatic_tax: z.boolean(),
     payment_method: z.literal("card"),
   })
-  .strict()
-  .refine(
-    (m) =>
-      m.price_id === ids[m.offer_key][0] &&
-      m.product_id === ids[m.offer_key][1],
-    "APPROVED_CATALOGUE_REQUIRED",
-  );
+  .strict();
 const intentSchema = z
   .object({
     id: z.uuid(),
@@ -62,10 +69,10 @@ const intentSchema = z
   .strict();
 export type LiveCustomerIntent = z.infer<typeof intentSchema>;
 export type LiveCustomerMapping = z.infer<typeof mappingSchema>;
-export type LiveCustomerDependencies = {
+export type LiveCustomerDependencies = ModernExecutionDependencies & {
   runtime?: {
     enabled: boolean;
-    mode: "live";
+    mode: "live" | "staging_sandbox";
     nodeEnv: string;
     secretKey: string;
   };
@@ -73,7 +80,11 @@ export type LiveCustomerDependencies = {
   resolveIntent: (
     id: string,
     principal: LiveBillingPrincipal,
-  ) => Promise<{ intent: unknown; mapping: unknown } | null>;
+  ) => Promise<{
+    intent: unknown;
+    mapping: unknown;
+    execution_scope?: unknown;
+  } | null>;
   stillCurrent: (
     intent: Readonly<LiveCustomerIntent>,
     mapping: Readonly<LiveCustomerMapping>,
@@ -89,6 +100,10 @@ const metadataSchema = z
     kxra_mapping_revision: z.string().regex(/^[1-9][0-9]*$/),
     kxra_intent_version: z.string().regex(/^[1-9][0-9]*$/),
     kxra_terms_sha256: digest,
+    kxra_execution_scope: z.uuid(),
+    kxra_execution_mode: z.enum(["LIVE", "STAGING_SANDBOX"]),
+    kxra_execution_sha256: digest,
+    kxra_execution_project: z.string(),
   })
   .strict();
 export type LiveCustomerResult = Readonly<{
@@ -98,8 +113,9 @@ export type LiveCustomerResult = Readonly<{
   offer_key: string;
   mapping_revision: number;
   intent_version: number;
-  account_id: "acct_1Rv3KdC84VkhhIRz";
-  livemode: true;
+  account_id: string;
+  livemode: boolean;
+  execution_scope: ModernScopeTag;
   outcome: "BOUND" | "UNCERTAIN" | "QUARANTINED";
   customer_id: string | null;
   metadata: z.infer<typeof metadataSchema> | null;
@@ -115,7 +131,7 @@ class CreationFault extends Error {
 const customerSchema = z.object({
   id: id("cus"),
   object: z.literal("customer"),
-  livemode: z.literal(true),
+  livemode: z.boolean(),
   deleted: z.literal(false).optional(),
   created: z.number().int().positive(),
   balance: z.literal(0),
@@ -126,19 +142,23 @@ const customerSchema = z.object({
   metadata: metadataSchema,
 });
 
-export async function createLiveStripeCustomer(
+async function createCustomerCore(
   deps: LiveCustomerDependencies,
   input: unknown,
   principalInput: LiveBillingPrincipal,
+  expectedMode: ModernExecutionMode,
 ): Promise<LiveCustomerResult> {
+  deps = bindModernExecution(deps, deps.runtime?.secretKey || "", expectedMode);
+  const execution = modernExecution(deps),
+    scope = execution.execution_scope;
   const runtime = deps.runtime;
   if (
     !runtime?.enabled ||
-    runtime.mode !== "live" ||
+    runtime.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
     runtime.nodeEnv !== "production"
   )
     throw Error("LIVE_CUSTOMER_DISABLED");
-  if (!/^(sk|rk)_live_[A-Za-z0-9_]{20,}$/.test(runtime.secretKey))
+  if (!/^(sk|rk)_(live|test)_[A-Za-z0-9_]{20,}$/.test(runtime.secretKey))
     throw Error("LIVE_CUSTOMER_LIVE_KEY_REQUIRED");
   const { intent_id } = z.object({ intent_id: z.uuid() }).strict().parse(input);
   const principal = z
@@ -147,8 +167,17 @@ export async function createLiveStripeCustomer(
     .parse(principalInput);
   const canonical = await deps.resolveIntent(intent_id, principal);
   if (!canonical) throw Error("LIVE_CUSTOMER_NOT_AUTHORIZED");
+  assertModernScopeTag(canonical.execution_scope, scope);
   const intent = intentSchema.parse(canonical.intent),
     mapping = mappingSchema.parse(canonical.mapping);
+  const row = modernCatalogueRow(execution, mapping.offer_key);
+  if (
+    mapping.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
+    mapping.account_id !== scope.account_id ||
+    mapping.price_id !== row.price_id ||
+    mapping.product_id !== row.product_id
+  )
+    throw Error("MODERN_CUSTOMER_MAPPING_MISMATCH");
   const now = deps.nowSeconds || (() => Math.floor(Date.now() / 1000));
   const started = now();
   if (
@@ -172,6 +201,7 @@ export async function createLiveStripeCustomer(
   )
     throw Error("LIVE_CUSTOMER_INTENT_EXPIRED");
   const metadata = metadataSchema.parse({
+    ...modernScopeMetadata(scope),
     kxra_customer_intent: intent.id,
     kxra_org: intent.org_id,
     kxra_actor: intent.actor_id,
@@ -186,7 +216,14 @@ export async function createLiveStripeCustomer(
   // No email/name/address/tax identity or payment method is sent. Collection belongs to the separately reviewed checkout UI.
   const nonce = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ intent, mapping, body: body.toString() }))
+    .update(
+      JSON.stringify({
+        execution_scope: scope,
+        intent,
+        mapping,
+        body: body.toString(),
+      }),
+    )
     .digest("hex");
   let attempted = false,
     observedCustomer: string | null = null;
@@ -206,7 +243,8 @@ export async function createLiveStripeCustomer(
       mapping_revision: intent.mapping_revision,
       intent_version: intent.version,
       account_id: mapping.account_id,
-      livemode: true as const,
+      livemode: scope.livemode,
+      execution_scope: scope,
       outcome,
       customer_id: customer,
       metadata: verifiedMetadata,
@@ -271,7 +309,9 @@ export async function createLiveStripeCustomer(
     } finally {
       reader.releaseLock();
     }
-    return schema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    assertModernProviderMode(raw, scope);
+    return schema.parse(raw);
   }
   try {
     const account = await request(
@@ -290,7 +330,7 @@ export async function createLiveStripeCustomer(
         id: z.literal(mapping.price_id),
         object: z.literal("price"),
         active: z.literal(true),
-        livemode: z.literal(true),
+        livemode: z.boolean(),
         currency: z.literal("gbp"),
         unit_amount: z.number().int(),
         type: z.literal("recurring"),
@@ -307,7 +347,7 @@ export async function createLiveStripeCustomer(
           id: z.literal(mapping.product_id),
           object: z.literal("product"),
           active: z.literal(true),
-          livemode: z.literal(true),
+          livemode: z.boolean(),
         }),
       }),
     );
@@ -382,42 +422,51 @@ function command(
     entitlement_authority: false,
   });
 }
-function enabled(config?: { enabled: boolean; mode: "live" }) {
-  if (config?.enabled !== true || config.mode !== "live")
+function enabled(
+  config: { enabled: boolean; mode: "live" | "staging_sandbox" } | undefined,
+  expectedMode: ModernExecutionMode,
+) {
+  if (
+    config?.enabled !== true ||
+    config.mode !== (expectedMode === "LIVE" ? "live" : "staging_sandbox")
+  )
     throw Error("LIVE_CUSTOMER_DISABLED");
 }
-export function requestLiveCustomerCommand(
+function requestLiveCustomerCommandCore(
   input: unknown,
-  config?: { enabled: boolean; mode: "live" },
+  config: { enabled: boolean; mode: "live" | "staging_sandbox" } | undefined,
+  expectedMode: ModernExecutionMode,
 ) {
-  enabled(config);
+  enabled(config, expectedMode);
   const r = z
     .object({ intent_id: z.uuid(), offer_key: offer })
     .strict()
     .parse(input);
   return command(
-    "select kxra_private.request_live_customer_intent($1::uuid,$2::text) value",
+    `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}request_live_customer_intent($1::uuid,$2::text) value`,
     [r.intent_id, r.offer_key],
     "AUTHENTICATED_SERVER",
   );
 }
-export function claimLiveCustomerCommand(
+function claimLiveCustomerCommandCore(
   input: unknown,
-  config?: { enabled: boolean; mode: "live" },
+  config: { enabled: boolean; mode: "live" | "staging_sandbox" } | undefined,
+  expectedMode: ModernExecutionMode,
 ) {
-  enabled(config);
+  enabled(config, expectedMode);
   const r = z.object({ intent_id: z.uuid() }).strict().parse(input);
   return command(
-    "select kxra_private.claim_live_customer_intent($1::uuid) value",
+    `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}claim_live_customer_intent($1::uuid) value`,
     [r.intent_id],
     "BILLING_WORKER",
   );
 }
-export function finishLiveCustomerCommand(
+function finishLiveCustomerCommandCore(
   input: unknown,
-  config?: { enabled: boolean; mode: "live" },
+  config: { enabled: boolean; mode: "live" | "staging_sandbox" } | undefined,
+  expectedMode: ModernExecutionMode,
 ) {
-  enabled(config);
+  enabled(config, expectedMode);
   const r = z
     .object({
       intent_id: z.uuid(),
@@ -426,8 +475,9 @@ export function finishLiveCustomerCommand(
       offer_key: offer,
       mapping_revision: z.number().int().positive(),
       intent_version: z.number().int().positive(),
-      account_id: z.literal("acct_1Rv3KdC84VkhhIRz"),
-      livemode: z.literal(true),
+      account_id: id("acct"),
+      livemode: z.boolean(),
+      execution_scope: modernScopeTagSchema,
       outcome: z.enum(["BOUND", "UNCERTAIN", "QUARANTINED"]),
       customer_id: id("cus").nullable(),
       metadata: metadataSchema.nullable(),
@@ -437,21 +487,25 @@ export function finishLiveCustomerCommand(
     })
     .strict()
     .parse(input);
+  const tag = assertModernModeTag(r.execution_scope, expectedMode);
+  if (r.livemode !== tag.livemode || r.account_id !== tag.account_id)
+    throw Error("MODERN_CUSTOMER_RECEIPT_SCOPE_MISMATCH");
   if (r.outcome === "BOUND" && (!r.customer_id || !r.metadata))
     throw Error("LIVE_CUSTOMER_PROVENANCE_REQUIRED");
   return command(
-    "select kxra_private.finish_live_customer_intent($1::uuid,$2::jsonb) value",
+    `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}finish_live_customer_intent($1::uuid,$2::jsonb) value`,
     [r.intent_id, JSON.stringify(r)],
     "BILLING_WORKER",
   );
 }
 
 /** Only answers whether the claimed canonical intent is still eligible; no table access. */
-export function currentLiveCustomerCommand(
+function currentLiveCustomerCommandCore(
   input: unknown,
-  config?: { enabled: boolean; mode: "live" },
+  config: { enabled: boolean; mode: "live" | "staging_sandbox" } | undefined,
+  expectedMode: ModernExecutionMode,
 ) {
-  enabled(config);
+  enabled(config, expectedMode);
   const r = z
     .object({
       intent_id: z.uuid(),
@@ -460,8 +514,75 @@ export function currentLiveCustomerCommand(
     .strict()
     .parse(input);
   return command(
-    "select kxra_private.live_customer_intent_current($1::uuid,$2::integer) value",
+    `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}live_customer_intent_current($1::uuid,$2::integer) value`,
     [r.intent_id, r.intent_version],
     "BILLING_WORKER",
   );
+}
+
+export function createLiveStripeCustomer(
+  deps: LiveCustomerDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return createCustomerCore(deps, input, principal, "LIVE");
+}
+export function createStagingSandboxStripeCustomer(
+  deps: LiveCustomerDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return createCustomerCore(deps, input, principal, "STAGING_SANDBOX");
+}
+
+export function requestLiveCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "live" },
+) {
+  return requestLiveCustomerCommandCore(input, config, "LIVE");
+}
+export function requestStagingSandboxCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "staging_sandbox" },
+) {
+  return requestLiveCustomerCommandCore(input, config, "STAGING_SANDBOX");
+}
+
+export function claimLiveCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "live" },
+) {
+  return claimLiveCustomerCommandCore(input, config, "LIVE");
+}
+export function claimStagingSandboxCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "staging_sandbox" },
+) {
+  return claimLiveCustomerCommandCore(input, config, "STAGING_SANDBOX");
+}
+
+export function finishLiveCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "live" },
+) {
+  return finishLiveCustomerCommandCore(input, config, "LIVE");
+}
+export function finishStagingSandboxCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "staging_sandbox" },
+) {
+  return finishLiveCustomerCommandCore(input, config, "STAGING_SANDBOX");
+}
+
+export function currentLiveCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "live" },
+) {
+  return currentLiveCustomerCommandCore(input, config, "LIVE");
+}
+export function currentStagingSandboxCustomerCommand(
+  input: unknown,
+  config?: { enabled: boolean; mode: "staging_sandbox" },
+) {
+  return currentLiveCustomerCommandCore(input, config, "STAGING_SANDBOX");
 }

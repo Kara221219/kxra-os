@@ -1,7 +1,14 @@
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import {
+  modernScopeMetadata,
+  type ModernExecutionMode,
+} from "../packages/integrations/modern-billing-scope";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createLiveStripeCustomer,
+  createStagingSandboxStripeCustomer,
+  finishStagingSandboxCustomerCommand,
   requestLiveCustomerCommand,
   claimLiveCustomerCommand,
   finishLiveCustomerCommand,
@@ -36,7 +43,13 @@ const plans = [
     19900,
   ],
 ] as const;
-function fixture(p = plans[0] as (typeof plans)[number]) {
+function fixture(
+  p = plans[0] as (typeof plans)[number],
+  mode: ModernExecutionMode = "LIVE",
+) {
+  const scoped = modernBillingFixture(mode),
+    scope = scoped.execution.execution_scope,
+    row = scoped.execution.catalogue.find((r) => r.offer_key === p[0])!;
   const intent = {
     id: intentId,
     ...principal,
@@ -51,13 +64,13 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   };
   const mapping = {
     version: 1,
-    mode: "live",
+    mode: scope.livemode ? "live" : "staging_sandbox",
     enabled: true,
-    account_id: "acct_1Rv3KdC84VkhhIRz",
+    account_id: scope.account_id,
     offer_key: String(p[0]),
     revision: 1,
-    price_id: String(p[1]),
-    product_id: String(p[2]),
+    price_id: row.price_id,
+    product_id: row.product_id,
     portal_configuration_id: "bpc_synthetic123",
     activation_review_sha256: hash,
     terms_review_sha256: hash,
@@ -75,7 +88,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     id: mapping.price_id,
     object: "price",
     active: true,
-    livemode: true,
+    livemode: scope.livemode,
     currency: "gbp",
     unit_amount: Number(p[3]),
     type: "recurring",
@@ -88,10 +101,11 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
       id: mapping.product_id,
       object: "product",
       active: true,
-      livemode: true,
+      livemode: scope.livemode,
     },
   };
   const metadata = {
+    ...modernScopeMetadata(scope),
     kxra_customer_intent: intent.id,
     kxra_org: intent.org_id,
     kxra_actor: intent.actor_id,
@@ -103,7 +117,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const customer = {
     id: "cus_synthetic123",
     object: "customer",
-    livemode: true,
+    livemode: scope.livemode,
     created: now,
     balance: 0,
     currency: null,
@@ -118,14 +132,17 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     | ((url: string, init: RequestInit, result: unknown) => Response | unknown)
     | undefined;
   const deps: LiveCustomerDependencies = {
+    ...scoped,
     runtime: {
       enabled: true,
-      mode: "live",
+      mode: scope.livemode ? "live" : "staging_sandbox",
       nodeEnv: "production",
-      secretKey: "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000",
+      secretKey: scope.livemode
+        ? "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000"
+        : "sk_test_SYNTHETIC_NOT_A_CREDENTIAL_000000",
     },
     nowSeconds: () => now,
-    resolveIntent: async () => ({ intent, mapping }),
+    resolveIntent: async () => ({ intent, mapping, execution_scope: scope }),
     stillCurrent: async () => true,
     transport: async (url, init) => {
       calls.push({ url, init });
@@ -143,6 +160,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     },
   };
   return {
+    mode,
     intent,
     mapping,
     account,
@@ -155,7 +173,9 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
 }
 const input = { intent_id: intentId };
 const run = (f: ReturnType<typeof fixture>, data: unknown = input) =>
-  createLiveStripeCustomer(f.deps, data, principal);
+  (f.mode === "LIVE"
+    ? createLiveStripeCustomer
+    : createStagingSandboxStripeCustomer)(f.deps, data, principal);
 for (const p of plans)
   test(`${p[0]}: one canonical metadata-only POST then live read verification`, async () => {
     const f = fixture(p);
@@ -373,4 +393,35 @@ test("current intent check is a parameterized read-only worker command", () => {
       { enabled: true, mode: "live" },
     ),
   );
+});
+
+for (const plan of plans)
+  test(`${plan[0]} modern staging sandbox uses SAME customer algorithm with actual false mode`, async () => {
+    const f = fixture(plan, "STAGING_SANDBOX");
+    const r = await run(f);
+    assert.equal(r.outcome, "BOUND");
+    assert.equal(r.livemode, false);
+    assert.equal(r.execution_scope.execution_mode, "STAGING_SANDBOX");
+    assert.equal(r.account_id, f.deps.execution!.execution_scope.account_id);
+    assert.equal(
+      finishStagingSandboxCustomerCommand(r, {
+        enabled: true,
+        mode: "staging_sandbox",
+      }).text.includes("staging_sandbox_finish_live_customer_intent"),
+      true,
+    );
+    await assert.rejects(createLiveStripeCustomer(f.deps, input, principal));
+  });
+test("modern sandbox customer rejects live provider data and wrong canonical scope", async () => {
+  const f = fixture(plans[0], "STAGING_SANDBOX");
+  f.customer.livemode = true;
+  assert.equal((await run(f)).outcome, "UNCERTAIN");
+  const g = fixture();
+  g.deps.resolveIntent = async () => ({
+    intent: g.intent,
+    mapping: g.mapping,
+    execution_scope:
+      modernBillingFixture("STAGING_SANDBOX").execution.execution_scope,
+  });
+  await assert.rejects(run(g));
 });
