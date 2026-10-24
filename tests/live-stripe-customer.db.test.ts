@@ -313,18 +313,28 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       uncertain.context,
       true,
     );
-    const lateLegacy = await fixture();
-    await lateLegacy.request();
-    await lateLegacy.claim();
+    const blockedLegacy = await fixture();
+    await blockedLegacy.request();
+    await blockedLegacy.claim();
     await call(
       "insert into kxra.billing_customers(org_id,provider_customer_id) values($1,$2)",
-      [lateLegacy.org, `cus_${crypto.randomBytes(12).toString("hex")}`],
+      [blockedLegacy.org, `cus_${crypto.randomBytes(12).toString("hex")}`],
       undefined,
       "42501",
     );
     // Reciprocal lane fencing prevents the formerly reachable late legacy write.
     // Quarantine remains exercised by committed revocation and disabled activation.
-    assert.equal(await lateLegacy.finish(), "BOUND");
+    assert.equal(await blockedLegacy.finish(), "BOUND");
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from kxra.billing_customers where org_id=$1",
+          [blockedLegacy.org],
+        )
+      ).rows[0].n,
+      0,
+    );
+
     const revoked = await fixture();
     await revoked.request();
     await revoked.claim();
@@ -371,7 +381,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       undefined,
       true,
     );
-    for (const f of [happy, uncertain, lateLegacy, revoked, disabled]) {
+    for (const f of [happy, uncertain, blockedLegacy, revoked, disabled]) {
       assert.equal(
         (
           await db.query(
@@ -390,16 +400,15 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
         ).rows[0].n,
         0,
       );
-      if (f !== happy)
-        assert.equal(
-          (
-            await db.query(
-              "select count(*)::integer n from kxra_private.live_billing_bindings where org_id=$1",
-              [f.org],
-            )
-          ).rows[0].n,
-          0,
-        );
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::integer n from kxra_private.live_billing_bindings where org_id=$1",
+            [f.org],
+          )
+        ).rows[0].n,
+        f === happy || f === blockedLegacy ? 1 : 0,
+      );
     }
   } finally {
     await db.query("rollback");
