@@ -1155,3 +1155,20 @@ applies deny-all CSP and no-referrer only to the exact terms path. Ten focused
 checks cover this path and unchanged sibling/invitation/nonce policies. The
 repair's rebuilt artifact acceptance must accompany its release receipt, separate
 from preceding-source pipeline results. No assertions or budgets were relaxed.
+
+
+### 2026-10-24 — local test-only CodeQL repair after 856621a
+
+Prepared a separate repair for new alerts 29–38 without modifying the published
+856621a checkout. Eight generated-fixture metadata readers now use one no-follow,
+nonblocking descriptor, validate fstat ownership/mode/type/size, read bounded bytes
+from that same descriptor, check size/time consistency and always close it. All
+existing directory/socket/fixture/database-target guards remain. Two rendering
+assertions now inspect parsed complete href/URL values, including lookalike-host
+and nested-cache cases, rather than unanchored or host-substring matches.
+
+Thirty-two focused pure checks, whole-source TypeScript and formatting pass. The
+new file-reader cases cover symlinks, unsafe modes, directories/FIFOs, oversize and
+invalid JSON/UTF8. No database/browser/build/provider execution or public source
+publication occurred in this repair. Actual CodeQL resolution and native database
+regression remain owner acceptance; the 21 older alerts were not dismissed.

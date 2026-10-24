@@ -1,3 +1,4 @@
+import { renderedAnchorHrefs } from "./support/rendered-html";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -277,7 +278,11 @@ test("hosted recovery presentation cannot offer revoked accounts a provisioning 
     }),
   );
   assert.match(review, /Workspace access review required/);
-  assert.match(review, /https:\/\/kxra-group.com\/contact/);
+  assert.ok(
+    renderedAnchorHrefs(review).some(
+      (href) => href === "https://kxra-group.com/contact",
+    ),
+  );
   assert.match(review, /name="logout" value="1"/);
   assert.doesNotMatch(
     review,

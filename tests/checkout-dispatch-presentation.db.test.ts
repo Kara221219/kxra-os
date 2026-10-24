@@ -1,3 +1,4 @@
+import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -21,12 +22,7 @@ function configuration() {
     assert.equal(meta.uid, process.getuid!());
     assert.equal(meta.mode & 0o077, 0);
   }
-  const file = path.join(runtime, "database.json"),
-    meta = fs.lstatSync(file);
-  assert.ok(meta.isFile() && !meta.isSymbolicLink());
-  assert.equal(meta.uid, process.getuid!());
-  assert.equal(meta.mode & 0o022, 0);
-  const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
+  const cfg = readPrivateFixtureJson(path.join(runtime, "database.json"));
   assert.equal(fs.realpathSync(cfg.host), path.join(runtime, "socket"));
   assert.equal(cfg.user, "kxra_app");
   assert.ok(!cfg.password && !cfg.connectionString && !cfg.ssl);

@@ -1,3 +1,4 @@
+import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
@@ -27,12 +28,7 @@ test("modern scope preserves actual mode, rejects opposite capabilities and cros
     assert.equal(m.uid, process.getuid!());
     assert.equal(m.mode & 0o077, 0);
   }
-  const file = path.join(runtime, "database.json"),
-    meta = fs.lstatSync(file);
-  assert.ok(meta.isFile() && !meta.isSymbolicLink());
-  assert.equal(meta.uid, process.getuid!());
-  assert.equal(meta.mode & 0o022, 0);
-  const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
+  const cfg = readPrivateFixtureJson(path.join(runtime, "database.json"));
   assert.equal(cfg.host, path.join(process.env.KXRA_RUNTIME!, "socket"));
   assert.equal(fs.realpathSync(cfg.host), path.join(runtime, "socket"));
   assert.equal(cfg.user, "kxra_app");

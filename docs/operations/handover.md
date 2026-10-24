@@ -935,3 +935,18 @@ scoped webhook/runner/trigger credentials and scheduling/test budgets. Existing
 £29/£79/£199 catalogue with 1/5/15 seats is already created; do not recreate or
 change legacy FinanceVision records. Catalogue approval grants none of those
 other decisions. Keep checkout disabled until actual provider/hosted acceptance.
+
+
+### Test-only CodeQL repair handoff, 2026-10-24
+
+The local branch based on 856621a targets only new test-source alerts 29–38. Fixture
+JSON now opens O_RDONLY|O_NOFOLLOW|O_NONBLOCK before descriptor metadata checks,
+limits reads to 16 KiB, rejects invalid UTF8/non-object JSON and closes on every
+exit. The eight native callers keep all prior isolation/identity checks. Rendering
+tests use parse5 and complete URL components; no runtime authorization changed.
+
+Focused pure acceptance is 32/32, with full TypeScript and formatting passes. Root
+must run affected native fixtures sequentially and obtain exact-revision public
+publication approval before any remote verification. Do not claim the scan alerts
+resolved until the new exact SHA is analyzed. No older alerts, frozen source,
+held deployments, credentials or hosted state changed.

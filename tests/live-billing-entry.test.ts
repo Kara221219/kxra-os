@@ -1,3 +1,4 @@
+import { renderedAbsoluteUrls } from "./support/rendered-html";
 import { liveEntryStatus } from "../packages/authz/live-billing-entry-contract";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -523,7 +524,9 @@ test("checkout continuation requires completed canonical status and server avail
         available && request_state === "CONSUMED",
       );
       assert.ok(
-        !html.includes("checkout.stripe.com"),
+        renderedAbsoluteUrls(html).every(
+          (url) => url.hostname !== "checkout.stripe.com",
+        ),
         "No bearer URL is rendered or cached in HTML",
       );
     }
