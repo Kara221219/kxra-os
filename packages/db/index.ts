@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { localModeConfiguration } from "#kxra/local-guard";
 import { databaseConnectionString, databaseSsl } from "./ssl";
+import { hostedSelfServiceConfiguration } from "../authz/hosted-self-service";
 export type Principal = {
   id: string;
   aal: "aal1" | "aal2";
@@ -102,6 +103,15 @@ export async function scoped<T>(
         actor?.source === "fake-provider"
           ? "on"
           : "off",
+      ],
+    );
+    const hostedAdmission =
+      !localMode() && hostedSelfServiceConfiguration() !== null;
+    await db.query(
+      "select set_config('request.kxra.hosted_self_service',$1,true),set_config('request.kxra.verified_supabase_identity',$2,true)",
+      [
+        hostedAdmission ? "on" : "off",
+        hostedAdmission && actor?.source === "supabase" ? "on" : "off",
       ],
     );
     const result = await work(db);

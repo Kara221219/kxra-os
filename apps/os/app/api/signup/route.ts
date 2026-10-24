@@ -13,13 +13,14 @@ import {
   issueLocalProviderSession,
 } from "#kxra/local-runtime";
 import { renderEmail } from "../../../../../packages/integrations/email";
+import { hostedSelfServiceConfiguration } from "../../../../../packages/authz/hosted-self-service";
+import { hostedSignupAction } from "../../../lib/hosted-self-service";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
-    // Production import conditions make localMode permanently false. No hosted
-    // registration, Auth hook, policy or account configuration is activated.
-    if (!localMode() || process.env.VERCEL_ENV)
+    const local = localMode() && !process.env.VERCEL_ENV;
+    if (!local && !hostedSelfServiceConfiguration())
       return privateJson(
         {
           error: "Self-service registration is not enabled in this environment",
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       .object({ action: z.enum(["register", "provision"]) })
       .passthrough()
       .parse(raw).action;
+    if (!local) return privateJson(await hostedSignupAction(raw, action), 201);
     if (action === "register") {
       const v = z
         .object({
@@ -118,6 +120,14 @@ export async function POST(request: Request) {
       201,
     );
   } catch (e) {
+    if ((e as Error).message === "HOSTED_SIGNUP_PROVIDER_UNAVAILABLE")
+      return privateJson(
+        {
+          error:
+            "Registration temporarily unavailable. Try again or sign in to recover your account.",
+        },
+        503,
+      );
     if (e instanceof z.ZodError)
       return privateJson(
         { error: "Check the registration fields and matching passwords" },

@@ -32,6 +32,11 @@ test("hosted recovery provider failures do not disclose account or provider deta
 
 test("authentication callbacks allow only exact internal destinations", () => {
   assert.equal(authCallbackDestination("/join/finish"), "/join/finish");
+  assert.equal(authCallbackDestination("/signup"), "/signup");
+  assert.equal(
+    authCallbackDestination("/signup?next=//attacker.invalid"),
+    "/os",
+  );
   assert.equal(authCallbackDestination("/reset-password"), "/os");
   assert.equal(authCallbackDestination("//attacker.invalid"), "/os");
   assert.equal(authCallbackDestination("/reset-password?next=evil"), "/os");

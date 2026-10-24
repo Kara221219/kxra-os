@@ -76,13 +76,14 @@ export type AccountContext = Principal &
     organisation_id: string;
   };
 
-export async function supabase() {
+export async function supabase(transport?: typeof fetch) {
   const store = await cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key)
     throw new HttpError(503, "Authentication is not configured");
   return createServerClient(url, key, {
+    ...(transport ? { global: { fetch: transport } } : {}),
     cookies: {
       getAll: () => store.getAll(),
       setAll(items) {

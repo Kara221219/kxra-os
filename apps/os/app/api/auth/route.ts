@@ -22,6 +22,7 @@ import {
   joinIntentCookie,
   postAuthenticationDestination,
 } from "../../../../../packages/authz/join-intent";
+import { pendingHostedSignup } from "../../../lib/hosted-self-service";
 
 function redirect(req: Request, path: string) {
   return NextResponse.redirect(
@@ -94,7 +95,14 @@ export async function POST(req: Request) {
       if (gate.challengeRequired)
         await verifyHostedTotp(api, gate.factorId, code);
       const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
-      return redirect(req, postAuthenticationDestination(hasJoin));
+      return redirect(
+        req,
+        hasJoin
+          ? postAuthenticationDestination(true)
+          : (await pendingHostedSignup())
+            ? "/signup"
+            : "/os",
+      );
     }
     const fixture = localMode() ? f.get("fixture") : null;
     if (fixture) {
@@ -174,6 +182,7 @@ export async function POST(req: Request) {
       if (gate.challengeRequired) return redirect(req, "/login/mfa");
       const hasJoin = Boolean((await cookies()).get(joinIntentCookie));
       if (hasJoin) return redirect(req, postAuthenticationDestination(hasJoin));
+      if (await pendingHostedSignup()) return redirect(req, "/signup");
     }
     stage = "complete";
     return redirect(req, "/os");

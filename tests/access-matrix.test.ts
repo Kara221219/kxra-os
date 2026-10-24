@@ -1642,6 +1642,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "workspace_pilot_events",
       "pilot_stripe_config",
       "pilot_stripe_catalogue_config",
+      "hosted_self_service_config",
+      "hosted_signup_admissions",
       "pilot_stripe_bindings",
       "pilot_stripe_intents",
       "pilot_stripe_events",
@@ -1800,6 +1802,19 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       );
       await db.query("rollback to savepoint sandbox_mapping_visibility");
       await db.query("release savepoint sandbox_mapping_visibility");
+      for (const table of [
+        "hosted_self_service_config",
+        "hosted_signup_admissions",
+      ]) {
+        await db.query("savepoint hosted_admission_visibility");
+        await assert.rejects(
+          db.query(`select * from kxra.${table}`),
+          { code: "42501" },
+          `${actor}:hosted admission metadata must remain server-only`,
+        );
+        await db.query("rollback to savepoint hosted_admission_visibility");
+        await db.query("release savepoint hosted_admission_visibility");
+      }
       for (const check of expectations) {
         const actual = (await db.query(check.sql, check.values)).rows
           .map((row) => String(row.key))

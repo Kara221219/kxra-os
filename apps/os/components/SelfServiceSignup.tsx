@@ -1,30 +1,70 @@
 "use client";
-import { useRef, useState } from "react";
+import type { HostedSignupStatus } from "../../../packages/authz/hosted-self-service";
+import React, { useRef, useState } from "react";
 export function SelfServiceSignup({
   verified,
   signedIn,
+  mode = "local",
+  verificationRequested = false,
+  existingWorkspaceName,
+  accountState,
 }: {
   verified: boolean;
   signedIn: boolean;
+  mode?: "local" | "hosted";
+  verificationRequested?: boolean;
+  existingWorkspaceName?: string;
+  accountState?: HostedSignupStatus["state"];
 }) {
   const attempt = useRef<string | null>(null),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
+  if (mode === "hosted" && accountState === "REVIEW_REQUIRED")
+    return (
+      <section className="panel">
+        <h1>Workspace access review required</h1>
+        <p>
+          Your email is verified, but your account needs a workspace access
+          review before you can continue. This page cannot renew or override an
+          admission decision.
+        </p>
+        <a href="https://kxra-group.com/contact">Contact KXRA</a>
+        <form method="post" action="/api/auth">
+          <input type="hidden" name="logout" value="1" />
+          <button type="submit">Sign out</button>
+        </form>
+      </section>
+    );
+  if (mode === "hosted" && accountState === "EXISTING_ACCOUNT")
+    return (
+      <section className="panel">
+        <h1>Use your existing account</h1>
+        <p>
+          This account already has a KXRA identity. Continue to your existing
+          workspace or contact KXRA if access needs review.
+        </p>
+        <a href="/os">Continue to workspace</a>
+        <a href="https://kxra-group.com/contact">Contact KXRA</a>
+      </section>
+    );
   return (
     <section className="panel">
-      <p className="eyebrow">LOCAL CUSTOMER ENTRY</p>
+      <p className="eyebrow">
+        {mode === "local" ? "LOCAL CUSTOMER ENTRY" : "CUSTOMER WORKSPACE"}
+      </p>
       <h1>Create your workspace</h1>
       <p>
-        Local acceptance only. Email delivery and payments are synthetic; no
-        subscription, provider or charge is activated.
+        {mode === "local"
+          ? "Local acceptance only. Email delivery and payments are synthetic; no subscription, provider or charge is activated."
+          : "Verify your email, create your private workspace and complete onboarding. Creating an account does not activate a subscription or grant paid access."}
       </p>
-      {!verified && signedIn && (
+      {!verified && (signedIn || verificationRequested) && (
         <>
           <h2>Verify your email</h2>
           <p>
-            Use the verification message before creating any organisation or
-            membership. No workspace has been created. Re-enter the same
-            credentials below to resend a verification message if needed.
+            If registration is available for this account, use its verification
+            message before creating a workspace. You can also sign in to recover
+            a verified account. No paid access is granted by this step.
           </p>
           <a href="/signup">Check verified session</a>
         </>
@@ -75,6 +115,8 @@ export function SelfServiceSignup({
                 required
                 minLength={2}
                 maxLength={120}
+                defaultValue={existingWorkspaceName}
+                readOnly={mode === "hosted" && Boolean(existingWorkspaceName)}
               />
             </label>
             <p>
@@ -119,7 +161,9 @@ export function SelfServiceSignup({
             ? "Checking…"
             : verified
               ? "Create or recover workspace"
-              : "Create local account"}
+              : mode === "local"
+                ? "Create local account"
+                : "Create account"}
         </button>
       </form>
       <p role="status">{notice}</p>

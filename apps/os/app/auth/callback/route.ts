@@ -20,7 +20,11 @@ export async function GET(request: Request) {
   }
   return NextResponse.redirect(
     new URL(
-      next === "/join/finish" ? "/login?error=callback" : "/login?error=1",
+      next === "/join/finish"
+        ? "/login?error=callback"
+        : next === "/signup"
+          ? "/login?error=signup_callback"
+          : "/login?error=1",
       origin,
     ),
     303,

@@ -1,6 +1,7 @@
 import { localMode } from "../../../../packages/db";
 import Link from "next/link";
 import LocalFixtureLogin from "#kxra/local-fixture-ui";
+import { hostedSignupAvailable } from "../../lib/hosted-self-service";
 export const dynamic = "force-dynamic";
 
 const signInErrors: Record<string, string> = {
@@ -12,6 +13,8 @@ const signInErrors: Record<string, string> = {
     "Sign-in is temporarily unavailable because the secure service connection failed.",
   callback:
     "Your email is verified. Sign in with the password you created to continue the invitation.",
+  signup_callback:
+    "Sign in to check your verified account and continue workspace setup.",
 };
 
 export default async function Login({
@@ -21,6 +24,7 @@ export default async function Login({
 }) {
   const { error, verify, reset } = await searchParams;
   const local = localMode();
+  const registration = !local && (await hostedSignupAvailable());
   return (
     <main className="login">
       <Link href="/" className="wordmark">
@@ -65,8 +69,11 @@ export default async function Login({
       </p>
       <LocalFixtureLogin enabled={local} />
       <p style={{ marginTop: 24 }}>
-        KXRA has no public registration. New partners join through the secure
-        link in an owner-issued invitation.
+        {registration ? (
+          <Link href="/signup">Create a customer workspace</Link>
+        ) : (
+          "KXRA has no public registration. New partners join through the secure link in an owner-issued invitation."
+        )}
       </p>
     </main>
   );

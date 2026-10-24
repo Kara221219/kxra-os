@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 
 export function authCallbackDestination(requested: string | null) {
-  return requested === "/join/finish" ? requested : "/os";
+  return requested === "/join/finish" || requested === "/signup"
+    ? requested
+    : "/os";
 }
 
 type HostedRecoveryIntent = {
