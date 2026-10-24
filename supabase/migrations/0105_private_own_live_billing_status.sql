@@ -2,7 +2,7 @@ begin;
 
 -- Read capability only. No activation, provider identifiers, secret values,
 -- entitlement writes or table grants. 0104 is reserved for worker dispatch.
-create function kxra_private.own_live_billing_status() returns jsonb
+create function kxra_private.modern_core_own_live_billing_status() returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare
  o uuid=kxra_private.requested_org();
@@ -23,7 +23,7 @@ begin
  and organisation.state='ACTIVE' and organisation.organisation_kind='CUSTOMER';
  if not found then raise insufficient_privilege;end if;
 
- select exists(select 1 from kxra_private.live_billing_activation a where a.singleton and a.enabled and a.review_sha256 is not null) into billing_enabled;
+ select kxra_private.modern_billing_scope_ready() and exists(select 1 from kxra_private.live_billing_activation a where a.singleton and a.enabled and a.review_sha256 is not null) into billing_enabled;
  select * into b from kxra_private.live_billing_bindings where org_id=o;
  select * into c from kxra_private.live_customer_intents where org_id=o;
  select * into r from kxra_private.live_billing_intents where org_id=o order by created_at desc,id desc limit 1;
@@ -55,7 +55,7 @@ begin
   'request_state',coalesce(r.state,c.state),'available_actions',actions,
   'dispatch_ready',false,'entitlement_authority',false);
 end $$;
-revoke all on function kxra_private.own_live_billing_status() from public,anon,kxra_billing_worker;
-grant execute on function kxra_private.own_live_billing_status() to authenticated;
+revoke all on function kxra_private.modern_core_own_live_billing_status() from public,anon,kxra_billing_worker;
+
 
 commit;

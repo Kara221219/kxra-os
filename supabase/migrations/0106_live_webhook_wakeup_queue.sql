@@ -6,6 +6,14 @@ create table kxra_private.live_webhook_endpoint_binding(
  review_sha256 text check(review_sha256~'^[a-f0-9]{64}$'),
  check(not enabled or (project_ref is not null and review_sha256 is not null))
 );
+alter table kxra_private.live_webhook_endpoint_binding
+ add column scope_id uuid,add column execution_mode text,add column scope_project_ref text,add column scope_account_id text,add column scope_sha256 text,add column provider_livemode boolean,
+ add constraint live_webhook_endpoint_binding_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_webhook_endpoint_binding for each row execute function kxra_private.guard_modern_billing_row_scope();
+alter table kxra_private.live_webhook_endpoint_binding add check(not enabled or scope_id is not null);
+
 insert into kxra_private.live_webhook_endpoint_binding(singleton) values(true);
 create table kxra_private.live_webhook_receipts(
  event_id text primary key check(event_id~'^evt_[A-Za-z0-9]{6,124}$'),
@@ -14,16 +22,30 @@ create table kxra_private.live_webhook_receipts(
  customer_id text check(customer_id~'^cus_[A-Za-z0-9]{6,124}$'),
  subscription_id text check(subscription_id~'^sub_[A-Za-z0-9]{6,124}$'),
  invoice_id text check(invoice_id~'^in_[A-Za-z0-9]{6,125}$'),
- account_id text not null check(account_id='acct_1Rv3KdC84VkhhIRz'),
+ account_id text not null check(account_id~'^acct_[A-Za-z0-9]{6,}$'),
  project_ref text not null check(project_ref in ('jlebgsxcvhvpueuibekd','lhbgeucifxxcdoyrnesf')),
  api_version text not null check(api_version='2025-07-30.basil'),
- livemode boolean not null check(livemode),received_at timestamptz not null default now()
+ livemode boolean not null,received_at timestamptz not null default now()
 );
+alter table kxra_private.live_webhook_receipts
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_webhook_receipts_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_webhook_receipts for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 create table kxra_private.live_webhook_conflicts(
  event_id text not null references kxra_private.live_webhook_receipts(event_id),
  observed_sha256 text not null check(observed_sha256~'^[a-f0-9]{64}$'),
  received_at timestamptz not null default now(),primary key(event_id,observed_sha256)
 );
+alter table kxra_private.live_webhook_conflicts
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_webhook_conflicts_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_webhook_conflicts for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 create table kxra_private.live_webhook_queue(
  event_id text primary key references kxra_private.live_webhook_receipts(event_id),
  org_id uuid references kxra_private.live_billing_bindings(org_id),binding_version bigint check(binding_version>=0),
@@ -33,6 +55,13 @@ create table kxra_private.live_webhook_queue(
  check((org_id is null)=(binding_version is null)),
  check(state<>'CLAIMED' or (org_id is not null and claim_token is not null and lease_until is not null))
 );
+alter table kxra_private.live_webhook_queue
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_webhook_queue_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_webhook_queue for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 alter table kxra_private.live_webhook_endpoint_binding enable row level security;
 alter table kxra_private.live_webhook_receipts enable row level security;
 alter table kxra_private.live_webhook_conflicts enable row level security;
@@ -44,11 +73,13 @@ create trigger live_webhook_receipt_immutable before update or delete on kxra_pr
 create trigger live_webhook_conflict_immutable before update or delete on kxra_private.live_webhook_conflicts
  for each row execute function kxra_private.live_billing_receipt_immutable();
 
-create function kxra_private.record_live_billing_wakeup(e jsonb) returns text
+create function kxra_private.modern_core_record_live_billing_wakeup(e jsonb) returns text
 language plpgsql security definer set search_path='' as $$
 declare prior kxra_private.live_webhook_receipts;q kxra_private.live_webhook_queue;
  target uuid;other uuid;affected uuid;generation bigint;new_conflict boolean;ambiguous boolean=false;
 begin
+ perform kxra_private.modern_billing_payload_scope(e);
+ e=e-'execution_scope';
  if e is null or jsonb_typeof(e)<>'object' or not(e ?& array['event_id','event_type','payload_sha256','customer_id','subscription_id','invoice_id','account_id','project_ref','api_version','livemode'])
  or e-'event_id'-'event_type'-'payload_sha256'-'customer_id'-'subscription_id'-'invoice_id'-'account_id'-'project_ref'-'api_version'-'livemode'<>'{}'::jsonb
  or coalesce(e->>'event_id','')!~'^evt_[A-Za-z0-9]{6,124}$' or coalesce(e->>'payload_sha256','')!~'^[a-f0-9]{64}$'
@@ -56,8 +87,8 @@ begin
  or (e->>'customer_id' is not null and e->>'customer_id'!~'^cus_[A-Za-z0-9]{6,124}$')
  or (e->>'subscription_id' is not null and e->>'subscription_id'!~'^sub_[A-Za-z0-9]{6,124}$')
  or (e->>'invoice_id' is not null and e->>'invoice_id'!~'^in_[A-Za-z0-9]{6,125}$')
- or e->>'account_id' is distinct from 'acct_1Rv3KdC84VkhhIRz' or e->>'api_version' is distinct from '2025-07-30.basil'
- or e->'livemode' is distinct from 'true'::jsonb then raise exception 'Invalid safe live wakeup';end if;
+ or e->>'account_id' is distinct from (kxra_private.modern_billing_scope_tag()->>'account_id') or e->>'api_version' is distinct from '2025-07-30.basil'
+ or e->'livemode' is distinct from (kxra_private.modern_billing_scope_tag()->'livemode') then raise exception 'Invalid safe live wakeup';end if;
  perform 1 from kxra_private.live_webhook_endpoint_binding where singleton and enabled and project_ref=e->>'project_ref' for share;
  if not found then raise exception 'Reviewed live webhook endpoint is disabled';end if;
  -- Same receipt-global -> tenant order as0100; never acquire pilot after live.
@@ -83,7 +114,7 @@ begin
   return 'CONFLICT';
  end if;
  insert into kxra_private.live_webhook_receipts(event_id,event_type,payload_sha256,customer_id,subscription_id,invoice_id,account_id,project_ref,api_version,livemode)
- values(e->>'event_id',e->>'event_type',e->>'payload_sha256',e->>'customer_id',e->>'subscription_id',e->>'invoice_id',e->>'account_id',e->>'project_ref',e->>'api_version',true);
+ values(e->>'event_id',e->>'event_type',e->>'payload_sha256',e->>'customer_id',e->>'subscription_id',e->>'invoice_id',e->>'account_id',e->>'project_ref',e->>'api_version',(e->>'livemode')::boolean);
  if target is not null then
   for affected in select distinct value from unnest(array[target,other]) as candidate(value) where value is not null order by value loop
    perform pg_advisory_xact_lock(hashtext('live-billing:'||affected::text));
@@ -96,7 +127,7 @@ begin
  return case when ambiguous then 'QUARANTINED' when target is null then 'UNMATCHED' else 'QUEUED' end;
 end $$;
 
-create function kxra_private.list_unmatched_live_wakeups(n integer) returns setof jsonb
+create function kxra_private.modern_core_list_unmatched_live_wakeups(n integer) returns setof jsonb
 language plpgsql stable security definer set search_path='' as $$
 begin
  if n is null or n not between 1 and 20 then raise exception 'Invalid bounded wakeup limit';end if;
@@ -107,7 +138,7 @@ end $$;
 
 -- Trusted worker must read the provider event first. This only matches an existing
 -- binding; never creates a customer, tenant, subscription or entitlement.
-create function kxra_private.resolve_unmatched_live_wakeup(i text,verified_customer text) returns text
+create function kxra_private.modern_core_resolve_unmatched_live_wakeup(i text,verified_customer text) returns text
 language plpgsql security definer set search_path='' as $$
 declare q kxra_private.live_webhook_queue;b kxra_private.live_billing_bindings;generation bigint;
 begin
@@ -130,7 +161,7 @@ begin
  return 'MATCHED';
 end $$;
 
-create function kxra_private.claim_live_billing_wakeups(n integer) returns setof jsonb
+create function kxra_private.modern_core_claim_live_billing_wakeups(n integer) returns setof jsonb
 language plpgsql security definer set search_path='' as $$
 begin
  if n is null or n not between 1 and 20 then raise exception 'Invalid bounded wakeup limit';end if;
@@ -154,7 +185,7 @@ begin
  from claimed c join kxra_private.live_webhook_receipts r using(event_id);
 end $$;
 
-create function kxra_private.ack_live_billing_wakeup(i text,token uuid,job uuid) returns text
+create function kxra_private.modern_core_ack_live_billing_wakeup(i text,token uuid,job uuid) returns text
 language plpgsql security definer set search_path='' as $$
 declare q kxra_private.live_webhook_queue;
 begin
@@ -171,9 +202,8 @@ begin
  -- NEVER clears reconcile_required, changes binding.version or grants paid access.
  return 'DONE';
 end $$;
-revoke all on function kxra_private.record_live_billing_wakeup(jsonb),kxra_private.list_unmatched_live_wakeups(integer),
- kxra_private.resolve_unmatched_live_wakeup(text,text),kxra_private.claim_live_billing_wakeups(integer),kxra_private.ack_live_billing_wakeup(text,uuid,uuid)
+revoke all on function kxra_private.modern_core_record_live_billing_wakeup(jsonb),kxra_private.modern_core_list_unmatched_live_wakeups(integer),
+ kxra_private.modern_core_resolve_unmatched_live_wakeup(text,text),kxra_private.modern_core_claim_live_billing_wakeups(integer),kxra_private.modern_core_ack_live_billing_wakeup(text,uuid,uuid)
  from public,anon,authenticated,kxra_billing_worker;
-grant execute on function kxra_private.record_live_billing_wakeup(jsonb),kxra_private.list_unmatched_live_wakeups(integer),
- kxra_private.resolve_unmatched_live_wakeup(text,text),kxra_private.claim_live_billing_wakeups(integer),kxra_private.ack_live_billing_wakeup(text,uuid,uuid) to kxra_billing_worker;
+
 commit;

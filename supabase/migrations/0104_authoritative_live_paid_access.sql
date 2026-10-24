@@ -18,6 +18,13 @@ create table kxra_private.live_paid_policies(
  primary key(id,revision),foreign key(offer_key,mapping_revision) references kxra_private.live_billing_mappings(offer_key,revision),
  foreign key(terms_document_id,terms_document_version) references kxra.legal_documents(id,version)
 );
+alter table kxra_private.live_paid_policies
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_paid_policies_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_paid_policies for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 create unique index live_paid_one_enabled_policy on kxra_private.live_paid_policies(offer_key,mapping_revision) where enabled;
 create trigger live_paid_policy_immutable before update or delete on kxra_private.live_paid_policies for each row execute function kxra_private.live_billing_mapping_immutable();
 create table kxra_private.live_paid_read_jobs(
@@ -32,6 +39,13 @@ create table kxra_private.live_paid_read_jobs(
  expires_at timestamptz not null default now()+interval '5 minutes',
  foreign key(policy_id,policy_revision) references kxra_private.live_paid_policies(id,revision),check(period_end>period_start)
 );
+alter table kxra_private.live_paid_read_jobs
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_paid_read_jobs_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_paid_read_jobs for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 create function kxra_private.guard_live_paid_read_identity() returns trigger language plpgsql set search_path='' as $$
 begin
  if tg_op='DELETE' or (to_jsonb(new)-'state') is distinct from (to_jsonb(old)-'state') or old.state<>'CLAIMED' then raise exception 'Live read identity/consumption is immutable';end if;
@@ -43,6 +57,13 @@ create table kxra_private.live_paid_receipts(
  evidence_sha256 text not null check(evidence_sha256~'^[a-f0-9]{64}$'),outcome text not null check(outcome in ('ELIGIBLE','DENIED','STALE')),
  safe_evidence jsonb not null check(jsonb_typeof(safe_evidence)='object'),created_at timestamptz not null default now()
 );
+alter table kxra_private.live_paid_receipts
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_paid_receipts_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_paid_receipts for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 create table kxra_private.live_paid_conflicts(job_id uuid not null references kxra_private.live_paid_read_jobs(id),evidence_sha256 text not null check(evidence_sha256~'^[a-f0-9]{64}$'),primary key(job_id,evidence_sha256));
 create table kxra_private.live_paid_access(
  org_id uuid primary key references kxra_private.live_billing_bindings(org_id),job_id uuid not null unique references kxra_private.live_paid_receipts(job_id),
@@ -53,6 +74,19 @@ create table kxra_private.live_paid_access(
  cancel_at_period_end boolean not null,checked_at timestamptz not null,
  foreign key(policy_id,policy_revision) references kxra_private.live_paid_policies(id,revision),check(period_end>period_start)
 );
+alter table kxra_private.live_paid_access
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_paid_access_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_paid_access for each row execute function kxra_private.guard_modern_billing_row_scope();
+alter table kxra_private.live_paid_conflicts
+ add column scope_id uuid not null,add column execution_mode text not null,add column scope_project_ref text not null,add column scope_account_id text not null,add column scope_sha256 text not null,add column provider_livemode boolean not null,
+ add constraint live_paid_conflicts_execution_scope_fk foreign key(scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256)
+ references kxra_private.modern_billing_execution_identity(scope_id,execution_mode,project_ref,account_id,scope_sha256) match full,
+ add check((scope_id is null and provider_livemode is null) or (scope_id is not null and provider_livemode is not null and provider_livemode=(execution_mode='LIVE')));
+create trigger a00_execution_scope before insert or update on kxra_private.live_paid_conflicts for each row execute function kxra_private.guard_modern_billing_row_scope();
+
 alter table kxra_private.live_paid_policies enable row level security;
 alter table kxra_private.live_paid_read_jobs enable row level security;
 alter table kxra_private.live_paid_receipts enable row level security;
@@ -82,10 +116,10 @@ create function kxra_private.live_paid_policy_current(p uuid,v integer,o uuid) r
  join kxra_private.live_billing_mappings c on c.offer_key=q.offer_key and c.revision=q.mapping_revision and c.enabled
  join kxra_private.live_billing_activation a on a.singleton and a.enabled and a.review_sha256=c.activation_review_sha256 and a.review_sha256=q.activation_review_sha256
  join kxra.legal_documents d on d.id=q.terms_document_id and d.version=q.terms_document_version and d.content_sha256=q.terms_review_sha256
- where q.id=p and q.revision=v and q.enabled and q.terms_review_sha256=c.terms_review_sha256 and q.tax_review_sha256=c.tax_review_sha256
+ where kxra_private.modern_billing_scope_ready() and q.id=p and q.revision=v and q.enabled and q.terms_review_sha256=c.terms_review_sha256 and q.tax_review_sha256=c.tax_review_sha256
  and d.status='APPROVED' and d.effective_at<=now() and d.owner_approval_reference is not null and d.owner_approved_at is not null)
 $$;
-create function kxra_private.reserve_live_paid_read(i uuid,o uuid,gross integer,invoice text,item text,start_at bigint,end_at bigint) returns jsonb
+create function kxra_private.modern_core_reserve_live_paid_read(i uuid,o uuid,gross integer,invoice text,item text,start_at bigint,end_at bigint) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare b kxra_private.live_billing_bindings;c kxra_private.live_billing_mappings;q kxra_private.live_paid_policies;ck kxra_private.live_billing_intents;j kxra_private.live_paid_read_jobs;actor uuid;amount integer;
 begin
@@ -104,7 +138,7 @@ begin
  select * into ck from kxra_private.live_billing_intents where id=b.checkout_intent_id for share;
  if not found or ck.org_id<>o or ck.kind<>'CHECKOUT' or ck.state<>'CONSUMED' or ck.customer_id<>b.customer_id
  or ck.offer_key<>b.offer_key or ck.mapping_revision<>b.mapping_revision or ck.terms_review_sha256<>c.terms_review_sha256
- or ck.provider_session_id is null or ck.provider_session_id!~'^cs_live_[A-Za-z0-9_]{6,}$' then raise exception 'Claimed completed checkout provenance required';end if;
+ or ck.provider_session_id is null or not kxra_private.modern_billing_checkout_id_ok(ck.provider_session_id) then raise exception 'Claimed completed checkout provenance required';end if;
  -- Original checkout expiry is deliberately not checked: completed consent is historical.
  select * into j from kxra_private.live_paid_read_jobs where id=i;
  if found then
@@ -121,11 +155,11 @@ begin
  'policy_id',j.policy_id,'policy_revision',j.policy_revision,'customer_id',j.customer_id,'subscription_id',j.subscription_id,'invoice_id',j.invoice_id,'price_id',c.price_id,'product_id',c.product_id,
  'checkout_intent_id',j.checkout_intent_id,'checkout_session_id',j.checkout_session_id,'period_start',j.period_start,'period_end',j.period_end,'expected_total_minor',j.expected_total_minor,
  'created_at',floor(extract(epoch from j.created_at))::bigint,'expires_at',floor(extract(epoch from j.expires_at))::bigint),
- 'subscription_item_id',j.subscription_item_id,'checkout_actor_id',j.checkout_actor_id,'mapping',to_jsonb(c),'policy',to_jsonb(q),'entitlement_authority',false,'provider_mutation_authority',false);
+ 'subscription_item_id',j.subscription_item_id,'checkout_actor_id',j.checkout_actor_id,'mapping',kxra_private.modern_billing_inner_dto(to_jsonb(c)),'policy',kxra_private.modern_billing_inner_dto(to_jsonb(q)),'entitlement_authority',false,'provider_mutation_authority',false);
 end $$;
 
 -- Existing worker capability can fence READ adapters without direct table privileges.
-create function kxra_private.live_paid_read_current(i uuid) returns boolean language plpgsql security definer set search_path='' as $$
+create function kxra_private.modern_core_live_paid_read_current(i uuid) returns boolean language plpgsql security definer set search_path='' as $$
 declare j kxra_private.live_paid_read_jobs;b kxra_private.live_billing_bindings;ck kxra_private.live_billing_intents;
 begin
  select * into j from kxra_private.live_paid_read_jobs where id=i;if not found then return false;end if;
@@ -140,11 +174,13 @@ begin
  and ck.state='CONSUMED' and ck.kind='CHECKOUT' and ck.provider_session_id=j.checkout_session_id and ck.customer_id=b.customer_id,false);
 end $$;
 
-create function kxra_private.commit_live_paid_proof(i uuid,e jsonb) returns text
+create function kxra_private.modern_core_commit_live_paid_proof(i uuid,e jsonb) returns text
 language plpgsql security definer set search_path='' as $$
 declare j kxra_private.live_paid_read_jobs;b kxra_private.live_billing_bindings;q kxra_private.live_paid_policies;c kxra_private.live_billing_mappings;
  old kxra_private.live_paid_receipts;ck kxra_private.live_billing_intents;allowed text[]=array['reconciliation_id','org_id','binding_version','mapping_revision','offer_key','policy_id','policy_revision','customer_id','subscription_id','invoice_id','price_id','product_id','checkout_intent_id','checkout_session_id','period_start','period_end','currency','quantity','monthly_amount_minor','expected_total_minor','collected_minor','refunded_minor','payment_intent_id','charge_id','payment_state','consent_state','subscription_status','cancel_at_period_end','terms_review_sha256','presentation_sha256','payment_sha256','consent_sha256','checked_at','eligibility','reason','entitlement_authority','evidence_sha256'];new_conflict boolean;eligible boolean;outcome text;next_version bigint;amount integer;checked timestamptz;
 begin
+ perform kxra_private.modern_billing_payload_scope(e);
+ e=e-'execution_scope';
  if e is null or jsonb_typeof(e)<>'object' or length(e::text)>20000 or not(e ?& allowed) or e-allowed<>'{}'::jsonb
  or e->>'reason' is null or e->>'reason'!~'^[A-Z_]{3,100}$' or e->>'eligibility' is null or e->>'eligibility' not in ('ELIGIBLE','DENY')
  or e->>'payment_state' is null or e->>'payment_state' not in ('COLLECTED','PENDING','FAILED','CANCELLED','REFUNDED','DISPUTED','MISMATCHED','UNVERIFIED','VERSION_RACE')
@@ -163,7 +199,7 @@ begin
  then raise exception 'Live evidence canonical binding mismatch';end if;
  select * into old from kxra_private.live_paid_receipts where job_id=i;
  if found then
-  if old.safe_evidence=e then return old.outcome;end if;
+  if old.safe_evidence=(e||jsonb_build_object('execution_scope',kxra_private.modern_billing_scope_tag())) then return old.outcome;end if;
   insert into kxra_private.live_paid_conflicts(job_id,evidence_sha256) values(i,e->>'evidence_sha256') on conflict do nothing returning true into new_conflict;
   if coalesce(new_conflict,false) then update kxra_private.live_billing_bindings set quarantined=true,reconcile_required=true,version=version+1 where org_id=j.org_id;end if;
   return 'CONFLICT';
@@ -192,7 +228,7 @@ begin
    and kxra_private.pilot_seats(j.org_id)<=kxra_private.workspace_seat_capacity(j.org_id),false);
   outcome=case when eligible then 'ELIGIBLE' else 'DENIED' end;
  end if;
- insert into kxra_private.live_paid_receipts(job_id,org_id,evidence_sha256,outcome,safe_evidence) values(i,j.org_id,e->>'evidence_sha256',outcome,e);
+ insert into kxra_private.live_paid_receipts(job_id,org_id,evidence_sha256,outcome,safe_evidence) values(i,j.org_id,e->>'evidence_sha256',outcome,e||jsonb_build_object('execution_scope',kxra_private.modern_billing_scope_tag()));
  if outcome<>'STALE' then
   next_version=b.version+1;
   update kxra_private.live_billing_bindings set version=next_version,reconcile_required=outcome<>'ELIGIBLE' where org_id=j.org_id;
@@ -271,12 +307,12 @@ begin
  end if;
  return new;
 end $$;
-revoke all on function kxra_private.guard_live_paid_read_identity(),kxra_private.is_live_billing_lane(uuid),kxra_private.live_paid_org_actor(uuid),kxra_private.live_paid_policy_current(uuid,integer,uuid),kxra_private.reserve_live_paid_read(uuid,uuid,integer,text,text,bigint,bigint),kxra_private.live_paid_read_current(uuid),kxra_private.commit_live_paid_proof(uuid,jsonb),kxra_private.live_paid_entitled(uuid),kxra_private.pilot_entitled(uuid),kxra_private.workspace_seat_capacity(uuid),kxra_private.guard_pilot_seats() from public,anon,authenticated,kxra_billing_worker;
-grant execute on function kxra_private.reserve_live_paid_read(uuid,uuid,integer,text,text,bigint,bigint),kxra_private.live_paid_read_current(uuid),kxra_private.commit_live_paid_proof(uuid,jsonb) to kxra_billing_worker;
+revoke all on function kxra_private.guard_live_paid_read_identity(),kxra_private.is_live_billing_lane(uuid),kxra_private.live_paid_org_actor(uuid),kxra_private.live_paid_policy_current(uuid,integer,uuid),kxra_private.modern_core_reserve_live_paid_read(uuid,uuid,integer,text,text,bigint,bigint),kxra_private.modern_core_live_paid_read_current(uuid),kxra_private.modern_core_commit_live_paid_proof(uuid,jsonb),kxra_private.live_paid_entitled(uuid),kxra_private.pilot_entitled(uuid),kxra_private.workspace_seat_capacity(uuid),kxra_private.guard_pilot_seats() from public,anon,authenticated,kxra_billing_worker;
+
 
 -- Safe onboarding/billing read: derives the selected verified owner tenant, never accepts org IDs.
 -- Do not use pilot_status's legacy offer fallback to display modern LIVE commercial state.
-create function kxra_private.live_paid_access_status() returns jsonb language plpgsql security definer set search_path='' as $$
+create function kxra_private.modern_core_live_paid_access_status() returns jsonb language plpgsql security definer set search_path='' as $$
 declare o uuid=kxra_private.member_org();b kxra_private.live_billing_bindings;i kxra_private.live_customer_intents;q kxra_private.live_paid_policies;plan jsonb;
 begin
  if session_user<>'kxra_app' or o is null or not coalesce(kxra_private.is_owner(o),false) or not kxra_private.is_live_billing_lane(o) then return null;end if;
@@ -290,5 +326,4 @@ begin
  'seat_capacity',kxra_private.workspace_seat_capacity(o),'seats_reserved',kxra_private.pilot_seats(o),'consent_required',true,
  'proof_valid_until',(select valid_until from kxra_private.live_paid_access where org_id=o));
 end $$;
-revoke all on function kxra_private.live_paid_access_status() from public,anon,authenticated,kxra_billing_worker;
-grant execute on function kxra_private.live_paid_access_status() to authenticated;
+revoke all on function kxra_private.modern_core_live_paid_access_status() from public,anon,authenticated,kxra_billing_worker;
