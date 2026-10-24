@@ -122,6 +122,10 @@ test("checkout result SQL: current completed own request, fixed mode, generation
       if (!denied || error instanceof assert.AssertionError) throw error;
       assert.ok(
         ["42501", "P0001"].includes((error as { code?: string }).code || ""),
+        "Unexpected checkout fence SQL error: " +
+          (error as { code?: string }).code +
+          ": " +
+          (error as Error).message,
       );
       return null;
     }

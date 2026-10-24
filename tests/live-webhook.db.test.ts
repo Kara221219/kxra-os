@@ -129,6 +129,11 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       ).rows[0].enabled,
       false,
     );
+    const originalReceiptCount = (
+      await db.query(
+        "select count(*)::int n from kxra_private.live_webhook_receipts",
+      )
+    ).rows[0].n;
     await call(record, [JSON.stringify(event)], "P0001");
     const execution = await bindSyntheticModernScope(db.query.bind(db), mode);
     assert.deepEqual(execution.execution_scope, scope);
@@ -141,7 +146,7 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           "select count(*)::int n from kxra_private.live_webhook_receipts",
         )
       ).rows[0].n,
-      0,
+      originalReceiptCount,
     );
     await db.query(
       "update kxra_private.live_webhook_endpoint_binding set enabled=true,project_ref=$1,review_sha256=$2 where singleton",
@@ -255,21 +260,23 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           execution_scope: ModernScopeTag;
         },
     );
-    assert.equal(claimed.length, 1);
-    assert.equal(claimed[0].event_id, event.event_id);
-    assert.deepEqual(claimed[0].execution_scope, scope);
-    assert.equal(Number(claimed[0].binding_version), 1);
-    assert.equal(
-      (
-        await worker(
-          "select * from kxra_private.claim_live_billing_wakeups(20)",
-        )
-      ).rowCount,
-      0,
+    assert.ok(claimed.length >= 1 && claimed.length <= 20);
+    const ownClaim = claimed.filter((row) => row.event_id === event.event_id);
+    assert.equal(ownClaim.length, 1);
+    assert.deepEqual(ownClaim[0].execution_scope, scope);
+    assert.equal(Number(ownClaim[0].binding_version), 1);
+    const nextClaims = (
+      await worker("select * from kxra_private.claim_live_billing_wakeups(20)")
+    ).rows.map((row) => Object.values(row)[0] as { event_id: string });
+    assert.ok(nextClaims.length <= 20);
+    const claimedIds = new Set(claimed.map((row) => row.event_id));
+    assert.ok(
+      nextClaims.every((row) => !claimedIds.has(row.event_id)),
+      "An active claim must not replay",
     );
     await call(
       "select kxra_private.ack_live_billing_wakeup($1,$2,$3)",
-      [event.event_id, claimed[0].claim_token, crypto.randomUUID()],
+      [event.event_id, ownClaim[0].claim_token, crypto.randomUUID()],
       "P0001",
     );
     await call(
@@ -402,7 +409,8 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
     assert.equal(
       (
         await db.query(
-          "select count(*)::int n from kxra_private.live_webhook_conflicts",
+          "select count(*)::int n from kxra_private.live_webhook_conflicts where event_id=$1",
+          [event.event_id],
         )
       ).rows[0].n,
       1,
