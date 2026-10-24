@@ -14,22 +14,31 @@ import { modernBillingFixture } from "./support/modern-billing-scope";
 // Run LIVE and STAGING_SANDBOX in separate fresh databases; never reset/switch identity.
 const offer = "KXRA_STARTER_V1";
 const selectedMode = process.env.KXRA_MODERN_BILLING_TEST_MODE;
-assert.ok([undefined, "LIVE", "STAGING_SANDBOX"].includes(selectedMode), "Invalid modern fixture mode");
-const executionMode = selectedMode === "STAGING_SANDBOX" ? "STAGING_SANDBOX" : "LIVE";
+assert.ok(
+  [undefined, "LIVE", "STAGING_SANDBOX"].includes(selectedMode),
+  "Invalid modern fixture mode",
+);
+const executionMode =
+  selectedMode === "STAGING_SANDBOX" ? "STAGING_SANDBOX" : "LIVE";
 const { execution } = modernBillingFixture(executionMode);
-const starter = execution.catalogue.find((row) => row.offer_key === "KXRA_STARTER_V1")!;
+const starter = execution.catalogue.find(
+  (row) => row.offer_key === "KXRA_STARTER_V1",
+)!;
 // Literal capabilities: no HTTP/user-selected SQL identifier or false-mode rewriting.
-const rpc = executionMode === "LIVE" ? {
- request: "kxra_private.request_live_billing_intent",
- claim: "kxra_private.claim_live_billing_intent",
- finish: "kxra_private.finish_live_billing_intent",
- customer: "kxra_private.request_live_customer_intent",
-} : {
- request: "kxra_private.staging_sandbox_request_live_billing_intent",
- claim: "kxra_private.staging_sandbox_claim_live_billing_intent",
- finish: "kxra_private.staging_sandbox_finish_live_billing_intent",
- customer: "kxra_private.staging_sandbox_request_live_customer_intent",
-};
+const rpc =
+  executionMode === "LIVE"
+    ? {
+        request: "kxra_private.request_live_billing_intent",
+        claim: "kxra_private.claim_live_billing_intent",
+        finish: "kxra_private.finish_live_billing_intent",
+        customer: "kxra_private.request_live_customer_intent",
+      }
+    : {
+        request: "kxra_private.staging_sandbox_request_live_billing_intent",
+        claim: "kxra_private.staging_sandbox_claim_live_billing_intent",
+        finish: "kxra_private.staging_sandbox_finish_live_billing_intent",
+        customer: "kxra_private.staging_sandbox_request_live_customer_intent",
+      };
 
 const hash = crypto
   .createHash("sha256")
@@ -223,8 +232,16 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
       0,
       "Do not reuse an active fixture mapping",
     );
-    const attestation = await bindSyntheticModernScope(admin.query.bind(admin), executionMode);
-    assert.deepEqual(attestation, execution);
+    const attestation = await bindSyntheticModernScope(
+      admin.query.bind(admin),
+      executionMode,
+    );
+    assert.deepEqual(attestation, {
+      ...execution,
+      catalogue: [...execution.catalogue].sort((a, b) =>
+        a.offer_key.localeCompare(b.offer_key),
+      ),
+    });
     revision = (
       await admin.query(
         "select coalesce(max(revision),0)+1 revision from kxra_private.live_billing_mappings where offer_key=$1",
@@ -234,7 +251,15 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
     await admin.query(
       `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,mode,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
       values($1,$2,true,$4,$5,$6,$7,'bpc_syntheticConcurrent',$3,$3,$3,'inclusive',false,'card')`,
-      [offer, revision, hash, executionMode === "LIVE" ? "live" : "staging_sandbox", execution.execution_scope.account_id, starter.price_id, starter.product_id],
+      [
+        offer,
+        revision,
+        hash,
+        executionMode === "LIVE" ? "live" : "staging_sandbox",
+        execution.execution_scope.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     for (const tenant of tenants) {
       await admin.query(
@@ -267,8 +292,7 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
     await admin.query("commit");
 
     const tenant = tenants[0];
-    const request =
-      `select ${rpc.request}($1,'CHECKOUT',$2) value`;
+    const request = `select ${rpc.request}($1,'CHECKOUT',$2) value`;
     const reserved = await contend(
       admin,
       cfg,
@@ -312,11 +336,26 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
     );
     assert.equal(claimed.first.rows[0].value.intent.id, tenant.intent);
     assert.equal(claimed.first.rows[0].value.entitlement_authority, false);
-    assert.deepEqual(claimed.first.rows[0].value.execution_scope, execution.execution_scope);
-    assert.equal(claimed.first.rows[0].value.mapping.mode, executionMode === "LIVE" ? "live" : "staging_sandbox");
+    assert.deepEqual(
+      claimed.first.rows[0].value.execution_scope,
+      execution.execution_scope,
+    );
+    assert.equal(
+      claimed.first.rows[0].value.mapping.mode,
+      executionMode === "LIVE" ? "live" : "staging_sandbox",
+    );
     denied(claimed.second, /Live intent changed, consumed or expired/);
-    const scopedIntent = (await admin.query("select scope_id,execution_mode,provider_livemode from kxra_private.live_billing_intents where id=$1", [tenant.intent])).rows[0];
-    assert.deepEqual(scopedIntent, {scope_id: execution.execution_scope.scope_id, execution_mode: executionMode, provider_livemode: executionMode === "LIVE"});
+    const scopedIntent = (
+      await admin.query(
+        "select scope_id,execution_mode,provider_livemode from kxra_private.live_billing_intents where id=$1",
+        [tenant.intent],
+      )
+    ).rows[0];
+    assert.deepEqual(scopedIntent, {
+      scope_id: execution.execution_scope.scope_id,
+      execution_mode: executionMode,
+      provider_livemode: executionMode === "LIVE",
+    });
     const before = (
       await admin.query(
         "select state,consumed_at from kxra_private.live_billing_intents where id=$1",
@@ -326,8 +365,7 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
     assert.equal(before.state, "INFLIGHT");
     assert.ok(before.consumed_at);
 
-    const finish =
-      `select ${rpc.finish}($1,'UNCERTAIN',null,$2) value`;
+    const finish = `select ${rpc.finish}($1,'UNCERTAIN',null,$2) value`;
     const finished = await contend(
       admin,
       cfg,
@@ -417,8 +455,22 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
         );
         await admin.query("commit");
         // Cleanup disables only application activation/mapping; permanent DB identity stays bound.
-        assert.deepEqual((await admin.query("select kxra_private.modern_billing_scope_tag() tag")).rows[0].tag, execution.execution_scope);
-        assert.equal((await admin.query("select enabled from kxra_private.modern_billing_execution_identity where singleton")).rows[0].enabled, true);
+        assert.deepEqual(
+          (
+            await admin.query(
+              "select kxra_private.modern_billing_scope_tag() tag",
+            )
+          ).rows[0].tag,
+          execution.execution_scope,
+        );
+        assert.equal(
+          (
+            await admin.query(
+              "select enabled from kxra_private.modern_billing_execution_identity where singleton",
+            )
+          ).rows[0].enabled,
+          true,
+        );
         assert.equal(
           (
             await admin.query(
