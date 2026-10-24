@@ -1,8 +1,9 @@
 import type { LiveBillingTransport } from "./live-catalogue-stripe";
 import { LIVE_STRIPE_API_VERSION } from "./live-catalogue-stripe";
 
-/** One customer job only. Pin credential destination, four requests/one POST,
- * decoded response bytes and complete body deadline. Never retries a POST.
+/** Pin destination, explicit bounded call/POST budget, decoded response bytes
+ * and complete body deadline. Single-job wrappers retain four calls/one POST;
+ * a batch may impose a larger shared ceiling without weakening those wrappers.
  */
 export function boundedDispatchTransport(
   fetcher: typeof fetch,
@@ -11,14 +12,28 @@ export function boundedDispatchTransport(
     authorize: (url: URL, init: RequestInit) => void;
     inspect?: (url: URL, body: Buffer) => void;
   },
-  options: { deadlineMs?: number; now?: () => number } = {},
+  options: {
+    deadlineMs?: number;
+    now?: () => number;
+    maxRequests?: number;
+    maxPosts?: number;
+  } = {},
 ): LiveBillingTransport {
   const milliseconds = options.deadlineMs ?? 30_000,
     clock = options.now ?? Date.now;
+  const maxRequests = options.maxRequests ?? 4,
+    maxPosts = options.maxPosts ?? 1;
   if (
     !Number.isInteger(milliseconds) ||
     milliseconds < 1 ||
-    milliseconds > 30_000
+    milliseconds > 90_000 ||
+    !Number.isInteger(maxRequests) ||
+    maxRequests < 1 ||
+    maxRequests > 80 ||
+    !Number.isInteger(maxPosts) ||
+    maxPosts < 0 ||
+    maxPosts > 20 ||
+    maxPosts > maxRequests
   )
     throw Error("LIVE_CUSTOMER_TRANSPORT_CONFIGURATION_INVALID");
   const deadline = clock() + milliseconds;
@@ -37,11 +52,11 @@ export function boundedDispatchTransport(
       headers.get("authorization") !== `Bearer ${secretKey}` ||
       headers.get("stripe-version") !== LIVE_STRIPE_API_VERSION ||
       headers.has("stripe-account") ||
-      ++calls > 4 ||
+      ++calls > maxRequests ||
       clock() >= deadline
     )
       throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
-    if (method === "POST" && ++posts > 1)
+    if (method === "POST" && ++posts > maxPosts)
       throw Error("LIVE_CUSTOMER_TRANSPORT_REJECTED");
     policy.authorize(target, init);
     const controller = new AbortController();
@@ -132,6 +147,8 @@ export function boundedLiveCustomerTransport(
   prices: readonly string[],
   options: { deadlineMs?: number; now?: () => number } = {},
 ) {
+  if (options.deadlineMs !== undefined && options.deadlineMs > 30_000)
+    throw Error("LIVE_CUSTOMER_TRANSPORT_CONFIGURATION_INVALID");
   return boundedDispatchTransport(
     fetcher,
     secretKey,

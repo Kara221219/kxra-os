@@ -18,6 +18,8 @@ export function boundedCheckoutTransport(
   },
   options: { deadlineMs?: number; now?: () => number } = {},
 ) {
+  if (options.deadlineMs !== undefined && options.deadlineMs > 30_000)
+    throw Error("CHECKOUT_TRANSPORT_CONFIGURATION_INVALID");
   return boundedDispatchTransport(
     fetcher,
     key,
@@ -88,6 +90,6 @@ export function boundedCheckoutTransport(
         }
       },
     },
-    options,
+    { deadlineMs: options.deadlineMs, now: options.now },
   );
 }
