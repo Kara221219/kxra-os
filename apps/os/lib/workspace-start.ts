@@ -3,6 +3,10 @@ import { query } from "../../../packages/db";
 import type { Actor } from "./auth";
 import { teamRooms } from "./team-workspace";
 import { workspacePilot } from "./workspace-pilot";
+import {
+  liveWorkspaceAccess,
+  ownerLiveWorkspaceBilling,
+} from "../../../packages/workspace/live-start";
 const pilotShape = z.object({
   assigned: z.boolean(),
   entitled: z.boolean(),
@@ -35,6 +39,45 @@ export async function workspaceStart(a: Actor) {
         [a.organisation_id],
       )
     )[0]?.allowed === true;
+  const memberRow = (
+    await query<{ value: unknown }>(
+      a,
+      "select kxra_private.own_member_live_workspace_access() value",
+      [],
+    )
+  )[0];
+  if (!memberRow) throw Error("WORKSPACE_ACCESS_STATUS_UNAVAILABLE");
+  const memberProjection = memberRow.value;
+  if (memberProjection !== null && memberProjection !== undefined) {
+    const access = liveWorkspaceAccess.parse(memberProjection);
+    const customerAdmin =
+      billingAdmin &&
+      a.security_role === "ORG_ADMIN" &&
+      a.relationship_type === "CUSTOMER" &&
+      a.source === "supabase";
+    const ownerProjection =
+      customerAdmin && access.lane === "LIVE"
+        ? (
+            await query<{ value: unknown }>(
+              a,
+              "select kxra_private.live_paid_access_status() value",
+              [],
+            )
+          )[0]?.value
+        : null;
+    return {
+      account_state: a.account_state,
+      organisation: a.organisation_name,
+      billing_admin: customerAdmin,
+      billing: null,
+      live_access: access,
+      live_billing: ownerProjection
+        ? ownerLiveWorkspaceBilling(ownerProjection)
+        : null,
+      rooms: rooms.map((r) => ({ id: r.id, name: r.name, access: r.access })),
+      provider_execution_accepted: false,
+    };
+  }
   const pilot = billingAdmin ? pilotShape.parse(await workspacePilot(a)) : null;
   return {
     account_state: a.account_state,

@@ -477,6 +477,38 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       "worker",
     ))!.rows[0].value;
     assert.equal(await commit(await packet(teamRead)), "ELIGIBLE");
+    // 0108 member view uses this actual collected/consented104 proof, not a mock gate.
+    const ordinaryMember = await account();
+    await db.query(
+      "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'ORG_MEMBER','CUSTOMER','ACTIVE','Paid member projection','LOCAL_PAID_TEST')",
+      [team.org, ordinaryMember],
+    );
+    const memberProjection = (await call(
+      "select kxra_private.own_member_live_workspace_access() value",
+      [],
+      { org: team.org, actor: ordinaryMember },
+    ))!.rows[0].value;
+    assert.equal(memberProjection.lane, "LIVE");
+    assert.equal(memberProjection.entitled, true);
+    assert.deepEqual(
+      Object.keys(memberProjection).sort(),
+      [
+        "lane",
+        "entitled",
+        "reconciliation_required",
+        "quarantined",
+        "proof_valid_until",
+      ].sort(),
+    );
+    assert.ok(!JSON.stringify(memberProjection).includes(teamCustomer));
+    assert.equal(
+      (await call("select kxra_private.live_paid_access_status() value", [], {
+        org: team.org,
+        actor: ordinaryMember,
+      }))!.rows[0].value,
+      null,
+    );
+
     assert.equal(
       (
         await db.query(

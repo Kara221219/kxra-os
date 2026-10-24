@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { WorkspaceStart as Start } from "../lib/workspace-start";
 import { WorkspacePilot } from "./WorkspacePilot";
+import { LiveWorkspaceAccess } from "./LiveWorkspaceAccess";
+import { liveWorkspacePresentation } from "../../../packages/workspace/live-start";
 export function WorkspaceStart({ local }: { local: boolean }) {
   const [data, setData] = useState<Start | null>(null),
     [notice, setNotice] = useState("Checking recorded workspace state…"),
@@ -36,7 +38,21 @@ export function WorkspaceStart({ local }: { local: boolean }) {
     return () => c.abort();
   }, [revision]);
   const billing = data?.billing,
-    blocked = billing ? !billing.entitled : false;
+    live = data && "live_access" in data ? data.live_access : null,
+    blocked = live
+      ? liveWorkspacePresentation(live).blocked
+      : billing
+        ? !billing.entitled
+        : false;
+  useEffect(() => {
+    if (!live?.proof_valid_until) return;
+    const delay = Date.parse(live.proof_valid_until) - Date.now();
+    const timer = setTimeout(
+      () => setRevision((n) => n + 1),
+      Math.max(0, Math.min(delay + 25, 2_147_483_647)),
+    );
+    return () => clearTimeout(timer);
+  }, [live?.proof_valid_until]);
   return (
     <div className="workspace-start">
       <p className="eyebrow">ACCOUNT → WORKSPACE</p>
@@ -79,39 +95,51 @@ export function WorkspaceStart({ local }: { local: boolean }) {
             </li>
             <li>
               <span>02 · Billing record</span>
-              <h2>
-                {!billing
-                  ? "Workspace administrator manages billing"
-                  : billing.test_billing.reconciliation_required
-                    ? "Reconciliation required"
-                    : billing.subscription
-                      ? billing.subscription.state
-                      : billing.entitled
-                        ? "No pilot assigned"
-                        : "Awaiting accepted subscription"}
-              </h2>
-              <p>
-                {!billing
-                  ? "Your room access follows current membership. Billing details and actions are restricted to the workspace administrator."
-                  : billing.subscription?.mode === "FIXTURE"
-                    ? "Synthetic lifecycle record only. This is not a paid subscription."
-                    : !billing.assigned && billing.entitled
-                      ? "Existing workspace access is retained. No paid subscription has been established."
-                      : blocked
-                        ? "New work is disabled until an authoritative current entitlement is recorded. Existing history remains readable."
-                        : "The current recorded test period permits work; this is not evidence of a live subscription."}
-              </p>
-              {billing?.subscription?.cancel_at_period_end && (
-                <p>
-                  Cancellation is scheduled. Work remains subject to the
-                  recorded period ending{" "}
-                  {new Date(billing.subscription.period_end).toISOString()}.
-                </p>
+              {live ? (
+                <LiveWorkspaceAccess
+                  access={live}
+                  billingAdmin={data.billing_admin}
+                  billing={
+                    "live_billing" in data ? (data.live_billing ?? null) : null
+                  }
+                />
+              ) : (
+                <>
+                  <h2>
+                    {!billing
+                      ? "Workspace administrator manages billing"
+                      : billing.test_billing.reconciliation_required
+                        ? "Reconciliation required"
+                        : billing.subscription
+                          ? billing.subscription.state
+                          : billing.entitled
+                            ? "No pilot assigned"
+                            : "Awaiting accepted subscription"}
+                  </h2>
+                  <p>
+                    {!billing
+                      ? "Your room access follows current membership. Billing details and actions are restricted to the workspace administrator."
+                      : billing.subscription?.mode === "FIXTURE"
+                        ? "Synthetic lifecycle record only. This is not a paid subscription."
+                        : !billing.assigned && billing.entitled
+                          ? "Existing workspace access is retained. No paid subscription has been established."
+                          : blocked
+                            ? "New work is disabled until an authoritative current entitlement is recorded. Existing history remains readable."
+                            : "The current recorded test period permits work; this is not evidence of a live subscription."}
+                  </p>
+                  {billing?.subscription?.cancel_at_period_end && (
+                    <p>
+                      Cancellation is scheduled. Work remains subject to the
+                      recorded period ending{" "}
+                      {new Date(billing.subscription.period_end).toISOString()}.
+                    </p>
+                  )}
+                  <p>
+                    No live checkout is enabled here. Commercial terms and
+                    provider acceptance remain separate release gates.
+                  </p>
+                </>
               )}
-              <p>
-                No live checkout is enabled here. Commercial terms and provider
-                acceptance remain separate release gates.
-              </p>
             </li>
             <li>
               <span>03 · First useful work</span>
@@ -139,7 +167,7 @@ export function WorkspaceStart({ local }: { local: boolean }) {
               ))}
             </li>
           </ol>
-          {data.billing_admin && (
+          {data.billing_admin && !live && (
             <details className="panel">
               <summary>
                 Reviewed test billing and local lifecycle controls
