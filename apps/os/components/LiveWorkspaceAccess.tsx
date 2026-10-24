@@ -36,18 +36,15 @@ export function LiveWorkspaceAccess({
             <Link href="/billing">Review workspace billing ↗</Link>
           </p>
           <p>
-            Billing requests do not confirm payment or grant access. Provider
-            dispatch and checkout remain separate release gates.
+            Billing requests do not confirm payment or grant access. Your
+            subscription status updates after processing.
           </p>
         </>
       ) : (
-        <p>
-          Your workspace administrator manages billing. No billing actions or
-          provider identifiers are available in this member view.
-        </p>
+        <p>Contact your workspace administrator to manage billing.</p>
       )}
       {access.reconciliation_required && (
-        <p>The recorded access requires reconciliation.</p>
+        <p>Your subscription status is being checked.</p>
       )}
     </>
   );

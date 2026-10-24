@@ -66,14 +66,14 @@ export function liveWorkspacePresentation(
   return {
     blocked: !allowed,
     heading: allowed
-      ? "Recorded paid access permits work"
+      ? "Your workspace is ready"
       : access.quarantined
         ? "Access requires review"
         : access.lane === "PENDING"
           ? "Payment setup is pending"
           : "Paid access is pending",
     detail: allowed
-      ? "The authoritative current server record permits work. Each action still rechecks current membership and entitlement."
-      : "New work is disabled until authoritative current paid access is recorded. Existing history remains readable under its access rules.",
+      ? "You can start work while your workspace membership and subscription remain active."
+      : "New work is disabled until payment setup is complete. You can still view the history you have access to.",
   };
 }

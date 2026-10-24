@@ -113,7 +113,7 @@ test("member presentation shows paid access honestly without admin checkout acti
       billing: null,
     }),
   );
-  assert.match(permitted, /Recorded paid access permits work/);
+  assert.match(permitted, /Your workspace is ready/);
   assert.ok(!permitted.includes('href="/billing"'));
   const pending = renderToStaticMarkup(
     createElement(LiveWorkspaceAccess, {
@@ -123,7 +123,7 @@ test("member presentation shows paid access honestly without admin checkout acti
     }),
   );
   assert.match(pending, /Payment setup is pending/);
-  assert.ok(!pending.includes("permits work"));
+  assert.ok(!pending.includes("Your workspace is ready"));
 });
 test("owner modern view links reviewed billing and never renders the legacy selector", async () => {
   const { createElement } = await import("react"),
