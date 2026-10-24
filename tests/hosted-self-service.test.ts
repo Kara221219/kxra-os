@@ -328,21 +328,27 @@ test("concurrent provisioning and session recovery return one receipt without ch
   enabled(async () => {
     const value = await admission();
     assert.deepEqual(await hook(value), {});
-    const request = crypto.randomUUID();
+    const request = crypto.randomUUID(),
+      competingRequest = crypto.randomUUID();
     const receipts = await Promise.all([
       provision(value, request),
       provision(value, request),
-      provision(value, crypto.randomUUID()),
+      provision(value, competingRequest),
     ]);
     assert.deepEqual(receipts[0], receipts[1]);
     assert.deepEqual(receipts[0], receipts[2]);
+    assert.ok([request, competingRequest].includes(receipts[0].request_id));
     await assert.rejects(
       provision(value, crypto.randomUUID(), "Different workspace"),
       { code: "P0001" },
     );
     const other = await admission();
     assert.deepEqual(await hook(other), {});
-    await assert.rejects(provision(other, request), { code: "42501" });
+    // The winner is deliberately nondeterministic; only its canonical request
+    // is reserved. Reusing that actual receipt must fail for another tenant.
+    await assert.rejects(provision(other, receipts[0].request_id), {
+      code: "42501",
+    });
     const second = await provision(other);
     assert.notEqual(second.organisation_id, receipts[0].organisation_id);
     for (const [subject, own] of [
