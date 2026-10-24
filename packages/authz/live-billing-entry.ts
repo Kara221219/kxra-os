@@ -141,7 +141,14 @@ export function liveBillingEntryController(ports: LiveEntryPorts) {
   return {
     async read(): Promise<LiveEntryStatus> {
       const a = await identity();
-      return liveEntryStatus.parse(await ports.status(a));
+      const status = liveEntryStatus.parse(await ports.status(a));
+      // Reconciliation is an authoritative read worker, not an unprocessed browser intent.
+      return {
+        ...status,
+        available_actions: status.available_actions.filter(
+          (action) => action !== "RECONCILE",
+        ),
+      };
     },
     async write(input: unknown) {
       ports.sameOrigin();
@@ -153,6 +160,12 @@ export function liveBillingEntryController(ports: LiveEntryPorts) {
           428,
           "AGREEMENT_REQUIRED",
           "Review the current required agreements",
+        );
+      if (request.action === "PORTAL" || request.action === "RECONCILE")
+        throw new LiveEntryError(
+          503,
+          "BILLING_ACTION_UNAVAILABLE",
+          "Use subscription management or refresh the current status",
         );
       // SQL reserves the caller's own tenant under verified claims and rechecks all authority.
       const result = z

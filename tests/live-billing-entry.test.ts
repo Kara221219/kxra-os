@@ -1,3 +1,4 @@
+import { liveEntryStatus } from "../packages/authz/live-billing-entry-contract";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -196,18 +197,13 @@ test("fresh customer requests queue real intent, preserve UUID for replay and ne
   assert.strictEqual(calls[0].who, who);
   assert.deepEqual(calls[0].request, request);
 });
-test("all three approved offers and all reservation actions retain only reviewed input", async () => {
+test("all three approved offers retain reviewed customer and checkout reservation input", async () => {
   for (const offer_key of [
     "KXRA_STARTER_V1",
     "KXRA_TEAM_V1",
     "KXRA_BUSINESS_V1",
   ] as const)
-    for (const action of [
-      "CUSTOMER",
-      "CHECKOUT",
-      "PORTAL",
-      "RECONCILE",
-    ] as const) {
+    for (const action of ["CUSTOMER", "CHECKOUT"] as const) {
       const { controller, calls } = harness();
       await controller.write({ ...request, offer_key, action });
       assert.deepEqual(calls[0].request, { ...request, offer_key, action });
@@ -300,11 +296,9 @@ test("runtime adapter reserves existing SQL functions and UI preserves truthful 
   );
   const ui = fs.readFileSync("apps/os/components/LiveBillingEntry.tsx", "utf8");
   assert.match(ui, /approvedCatalogue/);
-  assert.match(ui, /Provider dispatch is\s+unavailable/);
+  assert.match(ui, /openBillingResult/);
   assert.match(ui, /pending \|\|/);
-  assert.ok(
-    !/window\.location|router\.push|localStorage|sessionStorage/.test(ui),
-  );
+  assert.ok(!/router\.push|localStorage|sessionStorage/.test(ui));
 });
 
 test("billing renders approved prices and honest disabled/recovery states without browser/provider execution", async () => {
@@ -324,7 +318,7 @@ test("billing renders approved prices and honest disabled/recovery states withou
     "1 user",
     "up to 5 users",
     "up to 15 users",
-    "Provider dispatch is unavailable",
+    "confirm your subscription after",
   ]) {
     assert.ok(html.replace(/\s+/g, " ").includes(text));
   }
@@ -337,8 +331,8 @@ test("billing renders approved prices and honest disabled/recovery states withou
       }),
     }),
   );
-  assert.ok(!disabled.includes("Record customer request"));
-  assert.match(disabled, /Live billing remains disabled/);
+  assert.ok(!disabled.includes("Set up billing"));
+  assert.match(disabled, /Payment setup is currently paused/);
   const resumed = renderToStaticMarkup(
     createElement(Billing, {
       initial: liveEntryStatus.parse({
@@ -352,8 +346,8 @@ test("billing renders approved prices and honest disabled/recovery states withou
     }),
   );
   assert.ok(resumed.includes(request.request_id));
-  assert.ok(!resumed.includes("Record customer request"));
-  assert.match(resumed, /do not create a replacement/);
+  assert.ok(!resumed.includes("Set up billing"));
+  assert.match(resumed, /Refresh status/);
 });
 
 test("replayed consumed request is recorded, never advertised as newly queued", async () => {
@@ -478,4 +472,59 @@ test("real rate reservation is reached only after verified MFA/legal checks", as
   events.length = 0;
   await make().write(request);
   assert.deepEqual(events, ["account", "legal", "rate", "intent"]);
+});
+
+test("generic queue cannot manufacture unsupported portal or reconcile work", async () => {
+  for (const action of ["PORTAL", "RECONCILE"] as const) {
+    const { controller, calls } = harness();
+    await assert.rejects(
+      controller.write({ ...request, action }),
+      (e: unknown) =>
+        e instanceof LiveEntryError && e.code === "BILLING_ACTION_UNAVAILABLE",
+    );
+    assert.equal(calls.length, 0);
+  }
+  const { controller } = harness({
+    status: async () => ({
+      ...status,
+      available_actions: ["PORTAL", "RECONCILE"],
+    }),
+  });
+  assert.deepEqual((await controller.read()).available_actions, ["PORTAL"]);
+});
+
+test("checkout continuation requires completed canonical status and server availability", async () => {
+  const { createElement } = await import("react"),
+    { renderToStaticMarkup } = await import("react-dom/server"),
+    { default: Billing } =
+      await import("../apps/os/components/LiveBillingEntry");
+  for (const available of [false, true])
+    for (const request_state of [
+      "REQUESTED",
+      "INFLIGHT",
+      "UNCERTAIN",
+      "CONSUMED",
+    ] as const) {
+      const html = renderToStaticMarkup(
+        createElement(Billing, {
+          initial: liveEntryStatus.parse({
+            ...status,
+            state: "BOUND",
+            request_id: request.request_id,
+            kind: "CHECKOUT",
+            request_state,
+            available_actions: [],
+          }),
+          checkoutResultAvailable: available,
+        }),
+      );
+      assert.equal(
+        html.includes("Continue to secure payment"),
+        available && request_state === "CONSUMED",
+      );
+      assert.ok(
+        !html.includes("checkout.stripe.com"),
+        "No bearer URL is rendered or cached in HTML",
+      );
+    }
 });
