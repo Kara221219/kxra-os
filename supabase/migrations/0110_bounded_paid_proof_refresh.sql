@@ -29,6 +29,12 @@ begin
  left join kxra_private.live_paid_access a on a.org_id=binding.org_id and a.scope_id=binding.scope_id
  left join kxra_private.modern_paid_refresh_leases lease on lease.org_id=binding.org_id and lease.scope_id=binding.scope_id
  where binding.scope_id=s and not binding.quarantined and binding.subscription_id is not null
+ and exists(select 1 from kxra_private.live_billing_mappings mapping where mapping.scope_id=s and mapping.offer_key=binding.offer_key and mapping.revision=binding.mapping_revision and mapping.enabled)
+ and exists(select 1 from kxra_private.live_paid_policies policy where policy.scope_id=s and policy.offer_key=binding.offer_key and policy.mapping_revision=binding.mapping_revision and policy.enabled
+  and kxra_private.live_paid_policy_current(policy.id,policy.revision,binding.org_id))
+ and exists(select 1 from kxra_private.live_billing_intents checkout where checkout.scope_id=s and checkout.id=binding.checkout_intent_id and checkout.org_id=binding.org_id
+  and checkout.state='CONSUMED' and checkout.kind='CHECKOUT' and checkout.customer_id=binding.customer_id and checkout.provider_session_id is not null)
+ and kxra_private.live_paid_org_actor(binding.org_id) is not null
  and (lease.org_id is null or (lease.lease_until<=now() and lease.next_attempt_at<=now()))
  and (binding.reconcile_required or a.org_id is null or a.valid_until<=now()+interval '60 seconds'
   or a.binding_version<>binding.version)
