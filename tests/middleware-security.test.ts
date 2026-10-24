@@ -44,3 +44,31 @@ test("AT-27 invitation routes prevent token referral and caching", async () => {
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   assert.equal(response.headers.get("referrer-policy"), "no-referrer");
 });
+
+test("exact workspace terms path retains plain-text deny-all policy through middleware", async () => {
+  const response = await middleware(
+    new NextRequest(
+      "https://os.example.test/legal/workspace-terms?sha256=" + "a".repeat(64),
+    ),
+  );
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  );
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  for (const sibling of [
+    "/legal/workspace-terms-other",
+    "/legal/privacy",
+    "/billing",
+  ]) {
+    const ordinary = await middleware(
+      new NextRequest("https://os.example.test" + sibling),
+    );
+    assert.equal(ordinary.headers.get("referrer-policy"), "same-origin");
+    assert.match(
+      ordinary.headers.get("content-security-policy") || "",
+      /script-src 'self' 'nonce-/,
+    );
+  }
+});

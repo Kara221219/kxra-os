@@ -24,7 +24,11 @@ function securityPolicy(nonce: string) {
 // verify the user and apply RLS.
 export async function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID();
-  const policy = securityPolicy(nonce);
+  const workspaceTermsPath =
+    request.nextUrl.pathname === "/legal/workspace-terms";
+  const policy = workspaceTermsPath
+    ? "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    : securityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", policy);
@@ -58,7 +62,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/signup");
   response.headers.set(
     "Referrer-Policy",
-    invitationPath ? "no-referrer" : "same-origin",
+    invitationPath || workspaceTermsPath ? "no-referrer" : "same-origin",
   );
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set(
