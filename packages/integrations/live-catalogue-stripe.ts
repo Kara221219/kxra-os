@@ -1,4 +1,8 @@
 import crypto from "node:crypto";
+import {
+  validateCheckoutTermsPresentation,
+  type CheckoutTermsPresentation,
+} from "./live-checkout-consent";
 import { z } from "zod";
 import { approvedPlan } from "../workspace/approved-catalogue";
 import { verifyBillingWebhook } from "./billing";
@@ -71,6 +75,7 @@ export type LiveBillingTransport = (
   init: RequestInit,
 ) => Promise<Response>;
 export type LiveBillingDependencies = {
+  checkoutTerms?: CheckoutTermsPresentation;
   // Must come from private server runtime, independently of HTTP input. Missing means disabled.
   runtime?: {
     enabled: boolean;
@@ -295,12 +300,25 @@ export async function createLiveCatalogueSession(
     fail("EXISTING_SUBSCRIPTION");
   if (intent.kind === "PORTAL" && !intent.subscription_id)
     fail("SUBSCRIPTION_REQUIRED");
+  const terms =
+    intent.kind === "CHECKOUT"
+      ? validateCheckoutTermsPresentation(
+          deps.checkoutTerms,
+          mapping.terms_review_sha256,
+          runtime(deps).origin,
+        )
+      : null;
   await providerBinding(deps, mapping, intent);
   const r = runtime(deps);
   const body = new URLSearchParams({ customer: intent.customer_id });
   const checkout = intent.kind === "CHECKOUT";
   if (checkout) {
     body.set("mode", "subscription");
+    body.set("consent_collection[terms_of_service]", "required");
+    body.set(
+      "custom_text[terms_of_service_acceptance][message]",
+      terms!.message,
+    );
     body.set("line_items[0][price]", mapping.price_id);
     body.set("line_items[0][quantity]", "1");
     body.set("client_reference_id", intent.id);
@@ -313,8 +331,12 @@ export async function createLiveCatalogueSession(
       kxra_live_intent_id: intent.id,
       kxra_catalogue_offer: mapping.offer_key,
       kxra_mapping_revision: String(mapping.revision),
-    }))
+      kxra_terms_sha256: mapping.terms_review_sha256,
+      kxra_consent_presentation_sha256: terms!.presentation_sha256,
+    })) {
       body.set(`subscription_data[metadata][${k}]`, v);
+      body.set(`metadata[${k}]`, v);
+    }
   } else {
     const portal = z
       .object({
@@ -356,6 +378,13 @@ export async function createLiveCatalogueSession(
       status: z.string().optional(),
       client_reference_id: z.string().optional(),
       configuration: z.string().optional(),
+      consent_collection: z.object({ terms_of_service: z.string() }).optional(),
+      custom_text: z
+        .object({
+          terms_of_service_acceptance: z.object({ message: z.string() }),
+        })
+        .optional(),
+      metadata: z.record(z.string(), z.string()).optional(),
     })
     .parse(
       await request(
@@ -394,6 +423,19 @@ export async function createLiveCatalogueSession(
         session.configuration !== mapping.portal_configuration_id
   )
     fail("SESSION_INVALID");
+  if (
+    checkout &&
+    (session.consent_collection?.terms_of_service !== "required" ||
+      session.custom_text?.terms_of_service_acceptance.message !==
+        terms!.message ||
+      session.metadata?.kxra_live_intent_id !== intent.id ||
+      session.metadata?.kxra_catalogue_offer !== mapping.offer_key ||
+      session.metadata?.kxra_mapping_revision !== String(mapping.revision) ||
+      session.metadata?.kxra_terms_sha256 !== mapping.terms_review_sha256 ||
+      session.metadata?.kxra_consent_presentation_sha256 !==
+        terms!.presentation_sha256)
+  )
+    fail("SESSION_CONSENT_INVALID");
   return {
     id: session.id,
     url: session.url,

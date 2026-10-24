@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { checkoutTermsPresentationDigest } from "../packages/integrations/live-checkout-consent";
 import test from "node:test";
 import { createHmac } from "node:crypto";
 import {
@@ -151,7 +152,16 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
   const calls: { url: string; init: RequestInit }[] = [];
   let providerStatus = 200;
   let rawResponse: string | null = null;
+  const terms = {
+    terms_review_sha256: hash,
+    terms_url: `https://kxra.example/legal/terms?sha256=${hash}`,
+    message: `Synthetic reviewed fixture [terms](https://kxra.example/legal/terms?sha256=${hash})`,
+  };
   const deps: LiveBillingDependencies = {
+    checkoutTerms: {
+      ...terms,
+      presentation_sha256: checkoutTermsPresentationDigest(terms),
+    },
     runtime: {
       enabled: true,
       nodeEnv: "production",
@@ -174,6 +184,19 @@ function fixture(plan = plans[0] as (typeof plans)[number]) {
       });
     },
   };
+  Object.assign(session, {
+    consent_collection: { terms_of_service: "required" },
+    custom_text: {
+      terms_of_service_acceptance: { message: deps.checkoutTerms!.message },
+    },
+    metadata: {
+      kxra_live_intent_id: intentId,
+      kxra_catalogue_offer: mapping.offer_key,
+      kxra_mapping_revision: String(mapping.revision),
+      kxra_terms_sha256: hash,
+      kxra_consent_presentation_sha256: deps.checkoutTerms!.presentation_sha256,
+    },
+  });
   const binding = {
     customer_id: intent.customer_id,
     subscription_id: subscription.id,
@@ -252,6 +275,12 @@ for (const plan of plans)
     );
     assert.equal(body.get("subscription_data[trial_period_days]"), null);
     assert.equal(body.get("allow_promotion_codes"), "false");
+    assert.equal(body.get("consent_collection[terms_of_service]"), "required");
+    assert.equal(body.get("metadata[kxra_terms_sha256]"), hash);
+    assert.equal(
+      body.get("metadata[kxra_consent_presentation_sha256]"),
+      f.deps.checkoutTerms!.presentation_sha256,
+    );
     assert.equal(body.get("payment_method_types[0]"), "card");
     await run(f);
     assert.equal(
@@ -610,4 +639,18 @@ test("quantity transformations and arbitrary price scaling are rejected", async 
   Object.assign(f.price, { transform_quantity: { divide_by: 5, round: "up" } });
   await assert.rejects(run(f));
   assert.ok(f.calls.every((c) => c.init.method === "GET"));
+});
+
+test("live checkout cannot redirect without reviewed terms configuration and provider checkbox", async () => {
+  const f = fixture();
+  f.deps.checkoutTerms = undefined;
+  await assert.rejects(run(f));
+  assert.equal(f.calls.length, 0);
+  const g = fixture();
+  Object.assign(g.session, {
+    consent_collection: { terms_of_service: "none" },
+  });
+  await assert.rejects(run(g), {
+    message: "LIVE_BILLING_SESSION_CONSENT_INVALID",
+  });
 });
