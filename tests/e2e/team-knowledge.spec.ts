@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { knowledgeFixture, knowledgeOk } from "../support/team-knowledge";
 import crypto from "node:crypto";
+import { workspaceRefreshAfter } from "../support/workspace-refresh";
+import { testOrigin } from "../support/runtime";
 test("room knowledge and reviewed skill versions produce scoped drafts and revoke derived output", async ({
   page,
 }) => {
@@ -137,6 +139,13 @@ test("room knowledge and reviewed skill versions produce scoped drafts and revok
       response.request().method() === "POST" &&
       response.request().postDataJSON().active === false,
   );
+  void acknowledged.catch(() => undefined);
+  const refreshed = workspaceRefreshAfter(
+    page,
+    testOrigin,
+    f.room,
+    acknowledged,
+  );
   const detachStart = Date.now();
   try {
     await page
@@ -154,13 +163,17 @@ test("room knowledge and reviewed skill versions produce scoped drafts and revok
       ).status(),
     ).toBe(200);
     releaseDetach();
-    expect((await acknowledged).status()).toBe(201);
+    const response = await acknowledged;
+    expect(response.status()).toBe(201);
+    expect(await response.json()).toEqual({ saved: true });
   } finally {
     releaseDetach();
     console.log(
       `[${test.info().project.name}] Confirm file detach response: ${Date.now() - detachStart}ms`,
     );
   }
+  const rendered = await refreshed;
+  expect(rendered.status()).toBe(200);
   await expect(
     fileRegion.getByText("No eligible files attached.", { exact: true }),
   ).toBeVisible();

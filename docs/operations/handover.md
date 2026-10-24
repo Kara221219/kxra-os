@@ -978,3 +978,53 @@ Root must run the gated case on desktop/mobile, then full private browser
 acceptance and review any failures without weakening authority/version checks.
 No public publication, hosted data/security/billing/deployment or staging-hold
 change is authorized by this handover.
+
+
+### 2026-10-24 — knowledge detach render correlation (local)
+
+Exact 5821ad8 remote CI passed 856 services and migration/RLS verification
+(112 migrations, 208 protected tables), then reported 91 private browser passes,
+one desktop knowledge failure and six existing skips. The empty-list assertion
+failed five seconds after a successful detach acknowledgement. No trace artifact
+was uploaded; this does not establish the exact remote cause.
+
+Controlled fresh synthetic desktop/mobile experiments held only the post-commit
+server-render response. The database attachment was inactive and download access
+was already 404, while the old list remained visible. Releasing the render made
+the unchanged five-second empty-list assertion pass. The page is force-dynamic;
+source inspection found no persistent page-cache explanation.
+
+The test-only repair now requires a main-frame, exact-origin/room GET RSC request
+issued after the mutation acknowledgement. A pre-acknowledgement interval request
+delivered later cannot qualify. The acknowledgement still requires 201 and
+`{saved:true}`; the selected render response requires 200; the original empty-list,
+download-404, overflow and 120-second journey assertions remain. No assertion
+threshold or test retry setting changed. The explicit render-response phase can
+use up to Playwright’s existing default 30-second response wait before the
+five-second DOM check, within the same 120-second overall journey limit. This
+increases permitted acknowledgement-to-UI latency. A post-commit periodic
+eight-second refresh may qualify; this proves post-refresh consistency, not
+immediate mutation-triggered refresh or an application latency guarantee.
+A response is not treated as React completion: the original DOM assertion remains.
+
+Provisional experiments waiting for stream `finished()` were rejected: an ordinary
+RSC transfer could remain unfinished after the UI already displayed the empty
+state. Their failures and generated files remain local. They are not acceptance
+of the final source. Application, API, SQL, dependency and workflow files are
+unchanged by this repair. Final-source local results are recorded separately and
+are not a complete remote CI pass or hosted acceptance.
+
+See `safe-ci-diagnostics-proposal.md` for a separately reviewed failure-evidence
+proposal. No raw trace/screenshot/log upload or workflow change is implemented.
+No hosted data, private recovery copy, build hold, shared ref, checkout or provider
+configuration was changed.
+
+
+Final-source local validation: all eight browser cases passed (full knowledge
+journey and controlled 6.1-second render delivery, two repetitions per desktop
+and mobile), with zero failures/skips. All four protocol-negative tests,
+typechecking and source formatting passed. The test-file hashes were unchanged
+through browser execution and the disposable database stopped cleanly. This is
+targeted local acceptance; full remote CI, production builds and hosted provider
+acceptance have not been rerun for this revision. The earlier remote failure and
+all superseded local diagnostic failures remain preserved.
