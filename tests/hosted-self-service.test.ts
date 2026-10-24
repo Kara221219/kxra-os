@@ -147,7 +147,7 @@ function identity(value: Admission): Identity {
 }
 async function provision(
   value: Admission,
-  request = crypto.randomUUID(),
+  request: string = crypto.randomUUID(),
   name = "Synthetic hosted workspace",
 ) {
   return (
@@ -337,7 +337,10 @@ test("concurrent provisioning and session recovery return one receipt without ch
     ]);
     assert.deepEqual(receipts[0], receipts[1]);
     assert.deepEqual(receipts[0], receipts[2]);
-    assert.ok([request, competingRequest].includes(receipts[0].request_id));
+    assert.ok(
+      receipts[0].request_id === request ||
+        receipts[0].request_id === competingRequest,
+    );
     await assert.rejects(
       provision(value, crypto.randomUUID(), "Different workspace"),
       { code: "P0001" },
