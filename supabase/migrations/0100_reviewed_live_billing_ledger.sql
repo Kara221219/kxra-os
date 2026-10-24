@@ -328,6 +328,11 @@ begin
   then raise exception 'Live intent replay conflict';end if;
   return jsonb_build_object('id',r.id,'state',r.state,'entitlement_authority',false);
  end if;
+ -- One unresolved portal operation per tenant across ALL authenticated wrappers.
+ -- Exact UUID replay returned above; only known CONSUMED permits a fresh request.
+ if k='PORTAL' and exists(select 1 from kxra_private.live_billing_intents pending
+  where pending.org_id=o and pending.kind='PORTAL' and pending.state in ('REQUESTED','INFLIGHT','UNCERTAIN'))
+ then raise exception 'Original portal request requires reconciliation';end if;
  if k='CHECKOUT' and (b.subscription_id is not null or b.checkout_intent_id is not null)
  or k<>'CHECKOUT' and b.subscription_id is null then raise exception 'Live intent unavailable; reconcile original request';end if;
  if k='CHECKOUT' and kxra_private.pilot_seats(o)>(select (p->>'people')::integer from jsonb_array_elements(kxra_private.approved_workspace_catalogue_v1()) p where p->>'offer_key'=c.offer_key)
