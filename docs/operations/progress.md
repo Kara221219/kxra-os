@@ -1129,3 +1129,29 @@ Added `/legal/workspace-terms` with an empty immutable publication catalogue and
 exact UTF-8 SHA-256 validation. No terms text or approval was added. Seven handler
 source tests and full TypeScript checking pass; owner build/browser checks remain.
 See [publication prerequisites](workspace-terms-publication.md).
+
+
+### 2026-10-24 — combined local paid-launch acceptance and header repair
+
+Integrated migrations 0099–0112: shared LIVE/STAGING_SANDBOX billing, bounded
+customer/checkout dispatch, paid-proof refresh, synchronous portal, authenticated
+checkout-result recovery and private UI/protected worker routes. Switches remain
+disabled and public workspace terms catalogue empty. No hosted migration,
+provider execution, credential configuration, payment or deployment occurred.
+
+Application source 4c93f443c25ec73706ae963ee1640a4f0254e9b7 passed 846 services,
+92 private browser cases (six existing skips), 61 public browser cases in both
+development and production (one existing skip each), restart persistence,
+empty-target restore (208 tables/75 synthetic objects), all three builds,93-route
+CSP/SRI, artifact/secret checks and unchanged bundle/Lighthouse budgets. The full
+run stopped at pg_dump 14/server 17 mismatch; retained same-source evidence resumes
+only remaining stages using PostgreSQL 17. This is segmented local acceptance,
+not uninterrupted remote CI or genuine provider lifecycle acceptance. Separate
+fresh native scope runs passed 488 tests in each mode without contacting Stripe.
+
+A subsequent assembled production probe found middleware overwrote the terms
+handler's no-referrer header. Repair 0b48a0f980bff3a898ba93e7f37e9eb8149a078e
+applies deny-all CSP and no-referrer only to the exact terms path. Ten focused
+checks cover this path and unchanged sibling/invitation/nonce policies. The
+repair's rebuilt artifact acceptance must accompany its release receipt, separate
+from preceding-source pipeline results. No assertions or budgets were relaxed.

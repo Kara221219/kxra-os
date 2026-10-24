@@ -902,3 +902,36 @@ and returns uncached 404 until the owner approves exact text bytes and their pub
 release in an explicit source commit. No legal content, VAT decision, agreement,
 provider setting or billing activation was supplied. See
 [workspace terms publication](workspace-terms-publication.md).
+
+
+### Integrated paid-launch release gates, 2026-10-24
+
+Local implementation is frozen through migration 0112. The new worker routes do
+not configure a scheduler/trigger secret or enable provider work. Checkout and
+portal URL delivery requires durable canonical receipts plus authenticated
+generation fences; receipts alone never grant access. Peer review fixes cover
+portal generation drift and the refresh executor's pinned database target.
+
+Keep 4c93f44 segmented full-pipeline evidence distinct from the narrow 0b48a0f
+header repair and its rebuilt verification. Preserve the PostgreSQL-tool mismatch
+failure, generated Next configs, original tsconfig edit and private backups. Do
+not equate local fixtures or old 82→97 limited recovery with current hosted
+acceptance. The empty public terms route must be tested through assembled
+middleware/framework headers, not only its handler.
+
+Fresh read-only staging metadata matches all 82 applied migration hashes against
+112 source migrations: 30 anticipated pending, not a guarded accepted plan. Three
+staging holds remain exit 0; production projects remain Git-unlinked. No env-list
+endpoint/environment values were accessed. Before rollout: exact-source public
+CI/CodeQL and shared phase approval, current limited recovery/migration rehearsal,
+guarded staging plan/apply, hosted Auth/email/workspace/two-tenant/provider tests.
+The disabled recovery preparation remains disabled; old helper/source pins and
+limited-copy scope are preserved. Conditional hold restoration follows database
+gates, never precedes them.
+
+Owner decisions remain VAT registration and inclusive/exclusive presentation;
+exact legal/trial/refund/cancellation/usage terms; sandbox provider resources,
+scoped webhook/runner/trigger credentials and scheduling/test budgets. Existing
+£29/£79/£199 catalogue with 1/5/15 seats is already created; do not recreate or
+change legacy FinanceVision records. Catalogue approval grants none of those
+other decisions. Keep checkout disabled until actual provider/hosted acceptance.
