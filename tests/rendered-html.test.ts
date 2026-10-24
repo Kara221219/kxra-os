@@ -1,9 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  assertNoRenderedCheckoutBytes,
   renderedAnchorHrefs,
   renderedAbsoluteUrls,
 } from "./support/rendered-html";
+
+test("checkout privacy marker is forbidden in protocol-relative, escaped JSON, comments and text bytes", () => {
+  for (const html of [
+    '<a href="//checkout.stripe.com/session">Pay</a>',
+    String.raw`<script type="application/json">{"url":"https:\/\/checkout.stripe.com\/cached"}</script>`,
+    "<!-- cached checkout.stripe.com token -->",
+    "<span>checkout.stripe.com</span>",
+    '<a href="https://checkout.stripe.com.evil.invalid/session">Lookalike</a>',
+  ]) {
+    assert.throws(
+      () => assertNoRenderedCheckoutBytes(html),
+      /checkout marker bytes/,
+    );
+  }
+  // Preserve the exact marker invariant; this helper does not authorize domains.
+  assert.doesNotThrow(() =>
+    assertNoRenderedCheckoutBytes(
+      '<a href="https://checkout-stripe.com/">Different bytes</a>',
+    ),
+  );
+  assert.doesNotThrow(() =>
+    assertNoRenderedCheckoutBytes("<p>No checkout marker</p>"),
+  );
+});
 
 test("anchor assertion reads complete decoded href values", () => {
   const values = renderedAnchorHrefs(

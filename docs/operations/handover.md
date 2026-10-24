@@ -950,3 +950,11 @@ must run affected native fixtures sequentially and obtain exact-revision public
 publication approval before any remote verification. Do not claim the scan alerts
 resolved until the new exact SHA is analyzed. No older alerts, frozen source,
 held deployments, credentials or hosted state changed.
+
+
+The rendering follow-up explicitly retains the original forbidden-marker byte
+invariant in addition to parsed URL checks. Protocol-relative, slash-escaped JSON,
+comment/text and marker-containing lookalike cases fail that privacy assertion;
+no URL host allowlist is implemented by this helper. Only three rendering test/
+helper files plus these documents changed after 8604816; native fixture source and
+all application, schema and workflow files remain identical.

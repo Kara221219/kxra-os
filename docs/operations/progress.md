@@ -1172,3 +1172,11 @@ new file-reader cases cover symlinks, unsafe modes, directories/FIFOs, oversize 
 invalid JSON/UTF8. No database/browser/build/provider execution or public source
 publication occurred in this repair. Actual CodeQL resolution and native database
 regression remain owner acceptance; the 21 older alerts were not dismissed.
+
+
+Owner review identified that parsed URL inspection alone did not preserve the
+original rendered-byte privacy invariant. The follow-up retains parsed checks
+and additionally forbids literal `checkout.stripe.com` UTF8 marker bytes anywhere
+in the complete HTML, including comments, protocol-relative URLs and slash-escaped
+JSON. This is byte absence, not URL authorization. The focused rendering/signup/
+billing set passes 28 checks; fixture file/DB sources are unchanged from 8604816.

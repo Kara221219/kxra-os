@@ -1,4 +1,7 @@
-import { renderedAbsoluteUrls } from "./support/rendered-html";
+import {
+  assertNoRenderedCheckoutBytes,
+  renderedAbsoluteUrls,
+} from "./support/rendered-html";
 import { liveEntryStatus } from "../packages/authz/live-billing-entry-contract";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -523,6 +526,7 @@ test("checkout continuation requires completed canonical status and server avail
         html.includes("Continue to secure payment"),
         available && request_state === "CONSUMED",
       );
+      assertNoRenderedCheckoutBytes(html);
       assert.ok(
         renderedAbsoluteUrls(html).every(
           (url) => url.hostname !== "checkout.stripe.com",

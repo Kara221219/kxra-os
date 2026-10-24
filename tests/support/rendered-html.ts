@@ -1,4 +1,17 @@
 import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
+import assert from "node:assert/strict";
+
+/** Privacy invariant over every rendered/cache byte, including comments and
+ * escaped JSON. This is deliberately not URL sanitization or a host allowlist. */
+export function assertNoRenderedCheckoutBytes(html: string): void {
+  assert.equal(
+    Buffer.from(html, "utf8").indexOf(
+      Buffer.from("checkout.stripe.com", "ascii"),
+    ),
+    -1,
+    "No checkout marker bytes are rendered or cached anywhere in HTML",
+  );
+}
 
 type Node = DefaultTreeAdapterMap["node"];
 function walk(html: string, visit: (node: Node) => void) {
