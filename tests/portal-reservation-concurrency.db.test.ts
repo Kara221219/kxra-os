@@ -269,6 +269,40 @@ test("all portal request wrappers serialize one unresolved intent; exact replay 
       "CONSUMED",
     );
     assert.equal((await transaction(requestSQL, [firstId])).state, "CONSUMED");
+    const consumedBefore = (
+      await admin.query(
+        "select to_jsonb(r) receipt from kxra_private.live_billing_intents r where id=$1",
+        [firstId],
+      )
+    ).rows[0].receipt;
+    // Synthetic committed non-quarantining event generation advance, in the exact
+    // completion -> final authenticated delivery window. No provider is contacted.
+    await admin.query(
+      "update kxra_private.live_billing_bindings set version=version+1,reconcile_required=true where org_id=$1",
+      [org],
+    );
+    await assert.rejects(
+      transaction(requestSQL, [firstId]),
+      /Consumed portal delivery no longer current/,
+    );
+    assert.deepEqual(
+      (
+        await admin.query(
+          "select to_jsonb(r) receipt from kxra_private.live_billing_intents r where id=$1",
+          [firstId],
+        )
+      ).rows[0].receipt,
+      consumedBefore,
+    );
+    // Immutable worker completion replay stays stable even when delivery is stale.
+    assert.equal(
+      await transaction(
+        `select kxra_private.${prefix}finish_live_billing_intent($1,'CONSUMED','bps_syntheticportal',$2) value`,
+        [firstId, scopeHash],
+        true,
+      ),
+      "CONSUMED",
+    );
     assert.equal((await transaction(requestSQL, [thirdId])).state, "REQUESTED");
     await transaction(
       `select kxra_private.${prefix}claim_live_billing_intent($1) value`,

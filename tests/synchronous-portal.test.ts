@@ -28,6 +28,7 @@ function harness() {
     creates = 0,
     claims = 0,
     loads = 0,
+    generation = 7,
     current = true,
     authority = true,
     failFinish = false;
@@ -88,6 +89,10 @@ function harness() {
     enabled: true,
     reserve: async () => {
       events.push("reserve");
+      if (state === "CONSUMED" && generation !== canonical.observed_version)
+        throw Error(
+          "Consumed portal delivery no longer current: generation changed",
+        );
       return {
         id: request.request_id,
         state,
@@ -125,6 +130,9 @@ function harness() {
     },
     set state(v: string) {
       state = v;
+    },
+    set generation(v: number) {
+      generation = v;
     },
     set current(v: boolean) {
       current = v;
@@ -759,4 +767,25 @@ test("client-safe URL helper accepts documented secret-query and path forms, rej
   const result = await synchronousPortalDelivery(request, principal, h.ports);
   assert.equal(result.url, h.result.url);
   assert.ok(!JSON.stringify(h.finishes).includes("secret="));
+});
+
+test("generation advance after CONSUMED commit but before final reserve withholds the portal URL without changing the receipt", async () => {
+  const h = harness(),
+    finish = h.worker.finish;
+  h.worker.finish = async (r) => {
+    const outcome = await finish(r);
+    assert.equal(outcome, "CONSUMED");
+    h.generation = h.canonical.observed_version + 1;
+    return outcome;
+  };
+  await assert.rejects(
+    synchronousPortalDelivery(request, principal, h.ports),
+    /Consumed portal delivery no longer current/,
+  );
+  assert.equal(h.state, "CONSUMED");
+  assert.equal(h.creates, 1);
+  assert.equal(h.claims, 1);
+  assert.equal(h.finishes.length, 1);
+  assert.equal((h.finishes[0] as { outcome: string }).outcome, "CONSUMED");
+  assert.doesNotMatch(JSON.stringify(h.finishes), /https:|SYNTHETICtoken/);
 });

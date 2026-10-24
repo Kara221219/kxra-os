@@ -326,6 +326,18 @@ begin
  if found then
   if (r.org_id,r.actor_id,r.kind,r.offer_key,r.mapping_revision) is distinct from (o,auth.uid(),k,c.offer_key,c.revision)
   then raise exception 'Live intent replay conflict';end if;
+  -- Final authenticated PORTAL delivery replays only a CURRENT consumed result.
+  -- Completion receipts remain immutable/idempotent; this is a delivery fence,
+  -- not a second claim or a mutation of the recorded provider outcome.
+  if k='PORTAL' and r.state='CONSUMED' and (
+   r.observed_version is distinct from b.version
+   or (r.customer_id,r.subscription_id,r.offer_key,r.mapping_revision,r.scope_id)
+    is distinct from (b.customer_id,b.subscription_id,b.offer_key,b.mapping_revision,b.scope_id)
+   or r.scope_id is distinct from c.scope_id or r.terms_review_sha256 is distinct from c.terms_review_sha256
+   or r.expires_at<=now() or r.created_at>now()
+   or r.provider_session_id is null or r.provider_session_id!~'^bps_[A-Za-z0-9]{6,}$'
+   or r.result_sha256 is null or r.result_sha256!~'^[a-f0-9]{64}$')
+  then raise exception 'Consumed portal delivery no longer current';end if;
   return jsonb_build_object('id',r.id,'state',r.state,'entitlement_authority',false);
  end if;
  -- One unresolved portal operation per tenant across ALL authenticated wrappers.
