@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import type { ModernExecutionMode } from "../packages/integrations/modern-billing-scope";
 import test from "node:test";
 import {
   checkoutTermsPresentationDigest,
   readLiveCheckoutConsent,
+  readStagingSandboxCheckoutConsent,
   validateCheckoutTermsPresentation,
   type LiveConsentDependencies,
   type LiveCheckoutConsentProof,
 } from "../packages/integrations/live-checkout-consent";
 import {
   buildLivePaidProof,
+  buildStagingSandboxPaidProof,
+  commitStagingSandboxPaidProofCommand,
   reserveLivePaidReadCommand,
   commitLivePaidProofCommand,
   livePaidAccessStatusCommand,
@@ -21,7 +26,10 @@ const now = 1_800_000_000,
   uuid = (digit: string) =>
     `${digit.repeat(8)}-${digit.repeat(4)}-4${digit.repeat(3)}-8${digit.repeat(3)}-${digit.repeat(12)}`;
 const principal = { actor_id: uuid("1"), org_id: uuid("2") };
-function fixture() {
+function fixture(mode: ModernExecutionMode = "LIVE") {
+  const modern = modernBillingFixture(mode),
+    scope = modern.execution.execution_scope,
+    row = modern.execution.catalogue[0];
   const presentationBase = {
     terms_review_sha256: hash,
     terms_url: `https://kxra.example/legal/terms?sha256=${hash}`,
@@ -42,10 +50,12 @@ function fixture() {
     customer_id: "cus_synthetic123",
     subscription_id: "sub_synthetic123",
     invoice_id: "in_current123",
-    price_id: "price_1UTbq7C84VkhhIRzkBHEHivV",
-    product_id: "prod_VUb2kv7rUiTeiu",
+    price_id: row.price_id,
+    product_id: row.product_id,
     checkout_intent_id: uuid("4"),
-    checkout_session_id: "cs_live_synthetic123",
+    checkout_session_id: scope.livemode
+      ? "cs_live_synthetic123"
+      : "cs_test_synthetic123",
     period_start: now - 60,
     period_end: now + 3000,
     expected_total_minor: 2900,
@@ -79,13 +89,17 @@ function fixture() {
     kxra_live_intent_id: context.checkout_intent_id,
     kxra_catalogue_offer: context.offer_key,
     kxra_mapping_revision: "1",
+    kxra_execution_scope: scope.scope_id,
+    kxra_execution_mode: scope.execution_mode,
+    kxra_execution_sha256: scope.scope_sha256,
+    kxra_execution_project: scope.project_ref,
     kxra_terms_sha256: hash,
     kxra_consent_presentation_sha256: presentation.presentation_sha256,
   };
   const session = {
     id: context.checkout_session_id,
     object: "checkout.session",
-    livemode: true,
+    livemode: scope.livemode,
     mode: "subscription",
     status: "complete",
     customer: context.customer_id,
@@ -112,7 +126,7 @@ function fixture() {
         price: {
           id: context.price_id,
           product: context.product_id,
-          livemode: true,
+          livemode: scope.livemode,
           currency: "gbp",
           unit_amount: 2900,
           recurring: {
@@ -128,7 +142,7 @@ function fixture() {
     id: context.subscription_id,
     object: "subscription",
     customer: context.customer_id,
-    livemode: true,
+    livemode: scope.livemode,
     status: "active",
     cancel_at_period_end: false,
     latest_invoice: context.invoice_id,
@@ -148,18 +162,21 @@ function fixture() {
   };
   const calls: { url: string; init: RequestInit }[] = [];
   const deps: LiveConsentDependencies = {
+    ...modern,
     runtime: {
       enabled: true,
-      mode: "live",
+      mode: scope.livemode ? "live" : "staging_sandbox",
       nodeEnv: "production",
-      secretKey: "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000",
+      secretKey: scope.livemode
+        ? "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000"
+        : "sk_test_SYNTHETIC_NOT_A_CREDENTIAL_000000",
     },
     transport: async (url, init) => {
       calls.push({ url, init });
       return new Response(
         JSON.stringify(
           url.endsWith("/account")
-            ? { id: "acct_1Rv3KdC84VkhhIRz", object: "account" }
+            ? { id: scope.account_id, object: "account" }
             : url.includes("/line_items")
               ? lines
               : url.includes("/subscriptions/")
@@ -168,7 +185,7 @@ function fixture() {
         ),
       );
     },
-    resolveBinding: async () => binding,
+    resolveBinding: async () => ({ binding, execution_scope: scope }),
     stillCurrent: async () => true,
     nowSeconds: () => now,
   };
@@ -200,6 +217,7 @@ function fixture() {
     proof_ttl_seconds: 120,
   };
   const payment: LivePaymentEvidence = {
+    execution_scope: scope,
     version: 1,
     state: "COLLECTED",
     reason: "MATCHED_CAPTURED_CARD_COLLECTION_NOT_PAYOUT",
@@ -228,6 +246,7 @@ function fixture() {
     payout_authority: false,
   };
   const consent: LiveCheckoutConsentProof = {
+    execution_scope: scope,
     state: "VERIFIED",
     reason: "STRIPE_REQUIRED_TERMS_ACCEPTED",
     org_id: context.org_id,
@@ -253,6 +272,7 @@ function fixture() {
     entitlement_authority: false,
   };
   return {
+    modern,
     presentation,
     context,
     binding,
@@ -282,7 +302,14 @@ test("historical expired completed checkout proves consent only, independent of 
     assert.equal(new URL(c.url).origin, "https://api.stripe.com");
     assert.ok(c.init.signal);
   }
-  const p = buildLivePaidProof(f.context, f.policy, f.payment, s, now);
+  const p = buildLivePaidProof(
+    f.context,
+    f.policy,
+    f.payment,
+    s,
+    now,
+    f.modern,
+  );
   assert.equal(p.eligibility, "ELIGIBLE");
   assert.equal(p.entitlement_authority, false);
 });
@@ -371,6 +398,7 @@ for (const state of [
         { ...f.payment, state },
         f.consent,
         now,
+        f.modern,
       ).eligibility,
       "DENY",
     );
@@ -384,6 +412,7 @@ test("settlement without consent and consent without settlement are denied", () 
       f.payment,
       { ...f.consent, state: "UNVERIFIED" },
       now,
+      f.modern,
     ).eligibility,
     "DENY",
   );
@@ -394,6 +423,7 @@ test("settlement without consent and consent without settlement are denied", () 
       { ...f.payment, payment_intent_id: null },
       f.consent,
       now,
+      f.modern,
     ).eligibility,
     "DENY",
   );
@@ -411,7 +441,7 @@ test("no policy/cancellation/grace/refund/trial/AI terms are inferred", () => {
     const p = { ...f.policy } as Record<string, unknown>;
     delete p[key];
     assert.throws(() =>
-      buildLivePaidProof(f.context, p, f.payment, f.consent, now),
+      buildLivePaidProof(f.context, p, f.payment, f.consent, now, f.modern),
     );
   }
   assert.throws(() =>
@@ -421,6 +451,7 @@ test("no policy/cancellation/grace/refund/trial/AI terms are inferred", () => {
       f.payment,
       f.consent,
       now,
+      f.modern,
     ),
   );
   assert.throws(() =>
@@ -430,6 +461,7 @@ test("no policy/cancellation/grace/refund/trial/AI terms are inferred", () => {
       f.payment,
       f.consent,
       now,
+      f.modern,
     ),
   );
 });
@@ -449,13 +481,20 @@ test("pending/pastdue/cancelled subscriptions and proof/period expiry deny", () 
         { ...f.payment, subscription_status: status },
         { ...f.consent, subscription_status: status },
         now,
+        f.modern,
       ).eligibility,
       "DENY",
     );
   }
   assert.equal(
-    buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now + 201)
-      .eligibility,
+    buildLivePaidProof(
+      f.context,
+      f.policy,
+      f.payment,
+      f.consent,
+      now + 201,
+      f.modern,
+    ).eligibility,
     "DENY",
   );
   assert.equal(
@@ -465,6 +504,7 @@ test("pending/pastdue/cancelled subscriptions and proof/period expiry deny", () 
       f.payment,
       { ...f.consent, observed_at: now - 300 },
       now,
+      f.modern,
     ).eligibility,
     "DENY",
   );
@@ -473,7 +513,8 @@ test("scheduled cancellation follows explicit reviewed policy only", () => {
   const f = fixture();
   const s = { ...f.consent, cancel_at_period_end: true };
   assert.equal(
-    buildLivePaidProof(f.context, f.policy, f.payment, s, now).eligibility,
+    buildLivePaidProof(f.context, f.policy, f.payment, s, now, f.modern)
+      .eligibility,
     "ELIGIBLE",
   );
   assert.equal(
@@ -483,6 +524,7 @@ test("scheduled cancellation follows explicit reviewed policy only", () => {
       f.payment,
       s,
       now,
+      f.modern,
     ).eligibility,
     "DENY",
   );
@@ -496,7 +538,7 @@ test("tenant, generation, invoice, period and terms cannot be mixed", () => {
     { ...f.payment, period_end: now + 5000 },
   ])
     assert.throws(() =>
-      buildLivePaidProof(f.context, f.policy, p, f.consent, now),
+      buildLivePaidProof(f.context, f.policy, p, f.consent, now, f.modern),
     );
   assert.throws(() =>
     buildLivePaidProof(
@@ -505,15 +547,23 @@ test("tenant, generation, invoice, period and terms cannot be mixed", () => {
       f.payment,
       { ...f.consent, terms_review_sha256: "b".repeat(64) },
       now,
+      f.modern,
     ),
   );
 });
 test("duplicate proposals have stable fingerprints; old generation is never silently promoted", () => {
   const f = fixture();
-  const p = buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now);
+  const p = buildLivePaidProof(
+    f.context,
+    f.policy,
+    f.payment,
+    f.consent,
+    now,
+    f.modern,
+  );
   assert.equal(
     p.evidence_sha256,
-    buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now)
+    buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now, f.modern)
       .evidence_sha256,
   );
   assert.throws(() =>
@@ -523,6 +573,7 @@ test("duplicate proposals have stable fingerprints; old generation is never sile
       f.payment,
       f.consent,
       now,
+      f.modern,
     ),
   );
 });
@@ -542,7 +593,14 @@ test("worker SQL commands are disabled by default and accept no client authority
   assert.throws(() =>
     reserveLivePaidReadCommand({ ...input, role: "OWNER" }, true),
   );
-  const p = buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now);
+  const p = buildLivePaidProof(
+    f.context,
+    f.policy,
+    f.payment,
+    f.consent,
+    now,
+    f.modern,
+  );
   assert.throws(() => commitLivePaidProofCommand(p));
   assert.equal(
     commitLivePaidProofCommand(p, true).entitlement_authority,
@@ -552,7 +610,14 @@ test("worker SQL commands are disabled by default and accept no client authority
 
 test("proof command rejects altered packets and raw provider fields", () => {
   const f = fixture();
-  const p = buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now);
+  const p = buildLivePaidProof(
+    f.context,
+    f.policy,
+    f.payment,
+    f.consent,
+    now,
+    f.modern,
+  );
   assert.throws(() =>
     commitLivePaidProofCommand({ ...p, collected_minor: 1 }, true),
   );
@@ -585,5 +650,123 @@ test("read proof fencing is disabled by default and worker-only", () => {
       { reconciliation_id: uuid("3"), actor_id: principal.actor_id },
       true,
     ),
+  );
+});
+
+test("sandbox completed-session consent and paid proof preserve false scope end-to-end", async () => {
+  const f = fixture("STAGING_SANDBOX");
+  const consent = await readStagingSandboxCheckoutConsent(
+    f.deps,
+    { reconciliation_id: f.context.reconciliation_id },
+    principal,
+  );
+  assert.equal(consent.state, "VERIFIED");
+  assert.equal(consent.execution_scope.livemode, false);
+  assert.equal(f.session.livemode, false);
+  const packet = buildStagingSandboxPaidProof(
+    f.context,
+    f.policy,
+    f.payment,
+    consent,
+    now,
+    f.modern,
+  );
+  assert.equal(packet.eligibility, "ELIGIBLE");
+  assert.equal(packet.execution_scope.livemode, false);
+  assert.equal(packet.entitlement_authority, false);
+  assert.ok(
+    commitStagingSandboxPaidProofCommand(packet, true).text.includes(
+      "staging_sandbox_commit_live_paid_proof",
+    ),
+  );
+  assert.throws(() => commitLivePaidProofCommand(packet, true));
+});
+test("LIVE proof builder rejects sandbox facts and sandbox builder rejects LIVE facts", () => {
+  const stage = fixture("STAGING_SANDBOX"),
+    live = fixture();
+  assert.throws(() =>
+    buildLivePaidProof(
+      stage.context,
+      stage.policy,
+      stage.payment,
+      stage.consent,
+      now,
+      stage.modern,
+    ),
+  );
+  assert.throws(() =>
+    buildStagingSandboxPaidProof(
+      live.context,
+      live.policy,
+      live.payment,
+      live.consent,
+      now,
+      live.modern,
+    ),
+  );
+  assert.throws(() =>
+    buildStagingSandboxPaidProof(
+      stage.context,
+      stage.policy,
+      live.payment,
+      stage.consent,
+      now,
+      stage.modern,
+    ),
+  );
+});
+test("sandbox session requires actual false resource mode and execution metadata", async () => {
+  const f = fixture("STAGING_SANDBOX");
+  f.session.livemode = true;
+  assert.equal(
+    (
+      await readStagingSandboxCheckoutConsent(
+        f.deps,
+        { reconciliation_id: uuid("3") },
+        principal,
+      )
+    ).state,
+    "UNVERIFIED",
+  );
+  const g = fixture("STAGING_SANDBOX");
+  g.session.metadata.kxra_execution_mode = "LIVE";
+  assert.equal(
+    (
+      await readStagingSandboxCheckoutConsent(
+        g.deps,
+        { reconciliation_id: uuid("3") },
+        principal,
+      )
+    ).state,
+    "UNVERIFIED",
+  );
+});
+test("sandbox cannot reuse a LIVE checkout reference, scope tag, or contextless proof", () => {
+  const f = fixture("STAGING_SANDBOX");
+  assert.throws(() =>
+    buildStagingSandboxPaidProof(
+      { ...f.context, checkout_session_id: "cs_live_synthetic123" },
+      f.policy,
+      f.payment,
+      f.consent,
+      now,
+      f.modern,
+    ),
+  );
+  assert.throws(() =>
+    buildStagingSandboxPaidProof(
+      f.context,
+      f.policy,
+      {
+        ...f.payment,
+        execution_scope: modernBillingFixture("LIVE").execution.execution_scope,
+      },
+      f.consent,
+      now,
+      f.modern,
+    ),
+  );
+  assert.throws(() =>
+    buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now),
   );
 });

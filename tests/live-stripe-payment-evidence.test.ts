@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import type { ModernExecutionMode } from "../packages/integrations/modern-billing-scope";
 import test from "node:test";
 import {
   readLiveStripePaymentEvidence,
+  readStagingSandboxStripePaymentEvidence,
   type LivePaymentEvidenceDependencies,
 } from "../packages/integrations/live-stripe-payment-evidence";
 import { LIVE_STRIPE_API_VERSION } from "../packages/integrations/live-catalogue-stripe";
@@ -32,17 +35,23 @@ const plans = [
     19900,
   ],
 ] as const;
-function fixture(p = plans[0] as (typeof plans)[number]) {
+function fixture(
+  p = plans[0] as (typeof plans)[number],
+  mode: ModernExecutionMode = "LIVE",
+) {
+  const modern = modernBillingFixture(mode),
+    scope = modern.execution.execution_scope,
+    row = modern.execution.catalogue.find((r) => r.offer_key === p[0])!;
   const binding = {
     reconciliation_id: reconciliationId,
     ...principal,
     binding_version: 7,
     mapping_revision: 1,
-    account_id: "acct_1Rv3KdC84VkhhIRz",
-    mode: "live",
+    account_id: scope.account_id,
+    mode: scope.livemode ? "live" : "staging_sandbox",
     offer_key: String(p[0]),
-    price_id: String(p[1]),
-    product_id: String(p[2]),
+    price_id: row.price_id,
+    product_id: row.product_id,
     customer_id: "cus_synthetic123",
     subscription_id: "sub_synthetic123",
     subscription_item_id: "si_synthetic123",
@@ -63,7 +72,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const price = {
     id: binding.price_id,
     object: "price",
-    livemode: true,
+    livemode: scope.livemode,
     currency: "gbp",
     unit_amount: Number(p[3]),
     billing_scheme: "per_unit",
@@ -72,12 +81,16 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     recurring: { interval: "month", interval_count: 1, usage_type: "licensed" },
     transform_quantity: null,
     custom_unit_amount: null,
-    product: { id: binding.product_id, object: "product", livemode: true },
+    product: {
+      id: binding.product_id,
+      object: "product",
+      livemode: scope.livemode,
+    },
   };
   const subscription = {
     id: binding.subscription_id,
     object: "subscription",
-    livemode: true,
+    livemode: scope.livemode,
     customer: binding.customer_id,
     status: "active",
     latest_invoice: binding.invoice_id,
@@ -85,6 +98,10 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
       kxra_live_intent_id: checkoutId,
       kxra_catalogue_offer: binding.offer_key,
       kxra_mapping_revision: "1",
+      kxra_execution_scope: scope.scope_id,
+      kxra_execution_mode: scope.execution_mode,
+      kxra_execution_sha256: scope.scope_sha256,
+      kxra_execution_project: scope.project_ref,
     },
     items: {
       object: "list",
@@ -104,7 +121,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     id: "il_synthetic123",
     object: "line_item",
     invoice: binding.invoice_id,
-    livemode: true,
+    livemode: scope.livemode,
     currency: "gbp",
     amount: Number(p[3]),
     quantity: 1,
@@ -127,7 +144,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const invoice = {
     id: binding.invoice_id,
     object: "invoice",
-    livemode: true,
+    livemode: scope.livemode,
     customer: binding.customer_id,
     currency: "gbp",
     status: "paid",
@@ -153,7 +170,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const payment = {
     id: "inpay_synthetic123",
     object: "invoice_payment",
-    livemode: true,
+    livemode: scope.livemode,
     invoice: binding.invoice_id,
     currency: "gbp",
     status: "paid",
@@ -165,7 +182,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const pi = {
     id: "pi_synthetic123",
     object: "payment_intent",
-    livemode: true,
+    livemode: scope.livemode,
     customer: binding.customer_id,
     currency: "gbp",
     amount: Number(p[3]),
@@ -181,7 +198,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   const charge = {
     id: "ch_synthetic123",
     object: "charge",
-    livemode: true,
+    livemode: scope.livemode,
     customer: binding.customer_id,
     currency: "gbp",
     payment_intent: pi.id,
@@ -206,14 +223,17 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
   let change:
     ((url: string, count: number, value: unknown) => unknown) | undefined;
   const deps: LivePaymentEvidenceDependencies = {
+    ...modern,
     runtime: {
       enabled: true,
-      mode: "live",
+      mode: scope.livemode ? "live" : "staging_sandbox",
       nodeEnv: "production",
-      secretKey: "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000",
+      secretKey: scope.livemode
+        ? "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000"
+        : "sk_test_SYNTHETIC_NOT_A_CREDENTIAL_000000",
     },
     nowSeconds: () => now,
-    resolveBinding: async () => binding,
+    resolveBinding: async () => ({ binding, execution_scope: scope }),
     stillCurrent: async () => true,
     transport: async (url, init) => {
       calls.push({ url, init });
@@ -244,6 +264,7 @@ function fixture(p = plans[0] as (typeof plans)[number]) {
     },
   };
   return {
+    modern,
     binding,
     account,
     price,
@@ -535,4 +556,85 @@ test("unread monetary amounts are unknown rather than invented zero collection",
   assert.equal(r.state, "PENDING");
   assert.equal(r.collected_minor, null);
   assert.equal(r.refunded_minor, null);
+});
+
+test("modern sandbox uses the SAME collected-payment algorithm with actual false mode", async () => {
+  const f = fixture(plans[0], "STAGING_SANDBOX");
+  const r = await readStagingSandboxStripePaymentEvidence(
+    f.deps,
+    input,
+    principal,
+  );
+  assert.equal(r.state, "COLLECTED", r.reason);
+  assert.equal(r.execution_scope.execution_mode, "STAGING_SANDBOX");
+  assert.equal(r.execution_scope.livemode, false);
+  assert.equal(f.charge.livemode, false);
+  assert.equal(f.invoice.livemode, false);
+  assert.equal(f.price.livemode, false);
+  assert.equal(r.entitlement_authority, false);
+  assert.equal(r.payout_authority, false);
+  assert.ok(
+    f.calls.every((c) =>
+      (c.init.headers as Record<string, string>).Authorization.startsWith(
+        "Bearer sk_test_",
+      ),
+    ),
+  );
+  assert.equal(f.binding.price_id, "price_SYNTHETICsandboxStarter");
+});
+test("hard LIVE and staging entrypoints reject each other's execution contexts before transport", async () => {
+  const stage = fixture(plans[0], "STAGING_SANDBOX"),
+    live = fixture();
+  await assert.rejects(
+    readLiveStripePaymentEvidence(stage.deps, input, principal),
+  );
+  await assert.rejects(
+    readStagingSandboxStripePaymentEvidence(live.deps, input, principal),
+  );
+  assert.equal(stage.calls.length, 0);
+  assert.equal(live.calls.length, 0);
+});
+test("sandbox never accepts true nested provider objects or production catalogue IDs", async () => {
+  const f = fixture(plans[0], "STAGING_SANDBOX");
+  f.price.product.livemode = true;
+  assert.equal(
+    (await readStagingSandboxStripePaymentEvidence(f.deps, input, principal))
+      .state,
+    "MISMATCHED",
+  );
+  const other = fixture(plans[0], "STAGING_SANDBOX");
+  other.binding.price_id = plans[0][1];
+  await assert.rejects(
+    readStagingSandboxStripePaymentEvidence(other.deps, input, principal),
+  );
+  assert.equal(other.calls.length, 0);
+});
+test("canonical sandbox scope cannot be swapped after resolution", async () => {
+  const f = fixture(plans[0], "STAGING_SANDBOX");
+  f.deps.resolveBinding = async () => ({
+    binding: f.binding,
+    execution_scope: modernBillingFixture("LIVE").execution.execution_scope,
+  });
+  await assert.rejects(
+    readStagingSandboxStripePaymentEvidence(f.deps, input, principal),
+  );
+  assert.equal(f.calls.length, 0);
+});
+test("sandbox refuses production project/runtime and mismatched key mode", async () => {
+  const f = fixture(plans[0], "STAGING_SANDBOX");
+  f.deps.runtime!.secretKey = "sk_live_SYNTHETIC_NOT_A_CREDENTIAL_000000";
+  await assert.rejects(
+    readStagingSandboxStripePaymentEvidence(f.deps, input, principal),
+  );
+  assert.equal(f.calls.length, 0);
+  const g = fixture(plans[0], "STAGING_SANDBOX");
+  g.deps.runtimeIdentity = {
+    environment: "production",
+    project_ref: "lhbgeucifxxcdoyrnesf",
+    supabase_url: "https://lhbgeucifxxcdoyrnesf.supabase.co",
+  };
+  await assert.rejects(
+    readStagingSandboxStripePaymentEvidence(g.deps, input, principal),
+  );
+  assert.equal(g.calls.length, 0);
 });

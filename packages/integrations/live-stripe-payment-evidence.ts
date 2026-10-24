@@ -1,4 +1,14 @@
 import crypto from "node:crypto";
+import {
+  bindModernExecution,
+  modernExecution,
+  assertModernScopeTag,
+  assertModernProviderMode,
+  modernCatalogueRow,
+  type ModernExecutionDependencies,
+  type ModernExecutionMode,
+  type ModernScopeTag,
+} from "./modern-billing-scope";
 import { z } from "zod";
 import { approvedPlan } from "../workspace/approved-catalogue";
 import {
@@ -15,11 +25,6 @@ const id = (prefix: string) =>
   z.string().regex(new RegExp(`^${prefix}_[A-Za-z0-9]{6,}$`));
 const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
-const catalogue = {
-  KXRA_STARTER_V1: ["price_1UTbq7C84VkhhIRzkBHEHivV", "prod_VUb2kv7rUiTeiu"],
-  KXRA_TEAM_V1: ["price_1UTbrLC84VkhhIRzMN225zAr", "prod_VUb3rh9e9eNw5a"],
-  KXRA_BUSINESS_V1: ["price_1UTlt5C84VkhhIRzGztXl6ey", "prod_VUlPLWhBBf7lmP"],
-} as const;
 const bindingSchema = z
   .object({
     reconciliation_id: z.uuid(),
@@ -27,8 +32,8 @@ const bindingSchema = z
     org_id: z.uuid(),
     binding_version: integer,
     mapping_revision: integer.positive(),
-    account_id: z.literal("acct_1Rv3KdC84VkhhIRz"),
-    mode: z.literal("live"),
+    account_id: id("acct"),
+    mode: z.enum(["live", "staging_sandbox"]),
     offer_key: z.enum(["KXRA_STARTER_V1", "KXRA_TEAM_V1", "KXRA_BUSINESS_V1"]),
     price_id: id("price"),
     product_id: id("prod"),
@@ -51,10 +56,7 @@ const bindingSchema = z
   })
   .strict()
   .refine(
-    (b) =>
-      b.price_id === catalogue[b.offer_key][0] &&
-      b.product_id === catalogue[b.offer_key][1] &&
-      b.period_end > b.period_start,
+    (b) => b.period_end > b.period_start,
     "REVIEWED_PAYMENT_BINDING_REQUIRED",
   );
 export type LivePaymentBinding = z.infer<typeof bindingSchema>;
@@ -70,6 +72,7 @@ export type PaymentEvidenceState =
   | "VERSION_RACE";
 export type LivePaymentEvidence = Readonly<{
   version: 1;
+  execution_scope: ModernScopeTag;
   state: PaymentEvidenceState;
   reason: string;
   org_id: string;
@@ -96,10 +99,10 @@ export type LivePaymentEvidence = Readonly<{
   entitlement_authority: false;
   payout_authority: false;
 }>;
-export type LivePaymentEvidenceDependencies = {
+export type LivePaymentEvidenceDependencies = ModernExecutionDependencies & {
   runtime?: {
     enabled: boolean;
-    mode: "live";
+    mode: "live" | "staging_sandbox";
     nodeEnv: string;
     secretKey: string;
   };
@@ -253,6 +256,10 @@ const subSchema = z.object({
     kxra_live_intent_id: z.uuid(),
     kxra_catalogue_offer: z.string(),
     kxra_mapping_revision: z.string(),
+    kxra_execution_scope: z.uuid(),
+    kxra_execution_mode: z.enum(["LIVE", "STAGING_SANDBOX"]),
+    kxra_execution_sha256: digest,
+    kxra_execution_project: z.string(),
   }),
   items: list(
     z.object({
@@ -291,19 +298,23 @@ const priceSchema = z.object({
  * Multi-allocation/out-of-band/adjusted invoices explicitly remain UNVERIFIED in this v1;
  * they are not mistaken for unpaid or silently treated as settled.
  */
-export async function readLiveStripePaymentEvidence(
+async function readModernStripePaymentEvidence(
   deps: LivePaymentEvidenceDependencies,
   input: unknown,
   principalInput: LiveBillingPrincipal,
+  expectedMode: ModernExecutionMode,
 ): Promise<LivePaymentEvidence> {
+  deps = bindModernExecution(deps, deps.runtime?.secretKey || "", expectedMode);
+  const execution = modernExecution(deps),
+    scope = execution.execution_scope;
   const runtime = deps.runtime;
   if (
     !runtime?.enabled ||
-    runtime.mode !== "live" ||
+    runtime.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
     runtime.nodeEnv !== "production"
   )
     throw Error("LIVE_PAYMENT_EVIDENCE_DISABLED");
-  if (!/^(sk|rk)_live_[A-Za-z0-9_]{20,}$/.test(runtime.secretKey))
+  if (!/^(sk|rk)_(live|test)_[A-Za-z0-9_]{20,}$/.test(runtime.secretKey))
     throw Error("LIVE_PAYMENT_EVIDENCE_LIVE_KEY_REQUIRED");
   const { reconciliation_id } = z
     .object({ reconciliation_id: z.uuid() })
@@ -313,9 +324,20 @@ export async function readLiveStripePaymentEvidence(
     .object({ actor_id: z.uuid(), org_id: z.uuid() })
     .strict()
     .parse(principalInput);
-  const b = bindingSchema.parse(
-    await deps.resolveBinding(reconciliation_id, principal),
-  );
+  const canonical = z
+    .object({ binding: z.unknown(), execution_scope: z.unknown() })
+    .strict()
+    .parse(await deps.resolveBinding(reconciliation_id, principal));
+  assertModernScopeTag(canonical.execution_scope, scope);
+  const b = bindingSchema.parse(canonical.binding),
+    row = modernCatalogueRow(execution, b.offer_key);
+  if (
+    b.account_id !== scope.account_id ||
+    b.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
+    b.price_id !== row.price_id ||
+    b.product_id !== row.product_id
+  )
+    throw Error("MODERN_PAYMENT_BINDING_SCOPE_MISMATCH");
   const now = deps.nowSeconds || (() => Math.floor(Date.now() / 1000));
   const started = now();
   if (
@@ -351,6 +373,7 @@ export async function readLiveStripePaymentEvidence(
   ): LivePaymentEvidence {
     return Object.freeze({
       version: 1,
+      execution_scope: scope,
       state,
       reason,
       org_id: b.org_id,
@@ -374,7 +397,7 @@ export async function readLiveStripePaymentEvidence(
       observed_at: now(),
       source_sha256: crypto
         .createHash("sha256")
-        .update(JSON.stringify(sources))
+        .update(JSON.stringify({ execution_scope: scope, sources }))
         .digest("hex"),
       requires_recheck: true,
       entitlement_authority: false,
@@ -436,7 +459,13 @@ export async function readLiveStripePaymentEvidence(
     } finally {
       reader.releaseLock();
     }
-    return schema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    try {
+      assertModernProviderMode(raw, scope);
+    } catch {
+      throw new EvidenceFault("MISMATCHED", "MODE_OR_ACCOUNT_MISMATCH");
+    }
+    return schema.parse(raw);
   }
   try {
     const a = await get(
@@ -449,7 +478,11 @@ export async function readLiveStripePaymentEvidence(
       `prices/${b.price_id}?expand[]=product`,
       priceSchema,
     );
-    mismatch(price.livemode && price.product.livemode, "MODE_MISMATCH");
+    mismatch(
+      price.livemode === scope.livemode &&
+        price.product.livemode === scope.livemode,
+      "MODE_MISMATCH",
+    );
     mismatch(
       price.id === b.price_id &&
         price.product.id === b.product_id &&
@@ -472,7 +505,7 @@ export async function readLiveStripePaymentEvidence(
     mismatch(
       sub.id === b.subscription_id &&
         sub.customer === b.customer_id &&
-        sub.livemode,
+        sub.livemode === scope.livemode,
       "SUBSCRIPTION_BINDING_MISMATCH",
     );
     mismatch(
@@ -484,7 +517,11 @@ export async function readLiveStripePaymentEvidence(
     mismatch(
       sub.metadata.kxra_live_intent_id === b.checkout_intent_id &&
         sub.metadata.kxra_catalogue_offer === b.offer_key &&
-        sub.metadata.kxra_mapping_revision === String(b.mapping_revision),
+        sub.metadata.kxra_mapping_revision === String(b.mapping_revision) &&
+        sub.metadata.kxra_execution_scope === scope.scope_id &&
+        sub.metadata.kxra_execution_mode === scope.execution_mode &&
+        sub.metadata.kxra_execution_sha256 === scope.scope_sha256 &&
+        sub.metadata.kxra_execution_project === scope.project_ref,
       "SUBSCRIPTION_PROVENANCE_MISMATCH",
     );
     const si = sub.items.data[0];
@@ -501,7 +538,7 @@ export async function readLiveStripePaymentEvidence(
     mismatch(
       invoice.id === b.invoice_id &&
         invoice.customer === b.customer_id &&
-        invoice.livemode &&
+        invoice.livemode === scope.livemode &&
         invoice.currency === "gbp" &&
         invoice.parent.subscription_details.subscription === b.subscription_id,
       "INVOICE_BINDING_MISMATCH",
@@ -513,7 +550,7 @@ export async function readLiveStripePaymentEvidence(
     const line = invoice.lines.data[0];
     mismatch(
       line.invoice === b.invoice_id &&
-        line.livemode &&
+        line.livemode === scope.livemode &&
         line.currency === "gbp" &&
         line.quantity === 1 &&
         line.amount === plan.monthly_amount_minor &&
@@ -575,7 +612,7 @@ export async function readLiveStripePaymentEvidence(
     const payment = payments.data[0];
     mismatch(
       payment.invoice === b.invoice_id &&
-        payment.livemode &&
+        payment.livemode === scope.livemode &&
         payment.currency === "gbp" &&
         payment.amount_requested === b.expected_total_minor,
       "PAYMENT_ALLOCATION_MISMATCH",
@@ -591,7 +628,7 @@ export async function readLiveStripePaymentEvidence(
     mismatch(
       pi.id === piId &&
         pi.customer === b.customer_id &&
-        pi.livemode &&
+        pi.livemode === scope.livemode &&
         pi.currency === "gbp" &&
         pi.amount === b.expected_total_minor,
       "PAYMENT_INTENT_MISMATCH",
@@ -605,7 +642,7 @@ export async function readLiveStripePaymentEvidence(
         charge.id === chargeId &&
           charge.payment_intent === piId &&
           charge.customer === b.customer_id &&
-          charge.livemode &&
+          charge.livemode === scope.livemode &&
           charge.currency === "gbp" &&
           charge.amount === b.expected_total_minor &&
           charge.amount_refunded <= charge.amount_captured,
@@ -677,4 +714,24 @@ export async function readLiveStripePaymentEvidence(
       return finish(error.state, error.reason);
     return finish("UNVERIFIED", "PROVIDER_SCHEMA_OR_READ_UNVERIFIED");
   }
+}
+
+export function readLiveStripePaymentEvidence(
+  deps: LivePaymentEvidenceDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return readModernStripePaymentEvidence(deps, input, principal, "LIVE");
+}
+export function readStagingSandboxStripePaymentEvidence(
+  deps: LivePaymentEvidenceDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return readModernStripePaymentEvidence(
+    deps,
+    input,
+    principal,
+    "STAGING_SANDBOX",
+  );
 }

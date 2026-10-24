@@ -1,4 +1,14 @@
 import crypto from "node:crypto";
+import {
+  bindModernExecution,
+  modernExecution,
+  assertModernScopeTag,
+  assertModernProviderMode,
+  modernCatalogueRow,
+  type ModernExecutionDependencies,
+  type ModernExecutionMode,
+  type ModernScopeTag,
+} from "./modern-billing-scope";
 import { approvedPlan } from "../workspace/approved-catalogue";
 import { z } from "zod";
 import type {
@@ -69,7 +79,7 @@ const bindingSchema = z
     actor_id: z.uuid(),
     binding_version: z.number().int().nonnegative(),
     checkout_intent_id: z.uuid(),
-    checkout_session_id: z.string().regex(/^cs_live_[A-Za-z0-9_]{6,}$/),
+    checkout_session_id: z.string().regex(/^cs_(live|test)_[A-Za-z0-9_]{6,}$/),
     customer_id: id("cus"),
     subscription_id: id("sub"),
     invoice_id: id("in"),
@@ -95,6 +105,7 @@ const bindingSchema = z
   .strict();
 export type LiveConsentBinding = z.infer<typeof bindingSchema>;
 export type LiveCheckoutConsentProof = Readonly<{
+  execution_scope: ModernScopeTag;
   state: "VERIFIED" | "UNVERIFIED";
   reason: string;
   org_id: string;
@@ -119,10 +130,10 @@ export type LiveCheckoutConsentProof = Readonly<{
   source_sha256: string;
   entitlement_authority: false;
 }>;
-export type LiveConsentDependencies = {
+export type LiveConsentDependencies = ModernExecutionDependencies & {
   runtime?: {
     enabled: boolean;
-    mode: "live";
+    mode: "live" | "staging_sandbox";
     nodeEnv: string;
     secretKey: string;
   };
@@ -134,17 +145,21 @@ export type LiveConsentDependencies = {
   stillCurrent: (binding: Readonly<LiveConsentBinding>) => Promise<boolean>;
   nowSeconds?: () => number;
 };
-export async function readLiveCheckoutConsent(
+async function readModernCheckoutConsent(
   deps: LiveConsentDependencies,
   input: unknown,
   principal: LiveBillingPrincipal,
+  expectedMode: ModernExecutionMode,
 ): Promise<LiveCheckoutConsentProof> {
+  deps = bindModernExecution(deps, deps.runtime?.secretKey || "", expectedMode);
+  const execution = modernExecution(deps),
+    scope = execution.execution_scope;
   const r = deps.runtime;
   if (
     !r?.enabled ||
-    r.mode !== "live" ||
+    r.mode !== (scope.livemode ? "live" : "staging_sandbox") ||
     r.nodeEnv !== "production" ||
-    !/^(sk|rk)_live_[A-Za-z0-9_]{20,}$/.test(r.secretKey)
+    !/^(sk|rk)_(live|test)_[A-Za-z0-9_]{20,}$/.test(r.secretKey)
   )
     throw Error("LIVE_CONSENT_DISABLED");
   const request = z
@@ -155,9 +170,12 @@ export async function readLiveCheckoutConsent(
     .object({ actor_id: z.uuid(), org_id: z.uuid() })
     .strict()
     .parse(principal);
-  const b = bindingSchema.parse(
-    await deps.resolveBinding(request.reconciliation_id, actor),
-  );
+  const canonical = z
+    .object({ binding: z.unknown(), execution_scope: z.unknown() })
+    .strict()
+    .parse(await deps.resolveBinding(request.reconciliation_id, actor));
+  assertModernScopeTag(canonical.execution_scope, scope);
+  const b = bindingSchema.parse(canonical.binding);
   const now = deps.nowSeconds || (() => Math.floor(Date.now() / 1000));
   if (
     b.reconciliation_id !== request.reconciliation_id ||
@@ -168,15 +186,12 @@ export async function readLiveCheckoutConsent(
     b.expires_at - b.created_at > 300
   )
     throw Error("LIVE_CONSENT_BINDING_UNAVAILABLE");
-  const approvedIds = {
-    KXRA_STARTER_V1: ["price_1UTbq7C84VkhhIRzkBHEHivV", "prod_VUb2kv7rUiTeiu"],
-    KXRA_TEAM_V1: ["price_1UTbrLC84VkhhIRzMN225zAr", "prod_VUb3rh9e9eNw5a"],
-    KXRA_BUSINESS_V1: ["price_1UTlt5C84VkhhIRzGztXl6ey", "prod_VUlPLWhBBf7lmP"],
-  };
+  const row = modernCatalogueRow(execution, b.offer_key);
   if (
-    b.price_id !== approvedIds[b.offer_key][0] ||
-    b.product_id !== approvedIds[b.offer_key][1] ||
-    b.monthly_amount_minor !== approvedPlan(b.offer_key).monthly_amount_minor
+    b.price_id !== row.price_id ||
+    b.product_id !== row.product_id ||
+    b.monthly_amount_minor !== row.monthly_amount_minor ||
+    !b.checkout_session_id.startsWith(scope.livemode ? "cs_live_" : "cs_test_")
   )
     throw Error("LIVE_CONSENT_CATALOGUE_UNAVAILABLE");
   const presentation = validateCheckoutTermsPresentation(
@@ -194,6 +209,7 @@ export async function readLiveCheckoutConsent(
   ): LiveCheckoutConsentProof {
     return Object.freeze({
       state,
+      execution_scope: scope,
       reason,
       org_id: b.org_id,
       reconciliation_id: b.reconciliation_id,
@@ -216,7 +232,7 @@ export async function readLiveCheckoutConsent(
       observed_at: now(),
       source_sha256: crypto
         .createHash("sha256")
-        .update(JSON.stringify(sources))
+        .update(JSON.stringify({ execution_scope: scope, sources }))
         .digest("hex"),
       entitlement_authority: false,
     });
@@ -255,13 +271,15 @@ export async function readLiveCheckoutConsent(
     } finally {
       reader.releaseLock();
     }
-    return schema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    assertModernProviderMode(raw, scope);
+    return schema.parse(raw);
   }
   try {
     const account = await get(
       "account",
       z.object({
-        id: z.literal("acct_1Rv3KdC84VkhhIRz"),
+        id: z.literal(scope.account_id),
         object: z.literal("account"),
       }),
     );
@@ -269,7 +287,7 @@ export async function readLiveCheckoutConsent(
     const schema = z.object({
       id: z.literal(b.checkout_session_id),
       object: z.literal("checkout.session"),
-      livemode: z.literal(true),
+      livemode: z.literal(scope.livemode),
       mode: z.literal("subscription"),
       status: z.literal("complete"),
       customer: z.literal(b.customer_id),
@@ -283,6 +301,10 @@ export async function readLiveCheckoutConsent(
         }),
       }),
       metadata: z.object({
+        kxra_execution_scope: z.literal(scope.scope_id),
+        kxra_execution_mode: z.literal(scope.execution_mode),
+        kxra_execution_sha256: z.literal(scope.scope_sha256),
+        kxra_execution_project: z.literal(scope.project_ref),
         kxra_live_intent_id: z.literal(b.checkout_intent_id),
         kxra_catalogue_offer: z.literal(b.offer_key),
         kxra_mapping_revision: z.literal(String(b.mapping_revision)),
@@ -310,7 +332,7 @@ export async function readLiveCheckoutConsent(
               price: z.object({
                 id: z.literal(b.price_id),
                 product: z.literal(b.product_id),
-                livemode: z.literal(true),
+                livemode: z.literal(scope.livemode),
                 currency: z.literal("gbp"),
                 unit_amount: z.literal(b.monthly_amount_minor),
                 recurring: z.object({
@@ -331,11 +353,15 @@ export async function readLiveCheckoutConsent(
         id: z.literal(b.subscription_id),
         object: z.literal("subscription"),
         customer: z.literal(b.customer_id),
-        livemode: z.literal(true),
+        livemode: z.literal(scope.livemode),
         status: z.string(),
         cancel_at_period_end: z.boolean(),
         latest_invoice: z.literal(b.invoice_id),
         metadata: z.object({
+          kxra_execution_scope: z.literal(scope.scope_id),
+          kxra_execution_mode: z.literal(scope.execution_mode),
+          kxra_execution_sha256: z.literal(scope.scope_sha256),
+          kxra_execution_project: z.literal(scope.project_ref),
           kxra_live_intent_id: z.literal(b.checkout_intent_id),
           kxra_catalogue_offer: z.literal(b.offer_key),
           kxra_mapping_revision: z.literal(String(b.mapping_revision)),
@@ -379,4 +405,19 @@ export async function readLiveCheckoutConsent(
   } catch {
     return proof("UNVERIFIED", "CONSENT_PROVIDER_OR_BINDING_UNVERIFIED");
   }
+}
+
+export function readLiveCheckoutConsent(
+  deps: LiveConsentDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return readModernCheckoutConsent(deps, input, principal, "LIVE");
+}
+export function readStagingSandboxCheckoutConsent(
+  deps: LiveConsentDependencies,
+  input: unknown,
+  principal: LiveBillingPrincipal,
+) {
+  return readModernCheckoutConsent(deps, input, principal, "STAGING_SANDBOX");
 }

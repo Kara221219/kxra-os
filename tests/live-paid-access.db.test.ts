@@ -1,4 +1,10 @@
 import assert from "node:assert/strict";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import type {
+  ModernExecutionMode,
+  ModernBillingConfiguration,
+  ModernRuntimeIdentity,
+} from "../packages/integrations/modern-billing-scope";
 import test from "node:test";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -7,7 +13,10 @@ import path from "node:path";
 import { localModeConfiguration } from "../packages/authz/local-guard";
 import pg from "pg";
 import { runtimeFile } from "./support/runtime";
-import { buildLivePaidProof } from "../packages/integrations/live-paid-access";
+import {
+  buildLivePaidProof,
+  buildStagingSandboxPaidProof,
+} from "../packages/integrations/live-paid-access";
 import { checkoutTermsPresentationDigest } from "../packages/integrations/live-checkout-consent";
 import type { LivePaymentEvidence } from "../packages/integrations/live-stripe-payment-evidence";
 import type { LiveCheckoutConsentProof } from "../packages/integrations/live-checkout-consent";
@@ -38,6 +47,26 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
     termsHash = sha("Synthetic paid terms only"),
     review = sha("Synthetic unapproved policy fixture");
   const now = () => Math.floor(Date.now() / 1000);
+  assert.ok(
+    [undefined, "LIVE", "STAGING_SANDBOX"].includes(
+      process.env.KXRA_MODERN_BILLING_TEST_MODE,
+    ),
+  );
+  const executionMode: ModernExecutionMode =
+    process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
+      ? "STAGING_SANDBOX"
+      : "LIVE";
+  let modern: {
+    execution: ModernBillingConfiguration;
+    runtimeIdentity: ModernRuntimeIdentity;
+  } = modernBillingFixture(executionMode);
+  const scopedSQL = (sql: string) =>
+    executionMode === "LIVE"
+      ? sql
+      : sql.replace(
+          /kxra_private\.(reserve_live_paid_read|commit_live_paid_proof|live_paid_read_current|live_paid_access_status)\(/g,
+          "kxra_private.staging_sandbox_$1(",
+        );
   let mappingRevision = 0;
   async function call(
     sql: string,
@@ -65,7 +94,7 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
           ],
         );
       }
-      const r = await db.query(sql, values);
+      const r = await db.query(scopedSQL(sql), values);
       if (denied) assert.fail("Expected SQL denial");
       await db.query("reset role");
       await db.query("reset session authorization");
@@ -123,6 +152,71 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
   try {
     await db.query("begin");
     await db.query("set local statement_timeout='5s'");
+    // Synthetic fixture only: each execution mode needs a separate fresh private DB.
+    const identity = (
+      await db.query(
+        "select scope_id from kxra_private.modern_billing_execution_identity where singleton",
+      )
+    ).rows[0];
+    if (identity.scope_id === null) {
+      const x = modern.execution,
+        tag = x.execution_scope;
+      await db.query(
+        `update kxra_private.modern_billing_execution_identity set enabled=false,scope_id=$1,execution_mode=$2,project_ref=$3,account_id=$4,api_version=$5,catalogue_revision=$6,review_sha256=$7,scope_sha256=$8 where singleton`,
+        [
+          tag.scope_id,
+          tag.execution_mode,
+          tag.project_ref,
+          tag.account_id,
+          tag.api_version,
+          tag.catalogue_revision,
+          x.review_sha256,
+          tag.scope_sha256,
+        ],
+      );
+      for (const r of x.catalogue)
+        await db.query(
+          `insert into kxra_private.modern_billing_scope_catalogue(scope_id,offer_key,price_id,product_id,monthly_amount_minor,people,currency,interval) values($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [
+            tag.scope_id,
+            r.offer_key,
+            r.price_id,
+            r.product_id,
+            r.monthly_amount_minor,
+            r.people,
+            r.currency,
+            r.interval,
+          ],
+        );
+      await db.query(
+        "update kxra_private.modern_billing_execution_identity set enabled=true where singleton",
+      );
+    }
+    const attestation = (await call(
+      "select kxra_private.modern_billing_scope_attestation() value",
+      [],
+      "worker",
+    ))!.rows[0].value;
+    assert.equal(attestation.execution_scope.execution_mode, executionMode);
+    modern = {
+      execution: attestation,
+      runtimeIdentity: {
+        environment:
+          attestation.execution_scope.project_ref === "lhbgeucifxxcdoyrnesf"
+            ? "production"
+            : "staging",
+        project_ref: attestation.execution_scope.project_ref,
+        supabase_url: `https://${attestation.execution_scope.project_ref}.supabase.co`,
+      },
+    };
+    const scope = modern.execution.execution_scope,
+      starter = modern.execution.catalogue.find(
+        (r) => r.offer_key === "KXRA_STARTER_V1",
+      )!,
+      teamOffer = modern.execution.catalogue.find(
+        (r) => r.offer_key === "KXRA_TEAM_V1",
+      )!;
+
     assert.equal(
       (
         await db.query(
@@ -143,7 +237,7 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       checkout = uuid(),
       customer = `cus_${crypto.randomBytes(12).toString("hex")}`,
       subscription = `sub_${crypto.randomBytes(12).toString("hex")}`,
-      session = `cs_live_${crypto.randomBytes(12).toString("hex")}`;
+      session = `${scope.livemode ? "cs_live" : "cs_test"}_${crypto.randomBytes(12).toString("hex")}`;
     assert.equal(await entitled(legacy.org), true);
     await work(legacy);
     await db.query(
@@ -155,9 +249,17 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       [review],
     );
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-   values('KXRA_STARTER_V1',$3,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$2,$1,'inclusive',false,'card')`,
-      [review, termsHash, mappingRevision],
+      `insert into kxra_private.live_billing_mappings(mode,offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
+   values($4,'KXRA_STARTER_V1',$3,true,$5,$6,$7,'bpc_synthetic123',$1,$2,$1,'inclusive',false,'card')`,
+      [
+        review,
+        termsHash,
+        mappingRevision,
+        scope.livemode ? "live" : "staging_sandbox",
+        scope.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     await db.query(
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision,subscription_id) values($1,$2,'KXRA_STARTER_V1',$4,$3)",
@@ -184,8 +286,11 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
     assert.equal(unpaidStatus.offer.monthly_amount_minor, 2900);
     assert.ok(!JSON.stringify(unpaidStatus).includes(customer));
     assert.equal(
-      (await db.query("select kxra_private.live_paid_access_status() value"))
-        .rows[0].value,
+      (
+        await db.query(
+          scopedSQL("select kxra_private.live_paid_access_status() value"),
+        )
+      ).rows[0].value,
       null,
     );
     await work(f, true);
@@ -250,6 +355,7 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
     ) {
       const c = read.context;
       const p: LivePaymentEvidence = {
+        execution_scope: read.execution_scope,
         version: 1,
         state,
         reason: "SYNTHETIC_PROVIDER_EVIDENCE",
@@ -278,6 +384,7 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
         payout_authority: false,
       };
       const s: LiveCheckoutConsentProof = {
+        execution_scope: read.execution_scope,
         state: consentState,
         reason: "SYNTHETIC_REQUIRED_TERMS_ACCEPTED",
         org_id: c.org_id,
@@ -302,7 +409,11 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
         source_sha256: review,
         entitlement_authority: false,
       };
-      return buildLivePaidProof(c, read.policy, p, s, now());
+      return (
+        executionMode === "LIVE"
+          ? buildLivePaidProof
+          : buildStagingSandboxPaidProof
+      )(c, read.policy, p, s, now(), modern);
     }
     const commit = async (p: Awaited<ReturnType<typeof packet>>) =>
       (await call(
@@ -439,8 +550,8 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       [team.org, secondAdmin],
     );
     await db.query(
-      `insert into kxra_private.live_billing_mappings select (jsonb_populate_record(null::kxra_private.live_billing_mappings,to_jsonb(m)||jsonb_build_object('offer_key','KXRA_TEAM_V1','price_id','price_1UTbrLC84VkhhIRzMN225zAr','product_id','prod_VUb3rh9e9eNw5a'))).* from kxra_private.live_billing_mappings m where m.offer_key='KXRA_STARTER_V1' and m.revision=$1`,
-      [mappingRevision],
+      `insert into kxra_private.live_billing_mappings select (jsonb_populate_record(null::kxra_private.live_billing_mappings,to_jsonb(m)||jsonb_build_object('offer_key','KXRA_TEAM_V1','price_id',$2::text,'product_id',$3::text))).* from kxra_private.live_billing_mappings m where m.offer_key='KXRA_STARTER_V1' and m.revision=$1`,
+      [mappingRevision, teamOffer.price_id, teamOffer.product_id],
     );
     await db.query(
       `insert into kxra_private.live_paid_policies select (jsonb_populate_record(null::kxra_private.live_paid_policies,to_jsonb(q)||jsonb_build_object('id',$1::uuid,'offer_key','KXRA_TEAM_V1'))).* from kxra_private.live_paid_policies q where q.id=$2`,
@@ -449,7 +560,7 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
     const teamCustomer = `cus_${crypto.randomBytes(12).toString("hex")}`,
       teamSub = `sub_${crypto.randomBytes(12).toString("hex")}`,
       teamCheckout = uuid(),
-      teamSession = `cs_live_${crypto.randomBytes(12).toString("hex")}`;
+      teamSession = `${scope.livemode ? "cs_live" : "cs_test"}_${crypto.randomBytes(12).toString("hex")}`;
     await db.query(
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision,subscription_id) values($1,$2,'KXRA_TEAM_V1',$4,$3)",
       [team.org, teamCustomer, teamSub, mappingRevision],

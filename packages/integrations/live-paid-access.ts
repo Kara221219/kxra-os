@@ -1,4 +1,12 @@
 import crypto from "node:crypto";
+import {
+  validateModernBillingConfiguration,
+  assertModernScopeTag,
+  modernCatalogueRow,
+  modernScopeTagSchema,
+  type ModernExecutionDependencies,
+  type ModernExecutionMode,
+} from "./modern-billing-scope";
 import { z } from "zod";
 import { approvedPlan } from "../workspace/approved-catalogue";
 import type { LivePaymentEvidence } from "./live-stripe-payment-evidence";
@@ -54,7 +62,7 @@ const contextSchema = z
     price_id: id("price"),
     product_id: id("prod"),
     checkout_intent_id: z.uuid(),
-    checkout_session_id: z.string().regex(/^cs_live_[A-Za-z0-9_]{6,}$/),
+    checkout_session_id: z.string().regex(/^cs_(live|test)_[A-Za-z0-9_]{6,}$/),
     period_start: integer.positive(),
     period_end: integer.positive(),
     expected_total_minor: integer.positive(),
@@ -65,6 +73,7 @@ const contextSchema = z
 export type LivePaidContext = z.infer<typeof contextSchema>;
 const paymentSchema = z
   .object({
+    execution_scope: modernScopeTagSchema,
     version: z.literal(1),
     state: z.enum([
       "COLLECTED",
@@ -105,6 +114,7 @@ const paymentSchema = z
   .strict();
 const consentSchema = z
   .object({
+    execution_scope: modernScopeTagSchema,
     state: z.enum(["VERIFIED", "UNVERIFIED"]),
     reason: z.string(),
     org_id: z.uuid(),
@@ -113,7 +123,7 @@ const consentSchema = z
     mapping_revision: integer.positive(),
     offer_key: offer,
     checkout_intent_id: z.uuid(),
-    checkout_session_id: z.string().regex(/^cs_live_[A-Za-z0-9_]{6,}$/),
+    checkout_session_id: z.string().regex(/^cs_(live|test)_[A-Za-z0-9_]{6,}$/),
     customer_id: id("cus"),
     subscription_id: id("sub"),
     invoice_id: id("in"),
@@ -134,26 +144,38 @@ const consentSchema = z
  * Signature/provider evidence must be produced by read adapters; NEVER accept it from a client.
  * Policy rows are empty/default-disabled; synthetic policy fixtures are not approved terms.
  */
-export function buildLivePaidProof(
+function buildModernPaidProof(
   contextInput: unknown,
   policyInput: unknown,
   paymentInput: LivePaymentEvidence,
   consentInput: LiveCheckoutConsentProof,
   nowSeconds: number,
+  configuration: ModernExecutionDependencies | undefined,
+  expectedMode: ModernExecutionMode,
 ) {
+  if (!configuration?.runtimeIdentity)
+    throw Error("MODERN_RUNTIME_IDENTITY_REQUIRED");
+  const execution = validateModernBillingConfiguration(
+      configuration.execution,
+      configuration.runtimeIdentity,
+      undefined,
+      expectedMode,
+    ),
+    scope = execution.execution_scope;
   const c = contextSchema.parse(contextInput),
     policy = livePaidPolicySchema.parse(policyInput),
     p = paymentSchema.parse(paymentInput),
     s = consentSchema.parse(consentInput);
   const plan = approvedPlan(c.offer_key);
-  const ids = {
-    KXRA_STARTER_V1: ["price_1UTbq7C84VkhhIRzkBHEHivV", "prod_VUb2kv7rUiTeiu"],
-    KXRA_TEAM_V1: ["price_1UTbrLC84VkhhIRzMN225zAr", "prod_VUb3rh9e9eNw5a"],
-    KXRA_BUSINESS_V1: ["price_1UTlt5C84VkhhIRzGztXl6ey", "prod_VUlPLWhBBf7lmP"],
-  };
+  const row = modernCatalogueRow(execution, c.offer_key);
+  assertModernScopeTag(p.execution_scope, scope);
+  assertModernScopeTag(s.execution_scope, scope);
   if (
-    c.price_id !== ids[c.offer_key][0] ||
-    c.product_id !== ids[c.offer_key][1] ||
+    c.price_id !== row.price_id ||
+    c.product_id !== row.product_id ||
+    !c.checkout_session_id.startsWith(
+      scope.livemode ? "cs_live_" : "cs_test_",
+    ) ||
     policy.id !== c.policy_id ||
     policy.revision !== c.policy_revision ||
     policy.offer_key !== c.offer_key ||
@@ -223,6 +245,7 @@ export function buildLivePaidProof(
   else if (c.period_start > nowSeconds || c.period_end <= nowSeconds)
     reason = "PERIOD_NOT_CURRENT";
   const packet = {
+    execution_scope: scope,
     reconciliation_id: c.reconciliation_id,
     org_id: c.org_id,
     binding_version: c.binding_version,
@@ -269,6 +292,7 @@ export function buildLivePaidProof(
 const packetSchema = contextSchema
   .omit({ actor_id: true, created_at: true, expires_at: true })
   .extend({
+    execution_scope: modernScopeTagSchema,
     currency: z.literal("GBP"),
     quantity: z.literal(1),
     monthly_amount_minor: integer.positive(),
@@ -314,7 +338,11 @@ function packetDigest(packet: Record<string, unknown>) {
     .digest("hex");
 }
 export type LivePaidProofPacket = ReturnType<typeof buildLivePaidProof>;
-export function reserveLivePaidReadCommand(input: unknown, enabled = false) {
+function reserveModernPaidReadCommand(
+  input: unknown,
+  enabled: boolean,
+  expectedMode: ModernExecutionMode,
+) {
   if (!enabled) throw Error("LIVE_PAID_DISABLED");
   const r = z
     .object({
@@ -329,7 +357,7 @@ export function reserveLivePaidReadCommand(input: unknown, enabled = false) {
     .strict()
     .parse(input);
   return Object.freeze({
-    text: "select kxra_private.reserve_live_paid_read($1::uuid,$2::uuid,$3::integer,$4::text,$5::text,$6::bigint,$7::bigint) value",
+    text: `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}reserve_live_paid_read($1::uuid,$2::uuid,$3::integer,$4::text,$5::text,$6::bigint,$7::bigint) value`,
     values: Object.freeze([
       r.reconciliation_id,
       r.org_id,
@@ -343,17 +371,30 @@ export function reserveLivePaidReadCommand(input: unknown, enabled = false) {
     entitlement_authority: false,
   });
 }
-export function commitLivePaidProofCommand(
+function commitModernPaidProofCommand(
   packet: LivePaidProofPacket,
-  enabled = false,
+  enabled: boolean,
+  expectedMode: ModernExecutionMode,
 ) {
   if (!enabled) throw Error("LIVE_PAID_DISABLED");
   const parsed = packetSchema.parse(packet);
+  if (
+    parsed.execution_scope.execution_mode !== expectedMode ||
+    parsed.execution_scope.livemode !== (expectedMode === "LIVE") ||
+    (expectedMode === "STAGING_SANDBOX" &&
+      parsed.execution_scope.project_ref !== "jlebgsxcvhvpueuibekd") ||
+    (expectedMode === "LIVE" &&
+      parsed.execution_scope.account_id !== "acct_1Rv3KdC84VkhhIRz") ||
+    !parsed.checkout_session_id.startsWith(
+      expectedMode === "LIVE" ? "cs_live_" : "cs_test_",
+    )
+  )
+    throw Error("MODERN_PAID_COMMAND_SCOPE_MISMATCH");
   const { evidence_sha256, ...content } = parsed;
   if (packetDigest(content) !== evidence_sha256)
     throw Error("LIVE_PAID_PROOF_DIGEST_MISMATCH");
   return Object.freeze({
-    text: "select kxra_private.commit_live_paid_proof($1::uuid,$2::jsonb) value",
+    text: `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}commit_live_paid_proof($1::uuid,$2::jsonb) value`,
     values: Object.freeze([parsed.reconciliation_id, JSON.stringify(parsed)]),
     role: "BILLING_WORKER" as const,
     entitlement_authority: false,
@@ -361,9 +402,9 @@ export function commitLivePaidProofCommand(
 }
 
 /** Safe no-arg view only, within an existing verified selected-tenant transaction. */
-export function livePaidAccessStatusCommand() {
+function modernPaidAccessStatusCommand(expectedMode: ModernExecutionMode) {
   return Object.freeze({
-    text: "select kxra_private.live_paid_access_status() value",
+    text: `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}live_paid_access_status() value`,
     values: Object.freeze([]),
     role: "AUTHENTICATED_SERVER" as const,
     entitlement_authority: false,
@@ -371,13 +412,90 @@ export function livePaidAccessStatusCommand() {
 }
 
 /** Bounded authoritative DB-generation recheck for READ adapters only. */
-export function currentLivePaidReadCommand(input: unknown, enabled = false) {
+function currentModernPaidReadCommand(
+  input: unknown,
+  enabled: boolean,
+  expectedMode: ModernExecutionMode,
+) {
   if (!enabled) throw Error("LIVE_PAID_DISABLED");
   const r = z.object({ reconciliation_id: z.uuid() }).strict().parse(input);
   return Object.freeze({
-    text: "select kxra_private.live_paid_read_current($1::uuid) value",
+    text: `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}live_paid_read_current($1::uuid) value`,
     values: Object.freeze([r.reconciliation_id]),
     role: "BILLING_WORKER" as const,
     entitlement_authority: false,
   });
+}
+
+export function buildLivePaidProof(
+  c: unknown,
+  p: unknown,
+  payment: LivePaymentEvidence,
+  consent: LiveCheckoutConsentProof,
+  now: number,
+  configuration?: ModernExecutionDependencies,
+) {
+  return buildModernPaidProof(
+    c,
+    p,
+    payment,
+    consent,
+    now,
+    configuration,
+    "LIVE",
+  );
+}
+export function buildStagingSandboxPaidProof(
+  c: unknown,
+  p: unknown,
+  payment: LivePaymentEvidence,
+  consent: LiveCheckoutConsentProof,
+  now: number,
+  configuration?: ModernExecutionDependencies,
+) {
+  return buildModernPaidProof(
+    c,
+    p,
+    payment,
+    consent,
+    now,
+    configuration,
+    "STAGING_SANDBOX",
+  );
+}
+export function reserveLivePaidReadCommand(i: unknown, enabled = false) {
+  return reserveModernPaidReadCommand(i, enabled, "LIVE");
+}
+export function reserveStagingSandboxPaidReadCommand(
+  i: unknown,
+  enabled = false,
+) {
+  return reserveModernPaidReadCommand(i, enabled, "STAGING_SANDBOX");
+}
+export function commitLivePaidProofCommand(
+  p: LivePaidProofPacket,
+  enabled = false,
+) {
+  return commitModernPaidProofCommand(p, enabled, "LIVE");
+}
+export function commitStagingSandboxPaidProofCommand(
+  p: LivePaidProofPacket,
+  enabled = false,
+) {
+  return commitModernPaidProofCommand(p, enabled, "STAGING_SANDBOX");
+}
+export function livePaidAccessStatusCommand() {
+  return modernPaidAccessStatusCommand("LIVE");
+}
+export function stagingSandboxPaidAccessStatusCommand() {
+  return modernPaidAccessStatusCommand("STAGING_SANDBOX");
+}
+export function currentLivePaidReadCommand(i: unknown, enabled = false) {
+  return currentModernPaidReadCommand(i, enabled, "LIVE");
+}
+export function currentStagingSandboxPaidReadCommand(
+  i: unknown,
+  enabled = false,
+) {
+  return currentModernPaidReadCommand(i, enabled, "STAGING_SANDBOX");
 }
