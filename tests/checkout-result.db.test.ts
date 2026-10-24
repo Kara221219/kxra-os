@@ -66,7 +66,7 @@ test("checkout result SQL: current completed own request, fixed mode, generation
     process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
       ? "STAGING_SANDBOX"
       : "LIVE";
-  const prefix = mode === "LIVE" ? "" : "staging_sandbox_";
+  const prefix = mode === "LIVE" ? "live_" : "staging_sandbox_";
   const actor = uuid(),
     otherAdmin = uuid(),
     org = uuid(),
@@ -253,7 +253,7 @@ test("checkout result SQL: current completed own request, fixed mode, generation
       org,
       undefined,
       true,
-      mode === "LIVE" ? "staging_sandbox_" : "",
+      mode === "LIVE" ? "staging_sandbox_" : "live_",
     );
     await call(actor, org, undefined, true, prefix, "anon");
     // A current member who is not the original creator cannot recover that request.

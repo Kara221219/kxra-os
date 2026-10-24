@@ -49,10 +49,15 @@ begin
   if not found or ck.state<>'CONSUMED' or ck.kind<>'CHECKOUT' or ck.org_id<>b.org_id or ck.customer_id<>b.customer_id
    or ck.offer_key<>b.offer_key or ck.mapping_revision<>b.mapping_revision or ck.terms_review_sha256<>q.terms_review_sha256
    or ck.provider_session_id is null then continue;end if;
-  insert into kxra_private.modern_paid_refresh_leases(scope_id,org_id,claim_token,binding_version,lease_until,next_attempt_at)
+  insert into kxra_private.modern_paid_refresh_leases as current_lease(scope_id,org_id,claim_token,binding_version,lease_until,next_attempt_at)
   values(s,b.org_id,gen_random_uuid(),b.version,now()+interval '2 minutes',now()+interval '2 minutes')
   on conflict(scope_id,org_id) do update set claim_token=excluded.claim_token,binding_version=excluded.binding_version,
-   lease_until=excluded.lease_until,next_attempt_at=excluded.next_attempt_at,job_id=null returning * into l;
+   lease_until=excluded.lease_until,next_attempt_at=excluded.next_attempt_at,job_id=null
+   -- The discovery SELECT snapshot can predate another committed claim even after
+   -- its binding row lock has ended. Recheck the conflicting lease atomically.
+   where current_lease.lease_until<=now() and current_lease.next_attempt_at<=now()
+   returning * into l;
+  if not found then continue;end if;
   -- Superseded wakeups are handed to due discovery, never forged into DONE.
   update kxra_private.live_webhook_queue set state='SUPERSEDED',updated_at=now()
    where scope_id=s and org_id=b.org_id and binding_version<>b.version and state in ('PENDING','CLAIMED');
