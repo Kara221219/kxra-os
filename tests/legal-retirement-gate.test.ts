@@ -58,13 +58,23 @@ async function assertPrivateAccess(
   project: string,
   allowed: boolean,
 ) {
-  const gate = (
-    await db.query(
-      "select kxra_private.legal_requirements_satisfied($1) legal,kxra_private.private_access_allowed($1) private",
-      [org],
-    )
-  ).rows[0];
-  assert.deepEqual(gate, { legal: allowed, private: allowed });
+  // These are deliberately not public RPCs. Exercise authorization through
+  // the granted entry point and RLS, while preserving helper EXECUTE denial.
+  for (const helper of [
+    "legal_requirements_satisfied",
+    "private_access_allowed",
+  ]) {
+    await db.query("savepoint private_helper_denial");
+    try {
+      await assert.rejects(
+        db.query(`select kxra_private.${helper}($1)`, [org]),
+        { code: "42501" },
+      );
+    } finally {
+      await db.query("rollback to savepoint private_helper_denial");
+      await db.query("release savepoint private_helper_denial");
+    }
+  }
   assert.deepEqual(
     (await db.query("select id from kxra.projects where id=$1", [project]))
       .rows,
