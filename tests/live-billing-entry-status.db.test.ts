@@ -8,6 +8,12 @@ import pg from "pg";
 import { localModeConfiguration } from "../packages/authz/local-guard";
 import { liveEntryStatus } from "../packages/authz/live-billing-entry-contract";
 
+import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
+import type {
+  ModernExecutionMode,
+  ModernScopeTag,
+} from "../packages/integrations/modern-billing-scope";
+
 // Automatic native test SOURCE. Owner runs after0104/0105 on a disposable fixture.
 // Never skipped or run by this worker. Synthetic writes remain inside one rollback.
 function nativeConfiguration() {
@@ -56,6 +62,20 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
   const config = nativeConfiguration(),
     db = new pg.Client(config);
   await db.connect();
+  assert.ok(
+    [undefined, "LIVE", "STAGING_SANDBOX"].includes(
+      process.env.KXRA_MODERN_BILLING_TEST_MODE,
+    ),
+  );
+  const mode: ModernExecutionMode =
+    process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
+      ? "STAGING_SANDBOX"
+      : "LIVE";
+  const statusSQL =
+    mode === "LIVE"
+      ? "select kxra_private.own_live_billing_status() value"
+      : "select kxra_private.staging_sandbox_own_live_billing_status() value";
+  let scope: ModernScopeTag | null = null;
   const hash = "b".repeat(64);
   let revision = 0;
   type Context = { actor: string; org: string };
@@ -101,12 +121,12 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
           context.org,
         ],
       );
-      const value = (
-        await db.query("select kxra_private.own_live_billing_status() value")
-      ).rows[0].value;
+      const value = (await db.query(statusSQL)).rows[0].value;
       if (denied) assert.fail("Expected private SQL status denial");
-      const safe = liveEntryStatus.parse(value),
-        serialized = JSON.stringify(value);
+      assert.deepEqual(value.execution_scope, scope);
+      const { execution_scope: _scope, ...inner } = value;
+      const safe = liveEntryStatus.parse(inner),
+        serialized = JSON.stringify(inner);
       for (const forbidden of [
         "customer_id",
         "price_id",
@@ -156,12 +176,26 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
     assert.equal(fs.realpathSync(isolation.socket), config.host);
     await db.query("begin");
     await db.query("set local statement_timeout='5s'");
+    scope = (
+      await db.query("select kxra_private.modern_billing_scope_tag() tag")
+    ).rows[0].tag;
+    if (scope !== null)
+      assert.equal(
+        scope.execution_mode,
+        mode,
+        "Existing scope must never switch fixture mode",
+      );
     const fresh = await fixture(),
       foreign = await fixture();
     await db.query(
       "update kxra_private.live_billing_activation set enabled=false",
     );
     assert.equal((await read(fresh))!.state, "DISABLED");
+    const execution = await bindSyntheticModernScope(db.query.bind(db), mode);
+    scope = execution.execution_scope;
+    const starter = execution.catalogue.find(
+      (row) => row.offer_key === "KXRA_STARTER_V1",
+    )!;
     await db.query(
       "update kxra_private.live_billing_activation set enabled=true,review_sha256=$1",
       [hash],
@@ -175,8 +209,15 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
       )
     ).rows[0].n;
     await db.query(
-      "insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method) values('KXRA_STARTER_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_syntheticstatus',$1,$1,$1,'inclusive',false,'card')",
-      [hash, revision],
+      "insert into kxra_private.live_billing_mappings(mode,offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method) values($3,'KXRA_STARTER_V1',$2,true,$4,$5,$6,'bpc_syntheticstatus',$1,$1,$1,'inclusive',false,'card')",
+      [
+        hash,
+        revision,
+        scope.livemode ? "live" : "staging_sandbox",
+        scope.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     assert.equal((await read(fresh))!.state, "FRESH");
     assert.deepEqual((await read(fresh))!.available_actions, ["CUSTOMER"]);

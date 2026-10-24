@@ -6,11 +6,14 @@ import path from "node:path";
 import test from "node:test";
 import pg from "pg";
 import { localModeConfiguration } from "../packages/authz/local-guard";
-import {
-  LIVE_WEBHOOK_ACCOUNT,
-  LIVE_WEBHOOK_API_VERSION,
-  type LiveWakeup,
-} from "../packages/integrations/live-webhook";
+import { LIVE_WEBHOOK_API_VERSION } from "../packages/integrations/live-webhook";
+
+import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import type {
+  ModernExecutionMode,
+  ModernScopeTag,
+} from "../packages/integrations/modern-billing-scope";
 
 // SOURCE ONLY until owner executes after0104–0106. No provider calls; all writes roll back.
 function configuration() {
@@ -45,30 +48,54 @@ const hash = (text: string) =>
 test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalidation, unknown holding, claims and proof-only ACK", async () => {
   const db = new pg.Client(configuration());
   await db.connect();
-  const project = "jlebgsxcvhvpueuibekd";
+  assert.ok(
+    [undefined, "LIVE", "STAGING_SANDBOX"].includes(
+      process.env.KXRA_MODERN_BILLING_TEST_MODE,
+    ),
+  );
+  const mode: ModernExecutionMode =
+    process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
+      ? "STAGING_SANDBOX"
+      : "LIVE";
+  const scope = modernBillingFixture(mode).execution.execution_scope;
+  const project = scope.project_ref;
+  assert.equal(
+    project,
+    mode === "LIVE" ? "lhbgeucifxxcdoyrnesf" : "jlebgsxcvhvpueuibekd",
+  );
+  const scopedSQL = (sql: string) =>
+    mode === "LIVE"
+      ? sql
+      : sql.replace(
+          /kxra_private\.(record_live_billing_wakeup|claim_live_billing_wakeups|ack_live_billing_wakeup|list_unmatched_live_wakeups|resolve_unmatched_live_wakeup)\(/g,
+          "kxra_private.staging_sandbox_$1(",
+        );
   const org = crypto.randomUUID(),
     customer = `cus_${crypto.randomBytes(12).toString("hex")}`;
-  const event: LiveWakeup = {
+  const event = {
+    execution_scope: scope,
     event_id: `evt_${crypto.randomBytes(12).toString("hex")}`,
     event_type: "invoice.payment_failed",
     payload_sha256: hash("synthetic-safe-wakeup"),
     customer_id: customer,
     subscription_id: null,
     invoice_id: "in_syntheticWebhook",
-    account_id: LIVE_WEBHOOK_ACCOUNT,
+    account_id: scope.account_id,
     project_ref: project,
     api_version: LIVE_WEBHOOK_API_VERSION,
-    livemode: true,
+    livemode: scope.livemode,
   };
   async function call(sql: string, values: unknown[] = [], errorCode?: string) {
     await db.query("savepoint worker_call");
     try {
       await db.query("set local role kxra_billing_worker");
       if (errorCode) {
-        await assert.rejects(db.query(sql, values), { code: errorCode });
+        await assert.rejects(db.query(scopedSQL(sql), values), {
+          code: errorCode,
+        });
         return;
       }
-      return await db.query(sql, values);
+      return await db.query(scopedSQL(sql), values);
     } finally {
       await db.query("rollback to savepoint worker_call");
       await db.query("release savepoint worker_call");
@@ -79,7 +106,7 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
     await db.query("savepoint worker_success");
     try {
       await db.query("set local role kxra_billing_worker");
-      const result = await db.query(sql, values);
+      const result = await db.query(scopedSQL(sql), values);
       await db.query("reset role");
       await db.query("release savepoint worker_success");
       return result;
@@ -103,6 +130,11 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       false,
     );
     await call(record, [JSON.stringify(event)], "P0001");
+    const execution = await bindSyntheticModernScope(db.query.bind(db), mode);
+    assert.deepEqual(execution.execution_scope, scope);
+    const starter = execution.catalogue.find(
+      (row) => row.offer_key === "KXRA_STARTER_V1",
+    )!;
     assert.equal(
       (
         await db.query(
@@ -114,6 +146,25 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
     await db.query(
       "update kxra_private.live_webhook_endpoint_binding set enabled=true,project_ref=$1,review_sha256=$2 where singleton",
       [project, hash("SYNTHETIC_ENDPOINT_REVIEW")],
+    );
+    // Scope/payload disagreement cannot enter the durable queue even on a reviewed endpoint.
+    await call(
+      record,
+      [JSON.stringify({ ...event, livemode: !scope.livemode })],
+      "P0001",
+    );
+    await call(
+      record,
+      [
+        JSON.stringify({
+          ...event,
+          execution_scope: {
+            ...scope,
+            execution_mode: mode === "LIVE" ? "STAGING_SANDBOX" : "LIVE",
+          },
+        }),
+      ],
+      "P0001",
     );
     const revision = (
       await db.query(
@@ -129,9 +180,16 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       0,
     );
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-    values('KXRA_STARTER_V1',$1,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_syntheticWakeup',$2,$2,$2,'inclusive',false,'card')`,
-      [revision, hash("synthetic-review")],
+      `insert into kxra_private.live_billing_mappings(mode,offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
+    values($3,'KXRA_STARTER_V1',$1,true,$4,$5,$6,'bpc_syntheticWakeup',$2,$2,$2,'inclusive',false,'card')`,
+      [
+        revision,
+        hash("synthetic-review"),
+        scope.livemode ? "live" : "staging_sandbox",
+        scope.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     await db.query(
       "insert into kxra.organisations(id,name,slug) values($1,'Synthetic wakeup tenant',$2)",
@@ -145,6 +203,23 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       (await worker(record, [JSON.stringify(event)])).rows[0].state,
       "QUEUED",
     );
+    const receipt = (
+      await db.query(
+        "select scope_id,execution_mode,scope_project_ref,scope_account_id,scope_sha256,provider_livemode,livemode,account_id,project_ref from kxra_private.live_webhook_receipts where event_id=$1",
+        [event.event_id],
+      )
+    ).rows[0];
+    assert.deepEqual(receipt, {
+      scope_id: scope.scope_id,
+      execution_mode: mode,
+      scope_project_ref: project,
+      scope_account_id: scope.account_id,
+      scope_sha256: scope.scope_sha256,
+      provider_livemode: scope.livemode,
+      livemode: scope.livemode,
+      account_id: scope.account_id,
+      project_ref: project,
+    });
     let binding = (
       await db.query(
         "select version,reconcile_required,quarantined,subscription_id from kxra_private.live_billing_bindings where org_id=$1",
@@ -177,10 +252,12 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           event_id: string;
           claim_token: string;
           binding_version: number;
+          execution_scope: ModernScopeTag;
         },
     );
     assert.equal(claimed.length, 1);
     assert.equal(claimed[0].event_id, event.event_id);
+    assert.deepEqual(claimed[0].execution_scope, scope);
     assert.equal(Number(claimed[0].binding_version), 1);
     assert.equal(
       (
@@ -219,8 +296,15 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
     );
     const unknown = (
       await worker("select * from kxra_private.list_unmatched_live_wakeups(20)")
-    ).rows.map((row) => Object.values(row)[0] as { event_id: string });
+    ).rows.map(
+      (row) =>
+        Object.values(row)[0] as {
+          event_id: string;
+          execution_scope: ModernScopeTag;
+        },
+    );
     assert.equal(unknown[0].event_id, unmatched.event_id);
+    assert.deepEqual(unknown[0].execution_scope, scope);
     const total = (
       await db.query(
         "select count(*)::int n from kxra_private.live_billing_bindings",
@@ -336,7 +420,9 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       assert.equal(
         (
           await db.query(
-            "select has_function_privilege($1,'kxra_private.record_live_billing_wakeup(jsonb)','EXECUTE') allowed",
+            scopedSQL(
+              "select has_function_privilege($1,'kxra_private.record_live_billing_wakeup(jsonb)','EXECUTE') allowed",
+            ),
             [role],
           )
         ).rows[0].allowed,
@@ -344,9 +430,12 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
       );
       await db.query("savepoint denied_role");
       await db.query(`set local role ${role}`);
-      await assert.rejects(db.query(record, [JSON.stringify(event)]), {
-        code: "42501",
-      });
+      await assert.rejects(
+        db.query(scopedSQL(record), [JSON.stringify(event)]),
+        {
+          code: "42501",
+        },
+      );
       await db.query("rollback to savepoint denied_role");
     }
   } finally {
