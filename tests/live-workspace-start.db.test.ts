@@ -1,3 +1,4 @@
+import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
 import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
@@ -149,6 +150,17 @@ test("member workspace projection: pending before first live intent, LIVE blocke
     assert.equal(isolation.listen, "");
     assert.equal(fs.realpathSync(isolation.socket), config.host);
     await db.query("begin");
+    assert.ok(
+      [undefined, "LIVE", "STAGING_SANDBOX"].includes(
+        process.env.KXRA_MODERN_BILLING_TEST_MODE,
+      ),
+    );
+    await bindSyntheticModernScope(
+      db.query.bind(db),
+      process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
+        ? "STAGING_SANDBOX"
+        : "LIVE",
+    );
     await db.query("set local statement_timeout='5s'");
     const f = await fixture(),
       legacy = await fixture(),
