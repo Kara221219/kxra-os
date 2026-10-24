@@ -1096,3 +1096,12 @@ The corrected signup source d42ac77 completed 370/370 services, 92 private brows
 ## 24 October 2026 — separate disabled live billing and legal-gate source
 
 Integrated reviewed live catalogue/session contracts, durable intent/event ledger 0100 and mandatory legal-gate repair 0101 in an isolated local checkout. Provider evidence is bounded, read-only and non-authoritative until durable reconciliation/entitlement integration; no session/event timestamp grants paid access. Fresh customer binding/onboarding is a distinct remaining engineering slice, not a reason to convert sandbox pilot records. Default activation remains false, mappings empty, all hosted/provider/account/customer settings unchanged. 135 pure transport/command checks and strict typecheck pass; sequential SQL/concurrency acceptance and exact 101 recovery are still pending. See docs/workspace/live-billing-local-2026-10-24.md. No new public revision or rollout occurred.
+
+
+## 24 October 2026 — paid-access integration through 0106
+
+Exact source 53f037c10ab982332386ccfdc943ebb630e7ddad passes 255/255 focused synthetic native PostgreSQL/transport checks without skips, including live/legacy lane races, customer reservation, authoritative paid-access proof/CAS, own billing status and signed webhook wakeup receipts/leases. Migration verification passes 106 migrations and 208 protected KXRA tables. The private Unix-socket cluster stopped cleanly; no hosted/provider data or calls were used. Receipt: task release-artifacts/ci-publication-e37ce73/paid-launch-53f037c-focused-db-receipt.json.
+
+All three production builds, unchanged artifact exclusions, CSP/SRI (93 routes/795 references) and size budgets pass on that source. OS is 195.2KiB against 200; marketing 124.5KiB against 140. This is focused local acceptance, not combined remote CI or hosted payment acceptance. Live entry, policies, mappings and webhook activation remain disabled; the billing screen records honest requests and cannot dispatch a provider checkout yet. Modern staging sandbox scope, member-facing work-access projection and worker dispatch/reconciliation are still being implemented/reviewed in isolated worktrees.
+
+Exact timeout publication c3892aec8a82942643dc134322ec8d14dfe86699 and VAT registration/price presentation questions remain pending with the owner. No public source, phase ref, hosted migration/deployment, credentials, customer charge or staging hold changed. Existing original tsconfig edit and private limited recovery copy remain preserved.
