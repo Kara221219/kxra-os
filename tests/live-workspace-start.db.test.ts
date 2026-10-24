@@ -155,7 +155,7 @@ test("member workspace projection: pending before first live intent, LIVE blocke
         process.env.KXRA_MODERN_BILLING_TEST_MODE,
       ),
     );
-    await bindSyntheticModernScope(
+    const modern = await bindSyntheticModernScope(
       db.query.bind(db),
       process.env.KXRA_MODERN_BILLING_TEST_MODE === "STAGING_SANDBOX"
         ? "STAGING_SANDBOX"
@@ -213,9 +213,17 @@ test("member workspace projection: pending before first live intent, LIVE blocke
         "select coalesce(max(revision),0)+1 n from kxra_private.live_billing_mappings where offer_key='KXRA_TEAM_V1'",
       )
     ).rows[0].n;
+    const offer = modern.catalogue.find((r) => r.offer_key === "KXRA_TEAM_V1")!;
     await db.query(
-      "insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method) values('KXRA_TEAM_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbrLC84VkhhIRzMN225zAr','prod_VUb3rh9e9eNw5a','bpc_syntheticmembers',$1,$1,$1,'inclusive',false,'card')",
-      [hash, revision],
+      "insert into kxra_private.live_billing_mappings(mode,offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method) values($3,'KXRA_TEAM_V1',$2,true,$4,$5,$6,'bpc_syntheticmembers',$1,$1,$1,'inclusive',false,'card')",
+      [
+        hash,
+        revision,
+        modern.execution_scope.livemode ? "live" : "staging_sandbox",
+        modern.execution_scope.account_id,
+        offer.price_id,
+        offer.product_id,
+      ],
     );
     await db.query(
       "insert into kxra_private.live_customer_intents(id,org_id,actor_id,offer_key,mapping_revision,terms_review_sha256,auth_time) values($1,$2,$3,'KXRA_TEAM_V1',$4,$5,now())",
