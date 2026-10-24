@@ -34,13 +34,14 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
   async function call(
     sql: string,
     values: unknown[] = [],
-    context?: { actor: string; org: string } | "worker",
-    denied = false,
+    context?: { actor: string; org: string } | "worker" | "anon",
+    denied: boolean | string = false,
   ) {
     await db.query("savepoint customer_assertion");
     try {
       if (context === "worker")
         await db.query("set local role kxra_billing_worker");
+      else if (context === "anon") await db.query("set local role anon");
       else if (context) {
         await db.query("set local session authorization kxra_app");
         await db.query("set local role authenticated");
@@ -67,6 +68,8 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       await db.query("rollback to savepoint customer_assertion");
       await db.query("release savepoint customer_assertion");
       if (!denied || error instanceof assert.AssertionError) throw error;
+      if (typeof denied === "string")
+        assert.equal((error as { code?: string }).code, denied);
       return null;
     }
   }
@@ -171,6 +174,18 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       happy.context,
       true,
     );
+    for (const table of [
+      "live_customer_intents",
+      "live_customer_receipts",
+      "live_customer_conflicts",
+    ])
+      for (const role of [happy.context, "worker", "anon"] as const)
+        for (const sql of [
+          `select * from kxra_private.${table}`,
+          `insert into kxra_private.${table} default values`,
+          `delete from kxra_private.${table} where false`,
+        ])
+          await call(sql, [], role, "42501");
     const foreign = await fixture();
     await call(
       "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
@@ -301,11 +316,15 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     const lateLegacy = await fixture();
     await lateLegacy.request();
     await lateLegacy.claim();
-    await db.query(
+    await call(
       "insert into kxra.billing_customers(org_id,provider_customer_id) values($1,$2)",
       [lateLegacy.org, `cus_${crypto.randomBytes(12).toString("hex")}`],
+      undefined,
+      "42501",
     );
-    assert.equal(await lateLegacy.finish(), "QUARANTINED");
+    // Reciprocal lane fencing prevents the formerly reachable late legacy write.
+    // Quarantine remains exercised by committed revocation and disabled activation.
+    assert.equal(await lateLegacy.finish(), "BOUND");
     const revoked = await fixture();
     await revoked.request();
     await revoked.claim();
