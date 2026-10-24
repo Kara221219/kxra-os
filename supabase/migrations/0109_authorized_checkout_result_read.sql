@@ -27,7 +27,7 @@ begin
  select * into r from kxra_private.live_billing_intents where id=i and org_id=o and scope_id=sid for share;
  if not found or r.actor_id<>auth.uid() or r.kind<>'CHECKOUT' or r.state<>'CONSUMED'
  or r.provider_session_id is null or r.result_sha256 is null or r.result_sha256!~'^[a-f0-9]{64}$'
- or r.provider_session_id !~ case when expected_mode='LIVE' then '^cs_live_[A-Za-z0-9_]{6,}$' else '^cs_test_[A-Za-z0-9_]{6,}$' end
+ or r.provider_session_id !~ (case when expected_mode='LIVE' then '^cs_live_[A-Za-z0-9_]{6,}$' else '^cs_test_[A-Za-z0-9_]{6,}$' end)
  or r.expires_at<=now() or r.created_at>now() or r.observed_version<>b.version
  or b.checkout_intent_id is distinct from r.id
  or (r.customer_id,r.offer_key,r.mapping_revision) is distinct from (b.customer_id,b.offer_key,b.mapping_revision)
