@@ -1105,3 +1105,20 @@ Exact source 53f037c10ab982332386ccfdc943ebb630e7ddad passes 255/255 focused syn
 All three production builds, unchanged artifact exclusions, CSP/SRI (93 routes/795 references) and size budgets pass on that source. OS is 195.2KiB against 200; marketing 124.5KiB against 140. This is focused local acceptance, not combined remote CI or hosted payment acceptance. Live entry, policies, mappings and webhook activation remain disabled; the billing screen records honest requests and cannot dispatch a provider checkout yet. Modern staging sandbox scope, member-facing work-access projection and worker dispatch/reconciliation are still being implemented/reviewed in isolated worktrees.
 
 Exact timeout publication c3892aec8a82942643dc134322ec8d14dfe86699 and VAT registration/price presentation questions remain pending with the owner. No public source, phase ref, hosted migration/deployment, credentials, customer charge or staging hold changed. Existing original tsconfig edit and private limited recovery copy remain preserved.
+
+### 2026-10-24 — bounded paid-proof refresh source
+
+Added migration 0110 and a default-off `worker:paid-proof-refresh` once runner. The
+worker derives scope, tenant, checkout, mapping and policy from private attested
+SQL; reads the actual subscription/latest invoice/item/gross period before 0104
+reservation; then uses the shared mode-bound payment and historical checkout
+consent adapters and proof builder. Each SQL operation ends its transaction before
+provider HTTP. A two-minute claim and binding generation fence reserve/commit;
+concurrent discovery skips locked bindings. Exact-generation wakeups alone can
+ACK; superseded wakeups pass to due discovery without a fabricated ACK.
+
+Source tests exercise both LIVE and STAGING_SANDBOX algorithms with synthetic
+transport, mode rejection, refunds, stale claims and older-wakeup no-ACK. No DB,
+server, browser, provider or hosted verification was performed by this worker.
+Activation remains false and policy tables remain empty; terms/VAT approvals and
+owner sequential DB/browser/build verification remain required.

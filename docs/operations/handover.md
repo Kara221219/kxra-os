@@ -870,3 +870,27 @@ Exact source 53f037c10ab982332386ccfdc943ebb630e7ddad passes 255/255 focused syn
 All three production builds, unchanged artifact exclusions, CSP/SRI (93 routes/795 references) and size budgets pass on that source. OS is 195.2KiB against 200; marketing 124.5KiB against 140. This is focused local acceptance, not combined remote CI or hosted payment acceptance. Live entry, policies, mappings and webhook activation remain disabled; the billing screen records honest requests and cannot dispatch a provider checkout yet. Modern staging sandbox scope, member-facing work-access projection and worker dispatch/reconciliation are still being implemented/reviewed in isolated worktrees.
 
 Exact timeout publication c3892aec8a82942643dc134322ec8d14dfe86699 and VAT registration/price presentation questions remain pending with the owner. No public source, phase ref, hosted migration/deployment, credentials, customer charge or staging hold changed. Existing original tsconfig edit and private limited recovery copy remain preserved.
+
+### Paid-proof refresh 0110 source handover (2026-10-24)
+
+`npm run worker:paid-proof-refresh` accepts only `--once`, requires
+`KXRA_PAID_PROOF_REFRESH_ENABLED=true` (example defaults false), NODE_ENV=production,
+existing private billing-runner DB and Stripe settings, KXRA_ORIGIN and the correct
+runtime project. DB attestation selects the approved mode-bound scope; LIVE is
+production and STAGING_SANDBOX is staging. No runtime account/catalogue IDs are
+invented and raw sandbox livemode stays false. No loop, provider POST or retry is
+implemented.
+
+After separate activation/legal/tax approval, the operator must invoke the bounded
+once command regularly, normally every 30 seconds, with enough capacity to cover
+the due set. Discovery starts refreshing 60 seconds before expiry (proof TTL never
+exceeds 300 seconds). A failed attempt holds its two-minute lease; access expires
+closed if refresh does not succeed in time. Do not interpret one successful run as
+ongoing freshness or a scheduler being installed. Expired claims re-enter due
+discovery, and both reservation and commit lock the binding before checking lease
+ownership to prevent a concurrent claimant stealing a checked lease.
+
+Owner should apply/review 0107 before 0110, then run sequential local DB concurrency,
+RLS, lease-expiry, generation-race and full migration checks. This handover is source
+readiness only; no migrations, provider calls, approval records or activation were
+applied here. Pure regression command: `node --import tsx --test tests/live-paid-refresh.test.ts`.

@@ -32,6 +32,7 @@
     "test:marketing-boundary": "node scripts/verify-marketing-boundary.mjs",
     "test:restart": "node scripts/verify-persistence.mjs",
     "test:restore": "node scripts/verify-backup-restore.mjs",
+    "worker:paid-proof-refresh": "tsx scripts/paid-proof-refresh-worker.ts --once",
     "worker:files": "tsx scripts/file-worker.ts --once",
     "worker:files:watch": "tsx scripts/file-worker.ts --watch",
     "worker:team": "tsx scripts/team-job-worker.ts",
