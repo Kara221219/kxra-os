@@ -137,14 +137,19 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       "update kxra_private.live_billing_activation set enabled=true,review_sha256=$1",
       [hash],
     );
+    const mappingRevision = (
+      await db.query(
+        "select coalesce(max(revision),0)+1 revision from kxra_private.live_billing_mappings where offer_key='KXRA_STARTER_V1'",
+      )
+    ).rows[0].revision;
     await db.query(
       `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-      values('KXRA_STARTER_V1',1,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
-      [hash],
+      values('KXRA_STARTER_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
+      [hash, mappingRevision],
     );
     await db.query(
-      "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,'KXRA_STARTER_V1',1)",
-      [org, customer],
+      "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,'KXRA_STARTER_V1',$3)",
+      [org, customer, mappingRevision],
     );
     await call(
       "select * from kxra_private.live_billing_bindings",
@@ -300,7 +305,7 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       subscription_id: "sub_synthetic123",
       checkout_intent_id: intent,
       offer_key: "KXRA_STARTER_V1",
-      mapping_revision: 1,
+      mapping_revision: mappingRevision,
     };
     const record = async (r: unknown) =>
       (await call(
