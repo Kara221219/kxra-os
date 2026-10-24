@@ -1,3 +1,4 @@
+import { checkoutResultConfiguration } from "../../../../packages/authz/checkout-result-controller";
 import Link from "next/link";
 import LiveBillingEntry from "../../components/LiveBillingEntry";
 import { liveEntryController } from "../../lib/live-billing-entry";
@@ -10,7 +11,10 @@ export default async function BillingPage() {
     return (
       <main>
         <h1>Workspace billing</h1>
-        <LiveBillingEntry initial={status} />
+        <LiveBillingEntry
+          initial={status}
+          checkoutResultAvailable={Boolean(checkoutResultConfiguration())}
+        />
         <p>
           <Link href="/os">Return to workspace</Link>
         </p>
@@ -21,9 +25,8 @@ export default async function BillingPage() {
       <main>
         <h1>Workspace billing</h1>
         <p>
-          Billing entry is unavailable. Sign in to your verified customer
-          workspace; live billing remains disabled until its release checks are
-          complete.
+          Payment setup is unavailable. Sign in to your customer workspace or
+          return later.
         </p>
         <p>
           <Link href="/login">Sign in</Link> ·{" "}

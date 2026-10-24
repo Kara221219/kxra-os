@@ -105,9 +105,9 @@ export default function LiveBillingEntry({
       );
       await refresh();
       setPending(null);
-    } catch (error) {
+    } catch {
       setMessage(
-        error instanceof Error ? error.message : "Request unavailable",
+        "We couldn’t confirm this request. Refresh status before trying again, and check your account security and agreements.",
       );
     } finally {
       submitting.current = false;
@@ -173,7 +173,17 @@ export default function LiveBillingEntry({
         </select>
       </label>
       <p>
-        Status: {status.state.replaceAll("_", " ")}
+        Status:{" "}
+        {
+          {
+            FRESH: "Choose a plan",
+            DISABLED: "Payment setup paused",
+            CUSTOMER_PENDING: "Setting up billing",
+            BOUND: "Billing profile ready",
+            REQUEST_PENDING: "Preparing your request",
+            REVIEW_REQUIRED: "Needs review",
+          }[status.state]
+        }
         {status.request_state
           ? ` · ${status.request_state.replaceAll("_", " ")}`
           : ""}
