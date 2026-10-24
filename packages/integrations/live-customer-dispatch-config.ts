@@ -9,6 +9,16 @@ export function customerDispatchConfiguration(
   env: Record<string, string | undefined> = process.env,
 ) {
   if (env.KXRA_MODERN_BILLING_DISPATCH_ENABLED !== "true") return null;
+  return validatedModernBillingWorkerProfile(env);
+}
+
+/** Shared private profile validation without selecting or enabling an operation.
+ * Each entry point must enforce its own default-off gate before calling this.
+ * Credentials never leave the process until this complete profile validates.
+ */
+export function validatedModernBillingWorkerProfile(
+  env: Record<string, string | undefined>,
+) {
   try {
     const environment = env.KXRA_ENVIRONMENT;
     const project =

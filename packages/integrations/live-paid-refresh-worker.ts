@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import {
-  billingTransaction,
-  billingWorkerDatabaseConfiguration,
-} from "./billing-worker";
-import { requireLiveBillingWorkerIdentity } from "./live-worker-identity";
+import { createPaidRefreshWorkerQuery } from "./paid-refresh-database";
 import {
   assertModernScopeTag,
   modernCatalogueRow,
@@ -35,17 +31,8 @@ export type PaidRefreshQuery = (
   text: string,
   values?: unknown[],
 ) => Promise<{ rows: Record<string, unknown>[] }>;
-export const paidRefreshWorkerQuery: PaidRefreshQuery = (text, values = []) =>
-  billingTransaction(
-    async (db) => {
-      requireLiveBillingWorkerIdentity(
-        (await db.query("select session_user,current_user")).rows[0],
-      );
-      await db.query("set local lock_timeout='2s'");
-      return db.query(text, values);
-    },
-    { ...billingWorkerDatabaseConfiguration(), connectionTimeoutMillis: 3000 },
-  );
+export const paidRefreshWorkerQuery: PaidRefreshQuery =
+  createPaidRefreshWorkerQuery();
 export type PaidRefreshOptions = {
   enabled?: boolean;
   nodeEnv?: string;
