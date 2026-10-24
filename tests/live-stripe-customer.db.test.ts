@@ -143,6 +143,11 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       ).rows[0].enabled,
       false,
     );
+    mappingRevision = (
+      await db.query(
+        "select coalesce(max(revision),0)+1 revision from kxra_private.live_billing_mappings where offer_key='KXRA_STARTER_V1'",
+      )
+    ).rows[0].revision;
     const happy = await fixture();
     await call(
       "select kxra_private.claim_live_customer_intent($1)",
@@ -154,11 +159,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       "update kxra_private.live_billing_activation set enabled=true,review_sha256=$1",
       [hash],
     );
-    mappingRevision = (
-      await db.query(
-        "select coalesce(max(revision),0)+1 revision from kxra_private.live_billing_mappings where offer_key='KXRA_STARTER_V1'",
-      )
-    ).rows[0].revision;
+
     await db.query(
       `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
    values('KXRA_STARTER_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
