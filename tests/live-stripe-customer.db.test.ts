@@ -8,6 +8,21 @@ import { localModeConfiguration } from "../packages/authz/local-guard";
 import pg from "pg";
 import { runtimeFile } from "./support/runtime";
 
+import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+import { modernScopeMetadata } from "../packages/integrations/modern-billing-scope";
+const mode = process.env.KXRA_MODERN_BILLING_TEST_MODE ?? "LIVE";
+assert.ok(
+  mode === "LIVE" || mode === "STAGING_SANDBOX",
+  "Explicit supported synthetic execution mode required",
+);
+const scoped = modernBillingFixture(mode),
+  tag = scoped.execution.execution_scope;
+const prefix = mode === "LIVE" ? "" : "staging_sandbox_";
+const starter = scoped.execution.catalogue.find(
+  (r) => r.offer_key === "KXRA_STARTER_V1",
+)!;
+
 // SOURCE ONLY until owner runs sequentially after0100 +0102 in a fresh disposable local fixture.
 // No provider is contacted, and every synthetic database write rolls back.
 test("fresh live customer ledger: permanent reservation, authority, uncertain outcomes and binding", async () => {
@@ -91,6 +106,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     );
     const context = { actor, org };
     const metadata = {
+      ...modernScopeMetadata(tag),
       kxra_customer_intent: intent,
       kxra_org: org,
       kxra_actor: actor,
@@ -106,8 +122,9 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       offer_key: "KXRA_STARTER_V1",
       mapping_revision: mappingRevision,
       intent_version: 1,
-      account_id: "acct_1Rv3KdC84VkhhIRz",
-      livemode: true,
+      account_id: tag.account_id,
+      execution_scope: tag,
+      livemode: tag.livemode,
       outcome: "BOUND",
       customer_id: `cus_${crypto.randomBytes(12).toString("hex")}`,
       metadata,
@@ -117,19 +134,19 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     };
     const request = () =>
       call(
-        "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1') value",
+        `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1') value`,
         [intent],
         context,
       );
     const claim = () =>
       call(
-        "select kxra_private.claim_live_customer_intent($1) value",
+        `select kxra_private.${prefix}claim_live_customer_intent($1) value`,
         [intent],
         "worker",
       );
     const finish = async (r: unknown = receipt) =>
       (await call(
-        "select kxra_private.finish_live_customer_intent($1,$2::jsonb) value",
+        `select kxra_private.${prefix}finish_live_customer_intent($1,$2::jsonb) value`,
         [intent, JSON.stringify(r)],
         "worker",
       ))!.rows[0].value;
@@ -151,9 +168,10 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
         "select coalesce(max(revision),0)+1 revision from kxra_private.live_billing_mappings where offer_key='KXRA_STARTER_V1'",
       )
     ).rows[0].revision;
+    await bindSyntheticModernScope(db.query.bind(db), mode);
     const happy = await fixture();
     await call(
-      "select kxra_private.claim_live_customer_intent($1)",
+      `select kxra_private.${prefix}claim_live_customer_intent($1)`,
       [happy.intent],
       "worker",
       true,
@@ -164,9 +182,16 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     );
 
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-   values('KXRA_STARTER_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
-      [hash, mappingRevision],
+      `insert into kxra_private.live_billing_mappings(offer_key,revision,mode,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
+   values('KXRA_STARTER_V1',$2,$3,true,$4,$5,$6,'bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
+      [
+        hash,
+        mappingRevision,
+        mode === "LIVE" ? "live" : "staging_sandbox",
+        tag.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     await call(
       "select * from kxra_private.live_customer_intents",
@@ -188,7 +213,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
           await call(sql, [], role, "42501");
     const foreign = await fixture();
     await call(
-      "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1')`,
       [happy.intent],
       { actor: foreign.actor, org: happy.org },
       true,
@@ -199,7 +224,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       [happy.actor],
     );
     await call(
-      "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1')`,
       [happy.intent],
       happy.context,
       true,
@@ -221,43 +246,44 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
       ],
     );
     await call(
-      "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1')`,
       [legacyPending.intent],
       legacyPending.context,
       true,
     );
     await happy.request();
     await call(
-      "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1')`,
       [crypto.randomUUID()],
       happy.context,
       true,
     );
     await call(
-      "select kxra_private.claim_live_customer_intent($1)",
+      `select kxra_private.${prefix}claim_live_customer_intent($1)`,
       [happy.intent],
       happy.context,
       true,
     );
     const claimed = await happy.claim();
+    assert.deepEqual(claimed!.rows[0].value.execution_scope, tag);
     assert.equal(claimed!.rows[0].value.intent.state, "REQUESTED");
     assert.equal(claimed!.rows[0].value.intent.version, 1);
     assert.equal(
       (await call(
-        "select kxra_private.live_customer_intent_current($1,1) value",
+        `select kxra_private.${prefix}live_customer_intent_current($1,1) value`,
         [happy.intent],
         "worker",
       ))!.rows[0].value,
       true,
     );
     await call(
-      "select kxra_private.claim_live_customer_intent($1)",
+      `select kxra_private.${prefix}claim_live_customer_intent($1)`,
       [happy.intent],
       "worker",
       true,
     );
     await call(
-      "select kxra_private.finish_live_customer_intent($1,$2::jsonb)",
+      `select kxra_private.${prefix}finish_live_customer_intent($1,$2::jsonb)`,
       [
         happy.intent,
         JSON.stringify({
@@ -271,7 +297,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     assert.equal(await happy.finish(), "BOUND");
     assert.equal(
       (await call(
-        "select kxra_private.live_customer_intent_current($1,1) value",
+        `select kxra_private.${prefix}live_customer_intent_current($1,1) value`,
         [happy.intent],
         "worker",
       ))!.rows[0].value,
@@ -308,7 +334,7 @@ test("fresh live customer ledger: permanent reservation, authority, uncertain ou
     assert.equal(await uncertain.finish(uncertainReceipt), "UNCERTAIN");
     assert.equal(await uncertain.finish(uncertainReceipt), "UNCERTAIN");
     await call(
-      "select kxra_private.request_live_customer_intent($1,'KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_customer_intent($1,'KXRA_STARTER_V1')`,
       [crypto.randomUUID()],
       uncertain.context,
       true,

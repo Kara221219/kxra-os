@@ -8,6 +8,20 @@ import { localModeConfiguration } from "../packages/authz/local-guard";
 import pg from "pg";
 import { runtimeFile } from "./support/runtime";
 
+import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
+import { modernBillingFixture } from "./support/modern-billing-scope";
+const mode = process.env.KXRA_MODERN_BILLING_TEST_MODE ?? "LIVE";
+assert.ok(
+  mode === "LIVE" || mode === "STAGING_SANDBOX",
+  "Explicit supported synthetic execution mode required",
+);
+const scoped = modernBillingFixture(mode),
+  tag = scoped.execution.execution_scope;
+const prefix = mode === "LIVE" ? "" : "staging_sandbox_";
+const starter = scoped.execution.catalogue.find(
+  (r) => r.offer_key === "KXRA_STARTER_V1",
+)!;
+
 // OWNER MUST RUN SEQUENTIALLY after applying 0100 to a disposable LOCAL fixture.
 // Full CI supplies a private synthetic fixture. Never silently skip this gate.
 // No provider/network service is contacted; all fixture writes roll back.
@@ -91,7 +105,7 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       false,
     );
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "worker",
       true,
@@ -112,6 +126,7 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
         ])
           await call(sql, [], role, "42501");
 
+    await bindSyntheticModernScope(db.query.bind(db), mode);
     for (const [id, name] of [
       [org, "Ledger owner fixture"],
       [otherOrg, "Ledger outsider fixture"],
@@ -143,9 +158,16 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       )
     ).rows[0].revision;
     await db.query(
-      `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
-      values('KXRA_STARTER_V1',$2,true,'acct_1Rv3KdC84VkhhIRz','price_1UTbq7C84VkhhIRzkBHEHivV','prod_VUb2kv7rUiTeiu','bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
-      [hash, mappingRevision],
+      `insert into kxra_private.live_billing_mappings(offer_key,revision,mode,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method)
+      values('KXRA_STARTER_V1',$2,$3,true,$4,$5,$6,'bpc_synthetic123',$1,$1,$1,'inclusive',false,'card')`,
+      [
+        hash,
+        mappingRevision,
+        mode === "LIVE" ? "live" : "staging_sandbox",
+        tag.account_id,
+        starter.price_id,
+        starter.product_id,
+      ],
     );
     await db.query(
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,'KXRA_STARTER_V1',$3)",
@@ -158,24 +180,24 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       true,
     );
     await call(
-      "select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],
       "outsider",
       true,
     );
     await call(
-      "select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],
       "owner",
     );
     await call(
-      "select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [crypto.randomUUID()],
       "owner",
       true,
     );
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "owner",
       true,
@@ -200,7 +222,7 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       [requirement, org, document, legalHash],
     );
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "worker",
       true,
@@ -222,13 +244,13 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       [requirement],
     );
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "worker",
       true,
     );
     await call(
-      "select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],
       "owner",
       true,
@@ -240,13 +262,13 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       [document],
     );
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "worker",
       true,
     );
     await call(
-      "select kxra_private.request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')",
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],
       "owner",
       true,
@@ -267,31 +289,32 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
     await db.query("rollback to savepoint retired_legal_fixture");
     await db.query("release savepoint retired_legal_fixture");
     const claim = await call(
-      "select kxra_private.claim_live_billing_intent($1) value",
+      `select kxra_private.${prefix}claim_live_billing_intent($1) value`,
       [intent],
       "worker",
     );
+    assert.deepEqual(claim!.rows[0].value.execution_scope, tag);
     assert.equal(claim!.rows[0].value.intent.id, intent);
     assert.equal(claim!.rows[0].value.intent.state, "REQUESTED");
     assert.equal(claim!.rows[0].value.entitlement_authority, false);
     await call(
-      "select kxra_private.claim_live_billing_intent($1)",
+      `select kxra_private.${prefix}claim_live_billing_intent($1)`,
       [intent],
       "worker",
       true,
     );
     await call(
-      "select kxra_private.finish_live_billing_intent($1,'UNCERTAIN',null,$2)",
+      `select kxra_private.${prefix}finish_live_billing_intent($1,'UNCERTAIN',null,$2)`,
       [intent, hash],
       "worker",
     );
     await call(
-      "select kxra_private.finish_live_billing_intent($1,'UNCERTAIN',null,$2)",
+      `select kxra_private.${prefix}finish_live_billing_intent($1,'UNCERTAIN',null,$2)`,
       [intent, hash],
       "worker",
     );
     await call(
-      "select kxra_private.finish_live_billing_intent($1,'CONSUMED','cs_live_other123',$2)",
+      `select kxra_private.${prefix}finish_live_billing_intent($1,'CONSUMED','${mode === "LIVE" ? "cs_live_other123" : "cs_test_other123"}',$2)`,
       [intent, hash],
       "worker",
       true,
@@ -299,8 +322,9 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
     const receipt = {
       event_id: `evt_${crypto.randomBytes(12).toString("hex")}`,
       payload_sha256: hash,
-      account_id: "acct_1Rv3KdC84VkhhIRz",
-      mode: "live",
+      account_id: tag.account_id,
+      execution_scope: tag,
+      mode: mode === "LIVE" ? "live" : "staging_sandbox",
       customer_id: customer,
       subscription_id: "sub_synthetic123",
       checkout_intent_id: intent,
@@ -309,7 +333,7 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
     };
     const record = async (r: unknown) =>
       (await call(
-        "select kxra_private.record_live_billing_event($1::jsonb) value",
+        `select kxra_private.${prefix}record_live_billing_event($1::jsonb) value`,
         [JSON.stringify(r)],
         "worker",
       ))!.rows[0].value;
