@@ -130,6 +130,7 @@ language sql stable security definer set search_path='' as $$
  and not exists(select 1 from kxra.legal_documents d
  join kxra.legal_acceptances a on a.org_id=q.org_id and a.account_id=m.account_id and a.membership_id=m.id and a.requirement_id=q.id
  and a.document_id=q.document_id and a.document_version=q.document_version and a.document_sha256=q.document_sha256 and a.response='ACCEPTED'
+ and a.acceptance_wording=q.acceptance_wording and a.acceptance_wording_version=q.acceptance_wording_version and a.acceptance_wording_sha256=q.acceptance_wording_sha256
  where d.org_id=q.org_id and d.id=q.document_id and d.version=q.document_version and d.content_sha256=q.document_sha256 and d.status='APPROVED')
  )
 $$;

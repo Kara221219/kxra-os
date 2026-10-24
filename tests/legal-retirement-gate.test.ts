@@ -32,7 +32,14 @@ function syntheticConfiguration() {
     !config.password,
     "Only password-free isolated local fixture sockets are allowed",
   );
-  return { ...config, user: os.userInfo().username, password: "" };
+  return {
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: os.userInfo().username,
+    password: "",
+    ssl: false,
+  };
 }
 
 async function asCustomer(db: pg.Client, account: string, org: string) {
