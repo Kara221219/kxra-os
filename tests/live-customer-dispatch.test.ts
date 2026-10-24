@@ -92,7 +92,7 @@ test("target configuration pins project/runner/session port and verified TLS wit
 test("LIVE keys in staging, fixture auth, wrong project/login/host/port/DSN overrides and missing CA fail before execution", () => {
   for (const patch of [
     { NODE_ENV: "development" },
-    { KXRA_AUTH_MODE: "fixture" },
+    { NODE_ENV: "development", KXRA_AUTH_MODE: "fixture" },
     { STRIPE_SECRET_KEY: "sk_live_SYNTHETIC_NOT_A_REAL_CREDENTIAL_0000" },
     { NEXT_PUBLIC_SUPABASE_URL: "https://lhbgeucifxxcdoyrnesf.supabase.co" },
     { KXRA_DATABASE_CA_CERT_BASE64: "" },

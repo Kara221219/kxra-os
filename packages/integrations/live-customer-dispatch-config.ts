@@ -19,7 +19,6 @@ export function customerDispatchConfiguration(
           : null;
     if (
       env.NODE_ENV !== "production" ||
-      env.KXRA_AUTH_MODE === "fixture" ||
       !project ||
       env.NEXT_PUBLIC_SUPABASE_URL !== `https://${project}.supabase.co` ||
       !(
