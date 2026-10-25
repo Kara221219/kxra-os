@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createMarketingTiming } from "../support/marketing-phase-timing";
-test("reference baseline shell, samples and catalog stay local and usable", async ({
+test("reference baseline shell, samples and integrations stay local and usable", async ({
   page,
 }, info) => {
   const errors: string[] = [];
@@ -102,6 +102,21 @@ test("reference baseline shell, samples and catalog stay local and usable", asyn
     await page.getByRole("button", { name: "Reset filters" }).click();
     await expect(page.getByRole("status")).toContainText("9 results");
   });
+  await timed("ERRORS", async () => {
+    expect(errors).toEqual([]);
+  });
+});
+
+// Independent inventory: retain the preceding responsive loop's final size,
+// inherited desktop/mobile device semantics, route order and full page loads.
+// Two 30-second cases allow 60 seconds in aggregate per viewport (previously 30).
+test("reference catalogue routes load without page errors", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const timed = createMarketingTiming();
+  await page.setViewportSize({ width: 1440, height: 950 });
   let routeOrdinal = 0;
   for (const route of [
     "/product",
