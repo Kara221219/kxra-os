@@ -1276,3 +1276,27 @@ Exact owner approval is required before its public CI publication and future
 artifact retention. Source-specific local receipts belong with the reviewed
 candidate; these tests do not establish the remote cause or hosted readiness.
 See safe-ci-diagnostics-implementation.md for limits and trust assumptions.
+
+
+### 2026-10-25 — diagnostics CI type correction
+
+Exact published source 6e51e05 failed CI 40180809516 at lint/typecheck before
+service or browser acceptance. Its test override array used ProcessEnv rather
+than Partial<ProcessEnv>; Next's global declaration requires NODE_ENV on a full
+environment. The preserved earlier local typecheck log contained the same errors,
+so the earlier reported typecheck pass was incorrect and is superseded here.
+
+The correction changes only that type annotation. Runtime guards, invalid-context
+vectors, browser timeouts, assertions, collector/exporter and workflow are unchanged.
+A clean-checkout reproduction failed before the correction; full root typecheck
+and all 30 focused diagnostics tests passed after it. No browser or production
+build rerun is claimed for this type-only correction.
+
+CodeQL run 40180809521 succeeded for 6e51e05: analysis 2021747736 reported the same
+21 older open findings, zero new findings, with alerts 29–38 still fixed; none were
+dismissed. CI retained exactly one approved one-day artifact containing a single
+607-byte HARNESS JSON summary, with fixed fields and numeric resource/fixture/run
+metadata. No raw traces or sensitive values were retained in that artifact.
+
+This correction is local and unpublished. A new exact public revision needs owner
+approval; phase/production refs, staging holds, hosted data and checkout remain unchanged.

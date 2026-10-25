@@ -15,7 +15,7 @@ const environment: NodeJS.ProcessEnv = {
   GITHUB_RUN_ATTEMPT: "1",
 };
 test("invalid fixture, hosted, origin and run contexts are rejected before any fetch", async () => {
-  const changes: NodeJS.ProcessEnv[] = [
+  const changes: Partial<NodeJS.ProcessEnv>[] = [
     { KXRA_SAFE_DIAGNOSTICS_ENABLED: "false" },
     { KXRA_AUTH_MODE: "hosted" },
     { NODE_ENV: "production" },
