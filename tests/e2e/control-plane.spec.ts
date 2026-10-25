@@ -167,6 +167,30 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
   await expect(
     page.getByText("UNVERIFIED", { exact: true }).first(),
   ).toBeVisible();
+  const ideaTitle = `Browser-owned idea ${crypto.randomUUID()}`;
+  const ideaForm = page.locator("form").filter({
+    has: page.getByRole("heading", { name: "Submit an idea", exact: true }),
+  });
+  await ideaForm.getByLabel("Title", { exact: true }).fill(ideaTitle);
+  await ideaForm
+    .getByLabel("Raw idea", { exact: true })
+    .fill("Synthetic browser-owned idea; no external action.");
+  const ideaSaved = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "POST" &&
+      url.origin === new URL(page.url()).origin &&
+      url.pathname === "/api/ideas" &&
+      response.request().postDataJSON()?.title === ideaTitle
+    );
+  });
+  await ideaForm
+    .getByRole("button", { name: "Submit idea", exact: true })
+    .click();
+  expect((await ideaSaved).status()).toBe(201);
+  await expect(
+    page.getByRole("heading", { name: ideaTitle, exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".idea-card").first()).toBeVisible();
   await expect(
     page.getByText("NOT ASSESSED", { exact: true }).first(),

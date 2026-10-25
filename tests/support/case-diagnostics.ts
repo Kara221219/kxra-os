@@ -29,9 +29,36 @@ export function resourceSnapshot(elapsedMs: number): SafeDiagnosticEvent {
   };
 }
 
-export async function beginCaseDiagnostics(info: TestInfo) {
+type DiagnosticDependencies = {
+  health: typeof diagnosticHealth;
+  createWriter: typeof createSafeDiagnostics;
+};
+const captureRejected = () =>
+  console.error("SAFE_DIAGNOSTICS_CAPTURE_REJECTED");
+
+export async function beginCaseDiagnostics(
+  info: TestInfo,
+  overrides: Partial<DiagnosticDependencies> = {},
+) {
   if (process.env.KXRA_SAFE_DIAGNOSTICS_ENABLED !== "true") return null;
-  const health = await diagnosticHealth(process.env);
+  try {
+    return await createCaseDiagnostics(info, {
+      health: diagnosticHealth,
+      createWriter: createSafeDiagnostics,
+      ...overrides,
+    });
+  } catch {
+    // Capture stays closed. Its availability must not replace the test result.
+    captureRejected();
+    return null;
+  }
+}
+
+async function createCaseDiagnostics(
+  info: TestInfo,
+  dependencies: DiagnosticDependencies,
+) {
+  const health = await dependencies.health(process.env);
   const caseIndex = info.title.startsWith("remodeling scope")
     ? 0
     : info.title.startsWith("private recruiting")
@@ -46,7 +73,7 @@ export async function beginCaseDiagnostics(info: TestInfo) {
         ? "MOBILE"
         : null;
   if (caseIndex < 0 || !viewport) throw Error("SAFE_CASE_DIAGNOSTICS_GUARD");
-  const writer = createSafeDiagnostics({
+  const writer = dependencies.createWriter({
     root: process.cwd(),
     environment: process.env,
     health,
@@ -204,21 +231,25 @@ export async function beginCaseDiagnostics(info: TestInfo) {
             timer = setTimeout(resolve, 1500);
           }),
         ]);
+      } catch {
+        captureRejected();
       } finally {
         if (timer) clearTimeout(timer);
       }
     },
     finish(passed: boolean) {
-      record(resourceSnapshot(elapsed()));
-      closed = true;
       try {
+        record(resourceSnapshot(elapsed()));
+        closed = true;
         if (rejected) throw Error("SAFE_CASE_DIAGNOSTICS_REJECTED");
         writer.finish(
           passed ? "PASSED" : "FAILED",
           passed ? "NONE" : failureKind,
         );
       } catch {
-        if (passed) throw Error("SAFE_CASE_DIAGNOSTICS_REJECTED");
+        captureRejected();
+      } finally {
+        closed = true;
       }
     },
   };

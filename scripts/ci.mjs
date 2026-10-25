@@ -6,13 +6,18 @@ import net from "node:net";
 import path from "node:path";
 import os from "node:os";
 import {
+  ciPhaseConfiguration,
+  serviceVerificationCommands,
+} from "./ci-phases.mjs";
+import {
   mintDiagnosticsAttestation,
   writeHarnessDiagnostics,
 } from "./safe-ci-diagnostics-core.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
-const focusedTeam = process.argv.includes("--team-workspace");
-const runtime = path.join(root, ".runtime", focusedTeam ? "team-ci" : "ci");
+const phase = ciPhaseConfiguration(process.argv.slice(2));
+const { focusedTeam, servicesOnly } = phase;
+const runtime = path.join(root, ".runtime", phase.runtimeDirectory);
 const nextGeneratedConfigurationFiles = ["os", "marketing"].flatMap(
   (application) =>
     ["next-env.d.ts", "tsconfig.json"].map((name) => {
@@ -38,7 +43,7 @@ function availablePort() {
 }
 
 const diagnosticsEnabled =
-  process.env.GITHUB_ACTIONS === "true" && !focusedTeam;
+  process.env.GITHUB_ACTIONS === "true" && phase.diagnosticsAllowed;
 const diagnosticsMetadata = {
   sourceSha: process.env.GITHUB_SHA || "",
   githubRunId: process.env.GITHUB_RUN_ID || "",
@@ -50,6 +55,7 @@ let diagnosticsReady = false,
   harnessOutcome = "FAILED";
 const elapsed = () => Math.round(performance.now() - diagnosticStarted);
 function stageFor(args) {
+  if (args[0] === "scripts/verify-browser-restart.mjs") return "RESTART";
   if (args[0] === "test") return "SERVICES";
   if (args[0] !== "run") return null;
   return (
@@ -111,6 +117,16 @@ async function waitForServer(origin, child, runId, timeout = 90_000) {
     await new Promise((resolve) => setTimeout(resolve, 400));
   }
   throw Error("Application readiness timed out");
+}
+
+if (phase.needsServicePhase) {
+  const services = spawnSync(
+    process.execPath,
+    ["scripts/ci.mjs", "--services-only"],
+    { cwd: root, env: process.env, stdio: "inherit" },
+  );
+  if (services.status !== 0)
+    throw Error(`Isolated CI service phase failed with ${services.status}`);
 }
 
 fs.rmSync(runtime, { recursive: true, force: true });
@@ -221,6 +237,7 @@ try {
       healthy: true,
       fresh: true,
     });
+    if (phase.needsServicePhase) stageEvent("SERVICES", "PASS", 0);
   }
   marketingLogHandle = fs.openSync(path.join(runtime, "marketing.log"), "w");
   marketing = spawn(
@@ -285,16 +302,22 @@ try {
     );
     run("npm", ["run", "build:os"], productionEnvironment);
     console.log("Focused team workspace CI PASS (not the full platform CI).");
+  } else if (servicesOnly) {
+    for (const [command] of serviceVerificationCommands)
+      run("npm", command === "test" ? ["test"] : ["run", command], environment);
+    console.log(
+      "Isolated service, restart and restore verification PASS; service runtime retained.",
+    );
   } else {
     run("npm", ["run", "test:dependencies"], environment);
-    run("npm", ["test"], environment);
     run("npm", ["run", "test:migrations"], environment);
     run("npm", ["run", "test:publication"], environment);
     run("npm", ["run", "test:marketing-boundary"], environment);
     run("npm", ["run", "test:e2e"], environment);
     run("npm", ["run", "test:marketing"], environment);
-    run("npm", ["run", "test:restart"], environment);
-    run("npm", ["run", "test:restore"], environment);
+    // Keep both service AT-08/10 proof and browser-created values/objects covered.
+    run(process.execPath, ["scripts/verify-browser-restart.mjs"], environment);
+    run("npm", ["run", "test:restore", "--", "--browser-proof"], environment);
 
     run("npm", ["run", "build"], productionEnvironment);
     run("npm", ["run", "test:marketing-csp"], productionEnvironment);

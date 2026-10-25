@@ -3,15 +3,9 @@ import {
   expect,
   type Request as PlaywrightRequest,
 } from "@playwright/test";
-import fs from "node:fs";
-import os from "node:os";
-import pg from "pg";
-import { runtimeFile, testOrigin } from "../support/runtime";
-import {
-  knowledgeFixture,
-  knowledgeLogin,
-  knowledgeOk,
-} from "../support/team-knowledge";
+import { testOrigin } from "../support/runtime";
+import { knowledgeFixture, knowledgeOk } from "../support/team-knowledge";
+import { paginationFixture } from "../support/pagination-fixture";
 async function login(page: import("@playwright/test").Page, identity: string) {
   await page.goto("/login");
   await page.getByText("Local fixture identities", { exact: true }).click();
@@ -213,20 +207,7 @@ test("catalogs load earlier authorised pages and the pilot offer stays a simulat
   page,
 }) => {
   test.setTimeout(90000);
-  await knowledgeLogin();
-  const cfg = JSON.parse(fs.readFileSync(runtimeFile("database.json"), "utf8")),
-    db = new pg.Client({ ...cfg, user: os.userInfo().username });
-  await db.connect();
-  let room: string;
-  try {
-    room = (
-      await db.query(
-        "select room_id from kxra.team_schedules group by room_id having count(*)>100 order by room_id limit 1",
-      )
-    ).rows[0].room_id;
-  } finally {
-    await db.end();
-  }
+  const { room } = await paginationFixture();
   await login(page, "partner");
   await page.goto("/os/workspace/" + room);
   await page.getByRole("tab", { name: "Jobs", exact: true }).click();

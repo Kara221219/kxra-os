@@ -1080,3 +1080,17 @@ metadata. No raw traces or sensitive values were retained in that artifact.
 
 This correction is local and unpublished. A new exact public revision needs owner
 approval; phase/production refs, staging holds, hosted data and checkout remain unchanged.
+
+
+### 2026-10-25 — isolated fixtures and noninterfering diagnostics
+
+Remote 100b9db passed 890 service checks and verified 112 migrations with 208
+RLS-protected tables, but failed four browser cases (94 passed, six existing
+project skips). Diagnostics setup stopped
+two remodeling bodies; the two upload conflicts match exhausted shared-user
+quota. The local repair keeps quotas, budgets and assertions unchanged, separates
+service/browser fixtures, makes two browser setups self-contained, and preserves
+service recovery plus explicit browser value/object restart/restore evidence.
+See ci-fixture-isolation.md for retained results, skip reasons, recovery boundaries
+and pending final-source acceptance. Public source, held staging and live state
+remain unchanged by this local repair.

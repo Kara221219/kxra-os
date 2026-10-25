@@ -5,6 +5,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
+import {
+  assertBrowserRecoveryFixture,
+  browserRecoveryEvidence,
+} from "./browser-recovery-evidence.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const runtime = path.resolve(
@@ -14,6 +18,8 @@ const configPath = path.join(runtime, "database.json");
 if (!fs.existsSync(configPath))
   throw Error("Local database is not initialized");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+const browserProof = process.argv.includes("--browser-proof");
+if (browserProof) assertBrowserRecoveryFixture(config);
 const admin = { ...config, user: os.userInfo().username };
 const targetName = `kxra_restore_${crypto.randomBytes(6).toString("hex")}`;
 const drill = path.join(runtime, "restore-drill");
@@ -97,7 +103,14 @@ async function evidence(database) {
           await client.query(`select count(*)::int as rows from kxra.${table}`)
         ).rows[0].rows;
     }
-    return { migrations, tables, focus };
+    return {
+      migrations,
+      tables,
+      focus,
+      ...(browserProof
+        ? { browserEvidence: await browserRecoveryEvidence(client) }
+        : {}),
+    };
   } finally {
     await client.end();
   }
