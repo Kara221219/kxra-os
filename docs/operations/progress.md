@@ -1248,3 +1248,31 @@ through browser execution and the disposable database stopped cleanly. This is
 targeted local acceptance; full remote CI, production builds and hosted provider
 acceptance have not been rerun for this revision. The earlier remote failure and
 all superseded local diagnostic failures remain preserved.
+
+
+### 2026-10-25 — synthetic failure evidence and exact case requests
+
+The published aae1208 run passed 860 services and 93 private browser cases with
+six existing skips, but failed the mobile remodeling proposal response wait.
+No trace artifacts were uploaded, so its precise cause remains unproven.
+Unchanged local baseline and controlled phase probes distinguish delayed click
+readiness from delayed response delivery without changing the five-second wait
+or 90-second case limit. A timeout alone cannot distinguish those causes.
+
+This change hardens exact fixture room/source/version request matching, observes
+pending waiter rejection without swallowing its later awaited error, and records
+bounded action/request/response and resource evidence. Source identity is tracked
+passively; no canonical warm-up is added before the response clock. Canonical/UI
+sampling is bounded and occurs after failure or at test end. All original review,
+persistence, retry-on-lost-acknowledgement and isolation assertions remain.
+
+A strict, source/run-bound collector and validating exporter now support private
+synthetic fixture evidence only. A generic reporter covers other unexpected
+private-browser failures without copying titles, paths or errors. Guard checks
+precede every diagnostic health request. The prepared workflow retains only
+validated JSON for one day after exporter success; no raw traces/screenshots/logs
+or fallback upload are allowed. This source has not been published or deployed.
+Exact owner approval is required before its public CI publication and future
+artifact retention. Source-specific local receipts belong with the reviewed
+candidate; these tests do not establish the remote cause or hosted readiness.
+See safe-ci-diagnostics-implementation.md for limits and trust assumptions.

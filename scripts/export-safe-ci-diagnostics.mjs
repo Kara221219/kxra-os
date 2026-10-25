@@ -8,7 +8,7 @@ try {
   const result = exportSafeDiagnostics({
     root,
     runtime: path.join(root, ".runtime", "ci"),
-    destination: path.join(root, ".safe-ci-diagnostics-export"),
+    destination: path.join(root, "safe-ci-diagnostics-export"),
     environment: process.env,
     metadata: {
       sourceSha: process.env.GITHUB_SHA,

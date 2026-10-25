@@ -1,6 +1,6 @@
 # Proposed synthetic CI failure evidence
 
-This is a review proposal, not an implemented export or workflow change. The
+This is the historical review proposal. A local implementation and prepared workflow now exist; see `safe-ci-diagnostics-implementation.md`. Public source publication and external artifact retention remain unapproved. The
 failed 5821ad8 run produced runner-local Playwright traces but uploaded zero
 artifacts. Raw traces can contain credentials and response bodies even when the
 test data is synthetic. Do not upload `test-results`, trace ZIPs, screenshots,
@@ -41,6 +41,4 @@ run/SHA mismatches, unknown fields, oversized data, symlinks and traversal fail
 closed. A synthetic failed test must produce usable bounded timing and state
 evidence without any fixture secret, cookie, URL payload or raw trace content.
 
-The present repair records only fixed boolean summaries in its controlled local
-regression. It implements no artifact export or upload. Any future workflow
-publication needs its exact source and effects reviewed.
+The local implementation records only strict structured synthetic evidence and can export validated JSON locally. Its prepared workflow performs no external upload until the exact source is approved and executed in CI. Publication and retention effects require that review.

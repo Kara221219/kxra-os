@@ -38,3 +38,6 @@ supabase/.temp/
 /.env.local
 
 .next-sprint-preview/
+
+# Validated CI evidence is never source or a deployment input.
+safe-ci-diagnostics-export/

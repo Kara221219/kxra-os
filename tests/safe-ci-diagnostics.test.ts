@@ -53,7 +53,7 @@ function fixture() {
   };
   const health = { service: "kxra-os", run_id: run };
   const options = { root, environment, health, freshFixture: true, metadata };
-  const destination = path.join(root, ".safe-ci-diagnostics-export");
+  const destination = path.join(root, "safe-ci-diagnostics-export");
   const cleanup = () => {
     fs.rmSync(container, { recursive: true, force: true });
   };

@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "./tests/e2e",
   workers: 1,
   timeout: 30000,
+  reporter: [["dot"], ["./tests/support/safe-ci-reporter.ts"]],
   use: {
     baseURL: process.env.KXRA_ORIGIN || "http://127.0.0.1:3210",
     trace: "retain-on-failure",

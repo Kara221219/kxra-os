@@ -41,3 +41,19 @@ jobs:
 
       - name: Audit all dependencies
         run: npm audit
+
+      - name: Export validated synthetic failure summaries
+        id: safe_diagnostics
+        if: failure()
+        run: node scripts/export-safe-ci-diagnostics.mjs
+
+      - name: Retain validated synthetic failure summaries
+        if: failure() && steps.safe_diagnostics.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: synthetic-ci-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: safe-ci-diagnostics-export/*.json
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: false
+          overwrite: false

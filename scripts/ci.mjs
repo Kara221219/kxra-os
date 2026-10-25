@@ -4,6 +4,11 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import os from "node:os";
+import {
+  mintDiagnosticsAttestation,
+  writeHarnessDiagnostics,
+} from "./safe-ci-diagnostics-core.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const focusedTeam = process.argv.includes("--team-workspace");
@@ -32,12 +37,59 @@ function availablePort() {
   });
 }
 
+const diagnosticsEnabled =
+  process.env.GITHUB_ACTIONS === "true" && !focusedTeam;
+const diagnosticsMetadata = {
+  sourceSha: process.env.GITHUB_SHA || "",
+  githubRunId: process.env.GITHUB_RUN_ID || "",
+  githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT || "",
+};
+const diagnosticStarted = performance.now();
+const harnessEvents = [];
+let diagnosticsReady = false,
+  harnessOutcome = "FAILED";
+const elapsed = () => Math.round(performance.now() - diagnosticStarted);
+function stageFor(args) {
+  if (args[0] === "test") return "SERVICES";
+  if (args[0] !== "run") return null;
+  return (
+    {
+      "test:dependencies": "DEPENDENCIES",
+      "test:migrations": "MIGRATIONS",
+      "test:publication": "PUBLICATION",
+      "test:marketing-boundary": "MARKETING_BOUNDARY",
+      "test:e2e": "PRIVATE_BROWSER",
+      "test:marketing": "PUBLIC_BROWSER",
+      "test:restart": "RESTART",
+      "test:restore": "RESTORE",
+      build: "BUILD",
+      "test:marketing-csp": "CSP",
+      "test:build-budgets": "BUDGET",
+      "test:artifact": "ARTIFACT",
+      "test:secrets": "SECRET_SCAN",
+      "test:marketing-performance": "PERFORMANCE",
+    }[args[1]] || null
+  );
+}
+function stageEvent(stage, state, exitCode) {
+  if (diagnosticsReady && stage && harnessEvents.length < 63)
+    harnessEvents.push({
+      phase: "HARNESS_STAGE",
+      elapsedMs: elapsed(),
+      stage,
+      state,
+      exitCode,
+    });
+}
 function run(command, args, environment) {
+  const stage = stageFor(args);
+  stageEvent(stage, "BEGIN", 0);
   const result = spawnSync(command, args, {
     cwd: root,
     env: environment,
     stdio: "inherit",
   });
+  stageEvent(stage, result.status === 0 ? "PASS" : "FAIL", result.status ?? -1);
   if (result.status !== 0)
     throw Error(`${command} ${args.join(" ")} failed with ${result.status}`);
 }
@@ -52,7 +104,7 @@ async function waitForServer(origin, child, runId, timeout = 90_000) {
         signal: AbortSignal.timeout(1500),
       });
       const body = await response.json();
-      if (response.ok && body.run_id === runId) return;
+      if (response.ok && body.run_id === runId) return body;
     } catch {
       // Readiness is bounded by the deadline below.
     }
@@ -96,6 +148,7 @@ Object.assign(environment, {
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
   KXRA_CI_RUN_ID: runId,
   KXRA_NEXT_DIST_DIR: ciDistDir,
+  KXRA_SAFE_DIAGNOSTICS_ENABLED: diagnosticsEnabled ? "true" : "false",
 });
 fs.writeFileSync(
   path.join(runtime, "session-key"),
@@ -152,7 +205,23 @@ try {
       stdio: ["ignore", logHandle, logHandle],
     },
   );
-  await waitForServer(origin, application, runId);
+  const applicationHealth = await waitForServer(origin, application, runId);
+  if (diagnosticsEnabled) {
+    mintDiagnosticsAttestation({
+      root,
+      environment,
+      health: applicationHealth,
+      freshFixture: true,
+      metadata: diagnosticsMetadata,
+    });
+    diagnosticsReady = true;
+    harnessEvents.push({
+      phase: "FIXTURE_READY",
+      elapsedMs: elapsed(),
+      healthy: true,
+      fresh: true,
+    });
+  }
   marketingLogHandle = fs.openSync(path.join(runtime, "marketing.log"), "w");
   marketing = spawn(
     process.execPath,
@@ -275,7 +344,36 @@ try {
       `Hermetic CI PASS using disposable PostgreSQL ${postgresPort} and application ${applicationPort}.`,
     );
   }
+  harnessOutcome = "PASSED";
 } finally {
+  if (diagnosticsReady) {
+    try {
+      const memory = process.memoryUsage(),
+        cpu = process.resourceUsage();
+      harnessEvents.push({
+        phase: "RESOURCE_SNAPSHOT",
+        elapsedMs: elapsed(),
+        rssMiB: memory.rss / 1048576,
+        heapMiB: memory.heapUsed / 1048576,
+        load1: os.loadavg()[0],
+        cpuUserMs: cpu.userCPUTime / 1000,
+        cpuSystemMs: cpu.systemCPUTime / 1000,
+        freeMiB: os.freemem() / 1048576,
+        totalMiB: os.totalmem() / 1048576,
+        cpuCount: os.cpus().length,
+      });
+      writeHarnessDiagnostics({
+        root,
+        runtime,
+        environment,
+        metadata: diagnosticsMetadata,
+        events: harnessEvents,
+        outcome: harnessOutcome,
+      });
+    } catch {
+      console.error("SAFE_DIAGNOSTICS_CAPTURE_REJECTED");
+    }
+  }
   if (application && application.exitCode === null) {
     application.kill("SIGTERM");
     await new Promise((resolve) => {

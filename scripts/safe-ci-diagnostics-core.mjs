@@ -486,7 +486,7 @@ export function exportSafeDiagnostics({
     environment.DATABASE_URL ||
     environment.NEXT_PUBLIC_SUPABASE_URL ||
     path.resolve(destination) !==
-      path.join(path.resolve(root), ".safe-ci-diagnostics-export")
+      path.join(path.resolve(root), "safe-ci-diagnostics-export")
   )
     fail();
   const c = context(runtime),

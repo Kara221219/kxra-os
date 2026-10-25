@@ -1,8 +1,11 @@
 # Local synthetic diagnostic implementation
 
-This change implements a local collector and validating exporter. It does not
-change CI, publish source, upload artifacts, collect raw Playwright traces or
-change any application, database, credential or provider configuration.
+This locally prepared change implements a strict collector/exporter and its CI,
+reporter and test integration. No source publication or external upload has been
+performed. The prepared workflow would retain only validated synthetic JSON for
+one day after failure, and only if export succeeds. Raw Playwright artifacts stay
+runner-local. Application behavior, SQL, credentials and provider settings are
+unchanged.
 
 ## Integration contract
 
@@ -28,6 +31,8 @@ Minting occurs once in the private runtime, creating `safe-ci-diagnostics` and
 its private attestation file. Reusing an existing attestation directory fails.
 The attestation is a procedural assertion by the reviewed fixture creator, not a
 cryptographic proof of database provenance or permission to copy hosted data.
+Freshness describes the runtime/database at initial attestation, not a pristine
+DB for each test. Service and browser fixtures subsequently accumulate within it.
 
 Tests call `createSafeDiagnostics` with the same root/environment/health/metadata
 plus fixed suite, viewport and ordinal. `record` accepts only the typed strict
@@ -35,7 +40,10 @@ event union; `finish` accepts fixed outcome/failure categories and writes once.
 Record monotonic integer elapsed milliseconds. Do not pass raw exceptions,
 network headers/bodies/URLs, DOM text, test titles, filenames or customer data.
 Resource fields are bounded numeric measurements only; they do not allow process
-names, process lists or environment dumps.
+names, process lists or environment dumps. RSS/heap/CPU are for the current Node
+process, not aggregate Chromium/Next/PostgreSQL or the whole job. OS load and free
+memory are host-level. These measurements cannot by themselves prove absence or
+presence of resource pressure.
 
 `OTHER` suite and `TEST_RESULT` events support a generic failures-only reporter
 without copying test titles or paths. Source line is a bounded public integer.
@@ -69,7 +77,7 @@ node scripts/export-safe-ci-diagnostics.mjs
 ```
 
 It accepts no arguments. It reads only `.runtime/ci/safe-ci-diagnostics` and
-creates a new `.safe-ci-diagnostics-export` under its own repository. It requires
+creates a new `safe-ci-diagnostics-export` under its own repository. It requires
 the exact GitHub SHA/run/attempt and rejects hosted environment markers. It
 revalidates every summary and all bindings before creating output; only parsed,
 allowlisted JSON is copied. Existing output is never overwritten or cleaned.
@@ -82,10 +90,32 @@ must preserve the original verification/test error; callers must catch and
 separately mark diagnostics failure. They must never replace the original failure
 with a successful result, skip its assertion or upload raw files instead.
 
-Any workflow integration, immutable upload-action pin, one-day retention and
-external upload still require exact review/approval. Current code performs no
-network calls and no external upload. Root owns integrated browser/harness
-acceptance; this worker runs synthetic filesystem/schema tests only.
+The locally prepared workflow pins official actions/upload-artifact v7.0.2 to
+cf430e030ddbb5b0abf93d22962f4752f3646cd9 and uploads only the fixed nonhidden
+safe-ci-diagnostics-export/*.json directory on exporter success after failure.
+Retention is one day, hidden files are excluded, overwrite is disabled and missing
+files fail. The action definition/tag was checked through official GitHub API
+metadata. No job timeout, permission or retry setting was changed. Exact source
+publication and this future retention action still require owner approval.
+
+The core and exporter make no network calls. Integrated helpers perform bounded
+loopback health and canonical fixture reads; they make no provider/external
+requests. Case source identity is tracked passively from the exact save request
+and existing rendered Stage/Revision marker. No canonical warm-up or awaited
+sampling occurs before the original five-second waiter starts. UI/canonical
+sampling occurs only after a proposal failure or at test end, bounded to 1.5s.
+All instrumentation has some observer effect and is not a proven remote repair.
+The 90-second case limit and original five-second wait-before-click remain.
+Failure categories label where an exception is observed; event chronology is
+needed to determine where the timer actually expired.
+
+The generic reporter records only fixed suite/viewport enums, a public source-line
+integer, outcome and numeric resources for unexpected private-test failures.
+It never copies titles, paths, errors or attachments. Harness summaries record
+fixed stages and exit codes while retaining the original failed command/result.
+Later standalone dependency-audit steps remain separate from the disposable
+verification summary. Capture rejection emits a fixed warning only; export never
+falls back to raw evidence or an existing output directory.
 
 Evidence availability is bounded: failures before attestation, abrupt process
 termination/job cancellation, or a rejected capture/export can yield no summary.

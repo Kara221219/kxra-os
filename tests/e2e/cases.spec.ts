@@ -1,6 +1,50 @@
 import { test, expect, type Page } from "@playwright/test";
 import crypto from "node:crypto";
 import { knowledgeFixture } from "../support/team-knowledge";
+import {
+  matchesCaseProposal,
+  savedCaseIdentity,
+  renderedCaseVersion,
+  syntheticCaseReviewNote,
+  type CaseProposalScope,
+} from "../support/case-proposal";
+import { beginCaseDiagnostics } from "../support/case-diagnostics";
+import { testOrigin } from "../support/runtime";
+let diagnostics: Awaited<ReturnType<typeof beginCaseDiagnostics>> = null;
+const savedIds = new Map<string, string>();
+let saveListener:
+  ((request: import("@playwright/test").Request) => void) | undefined;
+test.beforeEach(async ({ page }, info) => {
+  savedIds.clear();
+  diagnostics = await beginCaseDiagnostics(info);
+  saveListener = (request) => {
+    try {
+      if (request.frame() !== page.mainFrame()) return;
+    } catch {
+      return;
+    }
+    const identity = savedCaseIdentity(request, testOrigin);
+    if (identity)
+      savedIds.set(
+        `${identity.room}/${identity.prefix}/${identity.title}`,
+        identity.sourceId,
+      );
+  };
+  page.on("request", saveListener);
+});
+test.afterEach(async ({ page }, info) => {
+  try {
+    if (diagnostics) {
+      await diagnostics.sample(page);
+      diagnostics.finish(info.status === info.expectedStatus);
+    }
+  } finally {
+    if (saveListener) page.off("request", saveListener);
+    saveListener = undefined;
+    savedIds.clear();
+    diagnostics = null;
+  }
+});
 async function enter(page: Page, room: string, view: string) {
   await page.goto("/login");
   await page.getByText("Local fixture identities", { exact: true }).click();
@@ -21,12 +65,34 @@ async function common(page: Page, label: string, title: string) {
 }
 async function reviewed(
   page: Page,
+  fixture: Pick<
+    Awaited<ReturnType<typeof knowledgeFixture>>,
+    "room" | "cookie"
+  >,
+  prefix: CaseProposalScope["prefix"],
   title: string,
   target: string,
   path?: string,
   holdProposal = false,
 ) {
   const card = page.getByRole("article", { name: title, exact: true });
+  await expect(card).toBeVisible();
+  const sourceId = savedIds.get(`${fixture.room}/${prefix}/${title}`);
+  expect(sourceId).toBeDefined();
+  const sourceVersion = renderedCaseVersion(
+    await card
+      .getByText(/^Stage [A-Z_]+ · Revision [1-9][0-9]*$/)
+      .textContent(),
+  );
+  const scope: CaseProposalScope = {
+    origin: testOrigin,
+    room: fixture.room,
+    prefix,
+    sourceId: sourceId!,
+    sourceVersion,
+    target,
+  };
+  const ordinal = diagnostics?.context(scope, fixture.cookie, title) ?? 0;
   const proposal = card.locator("details").filter({
     has: page.locator("summary").filter({ hasText: "Propose case step" }),
   });
@@ -35,17 +101,53 @@ async function reviewed(
   await card.getByLabel("Proposed stage", { exact: true }).selectOption(target);
   await card
     .getByLabel("Human review reason", { exact: true })
-    .fill("Synthetic human-reviewed record; no external action");
+    .fill(syntheticCaseReviewNote);
   const isProposal = (request: import("@playwright/test").Request) =>
-    request.method() === "POST" &&
-    new URL(request.url()).pathname.startsWith("/api/team-space/") &&
-    new URL(request.url()).pathname.endsWith("-propose") &&
-    request.postDataJSON().target_stage === target;
+    matchesCaseProposal(request, scope);
+  const endpoint = `/api/team-space/${fixture.room}/${prefix}-propose`;
+  const endpointRequest = (request: import("@playwright/test").Request) => {
+    const url = new URL(request.url());
+    return (
+      request.method() === "POST" &&
+      url.origin === new URL(testOrigin).origin &&
+      url.pathname === endpoint &&
+      !url.search
+    );
+  };
+  const observeRequest = (request: import("@playwright/test").Request) => {
+    if (endpointRequest(request))
+      diagnostics?.record({
+        phase: "REQUEST_OBSERVED",
+        elapsedMs: diagnostics.elapsed(),
+        operation: "CASE_PROPOSE",
+        ordinal,
+        matchesExpected: isProposal(request),
+      });
+  };
+  const observeResponse = (response: import("@playwright/test").Response) => {
+    if (endpointRequest(response.request()))
+      diagnostics?.record({
+        phase: "RESPONSE_OBSERVED",
+        elapsedMs: diagnostics.elapsed(),
+        operation: "CASE_PROPOSE",
+        ordinal,
+        status: response.status(),
+      });
+  };
+  page.on("request", observeRequest);
+  page.on("response", observeResponse);
+  diagnostics?.record({
+    phase: "ACTION_BEGIN",
+    elapsedMs: diagnostics.elapsed(),
+    operation: "CASE_PROPOSE",
+    ordinal,
+  });
+  let waiting: "ACTION" | "REQUEST" | "RESPONSE" = "ACTION";
   let release = () => {};
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const routePattern = "**/api/team-space/*/*-propose";
+  const routePattern = `**${endpoint}`;
   if (holdProposal)
     await page.route(routePattern, async (route) => {
       if (isProposal(route.request())) await gate;
@@ -54,12 +156,20 @@ async function reviewed(
   try {
     if (holdProposal) {
       const requested = page.waitForRequest(isProposal, { timeout: 5000 });
+      void requested.catch(() => undefined);
       await card
         .getByRole("button", {
           name: "Propose reviewed case step",
           exact: true,
         })
         .click();
+      diagnostics?.record({
+        phase: "ACTION_COMPLETE",
+        elapsedMs: diagnostics.elapsed(),
+        operation: "CASE_PROPOSE",
+        ordinal,
+      });
+      waiting = "REQUEST";
       await requested;
       await expect(
         card.getByRole("button", { name: "Working…", exact: true }),
@@ -72,19 +182,43 @@ async function reviewed(
       (response) => isProposal(response.request()),
       { timeout: 5000 },
     );
+    void acknowledged.catch(() => undefined);
     if (holdProposal) release();
-    else
+    else {
+      waiting = "ACTION";
       await card
         .getByRole("button", {
           name: "Propose reviewed case step",
           exact: true,
         })
         .click();
+      diagnostics?.record({
+        phase: "ACTION_COMPLETE",
+        elapsedMs: diagnostics.elapsed(),
+        operation: "CASE_PROPOSE",
+        ordinal,
+      });
+    }
+    waiting = "RESPONSE";
     const response = await acknowledged;
     expect(response.status()).toBe(201);
     expect((await response.json()).action_id).toMatch(/^[0-9a-f-]{36}$/i);
+  } catch (error) {
+    diagnostics?.failure(
+      error instanceof Error && error.name === "TimeoutError"
+        ? waiting === "ACTION"
+          ? "ACTION_TIMEOUT"
+          : waiting === "REQUEST"
+            ? "REQUEST_TIMEOUT"
+            : "RESPONSE_TIMEOUT"
+        : "ASSERTION",
+    );
+    await diagnostics?.sample(page);
+    throw error;
   } finally {
     release();
+    page.off("request", observeRequest);
+    page.off("response", observeResponse);
     if (holdProposal) await page.unroute(routePattern);
   }
   const review = page
@@ -148,8 +282,8 @@ test("remodeling scope and manual estimate reset review when changed and persist
     .click();
   const card = page.getByRole("article", { name, exact: true });
   await expect(card).toContainText("£1,250.45");
-  await reviewed(page, name, "ESTIMATE_DRAFT");
-  await reviewed(page, name, "SCOPE_REVIEWED");
+  await reviewed(page, f, "remodel", name, "ESTIMATE_DRAFT");
+  await reviewed(page, f, "remodel", name, "SCOPE_REVIEWED");
   await card.getByText("Edit recorded case", { exact: true }).click();
   await card
     .getByLabel("Recorded estimate (GBP)", { exact: true })
@@ -164,9 +298,9 @@ test("remodeling scope and manual estimate reset review when changed and persist
   await expect(card).toContainText("£1,300.01");
   await page.reload();
   await expect(card).toContainText("Stage ESTIMATE_DRAFT · Revision 4");
-  await reviewed(page, name, "SCOPE_REVIEWED");
-  await reviewed(page, name, "MILESTONE_PLANNED");
-  await reviewed(page, name, "HANDOFF");
+  await reviewed(page, f, "remodel", name, "SCOPE_REVIEWED");
+  await reviewed(page, f, "remodel", name, "MILESTONE_PLANNED");
+  await reviewed(page, f, "remodel", name, "HANDOFF");
   await page.reload();
   await expect(card).toContainText("Stage HANDOFF");
 });
@@ -186,7 +320,7 @@ test("private recruiting keeps an application attached to its role and records o
     .getByLabel("Review criteria", { exact: true })
     .fill("Recorded relevant experience; no ranking");
   await page.getByRole("button", { name: "Define role", exact: true }).click();
-  await reviewed(page, role, "OPEN");
+  await reviewed(page, f, "role", role, "OPEN");
   await page.getByRole("tab", { name: "Recruiting", exact: true }).click();
   await page
     .getByLabel("Open role", { exact: true })
@@ -209,7 +343,15 @@ test("private recruiting keeps an application attached to its role and records o
     card.getByRole("link", { name: role, exact: true }),
   ).toBeVisible();
   for (const target of ["REVIEW", "INTERVIEW", "DECISION_RECORDED"])
-    await reviewed(page, candidate, target, undefined, target === "REVIEW");
+    await reviewed(
+      page,
+      f,
+      "application",
+      candidate,
+      target,
+      undefined,
+      target === "REVIEW",
+    );
   await page.reload();
   await expect(card).toContainText("Stage DECISION_RECORDED · Revision 4");
   await expect(
@@ -249,9 +391,11 @@ test("travel validates dates, retries a lost acknowledgement once and resets edi
     .getByRole("button", { name: "Add travel enquiry", exact: true })
     .click();
   const card = page.getByRole("article", { name, exact: true });
-  await reviewed(page, name, "PROPOSAL_DRAFT");
+  await reviewed(page, f, "travel", name, "PROPOSAL_DRAFT");
   await reviewed(
     page,
+    f,
+    "travel",
     name,
     "REVIEWED",
     `**/api/team-space/${f.room}/travel-execute`,

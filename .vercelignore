@@ -32,3 +32,6 @@ scripts/*
 !scripts/build-email-worker.mjs
 !scripts/verify-staging-config.mjs
 !scripts/staging-config.mjs
+
+# Validated CI evidence is never source or a deployment input.
+safe-ci-diagnostics-export/
