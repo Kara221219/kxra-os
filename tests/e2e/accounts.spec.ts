@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 import fs from "node:fs";
 import { invitationTokenFromUrl } from "../../packages/authz/invitation-link";
 import { runtimeFile } from "../support/runtime";
@@ -130,14 +130,129 @@ async function createAndVerifyAccount(
   expect(rawToken).toBeTruthy();
   const networkUrls: string[] = [];
   const consoleLines: string[] = [];
-  page.on("request", (request) => networkUrls.push(request.url()));
+  const boundaryEvents: string[] = [];
+  const exchangeStatuses: number[] = [];
+  let tokenInReferrer = false;
+  let releaseExchange!: () => void;
+  const exchangeGate = new Promise<void>((resolve) => {
+    releaseExchange = resolve;
+  });
+  const heldExchange = async (route: Route) => {
+    await exchangeGate;
+    await route.continue();
+  };
+  await page.route("**/api/join/exchange", heldExchange);
+  page.on("request", (request) => {
+    networkUrls.push(request.url());
+    tokenInReferrer ||= (request.headers()["referer"] || "").includes(
+      rawToken!,
+    );
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/api/join/exchange")
+      boundaryEvents.push("EXCHANGE_REQUEST");
+    if (pathname === "/join/account") boundaryEvents.push("ACCOUNT_REQUEST");
+  });
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/join/exchange") {
+      boundaryEvents.push("EXCHANGE_RESPONSE");
+      exchangeStatuses.push(response.status());
+    }
+  });
   page.on("console", (message) => consoleLines.push(message.text()));
 
-  await page.goto(invitationUrl);
-  await expect(page).toHaveURL(/\/join\/account$/);
-  await expect(
-    page.getByRole("heading", { name: "Create your KXRA account." }),
-  ).toBeVisible();
+  let invitationResponse: Awaited<ReturnType<Page["goto"]>> = null;
+  try {
+    invitationResponse = await page.goto(invitationUrl);
+    await expect
+      .poll(() => boundaryEvents.includes("EXCHANGE_REQUEST"))
+      .toBe(true);
+    await expect(page).toHaveURL(/\/join$/);
+    expect(invitationResponse?.headers()["referrer-policy"]).toBe(
+      "no-referrer",
+    );
+    expect(
+      await page.evaluate(
+        (token) => JSON.stringify(window.history.state || null).includes(token),
+        rawToken!,
+      ),
+    ).toBe(false);
+    expect(
+      await page.evaluate(
+        (token) =>
+          JSON.stringify({ ...localStorage, ...sessionStorage }).includes(
+            token,
+          ),
+        rawToken!,
+      ),
+    ).toBe(false);
+    expect(boundaryEvents.includes("ACCOUNT_REQUEST")).toBe(false);
+  } catch (error) {
+    if (process.env.KXRA_CI_BOUNDED_OUTPUT === "true") {
+      console.log(
+        "JOIN_FLOW_GATE " +
+          JSON.stringify({
+            events: boundaryEvents.slice(0, 8),
+            statuses: exchangeStatuses.slice(0, 4),
+            atJoinRoot: new URL(page.url()).pathname === "/join",
+            atAccount: new URL(page.url()).pathname === "/join/account",
+            hashContainsToken: new URL(page.url()).hash.includes(rawToken!),
+            historyContainsToken: await page.evaluate(
+              (token) =>
+                JSON.stringify(window.history.state || null).includes(token),
+              rawToken!,
+            ),
+            invitationNoReferrer:
+              invitationResponse?.headers()["referrer-policy"] ===
+              "no-referrer",
+          }),
+      );
+    }
+    throw error;
+  } finally {
+    releaseExchange();
+  }
+  try {
+    await expect(page).toHaveURL(/\/join\/account$/);
+    await expect(
+      page.getByRole("heading", { name: "Create your KXRA account." }),
+    ).toBeVisible();
+  } catch (error) {
+    if (process.env.KXRA_CI_BOUNDED_OUTPUT === "true") {
+      const headings = await page.locator("h1").allTextContents();
+      console.log(
+        "JOIN_FLOW_BOUNDARY " +
+          JSON.stringify({
+            events: boundaryEvents.slice(0, 8),
+            statuses: exchangeStatuses.slice(0, 4),
+            invitationNoReferrer:
+              invitationResponse?.headers()["referrer-policy"] ===
+              "no-referrer",
+            unavailableHeading: headings.includes(
+              "This invitation is unavailable.",
+            ),
+            joinCookiePresent: (await page.context().cookies()).some(
+              (cookie) => cookie.name === "kxra_join_intent",
+            ),
+          }),
+      );
+    }
+    throw error;
+  }
+  await page.unroute("**/api/join/exchange", heldExchange);
+  expect(tokenInReferrer).toBe(false);
+  expect(exchangeStatuses).toEqual([200]);
+  expect(
+    boundaryEvents.filter((event) => event === "EXCHANGE_REQUEST"),
+  ).toHaveLength(1);
+  expect(boundaryEvents.indexOf("EXCHANGE_RESPONSE")).toBeLessThan(
+    boundaryEvents.indexOf("ACCOUNT_REQUEST"),
+  );
+  expect(
+    await page.evaluate(
+      (token) => JSON.stringify(window.history.state || null).includes(token),
+      rawToken!,
+    ),
+  ).toBe(false);
   expect(page.url()).not.toContain(rawToken!);
   expect(networkUrls.filter((url) => url.includes(rawToken!))).toEqual([
     invitationUrl,

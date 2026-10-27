@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { boardLenses } from "./board-lenses";
+export { boardLenses } from "./board-lenses";
 export const threadInput = z
   .object({
     request_id: z.string().uuid(),
@@ -12,43 +14,7 @@ export const messageInput = z
     body: z.string().trim().min(1).max(8000),
   })
   .strict();
-export const boardLenses = [
-  {
-    key: "customer",
-    name: "Customer advocate",
-    weight: 25,
-    question:
-      "What customer evidence supports this problem and willingness to pay?",
-  },
-  {
-    key: "commercial",
-    name: "Commercial analyst",
-    weight: 25,
-    question:
-      "What are the price, costs, cash exposure and break-even assumptions? Flag missing inputs; do not invent numbers.",
-  },
-  {
-    key: "delivery",
-    name: "Delivery operator",
-    weight: 20,
-    question:
-      "Can we deliver this with current capacity, skills and connections? What is the smallest useful test?",
-  },
-  {
-    key: "risk",
-    name: "Risk challenger",
-    weight: 20,
-    question:
-      "What could invalidate this decision? What permissions, dependencies and stop conditions matter?",
-  },
-  {
-    key: "freedom",
-    name: "Owner time steward",
-    weight: 10,
-    question:
-      "Does this improve recurring value and reduce owner workload? What maintenance does it create?",
-  },
-] as const;
+
 export const boardBriefInput = z
   .object({
     request_id: z.string().uuid(),

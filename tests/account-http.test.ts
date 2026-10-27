@@ -447,8 +447,20 @@ async function onboardPartner() {
     /Your project workspace/,
   );
 
-  const replay = await browserFetch(new Map(), invitationUrl);
-  assert.equal(replay.status, 200);
+  const replayJar: CookieJar = new Map();
+  const replay = await browserFetch(replayJar, invitationUrl);
+  assert.equal(replay.status, 307);
+  assert.equal(
+    replay.headers.get("location"),
+    `/join#token=${encodeURIComponent(rawInvitationToken)}`,
+  );
+  assert.equal(replay.headers.get("set-cookie"), null);
+  assert.equal(replayJar.size, 0);
+  assert.equal(replay.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(replay.headers.get("cache-control"), "private, no-store");
+  // A normalization GET does not consume or validate the bearer. Follow only
+  // the static path; the fragment is never sent in an HTTP request.
+  assert.equal((await browserFetch(replayJar, "/join")).status, 200);
   assert.equal(
     (await exchangeInvitation(new Map(), invitationUrl)).status,
     409,

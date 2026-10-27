@@ -1322,3 +1322,44 @@ service recovery plus explicit browser value/object restart/restore evidence.
 See ci-fixture-isolation.md for retained results, skip reasons, recovery boundaries
 and pending final-source acceptance. Public source, held staging and live state
 remain unchanged by this local repair.
+
+
+### 2026-10-27 — local Next/prebuilt compatibility checkpoint
+
+The isolated, unpublished `n16` candidate remains based on `fa600c42576b45e8908040847f466912b3cfcd5c`. Next 16.4.3, explicit Webpack builds and a baked OS deployment ID are under local validation. The original checkout, hosted services, production release, staging holds, credentials and payment state were not changed.
+
+The full generated-fixture run passed 925 service tests, service restart/restore, 98 private-browser cases with six existing viewport skips, 63 development marketing cases with one skip, browser idea/proposal/upload recovery, all three builds and marketing CSP/SRI checks. It then failed at the bundle-budget stage because Next 16 removed app-build-manifest.json. Both database phases stopped with exit 0 and all owned application processes exited. No raw server/browser diagnostic files were retained. This was NOT a complete acceptance pass.
+
+A fail-closed reader for Next 16 client-reference manifests now has 16 focused tests; it includes bootstrap chunks, ancestor CSS, every emitted page and canonical asset paths, preserving 140 KiB marketing and 200 KiB OS limits. Actual zlib gzip-level-9 measurements still fail: marketing maximum 162557 bytes against 143360, OS catch-all 231455 against 204800. No threshold was increased, and no page/bootstrap was excluded. Static production-artifact and secret scans passed separately after the failed run. Production marketing and Lighthouse acceptance have not run for this candidate. The full-run source differs from the latest tree only by the subsequently tested budget reader/tests and candidate-only canonical next-env paths plus this documentation.
+
+The invitation compatibility repair now server-normalizes path/query links to a static fragment route, starts one bounded exchange before fragment scrubbing and survives StrictMode replay. Original account/onboarding/tenant/replay checks remain, with explicit 307 normalization/privacy assertions and original POST replay=409. This is local evidence, not hosted Auth acceptance.
+
+Separate offline-build preparation passed 51 generated helper checks and 33 extracted lifecycle/verifier checks with confirmed child-group cleanup and independent review. Accelerated synthetic lifecycle tests do not establish an actual sandbox/build, artifact or hosted routing pass. No new prebuilt artifact was built, frozen or uploaded; no new candidate commit/publication was made.
+
+Next bounded work: preserve this snapshot; prefer an OS-only supported upgrade retaining verified marketing/worker versions, resolve Next per application in build/dev/CI/start commands, and remove the OS bundle excess through genuine separation/optimization without omitting delivered assets or relaxing limits. Revalidate versions, audits, typechecking, all journeys and budget coverage. Freeze an exact source only after these gates; then execute the reviewed offline build and real local navigation proof before proposing public CI/upload.
+
+
+### 2026-10-27 — narrower OS-only compatibility candidate (acceptance pending)
+
+The active isolated alternative is `n16os`; the earlier `n16` candidate and every failed receipt are preserved. Only OS/root Next is 16.4.3; marketing and email-worker retain patched15.5.28. Application-specific binary resolution covers build, dev, CI, production start and the reference workbench, with explicit Webpack only where supported. Declared/installed versions fail closed on mismatch.
+
+Pure classification values, board lenses and workspace presentation/type boundaries remove accidental client imports of server Zod schema construction. Authoritative schemas and backward exports remain; legitimate billing response/navigation validation is retained. Independent source review found no authorization/schema regression. Fourteen focused tests and typechecking passed.
+
+Fresh resolution exposed nested PostCSS8.4.31 despite the existing root override. Failed trees/locks were preserved. The independently reviewed minimal lock updates only framework/PostCSS families, preserves unrelated locked descriptors, and passes clean npm ci with unchanged SHA256 bcae4db2571c918e11c69c20f96991a3a85bd7d02896a79175ee7abd5887939a. All three apps actually resolve PostCSS8.5.28; full and production audits report0 vulnerabilities. Dependency policy now includes nested workspace nodes and rejects stale PostCSS despite the root declaration.
+
+All three local builds against that final dependency layout passed with network denied and confirmed whole-process-group cleanup. The original bundle limits pass: marketing124.3KiB/140KiB; OS199.7KiB/200KiB. OS headroom is small and remains a required full-run gate; limits and asset coverage were not relaxed. These focused/build results are not a complete final-source suite or hosted acceptance. A fresh complete generated-fixture run follows.
+
+Nothing is committed/published/deployed from this alternative. No hosted database, settings, protection, holds, credentials, providers, checkout or billing state changed. Exact-source freeze, actual prebuilt output/navigation proof, remote verification and hosted acceptance remain separate gates.
+
+
+### 2026-10-27 — OS-only full run and follow-up guard validation
+
+The complete generated-fixture run finished with exit0 at11:00:30UTC:955 service checks,98 private-browser passes/six existing skips,63 development and63 production marketing passes/one existing skip in each mode. Service and browser-created idea/proposal/upload restart/restore checks, three builds, CSP/SRI, unchanged140/200KiB bundle limits, artifact/secrets and Lighthouse budgets all passed. Both local database phases stopped with exit0 and all owned app processes exited. This is local evidence, not hosted/provider acceptance.
+
+After that run, OS explicitly disables the newly introduced optional Next development MCP/file logger. The actual outbound-restricted loopback probe returned health+login200, MCP404 and zero framework log files; its process group stopped and output was removed. Retained request logs/development traces from this task's earlier focused archives were discarded without reading/copying contents. The main CI already deletes its per-phase development directories in finally; the prior focused archives were the retention gap. Original task data/backups were not touched.
+
+Follow-up metadata guards require explicit baked-ID mode in both Next's required-server config and every Node launcher, with four new rejection cases. Budget CSS imports are parsed with TypeScript rather than a permissive source regex. These post-run changes passed34 focused checks and typechecking; do not describe them as part of the preceding955-check full run. Explicit type generation for all three app versions plus post-generation typechecking passed in a source-only snapshot with reviewed dependency links. The original initial-absence boolean was corrected/not relied upon; explicit typegen exits are the evidence.
+
+The mixed-version lock remains SHA256 bcae4db2571c918e11c69c20f96991a3a85bd7d02896a79175ee7abd5887939a and passed clean npm ci unchanged, strict nested policy and zero-vulnerability full/production audits. Schema bodies/reexports and real billing client validation remain intact. No migration, commercial terms, security/access grants, provider configuration, hosted setting, checkout, holds or production state changed.
+
+OS-only offline preparation tools passed54 helper,55 lifecycle/binding and41 scope checks against their current pinned sources. These use generated fixtures/accelerated lifecycle timing; no actual Vercel artifact or hosted routing is thereby proven. Next steps remain clean exact-source freeze, network-denied standalone build with reviewed public staging configuration, strict whole-artifact/NFT/provenance/ID checks and actual local navigation proof. Any public CI publication or protected upload needs its exact approval; no such action has occurred.

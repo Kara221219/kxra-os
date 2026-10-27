@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { classifications } from "../../../packages/domain";
+import { classifications } from "../../../packages/domain/classification-values";
 import type {
   DigitalOpportunity,
   GateAuthorization,

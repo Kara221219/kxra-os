@@ -110,11 +110,6 @@ try {
       "marketing-performance",
     );
     fs.mkdirSync(reportDirectory, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(
-      path.join(reportDirectory, `${profile.name}.json`),
-      JSON.stringify(result.lhr, null, 2) + "\n",
-      { mode: 0o600 },
-    );
     const metrics = {
       performance: score(result, "performance"),
       accessibility: score(result, "accessibility"),
@@ -122,6 +117,17 @@ try {
       cls: value(result, "cumulative-layout-shift"),
       tbtMs: value(result, "total-blocking-time"),
     };
+    fs.writeFileSync(
+      path.join(reportDirectory, `${profile.name}.json`),
+      JSON.stringify(
+        process.env.KXRA_CI_BOUNDED_OUTPUT === "true"
+          ? { profile: profile.name, metrics, rawReportRetained: false }
+          : result.lhr,
+        null,
+        2,
+      ) + "\n",
+      { mode: 0o600 },
+    );
     const failures = [
       metrics.performance < budgets.performance &&
         `performance ${metrics.performance.toFixed(2)} < ${budgets.performance}`,

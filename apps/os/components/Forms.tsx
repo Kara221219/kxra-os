@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { classifications } from "../../../packages/domain";
+import { classifications } from "../../../packages/domain/classification-values";
 function useReady() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);

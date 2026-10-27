@@ -1,3 +1,4 @@
+import { applicationNext } from "./application-next.mjs";
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -11,8 +12,9 @@ const root = path.resolve(import.meta.dirname, "..");
 const application = path.join(root, "apps", "marketing");
 const output = path.join(application, ".next");
 const command = [
-  path.join(root, "node_modules", "next", "dist", "bin", "next"),
+  applicationNext("marketing").binary,
   "build",
+  ...applicationNext("marketing").webpackArguments,
 ];
 const buildId =
   process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 40) || crypto.randomUUID();

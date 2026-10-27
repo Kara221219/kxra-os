@@ -5,6 +5,14 @@ export default {
     (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
   outputFileTracingRoot: path.resolve("../.."),
   poweredByHeader: false,
+  // Prebuilt artifacts carry their reviewed custom deployment ID. Do not depend
+  // on a second runtime environment value to reconstruct that identity.
+  experimental: {
+    runtimeServerDeploymentId: false,
+    // Keep the new development MCP server/file logger disabled. CI retains
+    // bounded diagnostics rather than raw request/browser logs.
+    mcpServer: false,
+  },
   async headers() {
     return [
       {

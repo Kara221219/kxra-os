@@ -4,7 +4,7 @@ import {
   liveWorkspacePresentation,
   type LiveWorkspaceAccess as Access,
   type OwnerLiveWorkspaceBilling,
-} from "../../../packages/workspace/live-start";
+} from "../../../packages/workspace/live-start-presentation";
 
 export function LiveWorkspaceAccess({
   access,

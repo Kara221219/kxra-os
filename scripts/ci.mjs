@@ -1,3 +1,4 @@
+import { applicationNext } from "./application-next.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -5,6 +6,7 @@ import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import os from "node:os";
+import { ciLogDestination } from "./ci-output-policy.mjs";
 import {
   ciPhaseConfiguration,
   serviceVerificationCommands,
@@ -204,12 +206,13 @@ try {
   if (!staleRejected) throw Error("Stale service passed CI readiness");
 
   run(process.execPath, ["scripts/database.mjs", "start"], environment);
-  logHandle = fs.openSync(path.join(runtime, "application.log"), "w");
+  logHandle = fs.openSync(ciLogDestination(runtime, "application.log"), "w");
   application = spawn(
     process.execPath,
     [
-      path.join(root, "node_modules", "next", "dist", "bin", "next"),
+      applicationNext("os").binary,
       "dev",
+      ...applicationNext("os").webpackArguments,
       "--hostname",
       "127.0.0.1",
       "--port",
@@ -239,12 +242,16 @@ try {
     });
     if (phase.needsServicePhase) stageEvent("SERVICES", "PASS", 0);
   }
-  marketingLogHandle = fs.openSync(path.join(runtime, "marketing.log"), "w");
+  marketingLogHandle = fs.openSync(
+    ciLogDestination(runtime, "marketing.log"),
+    "w",
+  );
   marketing = spawn(
     process.execPath,
     [
-      path.join(root, "node_modules", "next", "dist", "bin", "next"),
+      applicationNext("marketing").binary,
       "dev",
+      ...applicationNext("marketing").webpackArguments,
       "--hostname",
       "127.0.0.1",
       "--port",
@@ -333,13 +340,13 @@ try {
       KXRA_EXPECT_PRODUCTION_CSP: "true",
     };
     productionMarketingLogHandle = fs.openSync(
-      path.join(runtime, "marketing-production.log"),
+      ciLogDestination(runtime, "marketing-production.log"),
       "w",
     );
     productionMarketing = spawn(
       process.execPath,
       [
-        path.join(root, "node_modules", "next", "dist", "bin", "next"),
+        applicationNext("marketing").binary,
         "start",
         "--hostname",
         "127.0.0.1",
@@ -453,6 +460,26 @@ try {
     ["scripts/database.mjs", "stop"],
     { cwd: root, env: environment, stdio: "inherit" },
   );
+  if (process.env.KXRA_CI_BOUNDED_OUTPUT === "true")
+    fs.writeFileSync(
+      path.join(runtime, "bounded-cleanup.json"),
+      JSON.stringify({
+        postgresStopExitCode: stopped.status,
+        applicationExited:
+          !application ||
+          application.exitCode !== null ||
+          application.signalCode !== null,
+        marketingExited:
+          !marketing ||
+          marketing.exitCode !== null ||
+          marketing.signalCode !== null,
+        productionMarketingExited:
+          !productionMarketing ||
+          productionMarketing.exitCode !== null ||
+          productionMarketing.signalCode !== null,
+      }) + "\n",
+      { mode: 0o600 },
+    );
   if (stopped.status !== 0)
     console.error("Disposable PostgreSQL cleanup did not complete cleanly");
 }

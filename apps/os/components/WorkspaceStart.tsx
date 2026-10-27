@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { WorkspaceStart as Start } from "../lib/workspace-start";
 import { WorkspacePilot } from "./WorkspacePilot";
 import { LiveWorkspaceAccess } from "./LiveWorkspaceAccess";
-import { liveWorkspacePresentation } from "../../../packages/workspace/live-start";
+import { liveWorkspacePresentation } from "../../../packages/workspace/live-start-presentation";
 export function WorkspaceStart({ local }: { local: boolean }) {
   const [data, setData] = useState<Start | null>(null),
     [notice, setNotice] = useState("Checking recorded workspace state…"),

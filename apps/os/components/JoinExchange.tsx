@@ -1,14 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invitationTokenFromUrl } from "../../../packages/authz/invitation-link";
 
 export default function JoinExchange() {
   const [message, setMessage] = useState("Validating secure link…");
+  const exchange = useRef<Promise<string> | null>(null);
 
   useEffect(() => {
     let active = true;
-    const token = invitationTokenFromUrl(window.location.href);
+    // Preserve the request across StrictMode effect replay. Path/query links are
+    // first normalized server-side, so scrubbing a fragment keeps this route.
+    if (!exchange.current) {
+      const token = invitationTokenFromUrl(window.location.href);
+      exchange.current = token
+        ? fetch("/api/join/exchange", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+            credentials: "same-origin",
+            cache: "no-store",
+            referrerPolicy: "no-referrer",
+            signal: AbortSignal.timeout(10_000),
+          }).then(async (response) => {
+            const result = await response.json();
+            if (!response.ok || result.next !== "/join/account")
+              throw new Error("INVITATION_UNAVAILABLE");
+            return "/join/account";
+          })
+        : Promise.resolve("/join/account");
+    }
     const safeSearch = new URLSearchParams(window.location.search);
     safeSearch.delete("token");
     const remainingSearch = safeSearch.toString();
@@ -23,24 +44,9 @@ export default function JoinExchange() {
       `${safePath}${remainingSearch ? `?${remainingSearch}` : ""}`,
     );
 
-    if (!token) {
-      window.location.replace("/join/account");
-      return () => {
-        active = false;
-      };
-    }
-
-    void fetch("/api/join/exchange", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-      credentials: "same-origin",
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok) throw new Error("INVITATION_UNAVAILABLE");
-        if (active) window.location.replace(result.next || "/join/account");
+    void exchange.current
+      .then((next) => {
+        if (active) window.location.replace(next);
       })
       .catch(() => {
         if (!active) return;

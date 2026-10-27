@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { classifications } from "./classification-values";
+export { classifications } from "./classification-values";
 export const kinds = [
   "idea",
   "assumption",
@@ -19,17 +21,7 @@ export const kinds = [
   "blocker",
   "note",
 ] as const;
-export const classifications = [
-  "FACT",
-  "USER-SUPPLIED INFORMATION",
-  "EXTERNAL RESEARCH",
-  "ASSUMPTION",
-  "HYPOTHESIS",
-  "ESTIMATE",
-  "AI INFERENCE",
-  "DECISION",
-  "UNRESOLVED QUESTION",
-] as const;
+
 export const uuid = z.string().uuid();
 export const recordInput = z
   .object({

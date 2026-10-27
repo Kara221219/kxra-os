@@ -1,10 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { invitationFragmentPath } from "../../../../packages/authz/invitation-link";
 import JoinExchange from "../../components/JoinExchange";
 
 export const dynamic = "force-dynamic";
 export const metadata = { referrer: "no-referrer" };
 
-export default function Join() {
+export default async function Join({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string | string[] }>;
+}) {
+  const parameters = await searchParams;
+  if (parameters.token !== undefined)
+    redirect(invitationFragmentPath(parameters.token));
   return (
     <main className="join-page">
       <div className="join-card">

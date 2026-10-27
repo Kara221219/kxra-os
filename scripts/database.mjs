@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import pg from "pg";
+import { ciLogDestination } from "./ci-output-policy.mjs";
 import { importSeeds, loadSeeds, seedFixtures } from "./seed.mjs";
 const root = path.resolve(import.meta.dirname, "..");
 const runtime = path.resolve(
@@ -80,7 +81,7 @@ async function start() {
         "-D",
         data,
         "-l",
-        path.join(runtime, "postgres.log"),
+        ciLogDestination(runtime, "postgres.log"),
         "-o",
         `-k '${socket}' -p ${port} -h ''`,
         "-w",

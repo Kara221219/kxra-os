@@ -3,6 +3,15 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
+const rootManifest = JSON.parse(
+  fs.readFileSync(path.join(root, "package.json"), "utf8"),
+);
+const reviewedPostcss = rootManifest.overrides?.postcss;
+assert.equal(
+  reviewedPostcss,
+  "8.5.28",
+  "PostCSS patch pin requires explicit review",
+);
 const lock = JSON.parse(
   fs.readFileSync(path.join(root, "package-lock.json"), "utf8"),
 );
@@ -97,8 +106,13 @@ const findings = [];
 let packages = 0;
 let productionPackages = 0;
 for (const [location, descriptor] of Object.entries(lock.packages || {})) {
-  if (!location.startsWith("node_modules/") || descriptor.link) continue;
+  if (!/(?:^|\/)node_modules\//.test(location) || descriptor.link) continue;
   packages += 1;
+  if (
+    location.endsWith("node_modules/postcss") &&
+    descriptor.version !== reviewedPostcss
+  )
+    findings.push(`${location}: PostCSS patch pin mismatch`);
   if (!descriptor.dev) productionPackages += 1;
   if (!descriptor.version) findings.push(`${location}: missing locked version`);
   if (!allowedLicenses.has(descriptor.license))

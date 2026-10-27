@@ -16,3 +16,11 @@ export function invitationTokenFromUrl(value: string) {
     new URLSearchParams(url.hash.slice(1)).get("token")
   );
 }
+
+// Translate secret-bearing path/query links before rendering the static join page.
+// The fragment stays in the browser and is never sent in the next HTTP request.
+export function invitationFragmentPath(token: unknown) {
+  return typeof token === "string" && /^[A-Za-z0-9_-]{32,100}$/.test(token)
+    ? `/join#token=${encodeURIComponent(token)}`
+    : "/join/account?state=invalid";
+}

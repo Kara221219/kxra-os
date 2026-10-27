@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { boardLenses } from "../../../packages/workrooms";
+import { boardLenses } from "../../../packages/workrooms/board-lenses";
 async function post(path: string, value: unknown) {
   const response = await fetch(path, {
     method: "POST",

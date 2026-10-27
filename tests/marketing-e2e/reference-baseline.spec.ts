@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { ciScreenshotPath } from "../../scripts/ci-output-policy.mjs";
 import { createMarketingTiming } from "../support/marketing-phase-timing";
 test("reference baseline shell, samples and integrations stay local and usable", async ({
   page,
@@ -89,7 +90,9 @@ test("reference baseline shell, samples and integrations stay local and usable",
   });
   await timed("SCREENSHOT", async () => {
     await page.screenshot({
-      path: `.runtime/reference-baseline/${info.project.name}-home.png`,
+      path: ciScreenshotPath(
+        `.runtime/reference-baseline/${info.project.name}-home.png`,
+      ),
       fullPage: true,
     });
   });

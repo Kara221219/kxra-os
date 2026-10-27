@@ -1,3 +1,4 @@
+import { applicationNext } from "./application-next.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -82,13 +83,16 @@ const run = (args, env = environment) =>
     );
   });
 await run(["scripts/database.mjs", "start"]);
-const fd = fs.openSync(path.join(runtime, "application.log"), "w", 0o600);
+// Keep raw application diagnostics out of the private workbench store.
+const fd = fs.openSync(os.devNull, "w");
 const app = spawn(
   process.execPath,
   [
-    path.join(root, "node_modules/next/dist/bin/next"),
+    applicationNext("os").binary,
     "dev",
-    ...(process.argv.includes("--turbo") ? ["--turbopack"] : []),
+    ...(process.argv.includes("--turbo")
+      ? ["--turbopack"]
+      : applicationNext("os").webpackArguments),
     "--hostname",
     "127.0.0.1",
     "--port",

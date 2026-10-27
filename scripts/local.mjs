@@ -1,3 +1,4 @@
+import { applicationNext } from "./application-next.mjs";
 import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -50,8 +51,9 @@ if (!fs.existsSync(key))
 const child = spawn(
   process.execPath,
   [
-    path.join(root, "node_modules", "next", "dist", "bin", "next"),
+    applicationNext("os").binary,
     "dev",
+    ...applicationNext("os").webpackArguments,
     "--hostname",
     "127.0.0.1",
     "--port",

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   invitationActionUrl,
+  invitationFragmentPath,
   invitationTokenFromUrl,
 } from "../packages/authz/invitation-link";
 
@@ -36,4 +37,49 @@ test("invitation email links reject malformed bearer values", () => {
     () => invitationActionUrl("https://os.example.test", "too-short"),
     /INVITATION_TOKEN_INVALID/,
   );
+});
+
+test("canonical invitation redirects use a fixed fragment destination without reflecting invalid values", () => {
+  const valid = new URL(
+    invitationFragmentPath(token),
+    "https://os.example.test",
+  );
+  assert.equal(valid.origin, "https://os.example.test");
+  assert.equal(valid.pathname, "/join");
+  assert.equal(valid.search, "");
+  assert.equal(invitationTokenFromUrl(valid.href), token);
+  for (const invalid of [
+    null,
+    undefined,
+    [token],
+    "too-short",
+    "a".repeat(101),
+    "https://evil.invalid",
+    "//evil.invalid",
+    "a".repeat(32) + "\n",
+  ])
+    assert.equal(
+      invitationFragmentPath(invalid),
+      "/join/account?state=invalid",
+    );
+});
+
+test("path normalization is a private side-effect-free redirect, with no cookie creation", async () => {
+  const { GET } = await import("../apps/os/app/join/[token]/route");
+  for (const value of [token, "too-short"]) {
+    const response = await GET(
+      new Request(
+        "https://os.example.test/join/ignored?next=https://evil.invalid",
+      ),
+      { params: Promise.resolve({ token: value }) },
+    );
+    assert.equal(response.status, 307);
+    assert.equal(
+      response.headers.get("location"),
+      invitationFragmentPath(value),
+    );
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    assert.equal(response.headers.get("set-cookie"), null);
+  }
 });
