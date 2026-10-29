@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { createRecoveryConfirmationDiagnostics } from "../../../../../packages/authz/recovery-diagnostics";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { localMode, query, type Principal } from "../../../../../packages/db";
@@ -34,6 +35,8 @@ function hostedAuthClient() {
 }
 
 export async function POST(request: Request) {
+  let diagnostic:
+    ReturnType<typeof createRecoveryConfirmationDiagnostics> | undefined;
   try {
     sameOrigin(request);
     const raw = await readJson(request);
@@ -117,6 +120,7 @@ export async function POST(request: Request) {
       return privateJson({ accepted: true }, 202);
     }
 
+    diagnostic = createRecoveryConfirmationDiagnostics();
     const input = z
       .object({
         action: z.literal("confirm"),
@@ -137,12 +141,16 @@ export async function POST(request: Request) {
       .refine((value) => value.password === value.confirmation)
       .parse(raw);
     if (!localMode()) {
+      diagnostic.mark("INPUT", "MISSING_RECOVERY_INPUT");
       if (input.token) return privateJson({ error: "Reset unavailable" }, 409);
       if (!input.accessToken || !input.refreshToken || !input.intent)
         return privateJson({ error: "Reset unavailable" }, 409);
+      diagnostic.mark("VERIFY_USER");
       const client = hostedAuthClient();
       const verified = await client.auth.getUser(input.accessToken);
+      diagnostic.mark("VERIFY_CLAIMS");
       const claims = await client.auth.getClaims(input.accessToken);
+      diagnostic.mark("VERIFY_INTENT");
       const secret = process.env.KXRA_JOIN_SECRET || "";
       const intent = secret
         ? openHostedRecoveryIntent(input.intent, secret)
@@ -156,14 +164,36 @@ export async function POST(request: Request) {
         !intent ||
         !hostedRecoveryIntentMatches(intent, verified.data.user.email) ||
         !recoveryAuthenticationMatchesIntent(claims.data?.claims, intent)
-      )
+      ) {
+        // Classify only after the original combined guard, without reordering calls.
+        if (verified.error || !verified.data.user)
+          diagnostic.mark(
+            "VERIFY_USER",
+            "PROVIDER_USER_REJECTED",
+            verified.error,
+          );
+        else if (claims.error)
+          diagnostic.mark("VERIFY_CLAIMS", "CLAIMS_REJECTED", claims.error);
+        else if (
+          claims.data?.claims.sub !== verified.data.user.id ||
+          !verified.data.user.email
+        )
+          diagnostic.mark("VERIFY_CLAIMS", "IDENTITY_MISMATCH");
+        else if (!intent) diagnostic.mark("VERIFY_INTENT", "INTENT_INVALID");
+        else if (!hostedRecoveryIntentMatches(intent, verified.data.user.email))
+          diagnostic.mark("VERIFY_INTENT", "EMAIL_BINDING_MISMATCH");
+        else diagnostic.mark("VERIFY_INTENT", "RECOVERY_METHOD_INVALID");
         return privateJson({ error: "Reset unavailable" }, 409);
+      }
+      diagnostic.mark("ESTABLISH_SESSION");
       const session = await client.auth.setSession({
         access_token: input.accessToken,
         refresh_token: input.refreshToken,
       });
-      if (session.error || session.data.user?.id !== verified.data.user.id)
+      if (session.error || session.data.user?.id !== verified.data.user.id) {
+        diagnostic.mark("ESTABLISH_SESSION", "SESSION_REJECTED", session.error);
         return privateJson({ error: "Reset unavailable" }, 409);
+      }
       const identity: Principal = {
         id: verified.data.user.id,
         email: verified.data.user.email,
@@ -172,6 +202,7 @@ export async function POST(request: Request) {
         auth_time: Math.floor(Date.now() / 1000),
         source: "supabase",
       };
+      diagnostic.mark("CHECK_ELIGIBILITY");
       const profile = await query<{ account_state: string }>(
         identity,
         "select account_state from kxra.profiles where user_id=$1",
@@ -192,16 +223,29 @@ export async function POST(request: Request) {
         (!profile[0] && !invitedRecovery) ||
         (profile[0] &&
           ["SUSPENDED", "REVOKED"].includes(profile[0].account_state))
-      )
+      ) {
+        diagnostic.mark("CHECK_ELIGIBILITY", "ELIGIBILITY_DENIED");
         return privateJson({ error: "Reset unavailable" }, 409);
+      }
+      diagnostic.mark("UPDATE_PASSWORD");
+      diagnostic.attempted();
       const changed = await client.auth.updateUser({
         password: input.password,
       });
-      if (changed.error || changed.data.user?.id !== identity.id)
+      if (changed.error || changed.data.user?.id !== identity.id) {
+        diagnostic.mark(
+          "UPDATE_PASSWORD",
+          "PASSWORD_UPDATE_REJECTED",
+          changed.error,
+        );
         return privateJson({ error: "Reset unavailable" }, 409);
+      }
+      diagnostic.confirmed();
+      diagnostic.mark("AUDIT");
       // The provider change cannot be rolled back. End provider sessions even
       // if the local audit write subsequently fails.
       let auditRecorded = !profile[0];
+      let auditSucceeded = false; // Observation only; do not change existing response behavior.
       if (profile[0]) {
         try {
           await query(
@@ -209,18 +253,30 @@ export async function POST(request: Request) {
             "select kxra.record_password_event('PASSWORD_CHANGED')",
             [],
           );
+          auditSucceeded = true;
         } catch {
           auditRecorded = false;
         }
       }
+      diagnostic.mark("SIGN_OUT");
       const signedOut = await client.auth.signOut({ scope: "global" });
-      if (!auditRecorded || signedOut.error)
+      if (!auditRecorded || signedOut.error) {
+        if (signedOut.error)
+          diagnostic.mark("SIGN_OUT", "SIGN_OUT_FAILED", signedOut.error);
+        else
+          diagnostic.mark(
+            "AUDIT",
+            auditSucceeded ? "AUDIT_RESULT_UNACKNOWLEDGED" : "AUDIT_FAILED",
+          );
         return privateJson(
           { error: "Password changed; sign-in is required" },
           409,
         );
+      }
+      diagnostic.mark("COMPLETE", "SUCCESS");
       return privateJson({ next: "/login?reset=1" });
     }
+    diagnostic = undefined; // Local fixture path retains its existing behavior.
     if (!input.token) return privateJson({ error: "Reset unavailable" }, 409);
     const identity = await fakeAuthProvider().resetPassword(
       input.token,
@@ -258,13 +314,17 @@ export async function POST(request: Request) {
       next: profile[0].account_state === "ONBOARDING" ? "/onboarding" : "/os",
     });
   } catch (error) {
-    if (error instanceof z.ZodError)
+    if (error instanceof z.ZodError) {
+      diagnostic?.mark("INPUT", "INPUT_INVALID");
       return privateJson({ error: "Invalid reset request" }, 400);
+    }
     if ((error as Error).message === "PASSWORD_POLICY")
       return privateJson(
         { error: "Password does not meet the stated requirements" },
         400,
       );
     return privateJson({ error: "Reset unavailable" }, 409);
+  } finally {
+    diagnostic?.emit();
   }
 }
