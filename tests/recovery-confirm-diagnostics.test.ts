@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import { transformSync } from "esbuild";
@@ -12,10 +12,13 @@ const require = createRequire(import.meta.url);
 const routePath = "apps/os/app/api/password-reset/route.ts";
 const current = readFileSync(routePath, "utf8");
 // Differential tests execute both complete handlers with identical synthetic dependencies.
-const baseline = execFileSync(
-  "git",
-  ["show", `09c2f14abba1a3b5e1de06eb1acd4c4ad72adc2d:${routePath}`],
-  { encoding: "utf8" },
+const baseline = readFileSync(
+  "tests/fixtures/recovery-confirm-09c2f14.ts.fixture",
+  "utf8",
+);
+assert.equal(
+  createHash("sha256").update(baseline).digest("hex"),
+  "f3d5e0f5e64c89169df681a4fec2f99e7ee13c5e410f14938ae26a703ff3e32e",
 );
 const secret = "synthetic-recovery-key-".repeat(4);
 const sentinel = "PLANTED_SECRET_password_token_email_url_sql";
