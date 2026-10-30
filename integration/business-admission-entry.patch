@@ -1,0 +1,34 @@
+--- a/apps/os/app/billing/page.tsx
++++ b/apps/os/app/billing/page.tsx
+@@ -1,6 +1,7 @@
+ import { checkoutResultConfiguration } from "../../../../packages/authz/checkout-result-controller";
+ import { portalDeliveryConfiguration } from "../../../../packages/authz/portal-delivery";
+ import Link from "next/link";
++import BusinessAdmission from "../../components/BusinessAdmission";
+ import LiveBillingEntry from "../../components/LiveBillingEntry";
+ import { liveEntryController } from "../../lib/live-billing-entry";
+ 
+@@ -12,6 +13,7 @@
+     return (
+       <main>
+         <h1>Workspace billing</h1>
++        <BusinessAdmission />
+         <LiveBillingEntry
+           initial={status}
+           checkoutResultAvailable={Boolean(checkoutResultConfiguration())}
+--- a/apps/os/components/SelfServiceSignup.tsx
++++ b/apps/os/components/SelfServiceSignup.tsx
+@@ -166,6 +166,13 @@
+                 : "Create account"}
+         </button>
+       </form>
++      <p>
++        KXRA is for business customers. Before payment, you must provide business
++        details and confirm your authority to act for the business. You connect
++        and pay for your own AI-provider account and usage; provider credits are
++        not included in your workspace subscription.
++        <a href="/business-admission">Complete business details before payment</a>
++      </p>
+       <p role="status">{notice}</p>
+       <a href="/login">Already registered? Sign in</a>
+     </section>

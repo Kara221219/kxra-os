@@ -1229,3 +1229,7 @@ Independent operations review: candidate4a21b80 passes supplied21-case invocatio
 ### Local queued-grant authority correction — 2026-10-30
 
 The isolated operations follow-up rejects/hides ordinary hosted browser drains, restricts empty-grant execution to the guarded fixture mode and separates pre-grant admission from grant-bound runtime dispatch/publication. Existing on-demand runs and stop controls remain separate. Native withdrawal/atomicity/replay and existing job/schedule/provider tests passed 23/23 before one final fixture-only causal/cleanup clarification. Its exact-source rerun is pending local shared-memory capacity (initdb stopped before server start); final typecheck, formatting and OS build passed. See the operations candidate packet for source-specific evidence, preserved failures and remaining migration/billing/hosted gates. No global IPC, credentials, provider or hosted state changed.
+
+### Local business/BYOK admission candidate — 30 October 2026
+
+Prepared isolated fail-closed business declaration/eligibility candidate on d5, with no hosted actions or shared signup/checkout edits. New page/API, private policy/review schema proposal and payment fences are documented in business-admission-candidate-2026-10-30.md. Signup/billing linkage is an unapplied integration patch requiring parent/release/billing coordination. Final terms, jurisdiction/provider/tax evidence and aggregate acceptance remain gates; worldwide applications do not establish unrestricted coverage.
