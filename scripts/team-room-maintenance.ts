@@ -1,4 +1,34 @@
 import crypto from "node:crypto";
+async function boundedSummary(response: Response) {
+  const reader = response.body?.getReader();
+  if (!reader) throw Error("Maintenance summary unavailable");
+  const chunks: Uint8Array[] = [];
+  let bytes = 0,
+    expired = false;
+  const timer = setTimeout(() => {
+    expired = true;
+    void reader.cancel().catch(() => {});
+  }, 2000);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 16384 || chunks.length >= 64)
+        throw Error("Maintenance summary exceeded budget");
+      chunks.push(value);
+    }
+    if (expired) throw Error("Maintenance summary exceeded budget");
+    const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      throw Error("Maintenance summary unavailable");
+    return value as Record<string, unknown>;
+  } finally {
+    clearTimeout(timer);
+    void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 /** Finite reduction/health command. No provider credentials or database access. */
 async function main() {
   const mode = process.argv.slice(2).join(" ");
@@ -22,7 +52,7 @@ async function main() {
       {
         method: health ? "GET" : "POST",
         redirect: "error",
-        signal: AbortSignal.timeout(12000),
+        signal: AbortSignal.timeout(35000),
         headers: {
           authorization: `Bearer ${key}`,
           "content-type": "application/json",
@@ -33,7 +63,7 @@ async function main() {
       },
     );
   if (!response.ok) throw Error("Room maintenance unavailable");
-  const body = await response.json(),
+  const body = await boundedSummary(response),
     summary: Record<string, string | number | boolean> = {};
   for (const field of [
     "scopes",
@@ -57,7 +87,10 @@ async function main() {
       body[field] >= 0
     )
       summary[field] = body[field];
-  if (["OK", "STALE", "ATTENTION", "BACKLOG"].includes(body.status))
+  if (
+    typeof body.status === "string" &&
+    ["OK", "STALE", "ATTENTION", "BACKLOG"].includes(body.status)
+  )
     summary.status = body.status;
   if (typeof body.replayed === "boolean") summary.replayed = body.replayed;
   const attention =

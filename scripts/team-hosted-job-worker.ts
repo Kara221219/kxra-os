@@ -15,16 +15,19 @@ async function main() {
     origin.password
   )
     throw Error("An exact HTTPS application origin is required");
-  const response = await fetch(origin.origin + "/api/internal/room-jobs/drain", {
-    method: "POST",
-    redirect: "error",
-    signal: AbortSignal.timeout(55_000),
-    headers: {
-      authorization: `Bearer ${key}`,
-      "content-type": "application/json",
+  const response = await fetch(
+    origin.origin + "/api/internal/room-jobs/drain",
+    {
+      method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(55_000),
+      headers: {
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ request_id: crypto.randomUUID() }),
     },
-    body: JSON.stringify({ request_id: crypto.randomUUID() }),
-  });
+  );
   if (!response.ok) throw Error(`Room delivery failed (${response.status})`);
   const body = await response.json();
   console.log(

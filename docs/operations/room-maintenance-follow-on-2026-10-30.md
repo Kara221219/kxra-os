@@ -36,7 +36,7 @@ Recovery acknowledgment records **review without retry**. The job remains UNCERT
 
 ### Health and retention
 
-`/api/internal/room-jobs/maintenance` has a 10-second function budget and uses fixed private RPCs in a 5-second database transaction. POST has a 256-byte/eight-chunk/two-second body budget. GET is read-only. Both use a separately default-off maintenance capability and the existing dedicated room-worker bearer; they never need provider or database credentials at the scheduler.
+`/api/internal/room-jobs/maintenance` has a 30-second function budget and uses fixed private RPCs with a 5-second per-statement database timeout. POST has a 256-byte/eight-chunk/two-second body budget. GET is read-only. Both use a separately default-off maintenance capability and the existing dedicated room-worker bearer; they never need provider or database credentials at the scheduler.
 
 Private health exposes only aggregate status and counts, with no identities, room/grant/case/job IDs, body text or provider secrets:
 
@@ -94,7 +94,7 @@ The follow-on target function now retains the exact strict CASE from 4e68130, wi
 
 The reducer installs stored grant context, then checks grant activity, base context and the full runtime target predicate. Rollout/consent expiry or revocation therefore invalidates pending work rather than merely blocking dispatch. Native tests now include four additional withdrawal scenarios, but are NOT accepted until QA runs them in its exclusively assigned database window.
 
-Composition verification: eight pure boundary/source regressions pass and full typecheck passes. The full native final-source run remains pending, including the earlier 4e fixture-only delta and all 709 refinements. The historical 23-pass base result and eight-pass earlier maintenance result do not establish final combined acceptance.
+Composition verification: nine pure boundary/source regressions pass and full typecheck passes. The full native final-source run remains pending, including the earlier 4e fixture-only delta and all 709 refinements. The historical 23-pass base result and eight-pass earlier maintenance result do not establish final combined acceptance.
 
 ## Verification commands and remaining blocker
 
@@ -118,3 +118,8 @@ Retained evidence: `/tmp/room-maintenance-5.log` (8/8 earlier checkpoint), `/tmp
 The local resource blocker was macOS SysV shared-memory exhaustion. This task removed only two verified unattached segments from its own failed initializations, changed no kernel setting and stopped no other service. Its last owned PostgreSQL PID **58378** and regression PIDs **58316/58478/58480** are stopped. No fixture remains active. Release requested no new native cluster until its coordinated test window; that is the remaining verification blocker, not authorization to skip tests.
 
 Genuine owner/adviser decisions still include actual provider-account ownership and charging responsibility, dollar limits, technical/customer/audit retention policy, scope/expiry and the exact deployment/DB/scheduler/monitor targets. Engineering mechanisms for bounded reduction, quarantine, owner review, health, cleanup, BYOK gate and rollout gate are implemented locally; these are no longer merely roadmap items. Actual protected delivery and real provider acceptance remain separate hosted evidence and are not claimed from local tests.
+
+
+## Bounded transport follow-up
+
+The maintenance route now allows 30 seconds, rather than terminating at 10 seconds while a permitted 2-second body read, 5-second pool acquisition and bounded SQL/commit/rollback are still possible. This is a hosting-duration cap change, not a longer SQL statement allowance or any retry. The finite maintenance CLI has a 35-second fetch deadline and separately consumes at most 16 KiB / 64 chunks / 2 seconds of response body, rejects missing/non-object/malformed summaries, cancels its reader and emits only the existing finite summary. Synthetic tests exercise oversize, empty-chunk flooding, stalled body, malformed data and planted response secrets. No operation was sent. Actual hosting latency, cadence, private delivery, request cost and long-tail acknowledgement behavior still need the release acceptance window.

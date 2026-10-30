@@ -4,7 +4,9 @@ import {
   roomMaintenanceCommand,
 } from "../../../../../../../packages/workspace/room-maintenance";
 export const runtime = "nodejs";
-export const maxDuration = 10;
+// Allows 2s body + 5s pool acquisition + bounded command/commit/rollback,
+// without cutting off the reducer at the old 10s platform deadline.
+export const maxDuration = 30;
 const reply = (body: unknown, status: number) =>
   Response.json(body, {
     status,

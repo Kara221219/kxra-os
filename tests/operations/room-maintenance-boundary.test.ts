@@ -184,7 +184,7 @@ test("maintenance CLI is finite, targets exact HTTPS, distinguishes attention an
   async function run(
     mode: string,
     body: unknown,
-    options: { status?: number; origin?: string } = {},
+    options: { status?: number; origin?: string; response?: Response } = {},
   ) {
     let fetched = 0;
     const output: string[] = [],
@@ -206,6 +206,9 @@ test("maintenance CLI is finite, targets exact HTTPS, distinguishes attention an
         process: processState,
         URL,
         AbortSignal,
+        Buffer,
+        setTimeout,
+        clearTimeout,
         console: {
           log: (v: string) => output.push(v),
           error: (v: string) => errors.push(v),
@@ -223,6 +226,7 @@ test("maintenance CLI is finite, targets exact HTTPS, distinguishes attention an
             assert.deepEqual(Object.keys(JSON.parse(String(init.body))), [
               "request_id",
             ]);
+          if (options.response) return options.response;
           return new Response(JSON.stringify(body), {
             status: options.status ?? 200,
           });
@@ -255,6 +259,31 @@ test("maintenance CLI is finite, targets exact HTTPS, distinguishes attention an
   assert.equal(rejected.exit, 1);
   assert.equal(rejected.fetched, 1);
   assert.ok(!JSON.stringify(rejected).includes(secret));
+  for (const response of [
+    new Response("x".repeat(16385)),
+    new Response("[]"),
+    new Response("invalid json"),
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          for (let i = 0; i < 65; i++) controller.enqueue(new Uint8Array());
+        },
+      }),
+    ),
+  ]) {
+    const bounded = await run("--health", {}, { response });
+    assert.equal(bounded.fetched, 1);
+    assert.equal(bounded.exit, 1);
+    assert.equal(bounded.output.length, 0);
+    assert.ok(!JSON.stringify(bounded).includes(secret));
+  }
+  const timed = await run(
+    "--health",
+    {},
+    { response: new Response(new ReadableStream({ start() {} })) },
+  );
+  assert.equal(timed.exit, 1);
+  assert.equal(timed.output.length, 0);
   for (const origin of [
     "http://approved.example",
     "https://approved.example/path",
@@ -317,4 +346,22 @@ test("maintenance composition retains the strict hosted grant fence and pre-gran
   const byok = body(maintenance, "team_room_byok_allowed");
   assert.match(byok, /revoked_at is null/);
   assert.match(byok, /expires_at>now\(\)/);
+});
+
+test("maintenance route budget accommodates bounded body, pool and SQL cleanup", () => {
+  assert.match(
+    fs.readFileSync(
+      "apps/os/app/api/internal/room-jobs/maintenance/route.ts",
+      "utf8",
+    ),
+    /maxDuration = 30/,
+  );
+  assert.match(
+    fs.readFileSync("scripts/team-room-maintenance.ts", "utf8"),
+    /AbortSignal.timeout\(35000\)/,
+  );
+  assert.match(
+    fs.readFileSync("packages/workspace/room-maintenance.ts", "utf8"),
+    /statement_timeout='5s'/,
+  );
 });
