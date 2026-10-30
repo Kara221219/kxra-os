@@ -1,3 +1,4 @@
+import { seedReviewedBusinessFixture } from "./support/reviewed-business-fixture";
 import assert from "node:assert/strict";
 import { modernBillingFixture } from "./support/modern-billing-scope";
 import type {
@@ -301,31 +302,6 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       undefined,
       true,
     );
-    await db.query(
-      `insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,subscription_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time,created_at,expires_at,consumed_at,provider_session_id,result_sha256)
-   values($1,$2,$3,'CHECKOUT','CONSUMED',$4,null,'KXRA_STARTER_V1',$7,$5,0,now()-interval '2 days',now()-interval '2 days',now()-interval '2 days'+interval '20 minutes',now()-interval '2 days'+interval '1 minute',$6,$5)`,
-      [checkout, f.org, f.actor, customer, termsHash, session, mappingRevision],
-    );
-    await db.query(
-      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
-      [f.org, checkout],
-    );
-    const invoice = "in_synthetic123",
-      item = "si_synthetic123",
-      periodStart = now() - 60,
-      periodEnd = now() + 3000;
-    const reserve = async (id = uuid()) =>
-      (await call(
-        "select kxra_private.reserve_live_paid_read($1,$2,2900,$3,$4,$5,$6) value",
-        [id, f.org, invoice, item, periodStart, periodEnd],
-        "worker",
-      ))!.rows[0].value;
-    await call(
-      "select kxra_private.reserve_live_paid_read($1,$2,2900,$3,$4,$5,$6)",
-      [uuid(), f.org, invoice, item, periodStart, periodEnd],
-      "worker",
-      true,
-    );
     const termsUrl = `https://kxra.example/legal/terms?sha256=${termsHash}`,
       message = `Synthetic reviewed [terms](${termsUrl})`,
       presentation = checkoutTermsPresentationDigest({
@@ -347,6 +323,43 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
         mappingRevision,
       ],
     );
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: f.org,
+      actor_id: f.actor,
+    });
+    await db.query(
+      `insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,subscription_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time,created_at,expires_at,consumed_at,provider_session_id,result_sha256)
+   values($1,$2,$3,'CHECKOUT','CONSUMED',$4,null,'KXRA_STARTER_V1',$7,$5,0,now()-interval '2 days',now()-interval '2 days',now()-interval '2 days'+interval '20 minutes',now()-interval '2 days'+interval '1 minute',$6,$5)`,
+      [checkout, f.org, f.actor, customer, termsHash, session, mappingRevision],
+    );
+    await db.query(
+      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
+      [f.org, checkout],
+    );
+    const invoice = "in_synthetic123",
+      item = "si_synthetic123",
+      periodStart = now() - 60,
+      periodEnd = now() + 3000;
+    const reserve = async (id = uuid()) =>
+      (await call(
+        "select kxra_private.reserve_live_paid_read($1,$2,2900,$3,$4,$5,$6) value",
+        [id, f.org, invoice, item, periodStart, periodEnd],
+        "worker",
+      ))!.rows[0].value;
+    await db.query("savepoint unavailable_policy");
+    await db.query(
+      "update kxra_private.live_paid_policies set enabled=false where id=$1",
+      [policyId],
+    );
+    await call(
+      "select kxra_private.reserve_live_paid_read($1,$2,2900,$3,$4,$5,$6)",
+      [uuid(), f.org, invoice, item, periodStart, periodEnd],
+      "worker",
+      true,
+    );
+    await db.query("rollback to savepoint unavailable_policy");
+    await db.query("release savepoint unavailable_policy");
+
     async function packet(
       read: Awaited<ReturnType<typeof reserve>>,
       state: LivePaymentEvidence["state"] = "COLLECTED",
@@ -565,6 +578,10 @@ test("LIVE work/seat authority overrides grandfather fallback and fences stale p
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision,subscription_id) values($1,$2,'KXRA_TEAM_V1',$4,$3)",
       [team.org, teamCustomer, teamSub, mappingRevision],
     );
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: team.org,
+      actor_id: team.actor,
+    });
     await db.query(
       `insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,subscription_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time,created_at,expires_at,consumed_at,provider_session_id,result_sha256)
         values($1,$2,$3,'CHECKOUT','CONSUMED',$4,null,'KXRA_TEAM_V1',$7,$5,0,now()-interval '2 days',now()-interval '2 days',now()-interval '2 days'+interval '20 minutes',now()-interval '2 days'+interval '1 minute',$6,$5)`,

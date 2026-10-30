@@ -1,3 +1,4 @@
+import { seedReviewedBusinessFixture } from "./support/reviewed-business-fixture";
 import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -122,14 +123,6 @@ test("0112 eligibility before LIMIT, checked policy digest and worker-only disco
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,$3,$4)",
       [org, customer, row.offer_key, revision],
     );
-    await db.query(
-      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT',$4,$5,$6,$7,0,now())",
-      [request, org, actor, customer, row.offer_key, revision, termsHash],
-    );
-    await db.query(
-      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
-      [org, request],
-    );
 
     const origin =
       mode === "LIVE"
@@ -163,6 +156,18 @@ test("0112 eligibility before LIMIT, checked policy digest and worker-only disco
         termsHash,
         expected.presentation_sha256,
       ],
+    );
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: org,
+      actor_id: actor,
+    });
+    await db.query(
+      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT',$4,$5,$6,$7,0,now())",
+      [request, org, actor, customer, row.offer_key, revision, termsHash],
+    );
+    await db.query(
+      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
+      [org, request],
     );
 
     const found = (await worker(discover, [20, origin])).rows.map(

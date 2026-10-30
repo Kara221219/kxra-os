@@ -1,3 +1,7 @@
+import {
+  seedReviewedBusinessFixture,
+  seedSyntheticAdmissionTerms,
+} from "./support/reviewed-business-fixture";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -284,6 +288,15 @@ test("live billing: separate transactions serialize checkout, claim and uncertai
         ],
       );
     }
+    await seedSyntheticAdmissionTerms(admin.query.bind(admin), {
+      org_id: tenants[0].org,
+      content: "synthetic-concurrency-review",
+    });
+    for (const tenant of tenants)
+      await seedReviewedBusinessFixture(admin.query.bind(admin), {
+        org_id: tenant.org,
+        actor_id: tenant.actor,
+      });
     await admin.query(
       "update kxra_private.live_billing_activation set enabled=true,review_sha256=$1 where singleton",
       [hash],

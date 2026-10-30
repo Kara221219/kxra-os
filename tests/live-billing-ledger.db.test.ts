@@ -1,3 +1,7 @@
+import {
+  seedReviewedBusinessFixture,
+  seedSyntheticAdmissionTerms,
+} from "./support/reviewed-business-fixture";
 import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
@@ -50,7 +54,10 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
     otherOrg = crypto.randomUUID(),
     intent = crypto.randomUUID();
   const customer = `cus_${crypto.randomBytes(12).toString("hex")}`,
-    hash = "a".repeat(64);
+    hash = crypto
+      .createHash("sha256")
+      .update("Synthetic ledger admission terms")
+      .digest("hex");
   async function call(
     sql: string,
     values: unknown[] = [],
@@ -185,6 +192,20 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       "outsider",
       true,
     );
+    await call(
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
+      [intent],
+      "owner",
+      true,
+    );
+    await seedSyntheticAdmissionTerms(db.query.bind(db), {
+      org_id: org,
+      content: "Synthetic ledger admission terms",
+    });
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: org,
+      actor_id: owner,
+    });
     await call(
       `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],

@@ -1,3 +1,4 @@
+import { seedReviewedBusinessFixture } from "./support/reviewed-business-fixture";
 import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -200,21 +201,7 @@ test("checkout result SQL: current completed own request, fixed mode, generation
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,$3,$4)",
       [org, customer, plan.offer_key, revision],
     );
-    await db.query(
-      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT','REQUESTED',$4,$5,$6,$7,0,now())",
-      [intent, org, actor, customer, plan.offer_key, revision, terms],
-    );
-    await db.query(
-      "update kxra_private.live_billing_bindings set checkout_intent_id=$1 where org_id=$2",
-      [intent, org],
-    );
-    // Neither an unfinished request nor a completed request without approved policy is deliverable.
-    await call(actor, org, undefined, true);
-    await db.query(
-      "update kxra_private.live_billing_intents set state='CONSUMED',consumed_at=now(),provider_session_id=$2,result_sha256=$3 where id=$1",
-      [intent, session, review],
-    );
-    await call(actor, org, undefined, true);
+
     await db.query(
       "insert into kxra.legal_documents(id,org_id,document_type,audience,version,title,rendered_content,content_sha256,status,effective_at,immutable_object_key,owner_approval_reference,owner_approved_at) values($1,$2,'TERMS','CUSTOMER',1,'Synthetic result terms','Synthetic checkout terms only',$3,'APPROVED',now(),'synthetic/result-terms','SYNTHETIC_NOT_APPROVAL',now())",
       [document, org, terms],
@@ -233,6 +220,33 @@ test("checkout result SQL: current completed own request, fixed mode, generation
         presentation,
       ],
     );
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: org,
+      actor_id: actor,
+    });
+    await db.query(
+      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT','REQUESTED',$4,$5,$6,$7,0,now())",
+      [intent, org, actor, customer, plan.offer_key, revision, terms],
+    );
+    await db.query(
+      "update kxra_private.live_billing_bindings set checkout_intent_id=$1 where org_id=$2",
+      [intent, org],
+    );
+    // Neither an unfinished request nor a completed request without current policy is deliverable.
+    await call(actor, org, undefined, true);
+    await db.query(
+      "update kxra_private.live_billing_intents set state='CONSUMED',consumed_at=now(),provider_session_id=$2,result_sha256=$3 where id=$1",
+      [intent, session, review],
+    );
+    await db.query("savepoint unavailable_policy");
+    await db.query(
+      "update kxra_private.live_paid_policies set enabled=false where id=$1",
+      [policy],
+    );
+    await call(actor, org, undefined, true);
+    await db.query("rollback to savepoint unavailable_policy");
+    await db.query("release savepoint unavailable_policy");
+
     const prepared = await call();
     assert.equal(prepared.intent.state, "CONSUMED");
     assert.equal(prepared.intent.provider_session_id, session);

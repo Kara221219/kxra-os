@@ -30,6 +30,8 @@ const serviceCases = [
   "renewal-recovery-contract",
   "team-provider",
   "telemetry",
+  "reviewed-business-fixture",
+  "billing-refresh-alternative",
 ].map((name) => `tests/${name}.test.ts`);
 const databaseCases = [
   "live-stripe-customer",
@@ -39,6 +41,8 @@ const databaseCases = [
   "checkout-result",
   "live-paid-refresh",
   "billing-dispatch-discovery",
+  "checkout-dispatch-presentation",
+  "live-billing-ledger",
   "portal-reservation-concurrency",
   "billing-scheduler-budget",
 ].map((name) => `tests/${name}.db.test.ts`);

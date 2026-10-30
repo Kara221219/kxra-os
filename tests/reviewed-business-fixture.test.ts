@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   reviewedBusinessFixtureCommands,
   seedReviewedBusinessFixture,
+  seedSyntheticAdmissionTerms,
 } from "./support/reviewed-business-fixture";
 
 const id = (n: string) =>
@@ -32,6 +33,16 @@ test("fixture executor rejects ordinary/hosted execution before any database que
           return { rows: [] };
         },
         { org_id: context.org_id, actor_id: context.actor_id },
+      ),
+      /Explicit generated fixture required/,
+    );
+    await assert.rejects(
+      seedSyntheticAdmissionTerms(
+        async () => {
+          queries++;
+          return { rows: [] };
+        },
+        { org_id: context.org_id, content: "Synthetic only" },
       ),
       /Explicit generated fixture required/,
     );

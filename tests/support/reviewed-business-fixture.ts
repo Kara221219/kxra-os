@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { localModeConfiguration } from "../../packages/authz/local-guard";
+import { checkoutTermsPresentationDigest } from "../../packages/integrations/live-checkout-consent";
 import { readPrivateFixtureJson } from "./private-fixture-json";
 
 type Query = (
@@ -76,45 +77,8 @@ export async function seedReviewedBusinessFixture(
   query: Query,
   input: { org_id: string; actor_id: string },
 ) {
-  assert.ok(
-    localModeConfiguration(process.env),
-    "Explicit generated fixture required",
-  );
-  assert.ok(!process.env.VERCEL_ENV && !process.env.DATABASE_URL);
+  await requirePrivateAdmissionFixture(query);
   z.object({ org_id: z.uuid(), actor_id: z.uuid() }).strict().parse(input);
-  const runtime = fs.realpathSync(process.env.KXRA_RUNTIME!);
-  const cfg = readPrivateFixtureJson(path.join(runtime, "database.json"));
-  assert.equal(cfg.host, path.join(runtime, "socket"));
-  assert.equal(fs.realpathSync(cfg.host), cfg.host);
-  for (const directory of [runtime, cfg.host]) {
-    const metadata = fs.statSync(directory);
-    assert.equal(metadata.uid, process.getuid!());
-    assert.equal(metadata.mode & 0o077, 0);
-  }
-  assert.equal(cfg.user, "kxra_app");
-  assert.ok(!cfg.password && !cfg.connectionString && !cfg.ssl);
-  const identity = (
-    await query(
-      "select session_user,current_user,current_database() db,current_setting('listen_addresses') listen,current_setting('unix_socket_directories') socket",
-    )
-  ).rows[0];
-  assert.equal(identity.session_user, os.userInfo().username);
-  assert.equal(
-    identity.current_user,
-    identity.session_user,
-    "Use the existing fixture admin, never SET ROLE elevation",
-  );
-  assert.equal(identity.db, cfg.database);
-  assert.equal(identity.listen, "");
-  assert.equal(fs.realpathSync(identity.socket), cfg.host);
-  assert.ok(
-    (
-      await query(
-        "select to_regclass('kxra_private.business_eligibility_reviews') installed",
-      )
-    ).rows[0].installed,
-    "Install the reviewed admission proposal; do not bypass a missing migration",
-  );
   const canonical = (
     await query(
       `select b.org_id,$2::uuid actor_id,b.scope_id,b.customer_id,b.offer_key,b.mapping_revision,
@@ -195,4 +159,115 @@ export async function seedReviewedBusinessFixture(
     declaration_id: ids.declaration,
     review_id: ids.review,
   });
+}
+
+async function requirePrivateAdmissionFixture(query: Query) {
+  assert.ok(
+    localModeConfiguration(process.env),
+    "Explicit generated fixture required",
+  );
+  assert.ok(!process.env.VERCEL_ENV && !process.env.DATABASE_URL);
+  const runtime = fs.realpathSync(process.env.KXRA_RUNTIME!);
+  const cfg = readPrivateFixtureJson(path.join(runtime, "database.json"));
+  assert.equal(cfg.host, path.join(runtime, "socket"));
+  assert.equal(fs.realpathSync(cfg.host), cfg.host);
+  for (const directory of [runtime, cfg.host]) {
+    const metadata = fs.statSync(directory);
+    assert.equal(metadata.uid, process.getuid!());
+    assert.equal(metadata.mode & 0o077, 0);
+  }
+  assert.equal(cfg.user, "kxra_app");
+  assert.ok(!cfg.password && !cfg.connectionString && !cfg.ssl);
+  const identity = (
+    await query(
+      "select session_user,current_user,current_database() db,current_setting('listen_addresses') listen,current_setting('unix_socket_directories') socket",
+    )
+  ).rows[0];
+  assert.equal(identity.session_user, os.userInfo().username);
+  assert.equal(
+    identity.current_user,
+    identity.session_user,
+    "Use the existing fixture admin, never SET ROLE elevation",
+  );
+  assert.equal(identity.db, cfg.database);
+  assert.equal(identity.listen, "");
+  assert.equal(fs.realpathSync(identity.socket), cfg.host);
+  assert.ok(
+    (
+      await query(
+        "select to_regclass('kxra_private.business_eligibility_reviews') installed",
+      )
+    ).rows[0].installed,
+    "Install the reviewed admission proposal; do not bypass a missing migration",
+  );
+}
+
+/** Explicit synthetic legal/policy setup for legacy ledger/concurrency fixtures.
+ * Called once per mapping BEFORE evidence seeding. This does not repair existing
+ * policy rows or approve a real document. Its bytes must match the fixture mapping.
+ */
+export async function seedSyntheticAdmissionTerms(
+  query: Query,
+  input: { org_id: string; content: string },
+) {
+  await requirePrivateAdmissionFixture(query);
+  z.object({ org_id: z.uuid(), content: z.string().min(1).max(1000) })
+    .strict()
+    .parse(input);
+  const m = (
+    await query(
+      `select m.* from kxra_private.live_billing_bindings b
+    join kxra_private.live_billing_mappings m on m.scope_id=b.scope_id and m.offer_key=b.offer_key and m.revision=b.mapping_revision and m.enabled
+    where b.org_id=$1`,
+      [input.org_id],
+    )
+  ).rows[0];
+  assert.ok(m, "Explicit canonical mapping required");
+  const termsHash = crypto
+    .createHash("sha256")
+    .update(input.content)
+    .digest("hex");
+  assert.equal(
+    m.terms_review_sha256,
+    termsHash,
+    "Synthetic terms bytes must match the mapping",
+  );
+  assert.equal(
+    (
+      await query(
+        "select count(*)::integer n from kxra_private.live_paid_policies where scope_id=$1 and offer_key=$2 and mapping_revision=$3 and enabled",
+        [m.scope_id, m.offer_key, m.revision],
+      )
+    ).rows[0].n,
+    0,
+    "Never replace an existing policy",
+  );
+  const document = crypto.randomUUID(),
+    policy = crypto.randomUUID();
+  const terms = {
+    terms_review_sha256: termsHash,
+    terms_url: `https://kxra.example/legal/terms?sha256=${termsHash}`,
+    message: `SYNTHETIC ONLY [terms](https://kxra.example/legal/terms?sha256=${termsHash})`,
+  };
+  await query(
+    "insert into kxra.legal_documents(id,org_id,document_type,audience,version,title,rendered_content,content_sha256,status,effective_at,immutable_object_key,owner_approval_reference,owner_approved_at) values($1,$2,'TERMS','CUSTOMER',1,'Synthetic admission terms',$3,$4,'APPROVED',now(),'synthetic/admission-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())",
+    [document, input.org_id, input.content, termsHash],
+  );
+  await query(
+    `insert into kxra_private.live_paid_policies(id,revision,enabled,offer_key,mapping_revision,terms_document_id,terms_document_version,terms_url,message,activation_review_sha256,terms_review_sha256,presentation_sha256,tax_review_sha256,cancellation_review_sha256,grace_review_sha256,refund_review_sha256,trial_review_sha256,ai_review_sha256,access_rule,cancellation_mode,grace_seconds,refund_mode,trial_access,past_due_access,proof_ttl_seconds)
+    values($1,1,true,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$7,$7,$7,$7,$7,$7,'CURRENT_COLLECTED_ACTIVE_ONLY','END_OF_PAID_PERIOD',0,'DENY_ANY_REFUND',false,false,120)`,
+    [
+      policy,
+      m.offer_key,
+      m.revision,
+      document,
+      terms.terms_url,
+      terms.message,
+      m.activation_review_sha256,
+      termsHash,
+      checkoutTermsPresentationDigest(terms),
+      m.tax_review_sha256,
+    ],
+  );
+  return { document, policy };
 }
