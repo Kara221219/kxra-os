@@ -11,6 +11,10 @@ import {
   writePrivateOutput,
 } from "./private-operator-files.mjs";
 import { downloadOperatorVideo } from "./higgsfield-download";
+import {
+  operatorRequestId,
+  pollOperatorStatus,
+} from "./operator-generation-status";
 import path from "node:path";
 const directory = path.resolve(".runtime/consultancy-journey");
 const ledger = path.join(directory, "generation.json");
@@ -42,6 +46,7 @@ async function main() {
     record = JSON.parse(ledgerFile.read());
     if (!record.requestId)
       throw Error("UNCONFIRMED_SUBMISSION_REQUIRES_REVIEW");
+    operatorRequestId(record.requestId);
   } else {
     record = {
       status: "SUBMITTING",
@@ -76,6 +81,7 @@ async function main() {
     record.videoUrl = submitted.video?.url || null;
     save();
     if (!record.requestId) throw Error("REQUEST_ID_MISSING");
+    operatorRequestId(record.requestId);
     console.log(
       JSON.stringify({
         status: record.status,
@@ -97,18 +103,9 @@ async function main() {
     if (Date.now() > deadline)
       throw Error("POLL_TIMEOUT_RESUME_EXISTING_REQUEST_ONLY");
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    const response = await fetch(
-      `https://api.higgsfield.ai/requests/${encodeURIComponent(record.requestId!)}/status`,
-      {
-        headers: { Authorization: `Key ${credentials}` },
-        signal: AbortSignal.timeout(30000),
-      },
-    );
-    if (!response.ok) throw Error(`STATUS_HTTP_${response.status}`);
-    const result = await response.json();
-    record.status = String(result.status).toLowerCase();
-    record.videoUrl =
-      typeof result.video?.url === "string" ? result.video.url : null;
+    const result = await pollOperatorStatus(record.requestId, credentials);
+    record.status = result.status;
+    record.videoUrl = result.videoUrl || null;
     record.updatedAt = new Date().toISOString();
     save();
   }
