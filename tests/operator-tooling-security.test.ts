@@ -244,3 +244,183 @@ test("video download rejects redirects, non-video, declared oversize and streami
     /OUTPUT_SIZE_INVALID/,
   );
 });
+
+test("video download bounds cumulative empty reads and preserves bytes at the supported boundary", async () => {
+  const bytes = Buffer.alloc(1200, 7);
+  let empty = 0;
+  const valid = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (empty++ < 64) controller.enqueue(new Uint8Array());
+      else {
+        controller.enqueue(bytes);
+        controller.close();
+      }
+    },
+  });
+  assert.deepEqual(
+    await downloadOperatorVideo(
+      "https://video.example/clip",
+      async () => ["8.8.8.8"],
+      async () =>
+        new Response(valid, { headers: { "content-type": "video/mp4" } }),
+    ),
+    bytes,
+  );
+  let pulls = 0,
+    cancelled = false;
+  const flood = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      controller.enqueue(new Uint8Array());
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await assert.rejects(
+    downloadOperatorVideo(
+      "https://video.example/clip",
+      async () => ["8.8.8.8"],
+      async () =>
+        new Response(flood, { headers: { "content-type": "video/mp4" } }),
+    ),
+    /OUTPUT_STREAM_READ_LIMIT/,
+  );
+  assert.ok(pulls <= 66);
+  assert.equal(cancelled, true);
+});
+
+test("video download retains each emitted byte view when the source reuses its buffer", async () => {
+  const backing = Buffer.alloc(4096);
+  let part = 0;
+  const body = new ReadableStream<Uint8Array>(
+    {
+      pull(controller) {
+        if (++part <= 2) {
+          backing.fill(part);
+          controller.enqueue(backing.subarray(0, 600));
+        } else controller.close();
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const result = await downloadOperatorVideo(
+    "https://video.example/clip",
+    async () => ["8.8.8.8"],
+    async () =>
+      new Response(body, { headers: { "content-type": "video/mp4" } }),
+  );
+  assert.deepEqual(
+    result,
+    Buffer.concat([Buffer.alloc(600, 1), Buffer.alloc(600, 2)]),
+  );
+});
+
+test("video download caps tiny-chunk metadata and retains the supported read boundary", async () => {
+  const url = "https://video.example/clip";
+  let chunks = 0;
+  const valid = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (++chunks <= 65_535) controller.enqueue(new Uint8Array([5]));
+      else controller.close();
+    },
+  });
+  const result = await downloadOperatorVideo(
+    url,
+    async () => ["8.8.8.8"],
+    async () =>
+      new Response(valid, { headers: { "content-type": "video/mp4" } }),
+  );
+  assert.equal(result.length, 65_535);
+  assert.ok(result.every((byte) => byte === 5));
+  let pulls = 0,
+    cancelled = false;
+  const flood = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      controller.enqueue(new Uint8Array([1]));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await assert.rejects(
+    downloadOperatorVideo(
+      url,
+      async () => ["8.8.8.8"],
+      async () =>
+        new Response(flood, { headers: { "content-type": "video/mp4" } }),
+    ),
+    /OUTPUT_STREAM_READ_LIMIT/,
+  );
+  assert.ok(pulls <= 65_538);
+  assert.equal(cancelled, true);
+});
+
+test("video download deadline bounds stalled DNS, transport and reader without awaiting stuck cancellation", async (t) => {
+  // Keep a referenced synthetic timer so Node's test process can observe the
+  // timeout; the production contract still requests exactly sixty seconds.
+  const timers: ReturnType<typeof setTimeout>[] = [];
+  t.mock.method(AbortSignal, "timeout", (duration: number) => {
+    assert.equal(duration, 60_000);
+    const controller = new AbortController();
+    timers.push(setTimeout(() => controller.abort(), 10));
+    return controller.signal;
+  });
+  t.after(() => timers.forEach(clearTimeout));
+  const never = () => new Promise<never>(() => {});
+  await assert.rejects(
+    downloadOperatorVideo("https://video.example/clip", never),
+    /OUTPUT_DOWNLOAD_TIMEOUT/,
+  );
+  await assert.rejects(
+    downloadOperatorVideo(
+      "https://video.example/clip",
+      async () => ["8.8.8.8"],
+      never,
+    ),
+    /OUTPUT_DOWNLOAD_TIMEOUT/,
+  );
+  let cancelled = false;
+  const stalled = new ReadableStream<Uint8Array>({
+    pull: never,
+    cancel() {
+      cancelled = true;
+      return never();
+    },
+  });
+  await assert.rejects(
+    downloadOperatorVideo(
+      "https://video.example/clip",
+      async () => ["8.8.8.8"],
+      async () =>
+        new Response(stalled, { headers: { "content-type": "video/mp4" } }),
+    ),
+    /OUTPUT_DOWNLOAD_TIMEOUT/,
+  );
+  assert.equal(cancelled, true);
+  let floodedReads = 0,
+    floodCancelled = false;
+  const synchronousFlood = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      floodedReads++;
+      controller.enqueue(new Uint8Array([1]));
+    },
+    cancel() {
+      floodCancelled = true;
+    },
+  });
+  await assert.rejects(
+    downloadOperatorVideo(
+      "https://video.example/clip",
+      async () => ["8.8.8.8"],
+      async () =>
+        new Response(synchronousFlood, {
+          headers: { "content-type": "video/mp4" },
+        }),
+    ),
+    /OUTPUT_DOWNLOAD_TIMEOUT/,
+  );
+  assert.equal(floodCancelled, true);
+  assert.ok(floodedReads < 65_536);
+});

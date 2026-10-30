@@ -33,7 +33,7 @@ const pinnedVideoTransport: PinnedPublicTransport = (url, addresses, signal) =>
           response.statusCode >= 300 ||
           [204, 205].includes(response.statusCode)
         ) {
-          response.resume();
+          response.destroy();
           reject(Error("OUTPUT_DOWNLOAD_FAILED"));
           return;
         }
@@ -80,22 +80,30 @@ export async function downloadOperatorVideo(
   )
     throw Error("OUTPUT_URL_INVALID");
   const signal = AbortSignal.timeout(60_000);
-  const addresses = await Promise.race([
-    resolve(url.hostname),
-    new Promise<never>((_, reject) =>
-      signal.addEventListener(
-        "abort",
-        () => reject(Error("OUTPUT_DOWNLOAD_TIMEOUT")),
-        { once: true },
-      ),
-    ),
-  ]);
+  function beforeDeadline<T>(work: Promise<T>): Promise<T> {
+    if (signal.aborted) return Promise.reject(Error("OUTPUT_DOWNLOAD_TIMEOUT"));
+    return new Promise((resolve, reject) => {
+      const stop = () => reject(Error("OUTPUT_DOWNLOAD_TIMEOUT"));
+      signal.addEventListener("abort", stop, { once: true });
+      work.then(
+        (value) => {
+          signal.removeEventListener("abort", stop);
+          resolve(value);
+        },
+        (error) => {
+          signal.removeEventListener("abort", stop);
+          reject(error);
+        },
+      );
+    });
+  }
+  const addresses = await beforeDeadline(resolve(url.hostname));
   if (!addresses.length) throw Error("OUTPUT_ADDRESS_INVALID");
   addresses.forEach((address) => {
     if (!net.isIPv4(address)) throw Error("OUTPUT_ADDRESS_INVALID");
     assertGlobalAddress(address);
   });
-  const response = await transport(url, addresses, signal);
+  const response = await beforeDeadline(transport(url, addresses, signal));
   if (
     !response.ok ||
     !response.headers.get("content-type")?.toLowerCase().startsWith("video/") ||
@@ -103,29 +111,49 @@ export async function downloadOperatorVideo(
       response.headers.get("content-encoding") !== "identity") ||
     !response.body
   ) {
-    await response.body?.cancel();
+    void response.body?.cancel().catch(() => {});
     throw Error("OUTPUT_DOWNLOAD_FAILED");
   }
   const length = response.headers.get("content-length");
   if (length && (!/^\d+$/.test(length) || Number(length) > maximumBytes)) {
-    await response.body.cancel();
+    void response.body.cancel().catch(() => {});
     throw Error("OUTPUT_SIZE_INVALID");
   }
   const chunks: Uint8Array[] = [];
-  let size = 0;
+  let size = 0,
+    reads = 0,
+    emptyReads = 0,
+    complete = false;
   const reader = response.body.getReader();
   try {
     for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      // Byte limits alone do not bound chunk metadata or synchronous empty-read
+      // floods. These are cumulative limits, including non-consecutive empties.
+      if (++reads > 65_536) throw Error("OUTPUT_STREAM_READ_LIMIT");
+      const { done, value } = await beforeDeadline(reader.read());
+      if (done) {
+        complete = true;
+        break;
+      }
+      if (value.byteLength === 0) {
+        if (++emptyReads > 64) throw Error("OUTPUT_STREAM_READ_LIMIT");
+        continue;
+      }
       size += value.byteLength;
       if (size > maximumBytes) {
-        await reader.cancel();
         throw Error("OUTPUT_SIZE_INVALID");
       }
-      chunks.push(value);
+      // Copy only the counted view, rather than retaining an arbitrarily larger
+      // backing buffer behind a short chunk.
+      chunks.push(Buffer.from(value));
+      // Let the whole-download timer run even if an adversarial stream resolves
+      // every read synchronously. The chunk limit separately bounds memory.
+      if (reads % 128 === 0)
+        await new Promise<void>((resolve) => setImmediate(resolve));
     }
   } finally {
+    // Cancellation is requested but cannot be allowed to block the deadline.
+    if (!complete) void reader.cancel().catch(() => {});
     reader.releaseLock();
   }
   if (size < 1000) throw Error("OUTPUT_SIZE_INVALID");
