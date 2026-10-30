@@ -38,7 +38,7 @@ test("standalone installation occurs once only, and incomplete or changed fixtur
       roomSchemaDecision(false, ledger, count, receipt, "hash"),
     );
 });
-test("0114 must preserve exact base then maintenance source, not stale or inverted proposals", () => {
+test("0114 requires canonical reviewed SQL and rejects injected statements at every boundary", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "kxra-schema-source-"));
   try {
     fs.mkdirSync(path.join(root, "proposals"));
@@ -54,12 +54,22 @@ test("0114 must preserve exact base then maintenance source, not stale or invert
     const plain = roomSchemaSources(root);
     assert.equal(plain.migrationSource, null);
     const migration = path.join(root, "supabase/migrations", roomMigrationName);
-    fs.writeFileSync(migration, plain.proposals.join("\n"));
-    assert.ok(roomSchemaSources(root).migrationSource);
+    const [base, maintenance] = plain.proposals.map((source) => source.trim());
+    const canonical = base + "\n\n" + maintenance;
+    for (const sql of [canonical, " \n\t" + canonical + "\n\t "]) {
+      fs.writeFileSync(migration, sql);
+      assert.ok(roomSchemaSources(root).migrationSource);
+    }
+    const injected = "revoke all on schema kxra from authenticated;";
     for (const sql of [
       plain.proposals.toReversed().join("\n"),
       plain.proposals[0],
       "stale source",
+      injected + "\n" + canonical,
+      base + "\n" + injected + "\n" + maintenance,
+      canonical + "\n" + injected,
+      base + "\n" + maintenance,
+      base + "\n\n\n" + maintenance,
     ]) {
       fs.writeFileSync(migration, sql);
       assert.throws(() => roomSchemaSources(root));
