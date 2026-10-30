@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import vm from "node:vm";
 import { transformSync } from "esbuild";
 import * as recovery from "../packages/authz/recovery-intent";
+import * as stepup from "../packages/authz/recovery-stepup";
 import * as diagnostics from "../packages/authz/recovery-diagnostics";
 
 const require = createRequire(import.meta.url);
@@ -46,7 +47,14 @@ type Scenario = {
   originError?: boolean;
   logThrows?: boolean;
   logRejects?: boolean;
-  action?: "request";
+  action?: "request" | "reauthenticate";
+  mfa?: boolean;
+  mfaInvalid?: boolean;
+  mfaCrossUser?: boolean;
+  mfaCrossSession?: boolean;
+  rateDenied?: boolean;
+  nonceError?: boolean;
+  sessionClaimMismatch?: boolean;
   local?: boolean;
 };
 
@@ -55,8 +63,13 @@ async function invoke(source: string, scenario: Scenario) {
   const events: unknown[] = [];
   const now = Math.floor(Date.now() / 1000);
   const normalUser = { id, email };
+  const sessionKey = "12345678-1234-4123-8123-123456789012";
+  let currentToken = "a".repeat(120);
+  let mfaVerified = false;
   const claims = scenario.claims ?? {
     sub: id,
+    session_id: "12345678-1234-4123-8123-123456789012",
+    aal: "aal1",
     amr: [{ method: "recovery", timestamp: now }],
   };
   const step = async <T>(name: string, value: T): Promise<T> => {
@@ -72,9 +85,30 @@ async function invoke(source: string, scenario: Scenario) {
         },
         error: scenario.step === "getUser:error" ? scenario.error : null,
       }),
-    getClaims: () =>
+    getClaims: (token?: string) =>
       step("getClaims", {
-        data: { claims },
+        data: {
+          claims:
+            token === "upgraded-token"
+              ? {
+                  ...claims,
+                  sub: scenario.mfaCrossUser ? "other" : id,
+                  session_id: scenario.mfaCrossSession
+                    ? "22345678-1234-4123-8123-123456789012"
+                    : sessionKey,
+                  aal: "aal2",
+                  amr: [
+                    ...((claims.amr as object[]) ?? []),
+                    { method: "totp", timestamp: now },
+                  ],
+                }
+              : {
+                  ...claims,
+                  ...(scenario.sessionClaimMismatch
+                    ? { session_id: "wrong-session" }
+                    : {}),
+                },
+        },
         error: scenario.step === "getClaims:error" ? scenario.error : null,
       }),
     setSession: () =>
@@ -82,10 +116,61 @@ async function invoke(source: string, scenario: Scenario) {
         data: { user: { id: scenario.sessionId ?? id } },
         error: scenario.step === "setSession:error" ? scenario.error : null,
       }),
-    updateUser: () =>
-      step("updateUser", {
+    updateUser: (attributes: { password: string; nonce?: string }) => {
+      if (attributes.nonce) calls.push("nonceForwarded");
+      if (scenario.mfa)
+        assert.equal(
+          mfaVerified,
+          true,
+          "no password update before provider MFA success",
+        );
+      return step("updateUser", {
         data: { user: { id: scenario.updateId ?? id } },
         error: scenario.step === "updateUser:error" ? scenario.error : null,
+      });
+    },
+    getSession: async () => ({
+      data: { session: { access_token: currentToken, user: normalUser } },
+      error: null,
+    }),
+    mfa: {
+      getAuthenticatorAssuranceLevel: async () => ({
+        data: {
+          currentLevel: currentToken === "upgraded-token" ? "aal2" : "aal1",
+          nextLevel: scenario.mfa ? "aal2" : "aal1",
+        },
+        error: null,
+      }),
+      listFactors: async () => ({
+        data: {
+          all: [
+            {
+              id: "32345678-1234-4123-8123-123456789012",
+              factor_type: "totp",
+              status: "verified",
+            },
+          ],
+        },
+        error: null,
+      }),
+      challengeAndVerify: async ({ code }: { code: string }) => {
+        calls.push("mfaChallenge");
+        if (scenario.mfaInvalid || code !== "123456")
+          return {
+            data: null,
+            error: providerError("mfa_verification_failed"),
+          };
+        mfaVerified = true;
+        currentToken = "upgraded-token";
+        return {
+          data: { access_token: currentToken, user: normalUser },
+          error: null,
+        };
+      },
+    },
+    reauthenticate: async () =>
+      step("reauthenticate", {
+        error: scenario.nonceError ? providerError("unexpected_failure") : null,
       }),
     signOut: () =>
       step("signOut", {
@@ -113,7 +198,7 @@ async function invoke(source: string, scenario: Scenario) {
         localMode: () => scenario.local ?? false,
         query: async (_actor: unknown, sql: string) => {
           if (sql.includes("consume_rate_limit"))
-            return step("rateLimit", [{ allowed: true }]);
+            return step("rateLimit", [{ allowed: !scenario.rateDenied }]);
           if (sql.includes("account_state"))
             return step(
               "profile",
@@ -161,6 +246,7 @@ async function invoke(source: string, scenario: Scenario) {
             },
           }),
       };
+    if (name.endsWith("authz/recovery-stepup")) return stepup;
     if (name.endsWith("authz/recovery-intent")) return recovery;
     if (name.endsWith("authz/recovery-diagnostics")) return diagnostics;
     throw Error(`Unexpected synthetic import ${name}`);
@@ -182,15 +268,23 @@ async function invoke(source: string, scenario: Scenario) {
   const rawInput =
     scenario.action === "request"
       ? { action: "request", email }
-      : {
-          action: "confirm",
-          accessToken: "a".repeat(120),
-          refreshToken: "abc123def456",
-          intent: recovery.sealHostedRecoveryIntent(email, secret),
-          password: `SyntheticPassword-${sentinel}`,
-          confirmation: `SyntheticPassword-${sentinel}`,
-          ...scenario.input,
-        };
+      : scenario.action === "reauthenticate"
+        ? {
+            action: "reauthenticate",
+            accessToken: "a".repeat(120),
+            refreshToken: "abc123def456",
+            intent: recovery.sealHostedRecoveryIntent(email, secret),
+            ...scenario.input,
+          }
+        : {
+            action: "confirm",
+            accessToken: "a".repeat(120),
+            refreshToken: "abc123def456",
+            intent: recovery.sealHostedRecoveryIntent(email, secret),
+            password: `SyntheticPassword-${sentinel}`,
+            confirmation: `SyntheticPassword-${sentinel}`,
+            ...scenario.input,
+          };
   const request = new Request("http://127.0.0.1:3000/api/password-reset", {
     method: "POST",
     headers: {
@@ -238,11 +332,11 @@ const cases: Array<{
   stage?: string;
 }> = [
   {
-    name: "existing profile audit acknowledgement bug preserved",
+    name: "existing profile audit acknowledgement corrected",
     scenario: {},
-    reason: "AUDIT_RESULT_UNACKNOWLEDGED",
+    reason: "SUCCESS",
     state: "PROVIDER_CONFIRMED_CHANGED",
-    stage: "AUDIT",
+    stage: "COMPLETE",
   },
   {
     name: "invited account success",
@@ -457,11 +551,31 @@ for (const entry of cases)
   test(`actual route differential: ${entry.name}`, async () => {
     const before = await invoke(baseline, entry.scenario);
     const after = await invoke(current, entry.scenario);
-    assert.deepEqual(
-      { ...after, events: [] },
-      { ...before, events: [] },
-      "response, headers and security/provider/database call order unchanged",
+    // Intended changes: verified current-session reads, rate limits, fresh
+    // eligibility check, explicit step-up response and audit acknowledgement.
+    // Every original guard/provider call still appears in the same order.
+    let cursor = 0;
+    for (const call of after.calls) if (call === before.calls[cursor]) cursor++;
+    assert.equal(
+      cursor,
+      before.calls.length,
+      "original security calls remain ordered",
     );
+    assert.deepEqual(after.headers, before.headers);
+    const requirement =
+      entry.scenario.step === "updateUser:error"
+        ? stepup.recoveryProviderRequirement(entry.scenario.error)
+        : "OTHER";
+    if (requirement !== "OTHER") {
+      assert.equal(after.status, 409);
+      assert.equal(after.body.recoveryStep, requirement);
+    } else if (entry.reason === "SUCCESS") {
+      assert.equal(after.status, 200);
+      assert.equal(after.body.next, "/login?reset=1");
+    } else {
+      assert.equal(after.status, before.status);
+      assert.deepEqual(after.body, before.body);
+    }
     const events = after.events as Array<
       [string, diagnostics.RecoveryDiagnostic]
     >;
@@ -622,4 +736,107 @@ test("pathological logger thenables and non-numeric/out-of-range status cannot e
     assert.equal(events[0].providerStatus, null);
     assert.equal(JSON.stringify(events).includes(sentinel), false);
   }
+});
+
+test("recovery without factor proof requests MFA and never updates or sends email", async () => {
+  const r = await invoke(current, { mfa: true });
+  assert.equal(r.status, 409);
+  assert.equal(r.body.recoveryStep, "TOTP");
+  assert.equal(r.calls.includes("updateUser"), false);
+  assert.equal(r.calls.includes("reauthenticate"), false);
+});
+test("same-request bound recovery plus existing factor succeeds", async () => {
+  const r = await invoke(current, { mfa: true, input: { mfaCode: "123456" } });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.next, "/login?reset=1");
+  assert.equal(r.calls.filter((x) => x === "updateUser").length, 1);
+  assert.ok(r.calls.indexOf("mfaChallenge") < r.calls.indexOf("updateUser"));
+});
+for (const [name, scenario] of Object.entries({
+  invalid: { mfaInvalid: true },
+  crossUser: { mfaCrossUser: true },
+  crossSession: { mfaCrossSession: true },
+}))
+  test(`MFA ${name} never updates`, async () => {
+    const r = await invoke(current, {
+      mfa: true,
+      input: { mfaCode: "123456" },
+      ...scenario,
+    });
+    assert.equal(r.status, 409);
+    assert.equal(r.calls.includes("updateUser"), false);
+  });
+test("explicit nonce request alone sends once without password update", async () => {
+  const r = await invoke(current, { action: "reauthenticate" });
+  assert.equal(r.status, 202);
+  assert.equal(r.calls.filter((x) => x === "reauthenticate").length, 1);
+  assert.equal(r.calls.includes("updateUser"), false);
+  assert.equal(r.events.length, 0);
+});
+for (const [name, scenario] of Object.entries({
+  revoked: { profile: "REVOKED" },
+  limited: { rateDenied: true },
+  wrongSession: { sessionClaimMismatch: true },
+  tamperedIntent: { input: { intent: "x".repeat(120) } },
+  passwordIncluded: { input: { password: "SyntheticPassword123" } },
+}))
+  test(`nonce action ${name} cannot send`, async () => {
+    const r = await invoke(current, { action: "reauthenticate", ...scenario });
+    assert.equal(r.calls.includes("reauthenticate"), false);
+    assert.equal(r.calls.includes("updateUser"), false);
+  });
+test("MFA plus nonce forwarded only in validated confirmation", async () => {
+  const r = await invoke(current, {
+    mfa: true,
+    input: { mfaCode: "123456", nonce: "654321" },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.calls.filter((x) => x === "nonceForwarded").length, 1);
+  assert.equal(r.calls.includes("reauthenticate"), false);
+});
+test("unknown provider401 stays generic without nonce/MFA send", async () => {
+  const r = await invoke(current, {
+    step: "updateUser:error",
+    error: providerError("unmapped"),
+  });
+  assert.equal(r.status, 409);
+  assert.equal(r.body.error, "Reset unavailable");
+  assert.equal(r.body.recoveryStep, undefined);
+  assert.equal(r.calls.includes("reauthenticate"), false);
+});
+
+test("invalid and replayed nonce errors never trigger another send or acknowledge change", async () => {
+  for (const code of [
+    "reauthentication_needed",
+    "reauthentication_not_valid",
+  ]) {
+    const r = await invoke(current, {
+      input: { nonce: "123456" },
+      step: "updateUser:error",
+      error: providerError(code, 422),
+    });
+    assert.equal(r.status, 409);
+    assert.equal(r.body.recoveryStep, "NONCE");
+    assert.equal(r.calls.includes("reauthenticate"), false);
+    assert.equal(r.calls.includes("audit"), false);
+    assert.equal(
+      (r.events as any)[0][1].credentialState,
+      "ATTEMPTED_UNCONFIRMED",
+    );
+  }
+});
+test("malformed nonce never reaches provider or sends", async () => {
+  const r = await invoke(current, { input: { nonce: sentinel } });
+  assert.equal(r.status, 400);
+  assert.equal(r.calls.includes("updateUser"), false);
+  assert.equal(r.calls.includes("reauthenticate"), false);
+});
+test("revoked/replayed recovery session never reaches password mutation", async () => {
+  const r = await invoke(current, {
+    step: "getUser:error",
+    error: providerError("session_not_found"),
+  });
+  assert.equal(r.status, 409);
+  assert.equal(r.calls.includes("updateUser"), false);
+  assert.equal(r.calls.includes("reauthenticate"), false);
 });

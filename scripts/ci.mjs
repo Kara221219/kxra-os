@@ -327,6 +327,13 @@ try {
     run("npm", ["run", "test:restore", "--", "--browser-proof"], environment);
 
     run("npm", ["run", "build"], productionEnvironment);
+    // Actual production-rendered recovery UI, with synthetic intercepted API
+    // responses, native Chromium sandbox and bounded owned-process cleanup.
+    run(
+      process.execPath,
+      ["scripts/verify-recovery-stepup-forms.mjs"],
+      productionEnvironment,
+    );
     run("npm", ["run", "test:marketing-csp"], productionEnvironment);
     run("npm", ["run", "test:build-budgets"], productionEnvironment);
     run("npm", ["run", "test:artifact"], productionEnvironment);

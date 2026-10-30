@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 
+class RecoveryResponseError extends Error {
+  constructor(
+    message: string,
+    readonly recoveryStep?: "TOTP" | "NONCE",
+  ) {
+    super(message);
+  }
+}
 async function post(data: unknown) {
   const response = await fetch("/api/password-reset", {
     method: "POST",
@@ -9,7 +17,13 @@ async function post(data: unknown) {
     body: JSON.stringify(data),
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Request unavailable");
+  if (!response.ok)
+    throw new RecoveryResponseError(
+      typeof result.error === "string" ? result.error : "Request unavailable",
+      result.recoveryStep === "TOTP" || result.recoveryStep === "NONCE"
+        ? result.recoveryStep
+        : undefined,
+    );
   return result;
 }
 
@@ -65,11 +79,15 @@ export function PasswordResetConfirmForm({
 }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [needsMfa, setNeedsMfa] = useState(false);
+  const [needsNonce, setNeedsNonce] = useState(false);
+  const [nonceRequested, setNonceRequested] = useState(false);
   return (
     <form
       onSubmit={async (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
+        const form = event.currentTarget;
+        const data = new FormData(form);
         const password = String(data.get("password") || "");
         const confirmation = String(data.get("confirmation") || "");
         if (password !== confirmation) {
@@ -84,9 +102,21 @@ export function PasswordResetConfirmForm({
             ...(recoverySession || {}),
             password,
             confirmation,
+            ...(needsMfa && data.get("mfaCode")
+              ? { mfaCode: data.get("mfaCode") }
+              : {}),
+            ...(needsNonce && data.get("nonce")
+              ? { nonce: data.get("nonce") }
+              : {}),
           });
           window.location.assign(result.next || "/os");
         } catch (error) {
+          if (error instanceof RecoveryResponseError) {
+            if (error.recoveryStep === "TOTP") setNeedsMfa(true);
+            if (error.recoveryStep === "NONCE") setNeedsNonce(true);
+          }
+          const code = form.elements.namedItem("mfaCode");
+          if (code instanceof HTMLInputElement) code.value = "";
           setMessage(
             error instanceof Error ? error.message : "Reset unavailable",
           );
@@ -118,7 +148,65 @@ export function PasswordResetConfirmForm({
           required
         />
       </label>
-      <button disabled={busy}>{busy ? "Updating…" : "Set new password"}</button>
+      {needsMfa && (
+        <label>
+          Existing authenticator code
+          <input
+            name="mfaCode"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            minLength={6}
+            maxLength={6}
+            required
+          />
+        </label>
+      )}
+      {needsNonce && recoverySession && (
+        <>
+          <p>
+            Request a verification code, then enter it below. This sends a
+            separate verification email.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await post({ action: "reauthenticate", ...recoverySession });
+                setNonceRequested(true);
+                setMessage(
+                  "The provider accepted the verification request. Check your email for its code.",
+                );
+              } catch {
+                setMessage("Verification request unavailable");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Send verification code
+          </button>
+          {nonceRequested && (
+            <label>
+              Email verification code
+              <input
+                name="nonce"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6,10}"
+                minLength={6}
+                maxLength={10}
+                required
+              />
+            </label>
+          )}
+        </>
+      )}
+      <button disabled={busy || (needsNonce && !nonceRequested)}>
+        {busy ? "Updating…" : "Set new password"}
+      </button>
       {message && (
         <p className="error" role="alert">
           {message}
