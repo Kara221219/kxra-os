@@ -1,6 +1,10 @@
 // Production-rendered UI with synthetic intercepted API responses only.
 import { chromium } from "@playwright/test";
 import { applicationNext } from "./application-next.mjs";
+import {
+  recoveryBrowserLaunchOptions,
+  recoveryBrowserFailureCategory,
+} from "./recovery-ui-browser.mjs";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -36,6 +40,7 @@ let server,
   cleanup = false;
 let startupBytes = 0;
 let routeAnnouncerCollisionObserved = false;
+let browserFailureCategory = null;
 let activeCase = "STARTUP",
   actionPhase = "STARTUP";
 const groupExists = () => {
@@ -243,15 +248,30 @@ try {
     await new Promise((r) => setTimeout(r, 150));
   }
   assert.ok(ready, "LOCAL_SERVER_STARTUP_BOUND");
-  browserServer = await chromium.launchServer({
-    host: "127.0.0.1",
-    headless: true,
-    chromiumSandbox: true,
-    env,
-    timeout: 30000,
-  });
+  actionPhase = "BROWSER_LAUNCH";
+  try {
+    browserServer = await chromium.launchServer(
+      recoveryBrowserLaunchOptions(
+        process.platform,
+        process.env.GITHUB_ACTIONS,
+        env,
+      ),
+    );
+  } catch (error) {
+    browserFailureCategory = recoveryBrowserFailureCategory(error);
+    throw Error("BROWSER_STARTUP_FAILED");
+  }
   browserPid = browserServer.process().pid;
-  browser = await bounded(chromium.connect(browserServer.wsEndpoint()), 10000);
+  actionPhase = "BROWSER_CONNECT";
+  try {
+    browser = await bounded(
+      chromium.connect(browserServer.wsEndpoint()),
+      10000,
+    );
+  } catch (error) {
+    browserFailureCategory = recoveryBrowserFailureCategory(error);
+    throw Error("BROWSER_STARTUP_FAILED");
+  }
   const run = async () => {
     for (const viewport of [
       { width: 1280, height: 800 },
@@ -432,6 +452,7 @@ try {
               ? "ASSERTION"
               : "OTHER",
         rawErrorDiscarded: true,
+        browserFailureCategory,
         cleanupVerified: cleanup,
       }),
     );
