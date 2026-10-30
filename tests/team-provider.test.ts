@@ -9,8 +9,83 @@ import {
   generate,
   resolveProviderAddress,
   secureTransport,
+  connectionInput,
   type Connection,
 } from "../packages/workspace/provider";
+test("new real connections require customer-cost acknowledgement and reject header control bytes", () => {
+  const value = {
+    name: "Customer account",
+    provider: "OPENAI",
+    model: "chosen-model",
+    key: "SYNTHETIC_CUSTOMER_KEY",
+  };
+  assert.throws(() => connectionInput.parse(value));
+  assert.equal(
+    connectionInput.parse({ ...value, customer_billed_acknowledged: true })
+      .customer_billed_acknowledged,
+    true,
+  );
+  assert.throws(() =>
+    connectionInput.parse({
+      ...value,
+      key: "synthetic\r\ninjected",
+      customer_billed_acknowledged: true,
+    }),
+  );
+  assert.equal(
+    connectionInput.parse({
+      name: "Fixture",
+      provider: "FIXTURE",
+      model: "fixture-draft",
+      key: "local-fixture",
+    }).provider,
+    "FIXTURE",
+  );
+});
+
+test("provider boundary rejects key echoes and replaces raw errors without a platform-key fallback", async (t) => {
+  const oldFlag = process.env.KXRA_AI_ENABLED;
+  const oldVault = process.env.KXRA_MODEL_VAULT_KEY;
+  t.after(() => {
+    if (oldFlag === undefined) delete process.env.KXRA_AI_ENABLED;
+    else process.env.KXRA_AI_ENABLED = oldFlag;
+    if (oldVault === undefined) delete process.env.KXRA_MODEL_VAULT_KEY;
+    else process.env.KXRA_MODEL_VAULT_KEY = oldVault;
+  });
+  process.env.KXRA_AI_ENABLED = "true";
+  process.env.KXRA_MODEL_VAULT_KEY = crypto.randomBytes(32).toString("hex");
+  const key = "SYNTHETIC_CUSTOMER_KEY_DO_NOT_RETURN";
+  const c: Connection = {
+    id: "c",
+    org_id: "o",
+    provider: "OPENAI",
+    model: "chosen-model",
+    endpoint_id: "",
+    encrypted_key: sealKey(key, "o:c"),
+  };
+  await assert.rejects(
+    generate(c, "system", "context", async () => ({
+      choices: [{ finish_reason: "stop", message: { content: key } }],
+    })),
+    /^Error: PROVIDER_INVALID_RESPONSE$/,
+  );
+  await assert.rejects(
+    generate(c, "system", "context", async () => {
+      throw Error(`provider error with ${key}`);
+    }),
+    /^Error: PROVIDER_UNAVAILABLE$/,
+  );
+  let calls = 0;
+  await assert.rejects(
+    generate({ ...c, org_id: "foreign" }, "system", "context", async () => {
+      calls++;
+      return {};
+    }),
+    /^Error: PROVIDER_UNAVAILABLE$/,
+  );
+  assert.equal(calls, 0);
+  delete process.env.KXRA_MODEL_VAULT_KEY;
+});
 test("provider DNS lookup has a deadline, pins a public address and rejects mixed private answers", async () => {
   assert.equal(
     await resolveProviderAddress("example.test", async () => [

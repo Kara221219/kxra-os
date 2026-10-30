@@ -28,6 +28,8 @@ const serviceCases = [
   "billing-read-allowance",
   "billing-scheduler-budget",
   "renewal-recovery-contract",
+  "team-provider",
+  "telemetry",
 ].map((name) => `tests/${name}.test.ts`);
 const databaseCases = [
   "live-stripe-customer",

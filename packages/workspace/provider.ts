@@ -26,9 +26,19 @@ export const connectionInput = z
       .string()
       .regex(/^[a-zA-Z0-9_-]{0,80}$/)
       .default(""),
-    key: z.string().min(1).max(8000),
+    key: z
+      .string()
+      .min(1)
+      .max(8000)
+      .refine((value) => !/[\r\n\0]/.test(value)),
+    customer_billed_acknowledged: z.boolean().default(false),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) =>
+      value.provider === "FIXTURE" || value.customer_billed_acknowledged,
+    "CUSTOMER_PROVIDER_COST_ACKNOWLEDGEMENT_REQUIRED",
+  );
 export type Connection = {
   id: string;
   org_id: string;
@@ -204,7 +214,7 @@ export const secureTransport: Transport = async (url, headers, body) => {
     request.end(JSON.stringify(body));
   });
 };
-export async function generate(
+async function generateWithCustomerKey(
   c: Connection,
   system: string,
   context: string,
@@ -317,7 +327,41 @@ export async function generate(
     input_tokens = v.usage?.prompt_tokens || 0;
     output_tokens = v.usage?.completion_tokens || 0;
   }
-  if (!output.trim() || output.length > 12000)
+  if (!output.trim() || output.length > 12000 || output.includes(key))
     throw Error("PROVIDER_INVALID_RESPONSE");
   return { output, input_tokens, output_tokens };
+}
+
+/** Never allow provider/decryption/schema exceptions containing a customer's
+ * key, headers or response body to escape this boundary. No platform-key
+ * fallback is used if the customer's encrypted connection cannot be opened. */
+export async function generate(
+  c: Connection,
+  system: string,
+  context: string,
+  transport: Transport = secureTransport,
+) {
+  try {
+    return await generateWithCustomerKey(c, system, context, transport);
+  } catch (error) {
+    const allowed = new Set([
+      "VAULT_NOT_CONFIGURED",
+      "ENDPOINT_NOT_CONFIGURED",
+      "ENDPOINT_REJECTED",
+      "PROVIDER_RATE_LIMIT",
+      "PROVIDER_REJECTED",
+      "PROVIDER_TIMEOUT",
+      "PROVIDER_UNAVAILABLE",
+      "PROVIDER_RESPONSE_TOO_LARGE",
+      "PROVIDER_INVALID_RESPONSE",
+      "PROVIDER_INCOMPLETE",
+    ]);
+    const code =
+      error instanceof Error && allowed.has(error.message)
+        ? error.message
+        : error instanceof z.ZodError
+          ? "PROVIDER_INVALID_RESPONSE"
+          : "PROVIDER_UNAVAILABLE";
+    throw Error(code);
+  }
 }

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { CustomerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
 const roomViews = [
   "conversation",
   "tasks",
@@ -50,6 +51,7 @@ export function TeamWorkspace({
   candidates = [],
   isOrgOwner = false,
   knowledge,
+  aiPolicy,
 }: {
   rooms: TeamRoom[];
   projects: Project[];
@@ -61,6 +63,7 @@ export function TeamWorkspace({
   isOrgOwner?: boolean;
   candidates?: { account_id: string; display_name: string }[];
   knowledge?: Awaited<ReturnType<typeof teamKnowledge>>;
+  aiPolicy: CustomerAiPolicy;
 }) {
   const router = useRouter(),
     search = useSearchParams(),
@@ -332,7 +335,11 @@ export function TeamWorkspace({
                   />
                 </label>
               </ActionForm>
-              <ConnectionManager connections={connections} local={local} />
+              <ConnectionManager
+                connections={connections}
+                local={local}
+                aiPolicy={aiPolicy}
+              />
             </>
           ) : (
             <>
@@ -703,6 +710,7 @@ export function TeamWorkspace({
                       </ActionForm>
                     )}
                     <ConnectionManager
+                      aiPolicy={aiPolicy}
                       connections={connections}
                       local={local}
                     />
@@ -909,18 +917,26 @@ export function TeamWorkspace({
 function ConnectionManager({
   connections,
   local,
+  aiPolicy,
 }: {
   connections: ModelConnection[];
   local: boolean;
+  aiPolicy: CustomerAiPolicy;
 }) {
   return (
     <details className="panel">
       <summary>Model connections ({connections.length})</summary>
       <p>
-        Keys are stored encrypted on the server and are never returned to the
-        browser. Connections belong to you; only agents you explicitly attach
-        may use them.
+        Connections belong to you; only agents you explicitly attach may use
+        them.
       </p>
+      {!local && (
+        <>
+          <p>{aiPolicy.billing}</p>
+          <p>{aiPolicy.dataFlow}</p>
+          <p id="byok-key-handling">{aiPolicy.keyHandling}</p>
+        </>
+      )}
       {connections.map((c) => (
         <div className="team-message" key={c.id}>
           <strong>
@@ -944,6 +960,8 @@ function ConnectionManager({
           model: d.get("model"),
           endpoint_id: d.get("endpoint_id") || "",
           key: d.get("key"),
+          customer_billed_acknowledged:
+            d.get("customer_billed_acknowledged") === "on",
         })}
       >
         <label>
@@ -983,9 +1001,22 @@ function ConnectionManager({
             name="key"
             required
             autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            aria-describedby={local ? undefined : "byok-key-handling"}
             defaultValue={local ? "local-fixture" : ""}
           />
         </label>
+        {!local && (
+          <label>
+            <input
+              type="checkbox"
+              name="customer_billed_acknowledged"
+              required
+            />
+            {aiPolicy.acknowledgement}
+          </label>
+        )}
         <p>
           {local
             ? "Use the generated demonstration model. Real keys are rejected here."

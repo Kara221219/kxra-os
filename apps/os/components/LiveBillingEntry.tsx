@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { approvedCatalogue } from "../../../packages/workspace/approved-catalogue";
+import { customerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
 import { openBillingResult } from "../../../packages/workspace/billing-navigation";
 import {
   liveEntryStatus,
@@ -157,6 +158,7 @@ export default function LiveBillingEntry({
         Choose a monthly workspace plan. We’ll confirm your subscription after
         payment is processed.
       </p>
+      <p>{customerAiPolicy.billing}</p>
       <label>
         Workspace plan{" "}
         <select

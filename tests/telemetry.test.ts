@@ -55,3 +55,34 @@ test("telemetry fails closed for identity, content, secrets and unbounded values
     telemetryEnvelope("not-an-event" as never, { outcome: "ok" }),
   );
 });
+
+test("unknown-format BYOK values cannot hide in otherwise allowed categorical fields", () => {
+  for (const key of [
+    "provider",
+    "operation",
+    "outcome",
+    "environment",
+    "release",
+    "route_id",
+    "duration_bucket",
+    "status_code",
+  ]) {
+    for (const secret of [
+      "AIza_SYNTHETIC_NOT_A_REAL_PROVIDER_KEY",
+      "synthetic-opaque-customer-key-value",
+    ]) {
+      assert.throws(() =>
+        telemetryEnvelope("worker.run.completed", { [key]: secret }),
+      );
+    }
+  }
+  assert.equal(
+    telemetryEnvelope("worker.run.completed", {
+      provider: "GOOGLE",
+      operation: "generate",
+      outcome: "ok",
+      status_code: 200,
+    }).metadata.provider,
+    "GOOGLE",
+  );
+});

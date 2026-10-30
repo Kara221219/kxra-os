@@ -25,6 +25,54 @@ const forbiddenKey =
   /(email|phone|name|address|message|prompt|content|token|secret|password|cookie|authorization|file|identity|user|member|partner|project)/i;
 const forbiddenValue =
   /(bearer\s+|sk[-_][a-z0-9]|eyJ[a-zA-Z0-9_-]{8,}\.|-----BEGIN|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/i;
+// Field names alone cannot prevent an unknown-format API key being placed in
+// e.g. provider/operation. Keep categorical values closed too; no free text.
+const categories: Record<string, readonly string[]> = {
+  route_id: [
+    "public-enquiry",
+    "http",
+    "team-space",
+    "billing-dispatch",
+    "billing-refresh",
+    "billing-webhook",
+  ],
+  operation: [
+    "read",
+    "write",
+    "request",
+    "enquiry",
+    "connect",
+    "disconnect",
+    "generate",
+    "dispatch",
+    "refresh",
+    "webhook",
+  ],
+  outcome: [
+    "accepted",
+    "rejected",
+    "ok",
+    "failed",
+    "unavailable",
+    "disabled",
+    "eligible",
+    "denied",
+    "unverified",
+  ],
+  duration_bucket: ["under-250ms", "250ms-1s", "1s-5s", "5s-30s", "over-30s"],
+  provider: [
+    "OPENAI",
+    "ANTHROPIC",
+    "GOOGLE",
+    "OPENROUTER",
+    "COMPATIBLE",
+    "FIXTURE",
+    "STRIPE",
+    "RESEND",
+    "NONE",
+  ],
+  environment: ["production", "staging", "development", "test", "local"],
+};
 
 export type TelemetryEnvelope = Readonly<{
   schema: "KXRA_TELEMETRY_V1";
@@ -37,6 +85,26 @@ export type TelemetryEnvelope = Readonly<{
 function cleanValue(key: string, value: unknown): MetadataValue {
   if (!allowedMetadata.has(key) || forbiddenKey.test(key))
     throw Error("TELEMETRY_FIELD_NOT_ALLOWED");
+  if (key === "status_code") {
+    if (
+      typeof value !== "number" ||
+      !Number.isInteger(value) ||
+      value < 100 ||
+      value > 599
+    )
+      throw Error("TELEMETRY_VALUE_REJECTED");
+    return value;
+  }
+  if (
+    categories[key] &&
+    (typeof value !== "string" || !categories[key].includes(value))
+  )
+    throw Error("TELEMETRY_VALUE_REJECTED");
+  if (
+    key === "release" &&
+    (typeof value !== "string" || !/^[a-f0-9]{40}$/.test(value))
+  )
+    throw Error("TELEMETRY_VALUE_REJECTED");
   if (!["string", "number", "boolean"].includes(typeof value))
     throw Error("TELEMETRY_VALUE_NOT_SCALAR");
   if (typeof value === "string") {
@@ -46,7 +114,12 @@ function cleanValue(key: string, value: unknown): MetadataValue {
       /[\r\n]/.test(value)
     )
       throw Error("TELEMETRY_VALUE_REJECTED");
-    if (key === "request_id" && !/^[0-9a-f-]{36}$/i.test(value))
+    if (
+      key === "request_id" &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value,
+      )
+    )
       throw Error("TELEMETRY_REQUEST_ID_INVALID");
   }
   if (typeof value === "number" && !Number.isFinite(value))

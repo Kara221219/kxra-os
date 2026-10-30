@@ -1,6 +1,7 @@
 import { hostedRoomOperations } from "../../../../../packages/workspace/hosted-operations";
 import { WorkspaceStart } from "../../../components/WorkspaceStart";
 import { TeamWorkspace } from "../../../components/TeamWorkspace";
+import { customerAiPolicy } from "../../../../../packages/workspace/customer-ai-policy";
 import { teamKnowledge } from "../../../lib/team-knowledge";
 import { TeamTasks, TeamRuns } from "../../../components/TeamOperations";
 import {
@@ -562,6 +563,7 @@ export default async function Workspace({
         : [];
       content = (
         <TeamWorkspace
+          aiPolicy={customerAiPolicy}
           knowledge={
             detail ? await teamKnowledge(a, detail.room.id) : undefined
           }
