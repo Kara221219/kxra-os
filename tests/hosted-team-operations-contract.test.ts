@@ -5,6 +5,7 @@ import vm from "node:vm";
 import { createRequire } from "node:module";
 import { transformSync } from "esbuild";
 import { z } from "zod";
+import crypto from "node:crypto";
 
 const require = createRequire(import.meta.url);
 class HttpError extends Error {
@@ -31,7 +32,10 @@ function load(file: string, fixture: boolean, hosted: boolean) {
       scoped: unexpected,
     },
     "./auth": { HttpError },
-    "./team-room": { teamRoom: unexpected },
+    "./team-room": { teamRoom: async () => ({}) },
+    "../../../packages/workspace/hosted-operations": {
+      hostedRoomOperations: () => false,
+    },
     "./team-workspace": {
       teamRunInput: z.object({ request_id: z.string().uuid() }),
       prepareTeamAgent: unexpected,
@@ -63,7 +67,7 @@ for (const [fixture, hosted] of [
   [false, true],
   [true, true],
 ]) {
-  test(`unactivated hosted jobs/schedules reject before room, database or provider work: fixture=${fixture}, hosted=${hosted}`, async () => {
+  test(`unactivated hosted jobs/schedules reject before database or provider work: fixture=${fixture}, hosted=${hosted}`, async () => {
     for (const [file, methods] of [
       ["apps/os/lib/team-jobs.ts", ["enqueueTeamJob", "drainTeamJobs"]],
       [
@@ -74,7 +78,17 @@ for (const [fixture, hosted] of [
       const loaded = load(file, fixture, hosted);
       for (const method of methods)
         await assert.rejects(
-          loaded.api[method]({}, "not-a-resource", {}),
+          loaded.api[method](
+            {},
+            "not-a-resource",
+            method === "reviewTeamSchedule"
+              ? {
+                  schedule_id: crypto.randomUUID(),
+                  version: 1,
+                  action: "ACTIVATE",
+                }
+              : {},
+          ),
           (error: unknown) =>
             error instanceof HttpError &&
             error.status === 503 &&
