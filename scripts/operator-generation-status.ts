@@ -27,39 +27,93 @@ export async function pollOperatorStatus(
 ) {
   const requestId = operatorRequestId(savedRequestId);
   if (!credentials) throw Error("CREDENTIAL_REQUIRED");
-  const response = await transport(
-    `https://api.higgsfield.ai/requests/${requestId}/status`,
-    {
-      headers: { Authorization: `Key ${credentials}` },
-      redirect: "error",
-      signal: AbortSignal.timeout(30_000),
-    },
+  const signal = AbortSignal.timeout(30_000);
+  function cancelBody(response: Response) {
+    // An uncooperative stream cancellation must not extend the deadline.
+    void response.body?.cancel().catch(() => {});
+  }
+  function beforeDeadline<T>(
+    start: () => Promise<T>,
+    late?: (value: T) => void,
+  ): Promise<T> {
+    if (signal.aborted) return Promise.reject(Error("STATUS_RESPONSE_TIMEOUT"));
+    return new Promise((resolve, reject) => {
+      const stop = () => reject(Error("STATUS_RESPONSE_TIMEOUT"));
+      signal.addEventListener("abort", stop, { once: true });
+      let work: Promise<T>;
+      try {
+        work = start();
+      } catch (error) {
+        signal.removeEventListener("abort", stop);
+        reject(error);
+        return;
+      }
+      work.then(
+        (value) => {
+          signal.removeEventListener("abort", stop);
+          if (signal.aborted) {
+            late?.(value);
+            reject(Error("STATUS_RESPONSE_TIMEOUT"));
+          } else resolve(value);
+        },
+        (error) => {
+          signal.removeEventListener("abort", stop);
+          reject(error);
+        },
+      );
+    });
+  }
+  const response = await beforeDeadline(
+    () =>
+      transport(`https://api.higgsfield.ai/requests/${requestId}/status`, {
+        headers: { Authorization: `Key ${credentials}` },
+        redirect: "error",
+        signal,
+      }),
+    cancelBody,
   );
   if (!response.ok || response.redirected || !response.body) {
-    await response.body?.cancel();
+    cancelBody(response);
     throw Error("STATUS_RESPONSE_INVALID");
   }
   const maximumBytes = 65_536;
   const length = response.headers.get("content-length");
   if (length && (!/^\d+$/.test(length) || Number(length) > maximumBytes)) {
-    await response.body.cancel();
+    cancelBody(response);
     throw Error("STATUS_RESPONSE_TOO_LARGE");
   }
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
-  let size = 0;
+  let size = 0,
+    reads = 0,
+    emptyReads = 0,
+    complete = false;
   try {
     for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      // Status metadata is at most64KiB,64 cumulative empty reads and4096
+      // total reads including EOF. Extremely fragmented valid responses fail
+      // closed rather than allocating unbounded per-chunk metadata.
+      if (++reads > 4096) throw Error("STATUS_RESPONSE_READ_LIMIT");
+      const { done, value } = await beforeDeadline(() => reader.read());
+      if (done) {
+        complete = true;
+        break;
+      }
+      if (value.byteLength === 0) {
+        if (++emptyReads > 64) throw Error("STATUS_RESPONSE_READ_LIMIT");
+        continue;
+      }
       size += value.byteLength;
       if (size > maximumBytes) {
-        await reader.cancel();
         throw Error("STATUS_RESPONSE_TOO_LARGE");
       }
-      chunks.push(value);
+      chunks.push(Buffer.from(value));
+      // Allow the timer to fire even when each read resolves synchronously.
+      if (reads % 128 === 0)
+        await new Promise<void>((resolve) => setImmediate(resolve));
     }
   } finally {
+    if (!complete) void reader.cancel().catch(() => {});
     reader.releaseLock();
   }
   let result;
