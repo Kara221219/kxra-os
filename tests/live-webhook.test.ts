@@ -266,6 +266,85 @@ test("raw size/deadline gates run before signature parsing or persistence and ca
   assert.equal((await handler(declared)).status, 400);
 });
 
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const) {
+  test(`${mode}: empty-chunk flood cancels before scope lookup or persistence`, async () => {
+    let reads = 0,
+      cancelled = false,
+      calls = 0;
+    const create =
+      mode === "LIVE"
+        ? createLiveWebhookHandler
+        : createStagingSandboxWebhookHandler;
+    const handler = create({
+      configuration: () => ({ ...endpoint, execution: undefined }),
+      loadExecutionScope: async () => {
+        calls++;
+        throw Error("must not read database");
+      },
+      record: async () => {
+        calls++;
+      },
+    });
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        reads++;
+        controller.enqueue(new Uint8Array());
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const response = await handler(
+      new Request(
+        `${endpoint.origin}/api/webhooks/${mode === "LIVE" ? "workspace-live" : "workspace-sandbox"}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: stream,
+          duplex: "half",
+        } as RequestInit,
+      ),
+    );
+    assert.equal(response.status, 400);
+    assert.equal(cancelled, true);
+    assert.ok(reads <= 66);
+    assert.equal(calls, 0);
+  });
+}
+
+test("bounded empty chunks preserve the signed raw bytes", async () => {
+  const good = signed(fixture());
+  let recorded = 0;
+  const handler = createLiveWebhookHandler({
+    configuration: () => endpoint,
+    now: () => now,
+    record: async () => {
+      recorded++;
+    },
+  });
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (let i = 0; i < 64; i++) controller.enqueue(new Uint8Array());
+      controller.enqueue(new Uint8Array(good.raw.subarray(0, 20)));
+      controller.enqueue(new Uint8Array(good.raw.subarray(20)));
+      controller.close();
+    },
+  });
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": good.signature,
+      },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(recorded, 1);
+});
+
 test("modern sandbox verifies original false mode through the same webhook engine; production rejects it", async () => {
   const f = modernBillingFixture("STAGING_SANDBOX");
   const ep = {

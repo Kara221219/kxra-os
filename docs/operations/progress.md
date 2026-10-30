@@ -1,3 +1,11 @@
+## 30 October — billing customer acceptance (isolated local candidate)
+
+Based on `b4ea429bc30864f93b17e88bb17104b2b727d188`, this candidate bounds synchronous empty-chunk floods before modern live/sandbox webhook HMAC/database work, with exact-byte success and both-mode rejection tests. Missing modern environment example names are now default-off/empty. A pure non-secret capacity planner exposes the one-subject/55-second HTTP receipt budget against migration0110's60-second due-discovery window and30-second cooldown; it cannot schedule, enable billing or claim hosted acceptance.
+
+All424 focused checks pass:289 billing service,112 signup/admission/portal/scope,9 native LIVE,9 native STAGING_SANDBOX and5 capacity checks, zero skips. Native modes used separate fresh PG17 Unix-socket clusters; both stopped. Root typecheck, changed-file formatting, OS production build, locked dependency policy, disabled public snapshot and913-file secret scan pass. The initial signup database batch lacked fixture context and correctly failed closed; its complete fixture rerun passed. No Auth/recovery edits, shared-checkout changes, provider calls, credentials, public push/deploy, alias/settings changes, emails or real charges.
+
+[Billing launch acceptance](billing-launch-acceptance-2026-10-30.md) records the approved £29/£79/£199 workspace prices,1/5/15 seats and no-added-VAT instruction; exact configuration inventory; synthetic/hosted acceptance split; owner terms and worker-budget decisions; and protection/scheduler/provider gates. Deployed key mode remains uninspected. Checkout remains disabled and paying-customer readiness is not established. Release owner must integrate the exact local commit, run aggregate CI/CodeQL and prove provider sandbox lifecycle, webhook reachability and timely continuous proof refresh before any activation.
+
 ## 30 October — existing hosted room operations candidate (local only)
 
 An isolated candidate on `d2ee06b` adds a default-off bounded hosted wakeup, target-bound expiring execution grants, authenticated stop controls independent of admissions, and an executable fresh-fixture suite. It reuses the existing requester/tenant/room claims, leases, pinned inputs, retry limits, cancellation and uncertain-outcome semantics; it does not create a new agent product. Billing refresh scheduling is untouched.

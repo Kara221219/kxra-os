@@ -1,3 +1,9 @@
+## 30 October — billing acceptance handoff
+
+An isolated billing candidate based on `b4ea429bc30864f93b17e88bb17104b2b727d188` repairs unbounded empty-chunk reads in modern live/sandbox webhook handling, retains signed raw bytes, adds missing default-off environment example settings and a strict non-secret refresh-capacity planner. It contains no Auth/recovery or migration edits. Focused424/424 checks, root types/changed formatting, OS production build, dependency/publication/secret guards pass; owned native LIVE/sandbox PG17 fixtures stopped. These are local receipts, not aggregate or provider acceptance.
+
+Release integration and remaining gates are explicit in [billing launch acceptance](billing-launch-acceptance-2026-10-30.md). Critical operating constraint: HTTP refresh handles one workspace;55-second receipt budget plus a full minute polling wait can exceed the60-second due window. Longer proof TTL alone does not solve it. Prove approved scheduler concurrency/cadence/cost and synchronized backlog freshness, plus an authorized webhook path through All Deployments protection. Existing Stripe catalogue/Test resources must be reused. Deployed credentials/mode, provider lifecycle, exact private policy/mapping and owner commercial/payout requirements remain unverified. No push/deploy/settings/financial operation or customer contact was performed; all hosted integration belongs to release owner.
+
 ## 30 October — existing hosted room operations candidate (local only)
 
 An isolated candidate on `d2ee06b` adds a default-off bounded hosted wakeup, target-bound expiring execution grants, authenticated stop controls independent of admissions, and an executable fresh-fixture suite. It reuses the existing requester/tenant/room claims, leases, pinned inputs, retry limits, cancellation and uncertain-outcome semantics; it does not create a new agent product. Billing refresh scheduling is untouched.

@@ -1,0 +1,64 @@
+# Billing customer acceptance — 30 October 2026
+
+This is a local engineering handoff from isolated source base `b4ea429bc30864f93b17e88bb17104b2b727d188`. It does not activate checkout, modify Auth, deploy, provision Stripe, create credentials, contact customers or charge a card. The release owner controls integration and all hosted work. Current protected staging supplied by that owner is `https://kxra-os-staging-fa600c4.vercel.app`.
+
+## Commercial scope and current evidence
+
+The user's approved monthly prices are Starter £29/one seat, Team £79/five seats and Business £199/fifteen seats, per workspace. No VAT is to be added; the user reports not being VAT registered. These instructions supersede older proposal wording in October22 notes. The approved catalogue and Test counterparts were already verified upstream: reuse their exact IDs, never recreate them or migrate the legacy FinanceVision price/customers. This checkout has not inspected deployed key mode, current payout status, bank details or private customer records. Historic dashboard status is not fresh launch evidence.
+
+The static approved catalogue intentionally still records checkout/live charges false, unspecified tax and unset trial/refund/AI budgets. Private reviewed activation/mapping/policy records are separate prerequisites; setting a frontend flag or seeing a product in Stripe does not establish those records. Do not silently fill policy digests or change tax/account settings to make a preflight pass.
+
+## Implemented repair and configuration inventory
+
+The modern live/sandbox webhook reader now cancels after more than64 empty chunks, independently of its1MB byte limit. A synchronous empty-chunk stream can otherwise starve its deadline timer before HMAC verification. Tests exercise both handlers, prove no scope lookup/persistence on rejection, and retain successful verification of split raw bytes with64 empty chunks. No signed bytes are normalized or rewritten.
+
+`.env.example` now includes the previously missing modern dispatch, checkout-result, portal, HTTP-worker and sandbox-webhook settings, all default-off or empty. It is a name inventory, never a deployed configuration. `assessBillingRefreshCapacity` is a strict, non-secret, pure planning function; it neither reads the environment nor starts a worker. Positive results explicitly deny hosted acceptance/activation authority.
+
+| Target | Required existing configuration / proof | Status in this work |
+| --- | --- | --- |
+| OS signup | `KXRA_HOSTED_SELF_SERVICE_ENABLED`, matching Supabase URL/publishable key, existing signup hook/admission and current legal requirements | Synthetic admission/recovery/isolation tested; hosted fresh-user journey pending release owner |
+| OS billing entry | `KXRA_LIVE_BILLING_ENTRY_ENABLED`, verified own customer admin, recent MFA, exact legal acceptance, canonical scope/mapping | Synthetic guards tested; no hosted activation |
+| Dispatch worker | `KXRA_MODERN_BILLING_DISPATCH_ENABLED`, `STRIPE_SECRET_KEY`, `KXRA_BILLING_WORKER_DATABASE_URL`, `KXRA_DATABASE_CA_CERT_BASE64`, exact environment/project/origin | Local claims and role identity tested; deployed values/mode uninspected |
+| OS result delivery | `KXRA_CHECKOUT_RESULT_ENABLED`, same scope/key/origin; own consumed intent/current generation | Synthetic read/result/URL fences tested; hosted redirect pending |
+| OS cancellation portal | `KXRA_PORTAL_DELIVERY_ENABLED` plus dispatch profile, reviewed `bpc_` mapping with cancellation-only policy | Synthetic reservation/delivery tested; actual portal configuration pending |
+| Live snapshot webhook | `/api/webhooks/workspace-live`, `KXRA_LIVE_WEBHOOK_{ENABLED,PROJECT_REF,ACCOUNT_ID,MODE,API_VERSION,SECRET}`, existing runner+CA | HMAC/replay/wakeup tests pass locally; provider destination/delivery pending |
+| Sandbox snapshot webhook | `/api/webhooks/workspace-sandbox`, matching `KXRA_MODERN_SANDBOX_WEBHOOK_*` settings | Original false-mode tests pass locally; provider sandbox destination/delivery pending |
+| Worker HTTP | `/api/billing/dispatch` and `/api/billing/refresh` in email-worker app; `KXRA_BILLING_HTTP_ENABLED`, dedicated `KXRA_BILLING_WORKER_TRIGGER_SECRET`, operation-specific flags | Packaged injected-core tests pass; exact hosted artifact/header scheduler pending |
+| Paid refresh | `KXRA_PAID_PROOF_REFRESH_ENABLED`, reviewed policy/consent/tax/mapping and fresh collected-card evidence | Native leases/CAS and denial paths tested in both modes; continuous hosted freshness pending |
+
+Production scope is project `lhbgeucifxxcdoyrnesf`, origin `https://app.kxra-group.com`, LIVE mode, KXRA Stripe account `acct_1Rv3KdC84VkhhIRz`. Staging is project `jlebgsxcvhvpueuibekd`, approved staging origin, STAGING_SANDBOX mode and its separately attested account/catalogue. The existing adapter and snapshot webhook API version is `2025-07-30.basil`: do not substitute the current Stripe default or thin-event format. The worker requires genuine LOGIN `kxra_billing_runner` → NOLOGIN `kxra_billing_worker`, verified TLS/CA and the existing private scoped capabilities. Never use an admin/service-role fallback. Keep retired `KXRA_BILLING_ENABLED` and pilot billing off for this modern launch.
+
+## Worker operating envelope — a launch blocker
+
+Migration0110 only discovers existing paid proofs when within60 seconds of expiry, imposes a30-second cooldown after completed refresh and a two-minute in-flight lease. Policy proof TTL is at most300 seconds. A webhook only wakes reconciliation; it does not itself refresh proof or grant access. The HTTP refresh route processes one workspace, with a45-second provider and55-second receipt budget inside a60-second function ceiling.
+
+A one-minute polling interval plus a worst-case55-second invocation can exceed the60-second discovery window even for one workspace. Hourly automation is unsuitable. Increasing TTL alone does not expand that discovery window. Synchronized renewals and an outage recovery backlog require capacity for all due workspaces, not an average arrival count.
+
+The planning function reports conservative completion as `ceil(maximum_due_workspaces / parallel_invocations) * schedule_interval_ms + scheduler_jitter_ms + 55000`. Available time is `max(0, min(60000, proof_ttl_seconds * 1000 - 30000))`; strict positive headroom is required even for a projection. It assumes actual overlapping scheduled invocations at the stated concurrency and no missed invocations. It does not authorize that cadence, price its operation, predict Stripe rate limits or prove provider latency. Measure hosted latency/backlog, approve a bounded scheduler/cost/capacity plan and demonstrate freshness under synchronized load and missed runs before opening checkout. A new batching/cadence design may be preferable; preserve claims, tenant fences and existing budgets when considering it.
+
+The scheduler must supply the dedicated billing bearer header and reach the exact protected worker. Existing All Deployments authentication can also intercept Stripe webhook traffic before application HMAC checks. The release owner must prove an authorized narrowly scoped delivery path through protection; a302/login page or a manually replayed local signature is not acceptance. Do not disable deployment protection globally or assume Vercel Cron supplies the dedicated bearer secret.
+
+## Hosted customer acceptance still required
+
+Use authorized Stripe sandbox/test fixtures only, with two fresh tenants and a non-admin tenant member. Record finite receipt states/counts and private provider references as needed; never copy raw credentials, checkout/portal bearer URLs, request bodies, card/customer details or bank values into logs/chat.
+
+1. A fresh verified signup provisions exactly one customer workspace; duplicate submission/session recovery returns the same receipt. A second identity cannot read its status, billing request, payment result or workspace. Parent owns actual Auth/MFA verification and email work.
+2. Accept current required legal documents and complete recent MFA. Each approved plan must create one workspace subscription at quantity1 with the correct seat limit and exact GBP total (£29/£79/£199), with no added VAT. Verify the reviewed mapping, not a browser-selected price. Unknown outcome/reload/double-click must retain the original canonical UUID and reconcile before creating another operation.
+3. Complete a successful test payment and required3DS; verify the provider session, signed webhook delivery, invoice allocation, PaymentIntent, captured charge, exact original checkout consent, refresh commit and resulting own-workspace access. A success URL, active subscription or webhook alone must never grant access.
+4. Exercise declined/processing/canceled/expired checkout, webhook DB failure/retry, duplicate/out-of-order events, mismatched event hash, wrong account/mode/price/tenant, overlapping dispatch and provider POST timeout. An uncertain POST must not be retried automatically or replaced with a fresh ID. Confirm durable states and one provider operation.
+5. Exercise renewal, renewal failure/action-required, cancellation at paid-period end, refund/partial refund and dispute through supported test tooling only. Demonstrate timely revocation and recovery, no old-event restoration, no stale generation ACK, correct seat admissions and negative access from the other tenant. Current policy support is collected-active-only, no trial/past-due/grace access, end-of-paid-period cancellation and denial on any refund; owner must explicitly review those commercial policies before activation.
+6. Prove worker scheduling, backlog drain, concurrent leases, missed-run recovery, provider outage handling, failure alerts and latency while access proofs stay current. Recovery may temporarily deny access under current fail-closed policy; no availability guarantee follows from fixture success.
+
+Stripe's [webhook guide](https://docs.stripe.com/webhooks) requires an accessible HTTPS endpoint and signature verification; its [subscription guide](https://docs.stripe.com/billing/subscriptions/webhooks) explains asynchronous renewals and payment failures. The existing design deliberately reads authoritative current provider evidence after a wakeup and keeps event delivery separate from access authority.
+
+## Minimum remaining owner decisions and release sequence
+
+First integrate/review the exact returned local commit without overwriting the recovery owner. Then run aggregate CI/CodeQL and the exact-artifact hosted checks under the existing holds. Verify migrations through0112, scope attestation, current legal requirements, existing approved catalogue IDs and private mappings/policies. Do not reset/rebind an existing scope to get a pass.
+
+The owner must approve the actual customer terms (renewal, cancellation, refunds, trial/grace, AI allowance and limitations), the exact no-added-VAT mapping and displayed totals, and the worker operating/scheduler budget and credentials/delivery arrangement. Existing verified Stripe catalogue resources need no recreation. Read-only confirmation of current account payments/payouts and any provider-required owner verification belongs to the owner; if Stripe requires a bank/identity/tax action, report the exact requirement privately and let the owner complete it. This work neither accesses bank details nor performs financial account actions.
+
+After sandbox acceptance, release owner prepares a concrete reviewed production configuration and controlled activation/rollback. Activate only the separately approved gates and confirm actual provider configuration privately; keep claims/RLS/MFA/legal/tax protections intact. Pause new checkout on rollback while retaining webhook/refresher/customer cancellation capabilities needed by existing paying customers. Do not remove access blindly from paid customers or disable all worker processing as a substitute for a rollback plan. No live real charge is part of this acceptance task.
+
+## Local verification receipt
+
+Focused synthetic service checks:289/289. Signup/admission/portal/scope acceptance with explicit generated fixture:112/112. Native PostgreSQL17 billing cases:9/9 LIVE and9/9 STAGING_SANDBOX in separate fresh private Unix-socket clusters. Capacity planning checks:5/5. Total424/424, zero skips. Root typechecking, changed-file formatting, OS production build, dependency policy (269 locked packages), public snapshot and secret scan (913 files) pass. Both owned database servers stopped successfully. An initial admission batch correctly failed when called without its required local-fixture environment; it was rerun with generated secret, loopback origin and fixture mode, not by weakening guards. These receipts are local, not aggregate CI, hosted/provider acceptance or a claim that launch gates are complete.
