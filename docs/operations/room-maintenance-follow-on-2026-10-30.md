@@ -10,7 +10,7 @@ This is a separate local follow-on to `4a21b80` and activation packet `445683b`.
 
 Real-provider queued execution requires an unrevoked, unexpired operator-approved **room + customer tenant + exact connection** rollout, an authenticated customer connection owner's fresh-MFA consent, and the existing target grant and source/entitlement/session/membership checks. Rollout rows start empty. KXRA organisations cannot supply hosted automatic-run funding; the only fixture exception requires explicit server fixture execution mode. The customer connection stays BYOK: the existing provider code decrypts only its selected connection key and has no platform-funded key fallback. Consent is an audited customer ownership attestation; it is not cryptographic proof of an external provider account's owner.
 
-The rollout holds a 1–20 automatic dispatch limit per rolling 24 hours in that room. Dispatch locks the rollout row and conservatively counts all room runs admitted during the current rollout/24-hour window, including failed/cancelled runs. Provider uncertainty is never silently refunded. This gate limits queued dispatch, not independently requested on-demand work. Rollout expiry is constrained to at most 30 days from creation. A consent revocation locks/revokes the room's related execution grants before changing consent, fencing a late worker publication in the same lock order.
+The rollout holds a 1–20 automatic dispatch limit per rolling 24 hours in that room. Dispatch locks the rollout row and conservatively counts all room runs admitted during the current rollout/24-hour window, including failed/cancelled runs. Provider uncertainty is never silently refunded. This gate limits queued dispatch, not independently requested on-demand work. Rollout start is explicit: `starts_at<=now()` is required for consent and dispatch, and expiry is constrained to at most 30 days after that start. Preconfiguring a future window does not enable work early. A consent revocation locks/revokes the room's related execution grants before changing consent, fencing a late worker publication in the same lock order.
 
 ### Autonomous reducer and uncertainty
 
@@ -59,7 +59,7 @@ All of the following are **proposed values, not applied settings**:
 | Initial independent maintenance gate | `KXRA_ROOM_MAINTENANCE_ENABLED=false` until its own acceptance/retention approval |
 | Auth mode | Existing `KXRA_AUTH_MODE=supabase`; never fixture mode on a hosted deployment |
 | Credential | Existing planned `KXRA_ROOM_WORKER_SECRET`, 64 hex characters; no value generated. Same approved OS server/scheduler stores only; no billing, browser, service-role or provider key reuse |
-| Staging rollout registry | One customer tenant, one private room, one exact customer connection, `max_daily_dispatches=2`, `expires_at` exactly one hour after the approved UTC start |
+| Staging rollout registry | One customer tenant, one private room, one exact customer connection, `max_daily_dispatches=2`, `starts_at` equal to the approved UTC start, `expires_at=starts_at+1 hour` |
 | Customer approval | Connection creator/room creator, fresh AAL2/MFA within 600 seconds, BYOK consent; then one one-off and one reviewed definition with `max_occurrences=1` |
 | Approved trial gates | Only after native/integration and owner approval, both `KXRA_HOSTED_ROOM_JOBS=true` and `KXRA_ROOM_MAINTENANCE_ENABLED=true` on the exact protected staging deployment |
 | Execution schedule | One POST wakeup every 60 seconds for that one-hour acceptance window; no automatic command retries. Its SQL also performs maintenance |
@@ -82,7 +82,7 @@ Release owns allocation centrally. Billing currently owns **0113**. Release has 
 
 Base SQL SHA-256: `f94f89a8280e65ac62abd53f1faa8e37e458407ac84b33e00d5607da9957d3df`.
 
-Follow-on SQL SHA-256: `f49c909c12dcee1fd8a8b3ad6827fcb63cea62e719c83a4fb54a3910bc88adec`.
+Follow-on SQL SHA-256: `1b2c78f78fbacbdbe0de0b2a79ef0312054ea024e68155061ae86148b152fb0f`.
 
 These hashes bind this local review packet only; any final fixes require updated hashes. The latest source requires the final native rerun before installation. Existing `team-workspace.ts`, DB transaction helper, Jobs component, Auth routes and environment example were not overwritten. The follow-on proposal contains explicit reviewed function replacements; integration must reconcile them with independent QA/security changes, never apply old function bodies blindly over a newer fix.
 
@@ -111,9 +111,9 @@ KXRA_PG_BIN=/path/to/pg/bin node scripts/verify-room-maintenance.mjs --regressio
 
 Both native modes use fresh Unix-socket-only clusters and sanitized fixture environments. They stop their owned server/cluster, restore generated configuration and remove temporary test copies. The test subprocess group has a 180-second upper bound so a failed legacy test cannot retain the database slot indefinitely. No other task's database or kernel setting is altered by the harness.
 
-Earlier native coverage already exercised two customer tenants and requesters, private withdrawal, exact rollout/BYOK consent, room dispatch budgets, pre-dispatch exhaustion, lost dispatched calls, late completion, scheduled pause, concurrent backlog reduction, retention, owner recovery HTTP, origin/impersonation rejection and no new roles/triggers. Final tests additionally check per-table retention batch caps, busy-requester traversal, old-work health, private audit isolation and backfilled-case audit; those latest refinements remain **pending** the coordinated native slot.
+Earlier native coverage already exercised two customer tenants and requesters, private withdrawal, exact rollout/BYOK consent, room dispatch budgets, pre-dispatch exhaustion, lost dispatched calls, late completion, scheduled pause, concurrent backlog reduction, retention, owner recovery HTTP, origin/impersonation rejection and no new roles/triggers. Final tests additionally check per-table retention batch caps, busy-requester traversal, old-work health, private audit isolation, exact future-start rejection and backfilled-case audit; those latest refinements remain **pending** the coordinated native slot.
 
-Retained evidence: `/tmp/room-maintenance-5.log` (8/8 earlier checkpoint), `/tmp/room-maintenance-boundary-final.log` (current pure checks), `/tmp/room-maintenance-build.log`, `/tmp/room-maintenance-types-final.log`, and `/tmp/room-maintenance-regression-3.log` (retained failed/aborted regression; not acceptance).
+Retained evidence: `/tmp/room-maintenance-5.log` (8/8 earlier checkpoint), `/tmp/room-maintenance-boundary-final.log` (current pure checks), `/tmp/room-maintenance-build-start-window.log`, `/tmp/room-maintenance-types-final.log`, and `/tmp/room-maintenance-regression-3.log` (retained failed/aborted regression; not acceptance).
 
 The local resource blocker was macOS SysV shared-memory exhaustion. This task removed only two verified unattached segments from its own failed initializations, changed no kernel setting and stopped no other service. Its last owned PostgreSQL PID **58378** and regression PIDs **58316/58478/58480** are stopped. No fixture remains active. Release requested no new native cluster until its coordinated test window; that is the remaining verification blocker, not authorization to skip tests.
 

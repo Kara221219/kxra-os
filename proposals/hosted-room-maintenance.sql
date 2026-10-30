@@ -3,16 +3,16 @@
 -- Rollout rows are empty: only an exact later operator-approved setup may add one.
 create table kxra.team_room_rollouts(
  room_id uuid primary key,org_id uuid not null,connection_id uuid not null references kxra.team_connections(id),
- expires_at timestamptz not null,max_daily_dispatches integer not null check(max_daily_dispatches between 1 and 20),
+ starts_at timestamptz not null default now(),expires_at timestamptz not null,max_daily_dispatches integer not null check(max_daily_dispatches between 1 and 20),
  created_at timestamptz not null default now(),revoked_at timestamptz,
- check(expires_at>created_at and expires_at<=created_at+interval '30 days'),
+ check(expires_at>starts_at and expires_at<=starts_at+interval '30 days'),
  foreign key(room_id,org_id) references kxra.team_rooms(id,org_id)
 );
 alter table kxra.team_room_rollouts enable row level security;
 create policy team_room_rollouts_read on kxra.team_room_rollouts for select to authenticated
  using(org_id=kxra_private.member_org() and kxra_private.can_team_room(room_id));
 revoke all on kxra.team_room_rollouts from public,anon,authenticated;
-grant select(room_id,connection_id,expires_at,max_daily_dispatches,revoked_at) on kxra.team_room_rollouts to authenticated;
+grant select(room_id,connection_id,starts_at,expires_at,max_daily_dispatches,revoked_at) on kxra.team_room_rollouts to authenticated;
 create table kxra.team_byok_consents(
  room_id uuid primary key references kxra.team_rooms(id),org_id uuid not null,connection_id uuid not null,
  granted_by uuid not null,connection_sha256 text not null,expires_at timestamptz not null,
@@ -36,7 +36,7 @@ language sql stable security definer set search_path='' as $$
  join kxra.organisation_memberships membership on membership.org_id=org.id and membership.account_id=consent.granted_by
  join kxra.account_identities identity on identity.account_id=consent.granted_by and identity.state='ACTIVE'
  where rollout.room_id=r and rollout.connection_id=c and rollout.org_id=connection.org_id
- and rollout.revoked_at is null and rollout.expires_at>now() and consent.revoked_at is null and consent.expires_at>now()
+ and rollout.revoked_at is null and rollout.starts_at<=now() and rollout.expires_at>now() and consent.revoked_at is null and consent.expires_at>now()
  and consent.org_id=rollout.org_id and consent.connection_id=c and consent.granted_by=connection.created_by
  and membership.state='ACTIVE' and membership.revoked_at is null and membership.starts_at<=now()
  and (membership.expires_at is null or membership.expires_at>now())
@@ -63,7 +63,7 @@ begin
   if coalesce(auth.jwt()->>'aal','')<>'aal2' or at is null or at<extract(epoch from now())-600 or at>extract(epoch from now())+30
    or connection.provider='FIXTURE' or not exists(select 1 from kxra.organisations where id=connection.org_id and organisation_kind='CUSTOMER')
    then raise insufficient_privilege;end if;
-  select * into rollout from kxra.team_room_rollouts where room_id=r and org_id=connection.org_id and connection_id=c and revoked_at is null and expires_at>now() for share;
+  select * into rollout from kxra.team_room_rollouts where room_id=r and org_id=connection.org_id and connection_id=c and revoked_at is null and starts_at<=now() and expires_at>now() for share;
   if not found then raise insufficient_privilege;end if;
   insert into kxra.team_byok_consents(room_id,org_id,connection_id,granted_by,connection_sha256,expires_at)
   values(r,connection.org_id,c,auth.uid(),encode(sha256(convert_to(jsonb_build_array(connection.provider,connection.model,connection.endpoint_id,connection.encrypted_key)::text,'UTF8')),'hex'),least(rollout.expires_at,now()+interval '30 days'))
@@ -339,9 +339,9 @@ begin
   perform kxra.team_job_release(i,token,case when digest is distinct from j.context_sha256 then 'CONTEXT_CHANGED' else 'ACCESS_CHANGED' end);return null;
  end if;
  select rollout_row.* into rollout from kxra.team_room_rollouts rollout_row where rollout_row.room_id=j.room_id
- and rollout_row.revoked_at is null and rollout_row.expires_at>now() for update;
+ and rollout_row.revoked_at is null and rollout_row.starts_at<=now() and rollout_row.expires_at>now() for update;
  if found and exists(select 1 from kxra.team_agents a join kxra.team_connections c on c.id=a.connection_id where a.id=j.agent_id and c.provider<>'FIXTURE')
- and (select count(*) from kxra.team_runs run where run.room_id=j.room_id and run.created_at>=greatest(rollout.created_at,now()-interval '24 hours'))>=rollout.max_daily_dispatches then
+ and (select count(*) from kxra.team_runs run where run.room_id=j.room_id and run.created_at>=greatest(rollout.starts_at,now()-interval '24 hours'))>=rollout.max_daily_dispatches then
   perform kxra.team_job_release(i,token,'CAPACITY');return null;
  end if;
  begin

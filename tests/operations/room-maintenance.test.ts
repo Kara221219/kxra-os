@@ -711,6 +711,35 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
   }
   const a = await customer(owner),
     b = await customer(partner);
+  async function session(c: typeof a) {
+    const cookie = await knowledgeLogin(
+        c.actor === owner ? "owner" : "partner",
+      ),
+      response = await fetch(testOrigin + "/api/context", {
+        method: "POST",
+        headers: {
+          origin: testOrigin,
+          cookie,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ organisation_id: c.tenant }),
+      });
+    assert.equal(response.status, 200);
+    const jar = new Map(
+      cookie.split("; ").map((pair) => {
+        const n = pair.indexOf("=");
+        return [pair.slice(0, n), pair.slice(n + 1)];
+      }),
+    );
+    for (const raw of response.headers.getSetCookie()) {
+      const pair = raw.split(";", 1)[0],
+        n = pair.indexOf("=");
+      jar.set(pair.slice(0, n), pair.slice(n + 1));
+    }
+    return [...jar].map(([name, value]) => name + "=" + value).join("; ");
+  }
+  const cookieA = await session(a);
+
   async function allowed(c: typeof a, actor = c.actor, tenant = c.tenant) {
     return (
       await as(
@@ -740,6 +769,50 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
       "insert into kxra.team_room_rollouts(room_id,org_id,connection_id,expires_at,max_daily_dispatches) values($1,$2,$3,now()+interval '1 hour',1)",
       [c.room, c.tenant, c.connection],
     );
+    await admin.query(
+      "update kxra.team_room_rollouts set starts_at=now()+interval '30 minutes' where room_id=$1",
+      [c.room],
+    );
+    assert.equal(await allowed(c), false);
+    if (c === a) {
+      const held = await fetch(testOrigin + `/api/room-operations/${c.room}`, {
+        headers: { cookie: cookieA },
+      });
+      assert.equal(held.status, 200);
+      assert.equal((await held.json()).rollout.active, false);
+      const rejected = await fetch(
+        testOrigin + `/api/room-operations/${c.room}`,
+        {
+          method: "POST",
+          headers: {
+            origin: testOrigin,
+            cookie: cookieA,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "APPROVE_CUSTOMER_BYOK",
+            connection_id: c.connection,
+            customer_owned: true,
+          }),
+        },
+      );
+      assert.equal(rejected.status, 403);
+    }
+    await assert.rejects(
+      as(
+        c.actor,
+        "select kxra.team_room_byok_review($1,$2,'APPROVE')",
+        [c.room, c.connection],
+        c.tenant,
+        "",
+        "hosted",
+      ),
+      { code: "42501" },
+    );
+    await admin.query(
+      "update kxra.team_room_rollouts set starts_at=now() where room_id=$1",
+      [c.room],
+    );
     await as(
       c.actor,
       "select kxra.team_room_byok_review($1,$2,'APPROVE')",
@@ -750,6 +823,42 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
     );
     assert.equal(await allowed(c), true);
   }
+  const approved = await fetch(testOrigin + `/api/room-operations/${a.room}`, {
+    method: "POST",
+    headers: {
+      origin: testOrigin,
+      cookie: cookieA,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "APPROVE_CUSTOMER_BYOK",
+      connection_id: a.connection,
+      customer_owned: true,
+    }),
+  });
+  assert.equal(approved.status, 200);
+  const approvedData = await approved.json();
+  assert.equal(approvedData.rollout.active, true);
+  assert.equal(approvedData.connection.allowed, true);
+  assert.ok(
+    !JSON.stringify(approvedData).includes("not-a-real-provider-credential"),
+  );
+  const page = await fetch(testOrigin + `/os/room-operations/${a.room}`, {
+    headers: { cookie: cookieA },
+  });
+  assert.equal(page.status, 200);
+  const html = await page.text();
+  assert.ok(html.includes("Customer-owned provider connection"));
+  assert.ok(html.includes("Room rollout starts"));
+  assert.ok(!html.includes("not-a-real-provider-credential"));
+  assert.equal(
+    (
+      await fetch(testOrigin + `/api/room-operations/${b.room}`, {
+        headers: { cookie: cookieA },
+      })
+    ).status,
+    404,
+  );
   assert.equal(await allowed(a, partner, b.tenant), false);
   await assert.rejects(
     as(
@@ -922,7 +1031,7 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
       );
     if (withdrawal === "ROLLOUT_EXPIRED")
       await admin.query(
-        "update kxra.team_room_rollouts set created_at=now()-interval '1 hour',expires_at=now()-interval '1 second' where room_id=$1",
+        "update kxra.team_room_rollouts set starts_at=now()-interval '1 hour',expires_at=now()-interval '1 second' where room_id=$1",
         [c.room],
       );
     if (withdrawal === "CONSENT_REVOKED")

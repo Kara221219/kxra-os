@@ -25,12 +25,14 @@ export async function roomOperationRecovery(actor: Actor, room: string) {
     ),
     query<{
       connection_id: string;
+      starts_at: string;
+      active: boolean;
       expires_at: string;
       max_daily_dispatches: number;
       revoked_at: string | null;
     }>(
       actor,
-      "select connection_id,expires_at,max_daily_dispatches,revoked_at from kxra.team_room_rollouts where room_id=$1",
+      "select connection_id,starts_at,expires_at,max_daily_dispatches,revoked_at,(revoked_at is null and starts_at<=now() and expires_at>now()) active from kxra.team_room_rollouts where room_id=$1",
       [room],
     ),
     query<{ id: string; name: string; model: string; allowed: boolean }>(

@@ -48,10 +48,10 @@ export function RoomOperationRecovery({
       <p role="status">{notice}</p>
       {data.rollout ? (
         <p>
-          Room rollout expires {new Date(data.rollout.expires_at).toISOString()}
-          . Its automatic dispatch limit is {data.rollout.max_daily_dispatches}{" "}
-          per rolling 24 hours. Revoked:{" "}
-          {data.rollout.revoked_at ? "yes" : "no"}.
+          Room rollout starts {new Date(data.rollout.starts_at).toISOString()}{" "}
+          and expires {new Date(data.rollout.expires_at).toISOString()}. Its
+          automatic dispatch limit is {data.rollout.max_daily_dispatches} per
+          rolling 24 hours. Revoked: {data.rollout.revoked_at ? "yes" : "no"}.
         </p>
       ) : (
         <p>Automatic execution is held: this room has no approved rollout.</p>
@@ -79,7 +79,7 @@ export function RoomOperationRecovery({
               this room&apos;s reviewed automatic work within the approved
               limits and expiry.
             </label>
-            <button type="submit">
+            <button type="submit" disabled={!data.rollout?.active}>
               Approve this customer-owned connection
             </button>
             <button
