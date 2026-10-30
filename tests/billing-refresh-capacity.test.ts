@@ -57,6 +57,16 @@ test("short proofs must accommodate the30s completion cooldown", () => {
   }
 });
 
+test("queued waves each occupy a full receipt duration rather than sharing one55s slot", () => {
+  const result = assessBillingRefreshCapacity({
+    ...plan,
+    maximum_due_workspaces: 2,
+  });
+  assert.equal(result.waves, 2);
+  assert.equal(result.worst_case_completion_ms, 112_000);
+  assert.equal(result.state, "INSUFFICIENT_HEADROOM");
+});
+
 test("malformed/nonfinite plans and caller credential fields are rejected", () => {
   for (const invalid of [
     null,

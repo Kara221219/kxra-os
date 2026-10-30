@@ -28,6 +28,8 @@ export type BillingHttpRuntimePorts = {
   nowMs?: () => number;
   fetch?: typeof fetch;
   clientFactory?: () => Promise<LiveCustomerDatabaseClient>;
+  /** Server-only scheduler signal; no request can supply this port. */
+  onRefreshClaimCount?: (count: number) => void;
 };
 /** Separate, short transactions. No provider HTTP runs while these SQL locks exist.
  * Hard receipt deadline also bounds control queries; disconnect rolls back an interrupted transaction.
@@ -156,6 +158,7 @@ export async function runBillingHttpInvocation(
     limit: 1,
     transport,
     query: boundedQuery,
+    onClaimCount: ports.onRefreshClaimCount,
   });
 }
 

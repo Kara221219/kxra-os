@@ -26,11 +26,11 @@ export function assessBillingRefreshCapacity(input: unknown) {
   const waves = Math.ceil(
     plan.maximum_due_workspaces / plan.parallel_invocations,
   );
-  // The final wave can wait a full polling interval before its55s receipt budget.
+  // Slots remain occupied until a receipt completes. Each queued wave may need
+  // the entire polling interval AND receipt budget; never assume free slots.
   const worstCaseCompletionMs =
-    waves * plan.schedule_interval_ms +
-    plan.scheduler_jitter_ms +
-    BILLING_HTTP_RECEIPT_MS;
+    waves * (plan.schedule_interval_ms + BILLING_HTTP_RECEIPT_MS) +
+    plan.scheduler_jitter_ms;
   const headroomMs = discoveryWindowMs - worstCaseCompletionMs;
   return Object.freeze({
     state: headroomMs > 0 ? "PROJECTED_HEADROOM" : "INSUFFICIENT_HEADROOM",

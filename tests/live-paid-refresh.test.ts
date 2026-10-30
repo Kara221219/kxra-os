@@ -396,7 +396,11 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
       (f.committed[0].execution_scope as { livemode: boolean }).livemode,
       mode === "LIVE",
     );
-    assert.ok(f.calls.length <= 21);
+    assert.equal(
+      f.calls.length,
+      20,
+      "Keep the successful-refresh read-allocation model current",
+    );
     if (mode === "STAGING_SANDBOX")
       assert.ok(
         f.sql

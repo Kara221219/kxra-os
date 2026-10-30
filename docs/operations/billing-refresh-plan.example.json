@@ -1,0 +1,14 @@
+{
+  "maximum_due_workspaces": 16,
+  "concurrency": 16,
+  "poll_interval_ms": 1000,
+  "scheduler_jitter_ms": 1000,
+  "proof_ttl_seconds": 120,
+  "provider_reads_per_second": 16,
+  "maximum_provider_reads": 32000,
+  "maximum_invocations": 10000,
+  "duration_ms": 3600000,
+  "reviewed_monthly_read_allocation": 10000,
+  "other_monthly_read_reserve": 2000,
+  "read_allowance_review_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

@@ -44,6 +44,9 @@ export type PaidRefreshOptions = {
   transport?: LiveBillingTransport;
   query?: PaidRefreshQuery;
   nowSeconds?: () => number;
+  /** Private scheduler notification after the short claim transaction has ended.
+   * Never HTTP input, tenant authority or a provider/SQL bypass. */
+  onClaimCount?: (count: number) => void;
 };
 /** Bounded READ-only --once engine. No automatic retries or provider mutations.
  * Configuration and subjects come only from worker RPCs; no caller tenant/invoice. */
@@ -88,6 +91,7 @@ export async function runPaidRefreshOnce(options: PaidRefreshOptions) {
       [limit],
     )
   ).rows;
+  options.onClaimCount?.(subjects.length);
   const outcomes: { org_id: string; outcome: string; acknowledged: number }[] =
     [];
   const wakeSchema = z

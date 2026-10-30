@@ -1,0 +1,50 @@
+# Bounded billing scheduler and exact owner packet
+
+Local implementation only; no worker host, budget row, key, catalogue, provider setting or live checkout was changed. Auth/recovery remains owned by the release owner. Carry forward settled Starter£29/one seat, Team£79/five, Business£199/fifteen per workspace/month, no added VAT, B2B-only, automatic renewal, no trial, cancellation at paid-period end and `info@kxra-group.com` support. Do not revive the retired studio/annual offer or ask those choices again.
+
+## Compact owner decisions — actual unresolved items only
+
+1. **Strict proof/read allowance:** current strict evidence makes20 provider GETs per successful refresh. Even allowing an already-fresh proof at window start, one workspace at300-second expiry needs at least172,780 reads per30 days;16 workspaces at120-second expiry need at least6,911,680. Stripe's ordinary allocation is a rolling500 GETs per transaction with a10,000/month minimum, separately from per-second rate limits. Confirm an actual account allocation sufficient for the exact plan, or explicitly authorize a separately reviewed change to the payment-evidence trust model. The scheduler does not lengthen expiry or adopt webhook-only entitlement authority. Raising a JSON number is not provider approval. No Support contact is authorized here. [Stripe limits](https://docs.stripe.com/rate-limits).
+2. **Current workspace policy/version:** preserve ADR0047's seven-day failed-renewal work grace and at-most30-day recovery from the first failed payment in the current workspace terms, or explicitly replace just that commitment in a reviewed version. The exact proposal is in [renewal reconciliation](workspace-renewal-policy-reconciliation-2026-10-30.md). Keep settled cancellation, no-trial and refund-remedy commitments. The owner has now resolved BYOK: customers connect and pay their own provider accounts. Worldwide business intent is also settled, subject to the separate admission engineer's actual legal/provider/payment/tax gate. Do not ask those choices again or invent included AI credits.
+3. **Host/budget/operation:** approve one active bounded worker, exact mode/project/origin, measured latency and a tested due-workspace limit; the private existing runner/key/CA binding; a reviewed rolling read budget; named alert/operator ownership;60-second drain before replacement; and the incremental hosting budget below. Current example supports a projection for16 simultaneous subjects, not an unlimited customer promise. Actual account allocation and hosted load acceptance remain mandatory.
+4. **Coarse account readiness:** the release owner may obtain only timestamped correct-account/mode `payments_enabled`, `payouts_enabled`, and an outstanding-owner-action category. These flags are UNOBSERVED in this task. No bank values, balances, payment/customer records, identity/tax documents or financial-account changes are needed. Owner completes any specific required verification privately.
+
+## What the scheduler actually does
+
+`npm run worker:billing-refresh-scheduler` executes a bounded run only when `KXRA_BILLING_REFRESH_SCHEDULER_ENABLED=true`, its strict non-secret `KXRA_BILLING_REFRESH_SCHEDULE` JSON passes both capacity and allowance checks, and the existing HTTP/paid-refresh gates are on. It starts one idle probe per configured tick and fans out only after canonical database discovery claims a subject. Every job independently runs the existing fixed-mode scope/TLS/role/preflight/payment/consent/CAS algorithm. No tenant, invoice or mode is accepted from HTTP. No payment mutation or automatic uncertain-POST retry is added.
+
+Concurrency is capped at16; each job keeps45-second provider/55-second receipt budgets and32-GET ceiling. Process-wide actual GET starts are paced at the configured rate, capped at16/second. A queued aborted request cannot execute later. One active process is the approved topology; per-process pacing is not a cross-host global rate limiter. Durable SQL claims still prevent duplicate tenant refreshes across overlapping invocations. Rollouts must drain the old process before starting its replacement; actual account rate/concurrency headroom must be measured.
+
+An unavailable/unverified result pauses new admission for120 seconds. Valid DENIED payment decisions do not trigger payment retries. Signal shutdown stops new jobs and drains existing jobs; no catch-up burst runs after a missed tick. Progress outputs fixed states and bounded counts only, never identifiers, URLs, raw errors or credentials. Nonzero exit indicates an error/budget/jitter condition requiring an operator, not permission for a blind restart loop.
+
+Migration0113 adds private RLS budget/day-counter tables and one narrow worker RPC; it seeds no budget and creates no identity/credential. The genuine runner atomically reserves32 read permits at a time against an exact review hash, current scope, operator ceiling and expiry. Permits expire within55 seconds and unused/cancelled permits stay charged. A conservative31-UTC-day counter also fences rolling30-day usage across calendar boundaries, counter replacement, concurrent connections and process restarts. The runtime fails closed if no approved budget exists. Ordinary callers and the worker have no direct table privileges. Native verification of this new migration is a separate required receipt.
+
+The capacity check accounts for occupied slots: `ceil(due_workspaces/concurrency) * (poll_interval_ms + 55000) + jitter_ms` must fit strictly inside `max(0,min(60000,proof_ttl_seconds*1000-30000))`. This corrects the earlier planner's optimistic assumption that queued waves did not each consume a receipt duration. Virtual-time tests cover16 synchronized tenants at55-second job duration,100-tenant overload, failure pause, drain and pacing stalls. Overload denies stale access; it is not a capacity success.
+
+## Executable local acceptance
+
+With locked dependencies and local PostgreSQL installed:
+
+```sh
+npm run test:billing-lifecycle
+```
+
+This creates separate fresh private Unix-socket fixtures for synthetic LIVE and STAGING_SANDBOX, generates an in-memory session secret, strips inherited provider/database credentials and hosted selectors, runs the exact signup/checkout/webhook/payment/entitlement/portal/replay/failure/scheduler cases, checks migrations and stops both owned servers. It writes private logs and a finite JSON receipt to a new `/tmp/kxra-billing-acceptance-*` directory. Zero skips/failures are required. It accepts no hosted URL, key, Stripe CLI or real charge. Snapshot/card/3DS/provider delivery/renewal acceptance remains the release owner's separately authorized hosted work; follow [customer acceptance cases](billing-launch-acceptance-2026-10-30.md).
+
+Review the deliberately blocked standard-allocation example without starting anything:
+
+```sh
+node --import tsx scripts/billing-refresh-plan.ts --file docs/operations/billing-refresh-plan.example.json
+```
+
+Expected exit2: timing has projected headroom, read allocation is insufficient. The all-zero review digest is explicitly not an approval and no matching budget is seeded. Do not paste an invented exception into a runtime secret store or database. The independent executable [renewal review model](../../tests/support/renewal-policy-review-contract.ts) is test-side preparation only and cannot grant entitlements. Its30-day recovery horizon starts at the first failed payment, not the end of grace; exact current-workspace applicability remains unresolved.
+
+## Cost and hosting estimate, checked30 October
+
+The scheduler runs the existing bounded worker in-process, so idle polling does not create a Vercel Function invocation per probe. It still opens short database transactions; a fully idle1-second probe cadence is at most86,400 probes/day, approximately259,200 scope/wakeup/subject transactions, and must be measured against the actual pooler/compute capacity. Successful reconciliation adds the existing SQL reads plus one budget reservation per32 provider reads; unused reservations consume the durable allowance conservatively. Additional webhook-triggered/recovery work also consumes that allowance.
+
+For an optional1GB London Vercel daemon, published rates are$0.0146/GB-hour memory and$0.177/active-CPU-hour. On a30-day assumption, memory is about$10.51/month; illustrative10% CPU adds$12.74, about$23.26 total. Full1-vCPU utilization would be about$137.95/month. These are arithmetic scenarios, not measured bills or a spending authorization, and exclude base plan, builds, registry, networking, database, taxes and payment fees. Propose a$25/month incremental compute target only if measured usage supports it; an owner must approve the actual ceiling and alert response. [Compute pricing](https://vercel.com/docs/functions/usage-and-pricing).
+
+Current Daemons are beta, production-only, require a container image and do not support a project rooted at a subfolder. They consume provisioned memory while idle and restart exited instances automatically. Default shutdown grace is30 seconds; configure at least60 seconds if that host is selected. The existing60-second HTTP function is not an always-running scheduler. An existing approved persistent host can instead run the same bounded command with an operator-controlled supervisor. No hosting choice, daemon configuration or image was provisioned here. The release owner must verify project compatibility and budget persistence before choosing a host. [Daemon limits](https://vercel.com/docs/daemons/limits), [shutdown behavior](https://vercel.com/docs/daemons).
+
+For rollback, pause new checkout/admission first, retain original canonical uncertain requests, and preserve cancellation/webhook/reconciliation services needed by already-paying tenants. Drain only this scheduler's jobs; do not globally disable protection, RLS, MFA, legal checks or provider verification. The provider-read allocation conflict and current terms/policy conflict remain hard launch gates, independent of synthetic success.
