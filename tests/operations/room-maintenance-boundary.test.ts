@@ -265,3 +265,56 @@ test("maintenance CLI is finite, targets exact HTTPS, distinguishes attention an
     assert.equal(invalid.exit, 1);
   }
 });
+
+test("maintenance composition retains the strict hosted grant fence and pre-grant admission split", () => {
+  const base = fs.readFileSync("proposals/hosted-room-operations.sql", "utf8");
+  const maintenance = fs.readFileSync(
+    "proposals/hosted-room-maintenance.sql",
+    "utf8",
+  );
+  const body = (sql: string, name: string) => {
+    const start = sql.indexOf(`function kxra_private.${name}(`);
+    assert.ok(start >= 0);
+    return sql.slice(start, sql.indexOf("$$;", start) + 3);
+  };
+  const oldTarget = body(base, "team_worker_target");
+  const newTarget = body(maintenance, "team_worker_target");
+  // Only the reviewed BYOK conjunction may precede the exact strict CASE.
+  assert.equal(
+    newTarget.slice(newTarget.indexOf("case when")),
+    oldTarget.slice(oldTarget.indexOf("case when")),
+  );
+  assert.match(
+    newTarget,
+    /team_room_byok_allowed\(target.room_id,agent.connection_id\)/,
+  );
+  assert.match(newTarget, /execution_mode',true\)='fixture'/);
+  assert.match(
+    newTarget,
+    /hosted_room_jobs',true\) is distinct from 'on',false/,
+  );
+  assert.match(newTarget, /else session_user='kxra_app' and exists/);
+  assert.doesNotMatch(newTarget, /is null then true/);
+  const reducer = body(maintenance, "team_reduce_grant");
+  assert.ok(
+    reducer.indexOf("set_config('request.kxra.team_grant',g.id::text,true)") <
+      reducer.indexOf("valid="),
+  );
+  assert.match(
+    reducer,
+    /valid=kxra_private.team_execution_grant_active\(g.id\) and kxra_private.team_job_base_context_active\(g.target_id\)\s+and kxra_private.team_worker_target\(g.target_id\);/,
+  );
+  // Runtime target evaluation includes expiry/revocation/rollout/BYOK; admission
+  // remains separate so fresh MFA can authorize a just-enqueued target atomically.
+  assert.doesNotMatch(
+    body(base, "team_job_base_context_active"),
+    /team_worker_target/,
+  );
+  assert.match(
+    body(base, "team_job_context_active"),
+    /team_worker_target\(i\).*team_job_base_context_active\(i\)/,
+  );
+  const byok = body(maintenance, "team_room_byok_allowed");
+  assert.match(byok, /revoked_at is null/);
+  assert.match(byok, /expires_at>now\(\)/);
+});

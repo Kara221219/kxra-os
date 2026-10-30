@@ -15,7 +15,7 @@ async function main() {
     origin.password
   )
     throw Error("An exact HTTPS application origin is required");
-  const response = await fetch(origin + "/api/internal/room-jobs/drain", {
+  const response = await fetch(origin.origin + "/api/internal/room-jobs/drain", {
     method: "POST",
     redirect: "error",
     signal: AbortSignal.timeout(55_000),

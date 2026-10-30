@@ -51,6 +51,11 @@ export function RoomJobs({
       {canManage && canWrite && <RoomAuditExport roomId={roomId} />}
       <h2>Queued drafts</h2>
       <p>
+        <Link href={`/os/room-operations/${roomId}`}>
+          Review execution consent and uncertain outcomes
+        </Link>
+      </p>
+      <p>
         100 jobs per page, with pending work first, then uncertain outcomes and
         completed history. Loaded earlier pages are snapshots; refresh to update
         current states.

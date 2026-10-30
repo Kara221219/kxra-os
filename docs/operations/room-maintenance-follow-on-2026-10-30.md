@@ -32,7 +32,7 @@ The new authenticated page is `/os/room-operations/<room UUID>` and its GET/POST
 
 Recovery acknowledgment records **review without retry**. The job remains UNCERTAIN, no output becomes successful, no charge is refunded, and no schedule is restarted. A durable acknowledgment marker remains on the job after old closed case metadata is pruned. A requester or authorized room creator may review only a room they can currently access.
 
-`proposals/room-maintenance-integration.patch` is a coordination artifact, not applied here. It adds a navigation link from the existing Jobs panel, declares the default-off maintenance flag in the shared environment example, and fixes the existing hosted CLI's `URL + path` double-slash construction to `URL.origin + path`. The new maintenance CLI already uses the corrected exact-origin construction. The original fixture launcher is untouched.
+`proposals/room-maintenance-integration.patch` is retained as the original coordination artifact; its navigation, default-off flag and CLI origin repair are now applied in the composed candidate. It adds a navigation link from the existing Jobs panel, declares the default-off maintenance flag in the shared environment example, and fixes the existing hosted CLI's `URL + path` double-slash construction to `URL.origin + path`. The new maintenance CLI already uses the corrected exact-origin construction. The original fixture launcher is untouched.
 
 ### Health and retention
 
@@ -78,15 +78,23 @@ The room allowlist and conservative dispatch count now enforce the narrow stagin
 
 ## Migration and integration coordination
 
-Release owns allocation centrally. Billing currently owns **0113**. The room base and this follow-on require **two distinct later numbers**, in dependency order; do not assume either owns 0114/0115 until release assigns them. Our cumulative delta is +6 protected `kxra` tables and +4 exposed `kxra` functions over the old 112-migration baseline. Recompute final inventory after billing/security changes; do not copy a historical count into the merged release.
+Release owns allocation centrally. Billing currently owns **0113**. Release has reserved **0114 for the composed room base plus maintenance, in that order**, with 0113 billing and 0115 admission. Both SQL files remain proposals here; no migration was installed. Our cumulative delta is +6 protected `kxra` tables and +4 exposed `kxra` functions over the old 112-migration baseline. Recompute final inventory after billing/security changes; do not copy a historical count into the merged release.
 
-Base SQL SHA-256: `3a2534f127e3d48d6aeabb859614bb56c93ed084be741a671278824458c72b1a`.
+Base SQL SHA-256: `f94f89a8280e65ac62abd53f1faa8e37e458407ac84b33e00d5607da9957d3df`.
 
-Follow-on SQL SHA-256: `762330060d2418e92c8ae17b5b327421bf20253a4361375f1c9369dad24bcf52`.
+Follow-on SQL SHA-256: `f49c909c12dcee1fd8a8b3ad6827fcb63cea62e719c83a4fb54a3910bc88adec`.
 
 These hashes bind this local review packet only; any final fixes require updated hashes. The latest source requires the final native rerun before installation. Existing `team-workspace.ts`, DB transaction helper, Jobs component, Auth routes and environment example were not overwritten. The follow-on proposal contains explicit reviewed function replacements; integration must reconcile them with independent QA/security changes, never apply old function bodies blindly over a newer fix.
 
-`proposals/room-maintenance-fixture-context.patch` adds only explicit fixture mode at three native SQL setup sites across the original jobs/schedules test files. It changes no assertion or production guard. The new regression runner tests temporary copies with those additions while leaving the integration-owned originals untouched. This makes source-withdrawal tests fail for their intended account/session/tenant reason rather than an absent fixture attestation. A read predicate preserves RLS-scoped inspection under the fixture administrator's authenticated role; mutation restrictions are unchanged.
+The original `room-maintenance-fixture-context.patch` is superseded by the stronger 4e68130 guarded fixture helpers already present. The regression runner now uses those real test files directly rather than making temporary patched copies. It must not apply either proposal twice after release promotes the composed SQL into numbered migration 0114.
+
+## Grant-fence composition review
+
+The follow-on target function now retains the exact strict CASE from 4e68130, with only the customer BYOK conjunct added. Missing hosted grants fail closed; the empty-grant exception requires verified fixture mode with hosted execution off. Browser manual drain remains fixture-only. Fresh MFA grant issuance retains the separate base admission predicate, without granting queued claim/dispatch/finish an empty-grant bypass.
+
+The reducer installs stored grant context, then checks grant activity, base context and the full runtime target predicate. Rollout/consent expiry or revocation therefore invalidates pending work rather than merely blocking dispatch. Native tests now include four additional withdrawal scenarios, but are NOT accepted until QA runs them in its exclusively assigned database window.
+
+Composition verification: eight pure boundary/source regressions pass and full typecheck passes. The full native final-source run remains pending, including the earlier 4e fixture-only delta and all 709 refinements. The historical 23-pass base result and eight-pass earlier maintenance result do not establish final combined acceptance.
 
 ## Verification commands and remaining blocker
 

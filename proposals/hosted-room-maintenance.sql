@@ -81,12 +81,19 @@ create or replace function kxra_private.team_worker_target(i uuid) returns boole
 language sql stable security definer set search_path='' as $$
  select exists(select 1 from kxra.team_jobs target join kxra.team_agents agent on agent.id=target.agent_id
  where target.id=i and kxra_private.team_room_byok_allowed(target.room_id,agent.connection_id))
- and case when nullif(current_setting('request.kxra.team_grant',true),'') is null then true else exists(
- select 1 from kxra.team_execution_grants g join kxra.team_jobs j on j.id=i join kxra.team_agents agent on agent.id=j.agent_id
- where g.id=nullif(current_setting('request.kxra.team_grant',true),'')::uuid and kxra_private.team_execution_grant_active(g.id)
+ and case when nullif(current_setting('request.kxra.team_grant',true),'') is null then
+ coalesce(current_setting('request.kxra.execution_mode',true)='fixture'
+ and current_setting('request.kxra.hosted_room_jobs',true) is distinct from 'on',false)
+ else session_user='kxra_app' and exists(
+ select 1 from kxra.team_execution_grants g join kxra.team_jobs j on j.id=i
+ join kxra.team_agents agent on agent.id=j.agent_id
+ where g.id=nullif(current_setting('request.kxra.team_grant',true),'')::uuid
+ and kxra_private.team_execution_grant_active(g.id)
  and j.requested_by=g.requested_by and j.org_id=g.org_id and j.room_id=g.room_id and agent.connection_id=g.connection_id
- and (j.id=g.target_id or exists(select 1 from kxra.team_schedule_occurrences occurrence where occurrence.job_id=j.id and occurrence.schedule_id=g.target_id)
- or (j.id::text=current_setting('request.kxra.team_child',true) and exists(select 1 from kxra.team_jobs template where template.id=g.target_id
+ and (j.id=g.target_id or exists(select 1 from kxra.team_schedule_occurrences occurrence
+ where occurrence.job_id=j.id and occurrence.schedule_id=g.target_id)
+ or (j.id::text=current_setting('request.kxra.team_child',true) and exists(
+ select 1 from kxra.team_jobs template where template.id=g.target_id
  and (j.agent_id,j.message_id,j.context_mode,j.context_ids,j.context_sha256,j.chunk_ids,j.chunk_hashes,j.skill_ids,j.skill_hashes,j.memory_ids,j.memory_hashes)
  is not distinct from (template.agent_id,template.message_id,template.context_mode,template.context_ids,template.context_sha256,template.chunk_ids,template.chunk_hashes,template.skill_ids,template.skill_hashes,template.memory_ids,template.memory_hashes))))) end
 $$;
@@ -159,7 +166,8 @@ begin
  perform set_config('request.kxra.org_id',g.org_id::text,true);
  perform set_config('request.kxra.hosted_room_jobs','on',true);
  perform set_config('request.kxra.team_grant',g.id::text,true);
- valid=kxra_private.team_execution_grant_active(g.id) and kxra_private.team_job_base_context_active(g.target_id);
+ valid=kxra_private.team_execution_grant_active(g.id) and kxra_private.team_job_base_context_active(g.target_id)
+ and kxra_private.team_worker_target(g.target_id);
  reason=case when g.revoked_at is not null then 'GRANT_REVOKED' when g.expires_at<=now() then 'GRANT_EXPIRED' else 'AUTHORITY_CHANGED' end;
  uncertain=exists(select 1 from kxra.team_jobs job where job.org_id=g.org_id and job.room_id=g.room_id and job.requested_by=g.requested_by
  and (job.id=g.target_id or exists(select 1 from kxra.team_schedule_occurrences o where o.schedule_id=g.target_id and o.job_id=job.id))

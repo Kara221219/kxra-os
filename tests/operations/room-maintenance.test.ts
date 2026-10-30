@@ -10,8 +10,17 @@ import {
   knowledgeLogin,
   knowledgeOk as ok,
 } from "../support/team-knowledge";
-const cfg = JSON.parse(fs.readFileSync(runtimeFile("database.json"), "utf8")),
-  app = new pg.Pool(cfg),
+import { localModeConfiguration } from "../../packages/authz/local-guard";
+assert.ok(
+  localModeConfiguration(process.env) && !process.env.VERCEL_ENV,
+  "Maintenance tests require the guarded generated fixture runtime",
+);
+const cfg = JSON.parse(fs.readFileSync(runtimeFile("database.json"), "utf8"));
+assert.ok(
+  typeof cfg.host === "string" && cfg.host.startsWith("/") && !cfg.password,
+  "Maintenance tests require a private Unix socket without provider credentials",
+);
+const app = new pg.Pool(cfg),
   admin = new pg.Pool({ ...cfg, user: os.userInfo().username });
 after(async () => {
   await app.end();
@@ -881,4 +890,79 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
     "SUCCEEDED",
     "other tenant's withdrawal cannot change the first completed result",
   );
+  for (const withdrawal of [
+    "ROLLOUT_REVOKED",
+    "ROLLOUT_EXPIRED",
+    "CONSENT_REVOKED",
+    "CONSENT_EXPIRED",
+  ] as const) {
+    const c = await customer(owner);
+    await admin.query(
+      "insert into kxra.team_room_rollouts(room_id,org_id,connection_id,expires_at,max_daily_dispatches) values($1,$2,$3,now()+interval '1 hour',2)",
+      [c.room, c.tenant, c.connection],
+    );
+    await as(
+      c.actor,
+      "select kxra.team_room_byok_review($1,$2,'APPROVE')",
+      [c.room, c.connection],
+      c.tenant,
+      "",
+      "hosted",
+    );
+    const pending = await enqueue(c);
+    // Keep this synthetic scope first in the bounded maintenance traversal.
+    await admin.query(
+      "update kxra.team_execution_grants set last_maintained_at=now() where id<>$1",
+      [pending.grant],
+    );
+    if (withdrawal === "ROLLOUT_REVOKED")
+      await admin.query(
+        "update kxra.team_room_rollouts set revoked_at=now() where room_id=$1",
+        [c.room],
+      );
+    if (withdrawal === "ROLLOUT_EXPIRED")
+      await admin.query(
+        "update kxra.team_room_rollouts set created_at=now()-interval '1 hour',expires_at=now()-interval '1 second' where room_id=$1",
+        [c.room],
+      );
+    if (withdrawal === "CONSENT_REVOKED")
+      await admin.query(
+        "update kxra.team_byok_consents set revoked_at=now() where room_id=$1",
+        [c.room],
+      );
+    if (withdrawal === "CONSENT_EXPIRED")
+      await admin.query(
+        "update kxra.team_byok_consents set expires_at=now()-interval '1 second' where room_id=$1",
+        [c.room],
+      );
+    assert.equal(
+      (
+        await as(
+          c.actor,
+          "select kxra_private.team_worker_target($1) allowed",
+          [pending.id],
+          c.tenant,
+          pending.grant,
+          "hosted",
+        )
+      )[0].allowed,
+      false,
+      withdrawal,
+    );
+    await maintain();
+    assert.equal(
+      (await row(pending.id)).state,
+      "CANCELLED",
+      withdrawal + " must reduce pending work without a provider call",
+    );
+    assert.ok(
+      (
+        await admin.query(
+          "select revoked_at from kxra.team_execution_grants where id=$1",
+          [pending.grant],
+        )
+      ).rows[0].revoked_at,
+      withdrawal,
+    );
+  }
 });

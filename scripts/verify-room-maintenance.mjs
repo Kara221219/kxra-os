@@ -8,7 +8,6 @@ const flags = process.argv.slice(2);
 if (flags.length && flags.join(" ") !== "--regression")
   throw Error("Use no argument or --regression");
 const regression = flags.length === 1;
-const temporaryTests = [];
 const root = path.resolve(import.meta.dirname, ".."),
   runtime = fs.mkdtempSync(
     path.join(
@@ -149,31 +148,6 @@ try {
     } finally {
       await admin.end();
     }
-    const marker = '    await db.query("set local role authenticated");';
-    for (const name of ["team-jobs-http", "team-schedules-http"]) {
-      const source = fs.readFileSync(
-        path.join(root, "tests", name + ".test.ts"),
-        "utf8",
-      );
-      if (source.split(marker).length !== (name === "team-jobs-http" ? 3 : 2))
-        throw Error("Fixture context patch no longer has one exact match");
-      // No assertion or production behavior changes: direct fixture SQL now
-      // explicitly attests its execution mode, matching the guarded HTTP runtime.
-      const filename = path.join(
-        root,
-        "tests",
-        `.room-maintenance-regression-${env.KXRA_CI_RUN_ID}-${name}.test.ts`,
-      );
-      fs.writeFileSync(
-        filename,
-        source.replaceAll(
-          marker,
-          marker +
-            "\n    await db.query(\"select set_config('request.kxra.execution_mode','fixture',true)\");",
-        ),
-      );
-      temporaryTests.push(filename);
-    }
   }
   await runTests([
     "--import",
@@ -181,14 +155,17 @@ try {
     "--test",
     "--test-concurrency=1",
     ...(regression
-      ? [...temporaryTests, "tests/team-provider.test.ts"]
+      ? [
+          "tests/team-jobs-http.test.ts",
+          "tests/team-schedules-http.test.ts",
+          "tests/team-provider.test.ts",
+        ]
       : [
           "tests/operations/room-maintenance.test.ts",
           "tests/operations/room-maintenance-boundary.test.ts",
         ]),
   ]);
 } finally {
-  for (const filename of temporaryTests) fs.rmSync(filename, { force: true });
   server.kill("SIGTERM");
   run(["scripts/database.mjs", "stop"]);
   for (const [file, content] of generated) fs.writeFileSync(file, content);
