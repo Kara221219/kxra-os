@@ -1,6 +1,4 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { ActionButton } from "./Forms";
 import type { roomOperationRecovery } from "../lib/room-operation-recovery";
 type Data = Awaited<ReturnType<typeof roomOperationRecovery>>;
 export function RoomOperationRecovery({
@@ -10,28 +8,6 @@ export function RoomOperationRecovery({
   room: string;
   data: Data;
 }) {
-  const router = useRouter(),
-    [busy, setBusy] = useState(false),
-    [notice, setNotice] = useState("");
-  async function send(value: unknown) {
-    setBusy(true);
-    setNotice("");
-    try {
-      const response = await fetch(`/api/room-operations/${room}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(value),
-        }),
-        body = await response.json();
-      if (!response.ok) throw Error(body.error || "Review unavailable");
-      setNotice("Review recorded.");
-      router.refresh();
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Review unavailable");
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <section aria-label="Room execution recovery" className="panel">
       <h1>Room execution and recovery</h1>
@@ -45,7 +21,6 @@ export function RoomOperationRecovery({
         refunding provider usage, retrying it or reactivating a paused schedule.
         Recent MFA verification is required.
       </p>
-      <p role="status">{notice}</p>
       {data.rollout ? (
         <p>
           Room rollout starts {new Date(data.rollout.starts_at).toISOString()}{" "}
@@ -57,44 +32,31 @@ export function RoomOperationRecovery({
         <p>Automatic execution is held: this room has no approved rollout.</p>
       )}
       {data.connection && data.can_review && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void send({
-              action: "APPROVE_CUSTOMER_BYOK",
-              connection_id: data.connection!.id,
-              customer_owned: true,
-            });
-          }}
-        >
+        <div>
           <h2>Customer-owned provider connection</h2>
           <p>
             {data.connection.name} · {data.connection.model}. Consent active:{" "}
             {data.connection.allowed ? "yes" : "no"}.
           </p>
-          <fieldset disabled={busy}>
-            <label>
-              <input type="checkbox" required /> I supplied and own this
-              provider connection, accept its provider charges, and consent to
-              this room&apos;s reviewed automatic work within the approved
-              limits and expiry.
-            </label>
-            <button type="submit" disabled={!data.rollout?.active}>
-              Approve this customer-owned connection
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                void send({
-                  action: "REVOKE_CUSTOMER_BYOK",
-                  connection_id: data.connection!.id,
-                })
-              }
-            >
-              Revoke connection consent
-            </button>
-          </fieldset>
-        </form>
+          <ActionButton
+            url={`/api/room-operations/${room}`}
+            payload={{
+              action: "APPROVE_CUSTOMER_BYOK",
+              connection_id: data.connection.id,
+              customer_owned: true,
+            }}
+            label="Approve this customer-owned connection"
+            disabled={!data.rollout?.active}
+            confirmation="I supplied and own this provider connection, accept its provider charges, and consent to this room’s reviewed automatic work within the approved limits and expiry."
+            secondary={{
+              payload: {
+                action: "REVOKE_CUSTOMER_BYOK",
+                connection_id: data.connection.id,
+              },
+              label: "Revoke connection consent",
+            }}
+          />
+        </div>
       )}
       <h2>Uncertain outcomes</h2>
       {!data.cases.length && (
@@ -108,26 +70,17 @@ export function RoomOperationRecovery({
             {new Date(item.created_at).toISOString()}.
           </p>
           {item.state === "OPEN" && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void send({
-                  action: "ACKNOWLEDGE_NO_RETRY",
-                  case_id: item.id,
-                  version: item.version,
-                  reviewed: true,
-                });
+            <ActionButton
+              url={`/api/room-operations/${room}`}
+              payload={{
+                action: "ACKNOWLEDGE_NO_RETRY",
+                case_id: item.id,
+                version: item.version,
+                reviewed: true,
               }}
-            >
-              <fieldset disabled={busy}>
-                <label>
-                  <input type="checkbox" required /> I reviewed this uncertainty
-                  and understand that this acknowledgment does not retry the
-                  call or establish successful completion.
-                </label>
-                <button type="submit">Record review without retry</button>
-              </fieldset>
-            </form>
+              label="Record review without retry"
+              confirmation="I reviewed this uncertainty and understand that this acknowledgment does not retry the call or establish successful completion."
+            />
           )}
         </article>
       ))}
