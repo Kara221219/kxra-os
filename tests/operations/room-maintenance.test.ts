@@ -365,7 +365,15 @@ test("bounded reduction traverses a withdrawn backlog and prunes only old operat
     Array.from({ length: 3 }, () => maintain()),
   );
   assert.ok(results.every((r) => r.scopes <= 5));
-  for (let i = 0; i < 3; i++) await maintain();
+  // Concurrent ticks may defer the same busy requester for the real 60-second
+  // traversal cooldown. Advance only that fixture timestamp for the next tick.
+  for (let i = 0; i < 3; i++) {
+    await admin.query(
+      "update kxra.team_execution_grants set last_maintained_at=null where id=any($1::uuid[])",
+      [entries.map((entry) => entry.g)],
+    );
+    await maintain();
+  }
   for (const e of entries) assert.equal((await row(e.j.id)).state, "CANCELLED");
   const receipt = crypto.randomUUID(),
     fresh = crypto.randomUUID();
@@ -1045,6 +1053,35 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
         await as(
           c.actor,
           "select kxra_private.team_worker_target($1) allowed",
+          [pending.id],
+          c.tenant,
+          pending.grant,
+          "hosted",
+        )
+      )[0].allowed,
+      true,
+      withdrawal +
+        " must remain selectable only under its exact active grant for cleanup",
+    );
+    assert.equal(
+      (
+        await as(
+          c.actor,
+          "select kxra_private.team_worker_target($1) allowed",
+          [pending.id],
+          c.tenant,
+          "",
+          "hosted",
+        )
+      )[0].allowed,
+      false,
+      withdrawal + " must not admit hosted cleanup without its grant",
+    );
+    assert.equal(
+      (
+        await as(
+          c.actor,
+          "select kxra_private.team_job_context_active($1) allowed",
           [pending.id],
           c.tenant,
           pending.grant,

@@ -308,14 +308,17 @@ test("maintenance composition retains the strict hosted grant fence and pre-gran
   };
   const oldTarget = body(base, "team_worker_target");
   const newTarget = body(maintenance, "team_worker_target");
-  // Only the reviewed BYOK conjunction may precede the exact strict CASE.
+  // Cleanup selection retains the exact strict grant CASE, independent of funding.
   assert.equal(
     newTarget.slice(newTarget.indexOf("case when")),
     oldTarget.slice(oldTarget.indexOf("case when")),
   );
+  assert.doesNotMatch(newTarget, /team_room_byok_allowed/);
+  const newBase = body(maintenance, "team_job_base_context_active");
+  assert.doesNotMatch(newBase, /team_worker_target/);
   assert.match(
-    newTarget,
-    /team_room_byok_allowed\(target.room_id,agent.connection_id\)/,
+    newBase,
+    /team_room_byok_allowed\(j.room_id,agent.connection_id\)/,
   );
   assert.match(newTarget, /execution_mode',true\)='fixture'/);
   assert.match(
@@ -333,7 +336,7 @@ test("maintenance composition retains the strict hosted grant fence and pre-gran
     reducer,
     /valid=kxra_private.team_execution_grant_active\(g.id\) and kxra_private.team_job_base_context_active\(g.target_id\)\s+and kxra_private.team_worker_target\(g.target_id\);/,
   );
-  // Runtime target evaluation includes expiry/revocation/rollout/BYOK; admission
+  // Full runtime context includes expiry/revocation/rollout/BYOK; admission
   // remains separate so fresh MFA can authorize a just-enqueued target atomically.
   assert.doesNotMatch(
     body(base, "team_job_base_context_active"),

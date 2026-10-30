@@ -82,7 +82,7 @@ Release owns allocation centrally. Billing currently owns **0113**. Release has 
 
 Base SQL SHA-256: `f94f89a8280e65ac62abd53f1faa8e37e458407ac84b33e00d5607da9957d3df`.
 
-Follow-on SQL SHA-256: `1b2c78f78fbacbdbe0de0b2a79ef0312054ea024e68155061ae86148b152fb0f`.
+Follow-on SQL SHA-256: `379795f420af74ed61ab52311e1e6dd63e6000a9470099596de0b7847b39e458`.
 
 These hashes bind this local review packet only; any final fixes require updated hashes. The latest source requires the final native rerun before installation. Existing `team-workspace.ts`, DB transaction helper, Jobs component, Auth routes and environment example were not overwritten. The follow-on proposal contains explicit reviewed function replacements; integration must reconcile them with independent QA/security changes, never apply old function bodies blindly over a newer fix.
 
@@ -90,7 +90,7 @@ The original `room-maintenance-fixture-context.patch` is superseded by the stron
 
 ## Grant-fence composition review
 
-The follow-on target function now retains the exact strict CASE from 4e68130, with only the customer BYOK conjunct added. Missing hosted grants fail closed; the empty-grant exception requires verified fixture mode with hosted execution off. Browser manual drain remains fixture-only. Fresh MFA grant issuance retains the separate base admission predicate, without granting queued claim/dispatch/finish an empty-grant bypass.
+The follow-on target function now retains the exact strict CASE from 4e68130, without a BYOK condition in cleanup target selection. The BYOK conjunct belongs in the separate base admission/runtime context, so withdrawn work remains discoverable for cancellation while dispatch/publication still fail closed. Missing hosted grants fail closed; the empty-grant exception requires verified fixture mode with hosted execution off. Browser manual drain remains fixture-only. Fresh MFA grant issuance retains the separate base admission predicate, without granting queued claim/dispatch/finish an empty-grant bypass.
 
 The reducer installs stored grant context, then checks grant activity, base context and the full runtime target predicate. Rollout/consent expiry or revocation therefore invalidates pending work rather than merely blocking dispatch. Native tests now include four additional withdrawal scenarios, but are NOT accepted until QA runs them in its exclusively assigned database window.
 
@@ -132,3 +132,8 @@ Root service discovery now includes `tests/room-operations.test.ts`, importing t
 With `0114_hosted_room_operations.sql` present, it requires exactly `begin;\n` + base.trim() + `\n\n` + maintenance.trim() + `\ncommit;`, allowing only outer whitespace and no additional SQL, that name in `public.kxra_local_migrations`, all six operations tables, and the latest composed routine bodies, SECURITY DEFINER and empty search path. This path only verifies; it never installs or repairs proposals. Missing/partial/drifted state is a failure. Before promotion only, an empty schema can receive both proposals atomically once under an advisory lock, with a restricted public fixture receipt. Subsequent calls verify that receipt/hash and actual routines. A pre-promotion database must not be reused after source promotion; a standalone receipt is rejected in promoted mode. The standalone regression launcher delegates to the same installer.
 
 Dependencies: the existing generated migration ledger and fixture roles/seeds, root local loopback app, proposals retained byte-for-byte in composed 0114, and SQL installed before native assertions. Synthetic FIXTURE connection probes explicitly set execution mode while retaining hosted execution on; absent grants still fail. Explicit hosted empty-grant tests remain unchanged. Native scenarios and complete combined acceptance still await the QA serial database window. Pure schema contract, boundary, typecheck, OS build, format and secret checks pass locally; these do not substitute for native execution.
+
+
+## Withdrawn-work cleanup composition
+
+External `7c248e4` identified that placing BYOK in target selection hid withdrawn jobs from cancellation/reconciliation. This composition retains the strict 4e target CASE, moves only funding eligibility to base context, and does not restore the external empty-grant allowance or reintroduce target checks into pre-grant admission. The reducer still requires active grant plus full base context (including BYOK) plus exact target. Native cooldown tests advance only the synthetic last-maintained timestamps. External reported 13 maintenance / 16 regression / 4 boundary passes are historical evidence for that external branch, not acceptance of this combined source. Root's exclusive combined fixture owns final native verification; no service was started here.

@@ -76,12 +76,10 @@ end $$;
 revoke all on function kxra.team_room_byok_review(uuid,uuid,text) from public,anon;
 grant execute on function kxra.team_room_byok_review(uuid,uuid,text) to authenticated;
 
--- Preserve the original complete target fence and add customer-funded room admission.
+-- Preserve strict grant-bound cleanup selection even after funding is withdrawn.
 create or replace function kxra_private.team_worker_target(i uuid) returns boolean
 language sql stable security definer set search_path='' as $$
- select exists(select 1 from kxra.team_jobs target join kxra.team_agents agent on agent.id=target.agent_id
- where target.id=i and kxra_private.team_room_byok_allowed(target.room_id,agent.connection_id))
- and case when nullif(current_setting('request.kxra.team_grant',true),'') is null then
+ select case when nullif(current_setting('request.kxra.team_grant',true),'') is null then
  coalesce(current_setting('request.kxra.execution_mode',true)='fixture'
  and current_setting('request.kxra.hosted_room_jobs',true) is distinct from 'on',false)
  else session_user='kxra_app' and exists(
@@ -96,6 +94,30 @@ language sql stable security definer set search_path='' as $$
  select 1 from kxra.team_jobs template where template.id=g.target_id
  and (j.agent_id,j.message_id,j.context_mode,j.context_ids,j.context_sha256,j.chunk_ids,j.chunk_hashes,j.skill_ids,j.skill_hashes,j.memory_ids,j.memory_hashes)
  is not distinct from (template.agent_id,template.message_id,template.context_mode,template.context_ids,template.context_sha256,template.chunk_ids,template.chunk_hashes,template.skill_ids,template.skill_hashes,template.memory_ids,template.memory_hashes))))) end
+$$;
+
+-- Funding is admission/execution authority, not cleanup target selection.
+-- Keep pre-grant admission independent of the runtime target predicate.
+create or replace function kxra_private.team_job_base_context_active(i uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+ select exists(select 1 from kxra.team_jobs j join kxra.account_identities identity on identity.account_id=j.requested_by
+  join kxra.team_agents agent on agent.id=j.agent_id and agent.room_id=j.room_id
+  join kxra.team_connections connection on connection.id=agent.connection_id
+  where j.id=i and j.requested_by=auth.uid() and j.org_id=kxra_private.member_org() and kxra_private.pilot_entitled(j.org_id)
+  and identity.state='ACTIVE' and identity.session_version=j.request_session_version
+  and kxra_private.can_team_room(j.room_id,true) and agent.enabled and (connection.provider='FIXTURE' or
+   (connection.provider<>'FIXTURE' and current_setting('request.kxra.hosted_room_jobs',true)='on'))
+  and kxra_private.team_room_byok_allowed(j.room_id,agent.connection_id)
+  and kxra_private.team_connection_active(connection.id,j.room_id)
+  and j.message_id=any(j.context_ids)
+  and not exists(select 1 from unnest(j.context_ids) source(id) where not exists(
+   select 1 from kxra.team_messages message where message.id=source.id and message.room_id=j.room_id))
+  and not exists(select 1 from unnest(j.chunk_ids) with ordinality source(id,n) left join kxra.knowledge_chunks chunk on chunk.id=source.id
+   where chunk.id is null or not kxra_private.team_chunk_allowed(j.room_id,source.id) or chunk.content_sha256 is distinct from j.chunk_hashes[source.n])
+  and not exists(select 1 from unnest(j.skill_ids) with ordinality source(id,n) left join kxra.team_skill_versions skill on skill.id=source.id
+   where skill.id is null or not kxra_private.team_skill_allowed(j.room_id,j.agent_id,source.id) or skill.content_sha256 is distinct from j.skill_hashes[source.n])
+  and not exists(select 1 from unnest(j.memory_ids) with ordinality source(id,n) left join kxra.team_memory_versions memory on memory.id=source.id
+   where memory.id is null or memory.room_id<>j.room_id or not kxra_private.team_memory_allowed(source.id,j.agent_id) or memory.content_sha256 is distinct from j.memory_hashes[source.n]))
 $$;
 
 alter table kxra.team_execution_grants add column last_maintained_at timestamptz;
