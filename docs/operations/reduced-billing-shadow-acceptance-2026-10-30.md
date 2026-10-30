@@ -1,5 +1,7 @@
 # Reduced billing reconciliation — default-off local candidate
 
+Owner checkpoint, 30 October23:44 UTC: no payments, purchases, credit spending or paid activation without explicit permission. Neither a24-hour financial-evidence age nor current-workspace seven-day grace/day30 recovery has been approved. They remain recommendations for morning review; current safe production defaults stay unchanged. Marketing/video/visual redesign work is cancelled and is outside this billing candidate.
+
 This implements the event-led candidate beyond the earlier reference model. It is **shadow-only**: it records observations and cannot grant/extend paid access, clear the existing reconciliation flag, acknowledge the authoritative worker's jobs or change the 120/300-second production proof policy. No provider/account setting, credential, live charge, host or financial-age policy was enabled. Release owns the unnumbered SQL proposal and all hosted integration.
 
 ## Implemented transport and durable storage

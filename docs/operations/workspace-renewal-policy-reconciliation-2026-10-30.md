@@ -1,5 +1,7 @@
 # Exact workspace failed-renewal policy reconciliation
 
+Owner checkpoint, 30 October23:44 UTC: no payments, purchases, credit spending or paid activation without explicit permission. Neither a24-hour financial-evidence age nor current-workspace seven-day grace/day30 recovery has been approved. They remain recommendations for morning review; current safe production defaults stay unchanged. Marketing/video/visual redesign work is cancelled and is outside this billing candidate.
+
 ADR0047 was accepted on1October for the founding subscription and document pack SHA256 `8277d2cbad017feaf4fea238d9eecedd1e7cfff0aaab6fa80fca5a239a8783a9`. Later workspace decisions replace catalogue prices/seats and retire studio pricing; no evidence here explicitly revokes every other accepted service commitment. Current workspace public terms catalogue is empty. Do not treat existing zero-grace code as a new owner decision or publish an old document as current workspace terms.
 
 Carry forward the settled workspace catalogue/no-added-VAT instruction, B2B-only audience, automatic renewal, no trial, paid-period-end cancellation, support address and the accepted duplicate/incorrect-charge/legal/material-service refund remedies. The specific open applicability question is the seven-day failed-renewal work grace followed by at-most30 days of read-only recovery. Current TypeScript and private SQL allow only collected-current-active access, zero grace and no past-due access; own-member visibility is not a complete timed read-only/recovery/suspension contract.

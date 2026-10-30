@@ -306,7 +306,7 @@ async function boundedRawBody(request: Request, deadlineMs: number) {
         try {
           chunks.append(part.value);
         } catch (error) {
-          await reader.cancel().catch(() => {});
+          void reader.cancel().catch(() => {});
           throw error;
         }
       }

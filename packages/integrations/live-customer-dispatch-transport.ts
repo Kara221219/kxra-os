@@ -117,7 +117,7 @@ export function boundedDispatchTransport(
             try {
               chunks.append(next.value);
             } catch (error) {
-              await reader.cancel().catch(() => {});
+              void reader.cancel().catch(() => {});
               throw error;
             }
           }

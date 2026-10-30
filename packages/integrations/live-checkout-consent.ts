@@ -264,13 +264,13 @@ async function readModernCheckoutConsent(
         if (done) break;
         size += value.byteLength;
         if (size > 100_000 || Date.now() >= deadline) {
-          await reader.cancel();
+          void reader.cancel().catch(() => {});
           throw Error("BUDGET");
         }
         try {
           chunks.append(value);
         } catch (error) {
-          await reader.cancel().catch(() => {});
+          void reader.cancel().catch(() => {});
           throw error;
         }
       }

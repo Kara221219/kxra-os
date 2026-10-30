@@ -452,13 +452,13 @@ async function readModernStripePaymentEvidence(
         if (done) break;
         length += value.byteLength;
         if (length > 100_000 || Date.now() >= deadline) {
-          await reader.cancel();
+          void reader.cancel().catch(() => {});
           unverified("RESPONSE_BUDGET_EXCEEDED");
         }
         try {
           chunks.append(value);
         } catch (error) {
-          await reader.cancel().catch(() => {});
+          void reader.cancel().catch(() => {});
           throw error;
         }
       }

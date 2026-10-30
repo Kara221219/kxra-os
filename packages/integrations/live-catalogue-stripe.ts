@@ -185,13 +185,13 @@ async function request(
       if (done) break;
       size += value.byteLength;
       if (size > 100_000) {
-        await reader.cancel();
+        void reader.cancel().catch(() => {});
         fail("RESPONSE_TOO_LARGE");
       }
       try {
         chunks.append(value);
       } catch (error) {
-        await reader.cancel().catch(() => {});
+        void reader.cancel().catch(() => {});
         throw error;
       }
     }

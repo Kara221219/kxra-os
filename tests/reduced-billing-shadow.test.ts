@@ -63,6 +63,48 @@ test("default-off denies before configuration, SQL, or provider access", async (
     /DISABLED/,
   );
 });
+
+test(
+  "a 429 with a never-settling cancellation promise returns promptly without retry",
+  { timeout: 1000 },
+  async () => {
+    const { options } = await setup();
+    let cancelled = false,
+      calls = 0;
+    const result = await observeReducedBillingShadow({
+      ...options,
+      transport: async () => {
+        calls++;
+        return new Response(
+          new ReadableStream({
+            cancel() {
+              cancelled = true;
+              return new Promise<void>(() => {});
+            },
+          }),
+          { status: 429, headers: { "retry-after": "30" } },
+        );
+      },
+    });
+    assert.equal(cancelled, true);
+    assert.equal(calls, 1);
+    assert.equal(result.outcome, "UNVERIFIED");
+    assert.equal(result.retry_after_seconds, 30);
+  },
+);
+
+test("shadow deadline cannot be disabled or extended by private caller configuration", () => {
+  for (const deadlineMs of [0, -1, NaN, Infinity, 45001])
+    assert.throws(() =>
+      createReducedShadowSnapshot({
+        deadlineMs,
+        secretKey: "synthetic",
+        apiVersion: "2025-07-30.basil",
+        transport: async () => assert.fail("network"),
+        stillCurrent: async () => true,
+      }),
+    );
+});
 test("missing, tampered, foreign, wrong-mode or changed-terms consent cannot bootstrap unknown purchases", async () => {
   const { f, claim } = await setup();
   for (const bad of [

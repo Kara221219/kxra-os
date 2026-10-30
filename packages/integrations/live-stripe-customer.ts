@@ -302,13 +302,13 @@ async function createCustomerCore(
         if (done) break;
         bytes += value.byteLength;
         if (bytes > 100_000 || Date.now() >= deadline) {
-          await reader.cancel();
+          void reader.cancel().catch(() => {});
           throw new CreationFault("RESPONSE_BUDGET_EXCEEDED");
         }
         try {
           chunks.append(value);
         } catch (error) {
-          await reader.cancel().catch(() => {});
+          void reader.cancel().catch(() => {});
           throw error;
         }
       }

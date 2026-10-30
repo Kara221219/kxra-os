@@ -511,3 +511,82 @@ test("signed webhook survives small views into a large reused backing buffer", a
   assert.equal(response.status, 200);
   assert.equal(recorded, 1);
 });
+
+test(
+  "chunk-budget rejection returns before an uncooperative cancellation settles",
+  { timeout: 1000 },
+  async () => {
+    let cancelled = false,
+      recorded = 0;
+    const handler = createLiveWebhookHandler({
+      configuration: () => endpoint,
+      record: async () => {
+        recorded++;
+      },
+    });
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        c.enqueue(new Uint8Array([32]));
+      },
+      cancel() {
+        cancelled = true;
+        return new Promise<void>(() => {});
+      },
+    });
+    const response = await handler(
+      new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: stream,
+        duplex: "half",
+      } as RequestInit),
+    );
+    assert.equal(response.status, 400);
+    assert.equal(cancelled, true);
+    assert.equal(recorded, 0);
+  },
+);
+
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
+  test(`${mode}: unmatched refund retains its verified event ID and never guesses tenant/customer from metadata`, () => {
+    const scoped = modernBillingFixture(mode),
+      scope = scoped.execution.execution_scope;
+    const endpoint = {
+      ...scoped,
+      project: scope.project_ref,
+      account_id: scope.account_id,
+      origin: "https://kxra.example",
+      secret,
+    };
+    const event = {
+      ...fixture("refund.created"),
+      livemode: scope.livemode,
+      account: scope.account_id,
+      data: {
+        object: {
+          id: "re_syntheticHeld",
+          object: "refund",
+          charge: "ch_syntheticHeld",
+          metadata: {
+            org_id: "FORGED_TENANT",
+            customer: "cus_forged123",
+            subscription: "sub_forged123",
+            role: "KXRA_OWNER",
+          },
+        },
+      },
+    };
+    const s = signed(event);
+    const value = (
+      mode === "LIVE" ? normalizeLiveWebhook : normalizeStagingSandboxWebhook
+    )(s.raw, s.signature, endpoint, now)!;
+    assert.equal(value.event_id, event.id);
+    assert.equal(value.event_type, "refund.created");
+    assert.equal(value.customer_id, null);
+    assert.equal(value.subscription_id, null);
+    assert.equal(value.invoice_id, null);
+    assert.doesNotMatch(
+      JSON.stringify(value),
+      /FORGED_TENANT|cus_forged|sub_forged|KXRA_OWNER/,
+    );
+  });

@@ -8,6 +8,37 @@ import {
 import { readPaidRefreshPreflight } from "../packages/integrations/live-paid-refresh-preflight";
 import { checkoutTermsPresentationDigest } from "../packages/integrations/live-checkout-consent";
 import { paidRefreshProviderFixture as fixture } from "./support/paid-refresh-provider-fixture";
+
+test(
+  "preflight size rejection cannot hang on an uncooperative stream cancellation",
+  { timeout: 1000 },
+  async () => {
+    const f = fixture();
+    let cancelled = false;
+    await assert.rejects(
+      readPaidRefreshPreflight(
+        {
+          ...f.preflight,
+          transport: async () =>
+            new Response(
+              new ReadableStream({
+                start(c) {
+                  c.enqueue(new Uint8Array(100001));
+                },
+                cancel() {
+                  cancelled = true;
+                  return new Promise<void>(() => {});
+                },
+              }),
+            ),
+        },
+        f.subject,
+      ),
+      /BUDGET/,
+    );
+    assert.equal(cancelled, true);
+  },
+);
 import { type ModernExecutionMode } from "../packages/integrations/modern-billing-scope";
 for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
   test(`${mode} actual preflight → payment/consent → proof → fenced commit and exact ACK`, async () => {

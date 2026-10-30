@@ -94,7 +94,13 @@ export function createReducedShadowSnapshot(input: {
   deadlineMs?: number;
 }) {
   const cache = new Map<string, Uint8Array>();
-  const deadline = Date.now() + (input.deadlineMs ?? 45_000);
+  const duration = z
+    .number()
+    .int()
+    .min(1)
+    .max(45_000)
+    .parse(input.deadlineMs ?? 45_000);
+  const deadline = Date.now() + duration;
   let reads = 0,
     retryAfter = 0;
   const transport: LiveBillingTransport = async (url, init) => {
@@ -134,7 +140,7 @@ export function createReducedShadowSnapshot(input: {
           3600,
           Number(response.headers.get("retry-after")),
         );
-      await response.body?.cancel().catch(() => {});
+      void response.body?.cancel().catch(() => {});
       throw new ShadowReadFault(retryAfter);
     }
     const reader = response.body.getReader();
@@ -178,7 +184,7 @@ export function createReducedShadowSnapshot(input: {
             try {
               chunks.append(part.value);
             } catch (error) {
-              await reader.cancel().catch(() => {});
+              void reader.cancel().catch(() => {});
               throw error;
             }
           }

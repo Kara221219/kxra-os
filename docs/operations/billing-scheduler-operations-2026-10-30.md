@@ -1,5 +1,7 @@
 # Bounded billing scheduler and exact owner packet
 
+Owner checkpoint, 30 October23:44 UTC: no payments, purchases, credit spending or paid activation without explicit permission. Neither a24-hour financial-evidence age nor current-workspace seven-day grace/day30 recovery has been approved. They remain recommendations for morning review; current safe production defaults stay unchanged. Marketing/video/visual redesign work is cancelled and is outside this billing candidate.
+
 Local implementation only; no worker host, budget row, key, catalogue, provider setting or live checkout was changed. Auth/recovery remains owned by the release owner. Carry forward settled Starter£29/one seat, Team£79/five, Business£199/fifteen per workspace/month, no added VAT, B2B-only, automatic renewal, no trial, cancellation at paid-period end and `info@kxra-group.com` support. Do not revive the retired studio/annual offer or ask those choices again.
 
 ## Architecture disposition before any hosting/read-allocation decision
