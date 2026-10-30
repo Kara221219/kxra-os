@@ -1,29 +1,20 @@
 # Checkout/admission integration boundary
 
-Proposed interface for the separate admission engineer and release owner. Scheduler/billing owns dispatch, payment evidence, consent and paid-access authority; admission owns business declarations, jurisdiction/provider/tax review and its private storage. No114 migration or country allowlist is introduced by this billing candidate. This interface is not yet wired and is a required pre-activation integration gate.
+The admission implementation supplied by the parent supersedes the earlier proposed extra worker RPC/DTO below. Reviewed source: implementation `cf45b7f37d3ae86cce35d26f7367bc5d72bb0966`, tip `2efac7c8d8d6df32c36aac4596ae899fc523036c`, branch `codex/business-byok-eligibility`. Scheduler/billing owns dispatch, payment evidence, consent and paid-access authority; admission owns business declarations, jurisdiction/provider/tax review and private evidence. Release owns migration numbering and the shared UI patch. This billing checkout has not imported that migration or changed Auth.
 
-## Worker contract
+## Supplied implementation and compatibility
 
-Before claiming a new CHECKOUT UUID and immediately before its provider POST, billing needs an existing-worker RPC, fixed by server mode, for example `kxra_private.checkout_sale_eligibility(uuid)` and its `staging_sandbox_` facade. Proposed private DTO:
+Admission preserves the existing signatures of `modern_core_request_live_billing_intent(uuid,text,text)`, `modern_core_current_live_billing_intent(uuid)`, `modern_core_checkout_dispatch_presentation(uuid)` and `checkout_result_context(uuid,text)`. Its wrappers and `a10_business_review` trigger resolve and bind the current review server-side at CHECKOUT insertion, recheck at claim, and fence existing presentation/result reads. `a00_execution_scope` runs first. Missing evidence yields `BUSINESS_ELIGIBILITY_REVIEW_REQUIRED`. Scheduler discovery, cancellation portal and historical paid-refresh authority retain their existing interfaces. No additional Stripe metadata, scheduler callback, customer-supplied decision or entitlement authority is required. Preserve these wrappers when integrating billing; do not replace them with this document's earlier RPC proposal.
 
-```ts
-{
-  execution_scope: ModernScopeTag;
-  request_id: string; // canonical CHECKOUT UUID
-  org_id: string; // canonical intent/binding tenant, never HTTP input
-  state: "ELIGIBLE" | "BLOCKED" | "REVIEW_REQUIRED";
-  review_token: string; // SHA256 binding profile/review/source/tax versions
-  valid_until: number; // server UTC epoch seconds
-}
-```
+Static inspection found a concrete integration task: every CHECKOUT fixture insert, including historical CONSUMED rows, now needs legitimate synthetic review evidence first. Existing fixtures often insert their intent before their approved terms/paid policy. The guarded helper `tests/support/reviewed-business-fixture.ts` prepares exact tenant/customer/scope/offer/mapping/terms/tax-bound synthetic evidence only on a generated private local socket fixture, after the real admission migration and canonical approved synthetic policy exist. It neither repairs missing authority nor disables triggers. Its native execution remains unverified because of the shared-memory capacity block.
 
-The RPC must read the canonical intent/customer/scope and actual review authority, never trust a caller-provided tenant, country, clearance or token. It must return non-ELIGIBLE for missing/expired/future/mismatched evidence, changed business profile, unresolved ownership/control/subnational or tax facts, and unsupported provider/payment/legal cases. Keep raw business/identity/evidence data out of this DTO and logs. A stored tax identifier or self-declaration alone cannot clear eligibility.
+Required fixture adaptations remain pending in `checkout-dispatch-presentation.db.test.ts`, `billing-dispatch-discovery.db.test.ts`, `checkout-result.db.test.ts`, `live-paid-refresh.db.test.ts`, `live-paid-access.db.test.ts`, `live-billing-concurrency.db.test.ts` and `live-billing-ledger.db.test.ts`. Move approved synthetic terms/paid-policy setup before CHECKOUT insertion and call the helper there. Reuse one synthetic eligibility policy per scope so a second tenant does not supersede the first. Retain missing-review reservation denials and existing policy-unavailable/retirement negatives; do not satisfy the new trigger by bypassing it. Run the combined lifecycle with the admission migration actually installed in each mode; separate baseline and admission-only passes do not prove composition.
 
-Billing will validate scope/request/org against canonical claim output, require ELIGIBLE, bind the review token to the original dispatch context and re-read it in `stillCurrent` before/after provider work. Changed/expired authority must stop dispatch/result delivery without replacing an uncertain UUID or inventing a successful charge. Permit fresh eligibility review before claim so a blocked case does not consume the checkout UUID. Existing provider-response/ledger/generation/terms gates remain.
+The API accepts strict business declarations and returns server-owned eligibility/version/receipt/expiry with `entitlement_authority:false`. Empty configuration requires review. Real provider/legal/tax clearance, current terms and public publication remain separate gates.
 
 ## HTTP and existing-customer boundaries
 
-Admission should expose own-tenant status only to the verified customer identity and require current MFA/legal authority for consequential declarations. New CHECKOUT requests need a mandatory server-owned eligibility predicate; missing predicate/evidence must deny, with a finite BLOCKED or REVIEW_REQUIRED response. Do not add a default-allow shim to make tests pass. Coordinate the exact DTO/RPC/ports before changing billing files.
+Admission should expose own-tenant status only to the verified customer identity and require current MFA/legal authority for consequential declarations. New CHECKOUT requests need a mandatory server-owned eligibility predicate; missing predicate/evidence must deny, with a finite BLOCKED or REVIEW_REQUIRED response. Do not add a default-allow shim to make tests pass. The supplied wrappers satisfy the agreed existing-RPC boundary; verify their composition with billing before activation.
 
 Do not gate cancellation portal delivery, existing own-billing reads or lawful recovery/support on eligibility for a new sale. A sanctioned/unsupported renewal may also require a specifically authorized provider cancellation/hold process; blocking the UI or denying work alone does not stop Stripe's automatic renewal. No such provider mutation is performed by this source handoff. Already-issued hosted checkout sessions need an explicit expiry/revocation operating procedure; do not claim a later UI gate can recall a bearer URL already delivered to Stripe.
 
