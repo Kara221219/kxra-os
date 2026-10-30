@@ -35,11 +35,14 @@ export function roomSchemaSources(root = process.cwd()) {
     ? fs.readFileSync(migration, "utf8")
     : null;
   if (migrationSource !== null) {
-    const canonical = proposals.map((source) => source.trim()).join("\n\n");
+    const canonical =
+      "begin;\n" +
+      proposals.map((source) => source.trim()).join("\n\n") +
+      "\ncommit;";
     assert.equal(
       migrationSource.trim(),
       canonical,
-      "0114 must equal canonical reviewed base + two newlines + maintenance SQL; outer whitespace only",
+      "0114 must equal canonical begin/base/maintenance/commit SQL; outer whitespace only",
     );
   }
   return {

@@ -55,7 +55,7 @@ test("0114 requires canonical reviewed SQL and rejects injected statements at ev
     assert.equal(plain.migrationSource, null);
     const migration = path.join(root, "supabase/migrations", roomMigrationName);
     const [base, maintenance] = plain.proposals.map((source) => source.trim());
-    const canonical = base + "\n\n" + maintenance;
+    const canonical = "begin;\n" + base + "\n\n" + maintenance + "\ncommit;";
     for (const sql of [canonical, " \n\t" + canonical + "\n\t "]) {
       fs.writeFileSync(migration, sql);
       assert.ok(roomSchemaSources(root).migrationSource);
@@ -66,10 +66,18 @@ test("0114 requires canonical reviewed SQL and rejects injected statements at ev
       plain.proposals[0],
       "stale source",
       injected + "\n" + canonical,
-      base + "\n" + injected + "\n" + maintenance,
+      "begin;\n" + base + "\n" + injected + "\n" + maintenance + "\ncommit;",
+      "begin;\n" + injected + "\n" + base + "\n\n" + maintenance + "\ncommit;",
+      "begin;\n" + base + "\n\n" + maintenance + "\n" + injected + "\ncommit;",
       canonical + "\n" + injected,
       base + "\n" + maintenance,
+      "begin;\n" + base + "\n" + maintenance + "\ncommit;",
+      "begin;\n" + base + "\n\n\n" + maintenance + "\ncommit;",
       base + "\n\n\n" + maintenance,
+      base + "\n\n" + maintenance,
+      "begin;\n" + maintenance + "\n\n" + base + "\ncommit;",
+      "begin;\n" + base + "\n\n" + maintenance,
+      base + "\n\n" + maintenance + "\ncommit;",
     ]) {
       fs.writeFileSync(migration, sql);
       assert.throws(() => roomSchemaSources(root));
