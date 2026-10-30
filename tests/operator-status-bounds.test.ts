@@ -14,9 +14,12 @@ function jsonBytes(size: number) {
   );
 }
 function response(body: ReadableStream<Uint8Array> | Uint8Array) {
-  return new Response(body, {
-    headers: { "content-type": "application/json" },
-  });
+  return new Response(
+    body instanceof Uint8Array ? new Uint8Array(body) : body,
+    {
+      headers: { "content-type": "application/json" },
+    },
+  );
 }
 
 test("status accepts the64KiB byte boundary and4096 reads including EOF", async () => {
