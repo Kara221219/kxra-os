@@ -16,6 +16,7 @@ export const contractFiles = Object.freeze(
     "supabase-mfa",
     "supabase-auth-transport",
     "hosted-self-service-contract",
+    "hosted-team-operations-contract",
     "live-stripe-payment-evidence",
     "live-webhook",
     "checkout-worker",
