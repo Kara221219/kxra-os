@@ -371,12 +371,12 @@ function reserveModernPaidReadCommand(
     entitlement_authority: false,
   });
 }
-function commitModernPaidProofCommand(
-  packet: LivePaidProofPacket,
-  enabled: boolean,
+/** Read-only validation of an immutable stored receipt. This grants no access
+ * and executes no SQL; current policy/binding authority remains server-owned. */
+export function validateStoredModernPaidProof(
+  packet: unknown,
   expectedMode: ModernExecutionMode,
 ) {
-  if (!enabled) throw Error("LIVE_PAID_DISABLED");
   const parsed = packetSchema.parse(packet);
   if (
     parsed.execution_scope.execution_mode !== expectedMode ||
@@ -393,6 +393,15 @@ function commitModernPaidProofCommand(
   const { evidence_sha256, ...content } = parsed;
   if (packetDigest(content) !== evidence_sha256)
     throw Error("LIVE_PAID_PROOF_DIGEST_MISMATCH");
+  return Object.freeze(parsed);
+}
+function commitModernPaidProofCommand(
+  packet: LivePaidProofPacket,
+  enabled: boolean,
+  expectedMode: ModernExecutionMode,
+) {
+  if (!enabled) throw Error("LIVE_PAID_DISABLED");
+  const parsed = validateStoredModernPaidProof(packet, expectedMode);
   return Object.freeze({
     text: `select kxra_private.${expectedMode === "LIVE" ? "" : "staging_sandbox_"}commit_live_paid_proof($1::uuid,$2::jsonb) value`,
     values: Object.freeze([parsed.reconciliation_id, JSON.stringify(parsed)]),

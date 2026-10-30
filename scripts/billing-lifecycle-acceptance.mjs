@@ -52,8 +52,19 @@ const databaseCases = [
  * Real sandbox/card/3DS acceptance remains an explicit release-owner operation.
  */
 async function main() {
-  if (process.argv.slice(2).join(" ") !== "--synthetic")
+  const selection = process.argv.slice(2).join(" ");
+  if (!["--synthetic", "--synthetic --shadow"].includes(selection))
     throw Error("BILLING_ACCEPTANCE_SYNTHETIC_ONLY");
+  const includeShadow = selection === "--synthetic --shadow";
+  const selectedServices = [
+    ...serviceCases,
+    "tests/billing-body-buffer.test.ts",
+    ...(includeShadow ? ["tests/reduced-billing-shadow.test.ts"] : []),
+  ];
+  const selectedDatabase = [
+    ...databaseCases,
+    ...(includeShadow ? ["tests/reduced-billing-shadow.db.test.ts"] : []),
+  ];
   process.umask(0o077);
   const directory = fs.realpathSync(
     fs.mkdtempSync("/tmp/kxra-billing-acceptance-"),
@@ -77,6 +88,7 @@ async function main() {
     checks: 0,
     phases: [],
     fixture_servers_stopped: true,
+    shadow_candidate: includeShadow,
     provider_acceptance: false,
     activation_authority: false,
   };
@@ -169,7 +181,20 @@ async function main() {
           ],
           env,
         );
-        const sourceFiles = [...new Set([...serviceCases, ...databaseCases])];
+        if (includeShadow)
+          execute(
+            `${mode}-shadow-schema`,
+            [
+              "--import",
+              "tsx",
+              "scripts/reduced-shadow-fixture.ts",
+              "--synthetic",
+            ],
+            env,
+          );
+        const sourceFiles = [
+          ...new Set([...selectedServices, ...selectedDatabase]),
+        ];
         if (mode === "LIVE") {
           const digest = crypto.createHash("sha256");
           for (const file of sourceFiles)
@@ -183,7 +208,7 @@ async function main() {
               "tsx",
               "--test",
               "--test-concurrency=1",
-              ...serviceCases,
+              ...selectedServices,
             ],
             env,
             true,
@@ -197,7 +222,7 @@ async function main() {
             "tsx",
             "--test",
             "--test-concurrency=1",
-            ...databaseCases,
+            ...selectedDatabase,
           ],
           env,
           true,

@@ -1,5 +1,7 @@
 # Billing refresh architecture review — local proposal
 
+Subsequent implementation now measures seven GETs and passes fresh native composition in both modes. The four/eight-GET columns below remain historical planning comparisons, not the measured candidate. See [implemented default-off shadow path and current owner packet](reduced-billing-shadow-acceptance-2026-10-30.md).
+
 The earlier scheduler packet is not an approved launch architecture. Do not ask the owner to buy hosting or seek an exceptional read allowance just to preserve an unexamined polling implementation. Keep production's existing fail-closed policy until an explicitly reviewed replacement is integrated and tested. No provider setting, credential, spend or entitlement policy changed in this review.
 
 ## What actually requires freshness
