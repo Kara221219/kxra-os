@@ -3,6 +3,7 @@
   "concurrency": 16,
   "poll_interval_ms": 1000,
   "scheduler_jitter_ms": 1000,
+  "maximum_claim_delay_ms": 1000,
   "proof_ttl_seconds": 120,
   "provider_reads_per_second": 16,
   "maximum_provider_reads": 32000,

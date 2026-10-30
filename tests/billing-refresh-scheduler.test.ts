@@ -12,6 +12,7 @@ const plan: RefreshSchedule = {
   concurrency: 16,
   poll_interval_ms: 1_000,
   scheduler_jitter_ms: 1_000,
+  maximum_claim_delay_ms: 1_000,
   proof_ttl_seconds: 120,
   provider_reads_per_second: 16,
   maximum_provider_reads: 32_000,
@@ -145,6 +146,60 @@ test("one idle probe per tick, no fanout without a durable claim, hard invocatio
   assert.equal(summary.maximum_active, 1);
   assert.equal(summary.empty_probes, 4);
   assert.equal(summary.state, "INVOCATION_LIMIT");
+});
+
+test("a delayed first claim beyond its bound pauses fanout and drains the one existing job", async () => {
+  const c = new Clock();
+  let calls = 0;
+  const summary = await c.complete(
+    runBillingRefreshScheduler(
+      { ...plan, duration_ms: 60_000, maximum_provider_reads: 1_000 },
+      {
+        now: c.now,
+        wait: c.wait,
+        invoke: async (claimed) => {
+          calls++;
+          await c.wait(10_000);
+          claimed(1);
+          await c.wait(45_000);
+          return result("ELIGIBLE");
+        },
+      },
+    ),
+  );
+  assert.equal(calls, 1);
+  assert.equal(summary.maximum_active, 1);
+  assert.equal(summary.claim_delay_breaches, 1);
+  assert.equal(summary.circuit_pauses, 1);
+  assert.equal(summary.eligible, 1);
+});
+
+test("first durable claim exactly at configured delay may fan out within the projected window", async () => {
+  const c = new Clock();
+  let calls = 0;
+  const summary = await c.complete(
+    runBillingRefreshScheduler(
+      { ...plan, duration_ms: 60_000, maximum_provider_reads: 1_000 },
+      {
+        now: c.now,
+        wait: c.wait,
+        invoke: async (claimed) => {
+          const ordinal = ++calls;
+          if (ordinal > 16) {
+            claimed(0);
+            return result();
+          }
+          await c.wait(plan.maximum_claim_delay_ms);
+          claimed(1);
+          await c.wait(54_000);
+          return result("ELIGIBLE");
+        },
+      },
+    ),
+  );
+  assert.equal(summary.claim_delay_breaches, 0);
+  assert.equal(summary.maximum_active, 16);
+  assert.equal(summary.eligible, 16);
 });
 
 test("16 synchronized tenants refresh before unchanged120s expiry under55s receipt load", async () => {

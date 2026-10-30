@@ -9,6 +9,7 @@ export const refreshScheduleSchema = z
     concurrency: z.number().int().min(1).max(16),
     poll_interval_ms: z.number().int().min(100).max(60_000),
     scheduler_jitter_ms: z.number().int().min(0).max(60_000),
+    maximum_claim_delay_ms: z.number().int().min(1).max(55_000),
     proof_ttl_seconds: z.number().int().min(1).max(300),
     provider_reads_per_second: z.number().int().min(1).max(16),
     maximum_provider_reads: z.number().int().min(32).max(1_000_000),
@@ -52,6 +53,7 @@ export function billingRefreshSchedulerConfiguration(
       parallel_invocations: plan.concurrency,
       schedule_interval_ms: plan.poll_interval_ms,
       scheduler_jitter_ms: plan.scheduler_jitter_ms,
+      first_claim_delay_ms: plan.maximum_claim_delay_ms,
       proof_ttl_seconds: plan.proof_ttl_seconds,
     });
     if (capacity.state !== "PROJECTED_HEADROOM") throw Error();
@@ -179,6 +181,7 @@ export type RefreshSchedulerSummary = {
   circuit_pauses: number;
   maximum_active: number;
   overrun_ticks: number;
+  claim_delay_breaches: number;
   entitlement_authority: false;
 };
 
@@ -210,6 +213,7 @@ export async function runBillingRefreshScheduler(
     parallel_invocations: plan.concurrency,
     schedule_interval_ms: plan.poll_interval_ms,
     scheduler_jitter_ms: plan.scheduler_jitter_ms,
+    first_claim_delay_ms: plan.maximum_claim_delay_ms,
     proof_ttl_seconds: plan.proof_ttl_seconds,
   });
   assertReadAllowance(plan);
@@ -226,6 +230,7 @@ export async function runBillingRefreshScheduler(
     circuit_pauses: 0,
     maximum_active: 0,
     overrun_ticks: 0,
+    claim_delay_breaches: 0,
     entitlement_authority: false,
   };
   const active = new Set<Promise<void>>();
@@ -251,6 +256,7 @@ export async function runBillingRefreshScheduler(
   function launch() {
     if (!canAdmit() || active.size >= plan.concurrency) return;
     summary.invocations++;
+    const invocationStarted = clock();
     let notified = false,
       claimed = 0;
     const task = Promise.resolve()
@@ -261,6 +267,14 @@ export async function runBillingRefreshScheduler(
               throw Error("BILLING_SCHEDULER_CLAIM_INVALID");
             notified = true;
             claimed = count;
+            if (
+              count === 1 &&
+              clock() - invocationStarted > plan.maximum_claim_delay_ms
+            ) {
+              summary.claim_delay_breaches++;
+              pause(); // Existing work drains; never fan out a late claim.
+              return;
+            }
             // This is a scheduling hint only. Each new job must independently
             // attest scope, claim its own tenant and pass every existing gate.
             if (count === 1)

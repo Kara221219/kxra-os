@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import crypto from "node:crypto";
 import {
   bindModernExecution,
@@ -256,7 +257,7 @@ async function readModernCheckoutConsent(
     if (!response.ok || !response.body) throw Error("PROVIDER");
     const reader = response.body.getReader();
     let size = 0;
-    const chunks: Uint8Array[] = [];
+    const chunks = billingBodyBuffer(100_000);
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -266,12 +267,17 @@ async function readModernCheckoutConsent(
           await reader.cancel();
           throw Error("BUDGET");
         }
-        chunks.push(value);
+        try {
+          chunks.append(value);
+        } catch (error) {
+          await reader.cancel().catch(() => {});
+          throw error;
+        }
       }
     } finally {
       reader.releaseLock();
     }
-    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const raw = JSON.parse(chunks.finish().toString("utf8"));
     assertModernProviderMode(raw, scope);
     return schema.parse(raw);
   }

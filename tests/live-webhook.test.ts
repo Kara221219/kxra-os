@@ -423,3 +423,91 @@ test("invalid HMAC cannot trigger private scope lookup", async () => {
   assert.equal(response.status, 400);
   assert.equal(loaded, 0);
 });
+
+test("one-byte chunk flood cancels at the chunk budget before signature/scope/persistence", async () => {
+  let cancelled = false,
+    reads = 0,
+    loaded = 0,
+    recorded = 0;
+  const { execution, ...shell } = endpoint;
+  const handler = createLiveWebhookHandler({
+    configuration: () => shell,
+    loadExecutionScope: async () => {
+      loaded++;
+      return execution;
+    },
+    record: async () => {
+      recorded++;
+    },
+    now: () => now,
+  });
+  const stream = new ReadableStream<Uint8Array>({
+    pull(c) {
+      reads++;
+      c.enqueue(new Uint8Array([32]));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(cancelled, true);
+  assert.ok(reads <= 4099);
+  assert.equal(loaded + recorded, 0);
+});
+
+test("signed webhook survives small views into a large reused backing buffer", async () => {
+  const good = signed(fixture()),
+    backing = new Uint8Array(16_000_000);
+  const split = Math.floor(good.raw.length / 2);
+  let step = 0,
+    recorded = 0;
+  const handler = createLiveWebhookHandler({
+    configuration: () => endpoint,
+    record: async (e) => {
+      recorded++;
+      assert.equal(
+        e.payload_sha256,
+        crypto.createHash("sha256").update(good.raw).digest("hex"),
+      );
+    },
+    now: () => now,
+  });
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      pull(c) {
+        if (step === 2) {
+          c.close();
+          return;
+        }
+        const part =
+          step++ === 0 ? good.raw.subarray(0, split) : good.raw.subarray(split);
+        backing.fill(90);
+        backing.set(part, 8_000_000);
+        c.enqueue(backing.subarray(8_000_000, 8_000_000 + part.length));
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": good.signature,
+      },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(recorded, 1);
+});

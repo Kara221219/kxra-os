@@ -7,6 +7,7 @@ const plan = {
   parallel_invocations: 1,
   schedule_interval_ms: 1_000,
   scheduler_jitter_ms: 0,
+  first_claim_delay_ms: 1_000,
   proof_ttl_seconds: 120,
 };
 
@@ -65,6 +66,34 @@ test("queued waves each occupy a full receipt duration rather than sharing one55
   assert.equal(result.waves, 2);
   assert.equal(result.worst_case_completion_ms, 112_000);
   assert.equal(result.state, "INSUFFICIENT_HEADROOM");
+});
+
+test("fanout includes delayed first durable claim and denies exact expiry or unknown latency", () => {
+  const parallel = {
+    ...plan,
+    maximum_due_workspaces: 16,
+    parallel_invocations: 16,
+  };
+  assert.equal(
+    assessBillingRefreshCapacity({ ...parallel, first_claim_delay_ms: 3_999 })
+      .headroom_ms,
+    1,
+  );
+  assert.equal(
+    assessBillingRefreshCapacity({ ...parallel, first_claim_delay_ms: 4_000 })
+      .state,
+    "INSUFFICIENT_HEADROOM",
+  );
+  assert.equal(
+    assessBillingRefreshCapacity({ ...parallel, first_claim_delay_ms: 10_000 })
+      .worst_case_completion_ms,
+    66_000,
+  );
+  const { first_claim_delay_ms: _omitted, ...unknown } = parallel;
+  assert.equal(
+    assessBillingRefreshCapacity(unknown).state,
+    "INSUFFICIENT_HEADROOM",
+  );
 });
 
 test("malformed/nonfinite plans and caller credential fields are rejected", () => {

@@ -159,6 +159,16 @@ async function main() {
       try {
         startAttempted = true;
         execute(`${mode}-start`, ["scripts/database.mjs", "start"], env);
+        execute(
+          `${mode}-admission`,
+          [
+            "--import",
+            "tsx",
+            "scripts/billing-admission-fixture.ts",
+            "--synthetic",
+          ],
+          env,
+        );
         const sourceFiles = [...new Set([...serviceCases, ...databaseCases])];
         if (mode === "LIVE") {
           const digest = crypto.createHash("sha256");

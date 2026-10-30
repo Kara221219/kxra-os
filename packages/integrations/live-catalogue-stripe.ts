@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import {
   bindModernExecution,
   modernExecution,
@@ -176,7 +177,7 @@ async function request(
   if (!response.ok || !response.body)
     fail(body ? "PROVIDER_OUTCOME_UNCERTAIN" : "PROVIDER_RESPONSE");
   const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks = billingBodyBuffer(100_000);
   let size = 0;
   try {
     while (true) {
@@ -187,7 +188,12 @@ async function request(
         await reader.cancel();
         fail("RESPONSE_TOO_LARGE");
       }
-      chunks.push(value);
+      try {
+        chunks.append(value);
+      } catch (error) {
+        await reader.cancel().catch(() => {});
+        throw error;
+      }
     }
   } catch (error) {
     if (
@@ -200,7 +206,7 @@ async function request(
     reader.releaseLock();
   }
   try {
-    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+    const raw = JSON.parse(chunks.finish().toString("utf8")) as unknown;
     assertModernProviderMode(raw, modernExecution(deps).execution_scope);
     return raw;
   } catch {

@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import crypto from "node:crypto";
 import {
   bindModernExecution,
@@ -443,7 +444,7 @@ async function readModernStripePaymentEvidence(
     if (!response.ok || !response.body)
       unverified("PROVIDER_RESPONSE_UNVERIFIED");
     const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
+    const chunks = billingBodyBuffer(100_000);
     let length = 0;
     try {
       while (true) {
@@ -454,12 +455,17 @@ async function readModernStripePaymentEvidence(
           await reader.cancel();
           unverified("RESPONSE_BUDGET_EXCEEDED");
         }
-        chunks.push(value);
+        try {
+          chunks.append(value);
+        } catch (error) {
+          await reader.cancel().catch(() => {});
+          throw error;
+        }
       }
     } finally {
       reader.releaseLock();
     }
-    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const raw = JSON.parse(chunks.finish().toString("utf8"));
     try {
       assertModernProviderMode(raw, scope);
     } catch {

@@ -234,12 +234,12 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
         .digest("hex");
     await db.query(
       `insert into kxra.legal_documents(id,org_id,document_type,audience,version,title,rendered_content,content_sha256,status,effective_at,immutable_object_key,owner_approval_reference,owner_approved_at)
-        values($1,$2,'TERMS','CUSTOMER',1,'Synthetic ledger terms','Synthetic only',$3,'APPROVED',now(),'synthetic/ledger-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())`,
+        values($1,$2,'TERMS','CUSTOMER',2,'Synthetic ledger terms','Synthetic only',$3,'APPROVED',now(),'synthetic/ledger-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())`,
       [document, org, legalHash],
     );
     await db.query(
       `insert into kxra.legal_document_requirements(id,org_id,document_id,document_version,document_sha256,state,effective_at,acceptance_wording,acceptance_wording_version,acceptance_wording_sha256)
-        values($1,$2,$3,1,$4,'ACTIVE',now(),'Synthetic accept',1,encode(sha256(convert_to('Synthetic accept','UTF8')),'hex'))`,
+        values($1,$2,$3,2,$4,'ACTIVE',now(),'Synthetic accept',1,encode(sha256(convert_to('Synthetic accept','UTF8')),'hex'))`,
       [requirement, org, document, legalHash],
     );
     await call(

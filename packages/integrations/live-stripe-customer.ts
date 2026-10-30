@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import {
   bindModernExecution,
   modernExecution,
@@ -293,7 +294,7 @@ async function createCustomerCore(
     if (!response.ok || !response.body)
       throw new CreationFault("PROVIDER_RESPONSE_UNVERIFIED");
     const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
+    const chunks = billingBodyBuffer(100_000);
     let bytes = 0;
     try {
       while (true) {
@@ -304,12 +305,17 @@ async function createCustomerCore(
           await reader.cancel();
           throw new CreationFault("RESPONSE_BUDGET_EXCEEDED");
         }
-        chunks.push(value);
+        try {
+          chunks.append(value);
+        } catch (error) {
+          await reader.cancel().catch(() => {});
+          throw error;
+        }
       }
     } finally {
       reader.releaseLock();
     }
-    const raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const raw = JSON.parse(chunks.finish().toString("utf8"));
     assertModernProviderMode(raw, scope);
     return schema.parse(raw);
   }

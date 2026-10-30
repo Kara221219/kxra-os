@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import type { LiveBillingTransport } from "./live-catalogue-stripe";
 import { LIVE_STRIPE_API_VERSION } from "./live-catalogue-stripe";
 
@@ -105,7 +106,7 @@ export function boundedDispatchTransport(
         try {
           if (length && (!/^\d+$/.test(length) || Number(length) > 100_000))
             throw Error();
-          const chunks: Uint8Array[] = [];
+          const chunks = billingBodyBuffer(100_000);
           let total = 0;
           while (true) {
             const next = await reader.read();
@@ -113,9 +114,14 @@ export function boundedDispatchTransport(
             if (next.done) break;
             total += next.value.byteLength;
             if (total > 100_000 || clock() >= deadline) throw Error();
-            chunks.push(next.value.slice());
+            try {
+              chunks.append(next.value);
+            } catch (error) {
+              await reader.cancel().catch(() => {});
+              throw error;
+            }
           }
-          const bytes = Buffer.concat(chunks, total);
+          const bytes = chunks.finish();
           policy.inspect?.(target, bytes);
           return new Response(bytes, {
             status: response.status,

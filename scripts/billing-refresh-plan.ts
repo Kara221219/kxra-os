@@ -26,6 +26,7 @@ function main() {
     parallel_invocations: plan.concurrency,
     schedule_interval_ms: plan.poll_interval_ms,
     scheduler_jitter_ms: plan.scheduler_jitter_ms,
+    first_claim_delay_ms: plan.maximum_claim_delay_ms,
     proof_ttl_seconds: plan.proof_ttl_seconds,
   });
   const allowance = assessBillingReadAllowance({

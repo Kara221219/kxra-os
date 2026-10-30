@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import { z } from "zod";
 import { verifyBillingWebhook } from "./billing";
 import {
@@ -282,7 +283,7 @@ async function boundedRawBody(request: Request, deadlineMs: number) {
   try {
     if (request.signal.aborted) throw Error("LIVE_WEBHOOK_INVALID");
     const work = (async () => {
-      const chunks: Uint8Array[] = [];
+      const chunks = billingBodyBuffer(1_000_000);
       let total = 0,
         emptyChunks = 0;
       while (true) {
@@ -302,9 +303,14 @@ async function boundedRawBody(request: Request, deadlineMs: number) {
           stop();
           throw Error("LIVE_WEBHOOK_INVALID");
         }
-        chunks.push(part.value.slice());
+        try {
+          chunks.append(part.value);
+        } catch (error) {
+          await reader.cancel().catch(() => {});
+          throw error;
+        }
       }
-      return Buffer.concat(chunks, total);
+      return chunks.finish();
     })();
     return await Promise.race([work, stopped]);
   } finally {
