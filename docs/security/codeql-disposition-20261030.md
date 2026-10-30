@@ -34,3 +34,5 @@ The installed SDK's initial submission still uses its own Axios client. This fol
 4. Keep the13 disabled flags, three holds, All Deployments authentication and Skew Protection. This patch does not authorize operator generation, new media publication, provider/credential changes or financial transactions. Unresolved alert22 remains a gate before publishing a newly generated asset; no such asset is introduced by these commits.
 
 Validation for the follow-up:16 standalone checks passed (5 new disposition checks,7 tooling checks,4 existing account contracts), TypeScript passed, changed-file formatting and publication secret checks passed. No app server, database, shared browser or real provider was required.
+
+Actual-asset follow-up: [Shared Perspective hero media review](reviewed-hero-media-20261030.md). The supplied PNG and all8 static exports passed exact-hash/full-decode and byte-identical export reproduction. The current site path uses these rasters rather than the historical alert22 MP4. That legacy/future video condition remains separate; no remote closure is claimed.
