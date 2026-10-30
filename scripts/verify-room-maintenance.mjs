@@ -133,21 +133,7 @@ try {
   }
   if (!ready) throw Error("readiness failed");
   if (regression) {
-    const { default: pg } = await import("pg");
-    const cfg = JSON.parse(fs.readFileSync(runtime + "/database.json", "utf8"));
-    const admin = new pg.Client({ ...cfg, user: os.userInfo().username });
-    await admin.connect();
-    try {
-      for (const proposal of [
-        "hosted-room-operations.sql",
-        "hosted-room-maintenance.sql",
-      ])
-        await admin.query(
-          fs.readFileSync(path.join(root, "proposals", proposal), "utf8"),
-        );
-    } finally {
-      await admin.end();
-    }
+    run(["--import", "tsx", "scripts/prepare-room-operations-fixture.ts"]);
   }
   await runTests([
     "--import",

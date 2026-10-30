@@ -10,6 +10,7 @@ import {
   knowledgeLogin,
   knowledgeOk as ok,
 } from "../support/team-knowledge";
+import { ensureRoomOperationsSchema } from "../support/room-operations-schema";
 import { localModeConfiguration } from "../../packages/authz/local-guard";
 assert.ok(
   localModeConfiguration(process.env) && !process.env.VERCEL_ENV,
@@ -135,12 +136,7 @@ test("maintenance proposal installs into a fresh local fixture with no new roles
       "select (select count(*) from pg_roles) roles,(select count(*) from pg_trigger where not tgisinternal) triggers",
     )
   ).rows[0];
-  await admin.query(
-    fs.readFileSync("proposals/hosted-room-operations.sql", "utf8"),
-  );
-  await admin.query(
-    fs.readFileSync("proposals/hosted-room-maintenance.sql", "utf8"),
-  );
+  await ensureRoomOperationsSchema(admin, cfg);
   const after = (
     await admin.query(
       "select (select count(*) from pg_roles) roles,(select count(*) from pg_trigger where not tgisinternal) triggers",

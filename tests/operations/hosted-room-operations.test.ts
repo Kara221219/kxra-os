@@ -8,6 +8,7 @@ import { runtimeFile } from "../support/runtime";
 import { knowledgeFixture, knowledgeOk as ok } from "../support/team-knowledge";
 import { roomWorkerAuthorized } from "../../packages/workspace/room-worker-auth";
 import { hostedRoomOperations } from "../../packages/workspace/hosted-operations";
+import { ensureRoomOperationsSchema } from "../support/room-operations-schema";
 import { localModeConfiguration } from "../../packages/authz/local-guard";
 assert.ok(
   localModeConfiguration(process.env) && !process.env.VERCEL_ENV,
@@ -45,7 +46,7 @@ async function as(
     await db.query("begin");
     await db.query("set local role authenticated");
     await db.query(
-      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true),set_config('request.kxra.hosted_room_jobs','on',true),set_config('request.kxra.team_grant',$4,true)",
+      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true),set_config('request.kxra.hosted_room_jobs','on',true),set_config('request.kxra.execution_mode','fixture',true),set_config('request.kxra.team_grant',$4,true)",
       [
         actor,
         JSON.stringify({
@@ -94,9 +95,7 @@ test("hosted delivery authentication is explicit, default off and independent fr
     assert.equal(roomWorkerAuthorized("Bearer " + key, bad), false);
 });
 test("native hosted grant scope, authority withdrawal, replay and concurrent delivery use actual app login", async () => {
-  await admin.query(
-    fs.readFileSync("proposals/hosted-room-operations.sql", "utf8"),
-  );
+  await ensureRoomOperationsSchema(admin, config);
   const f = await knowledgeFixture(false, "owner");
   const input = () => ({
     request_id: crypto.randomUUID(),
