@@ -90,6 +90,18 @@ test("disabled hosted admission and drain reject; authorized pause and revoke re
     schedules.operations.every((sql) => sql.includes("team_schedule_review")),
   );
   assert.equal(jobs.operations.length, 0);
+  const hostedJobs = load("apps/os/lib/team-jobs.ts", true);
+  await assert.rejects(
+    hostedJobs.api.drainTeamJobs({}, { request_id: crypto.randomUUID() }),
+    (e: unknown) => e instanceof HttpError && e.status === 503,
+  );
+  assert.equal(hostedJobs.operations.length, 0);
+  const ui = fs.readFileSync("apps/os/components/RoomJobs.tsx", "utf8");
+  assert.ok(
+    ui.includes(
+      '{local && canWrite && (\n        <ActionForm\n          path="/jobs/drain"',
+    ),
+  );
   const enabled = load("apps/os/lib/team-schedules.ts", true);
   await enabled.api.reviewTeamSchedule({}, "room", {
     ...value,

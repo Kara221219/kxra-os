@@ -57,7 +57,10 @@ grant execute on function kxra_private.team_execution_grant_validate(uuid) to au
 
 create function kxra_private.team_worker_target(i uuid) returns boolean
 language sql stable security definer set search_path='' as $$
- select case when nullif(current_setting('request.kxra.team_grant',true),'') is null then true else exists(
+ select case when nullif(current_setting('request.kxra.team_grant',true),'') is null then
+ coalesce(current_setting('request.kxra.execution_mode',true)='fixture'
+ and current_setting('request.kxra.hosted_room_jobs',true) is distinct from 'on',false)
+ else session_user='kxra_app' and exists(
  select 1 from kxra.team_execution_grants g join kxra.team_jobs j on j.id=i
  join kxra.team_agents agent on agent.id=j.agent_id
  where g.id=nullif(current_setting('request.kxra.team_grant',true),'')::uuid
@@ -153,7 +156,6 @@ language sql stable security definer set search_path='' as $$
   and identity.state='ACTIVE' and identity.session_version=j.request_session_version
   and kxra_private.can_team_room(j.room_id,true) and agent.enabled and (connection.provider='FIXTURE' or
    (connection.provider<>'FIXTURE' and current_setting('request.kxra.hosted_room_jobs',true)='on'))
-  and kxra_private.team_worker_target(i)
   and kxra_private.team_connection_active(connection.id,j.room_id)
   and j.message_id=any(j.context_ids)
   and not exists(select 1 from unnest(j.context_ids) source(id) where not exists(
@@ -165,6 +167,48 @@ language sql stable security definer set search_path='' as $$
   and not exists(select 1 from unnest(j.memory_ids) with ordinality source(id,n) left join kxra.team_memory_versions memory on memory.id=source.id
    where memory.id is null or memory.room_id<>j.room_id or not kxra_private.team_memory_allowed(source.id,j.agent_id) or memory.content_sha256 is distinct from j.memory_hashes[source.n]))
 $$;
+-- Admission/readiness is checked before a grant exists. Runtime execution
+-- additionally requires an active target grant or the verified fixture mode.
+create or replace function kxra_private.team_job_context_active(i uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+ select kxra_private.team_worker_target(i) and kxra_private.team_job_base_context_active(i) and exists(select 1 from kxra.team_jobs j where j.id=i and kxra_private.pilot_entitled(j.org_id)) and not exists(
+ select 1 from kxra.team_schedule_occurrences o join kxra.team_schedules s on s.id=o.schedule_id
+ where o.job_id=i and (s.state not in ('ACTIVE','EXHAUSTED') or s.expires_at<=now() or not kxra_private.team_job_base_context_active(s.id)))
+$$;
+
+-- Preserve the existing enqueue guards; only its final admission predicate
+-- is separate from the later grant-bound runtime predicate.
+create or replace function kxra.team_job_enqueue(i uuid,r uuid,a uuid,m uuid,mode text,ids uuid[],digest text,
+ chunks uuid[],chashes text[],skills uuid[],shashes text[],memories uuid[],mhashes text[],due timestamptz,request_digest text) returns uuid
+language plpgsql security definer set search_path='' as $$
+declare o uuid;sv integer;
+begin
+ if session_user<>'kxra_app' or not kxra_private.can_team_room(r,true) then raise insufficient_privilege;end if;
+ perform pg_advisory_xact_lock(hashtext(auth.uid()::text));
+ if exists(select 1 from kxra.team_jobs where id=i) then
+  if not exists(select 1 from kxra.team_jobs where id=i and room_id=r and agent_id=a and message_id=m and requested_by=auth.uid()
+   and context_mode=mode and context_ids=ids and context_sha256=digest and chunk_ids=chunks and chunk_hashes=chashes
+   and skill_ids=skills and skill_hashes=shashes and memory_ids=memories and memory_hashes=mhashes and requested_due_at is not distinct from due and request_sha256=request_digest)
+  then raise exception 'Job idempotency conflict';end if;return i;
+ end if;
+ if due is not null and (due<now()-interval '1 minute' or due>now()+interval '7 days') then raise exception 'Job due time is outside bounds';end if;
+ if (select count(*) from kxra.team_jobs where requested_by=auth.uid() and state in ('QUEUED','LEASED','DISPATCHED'))>=20 then raise exception 'Active job limit reached';end if;
+ if ids is null or chunks is null or chashes is null or skills is null or shashes is null or memories is null or mhashes is null
+  or cardinality(ids)<>(select count(distinct x) from unnest(ids) x)
+  or cardinality(chunks)<>(select count(distinct x) from unnest(chunks) x)
+  or cardinality(skills)<>(select count(distinct x) from unnest(skills) x)
+  or cardinality(memories)<>(select count(distinct x) from unnest(memories) x)
+  or (mode='MESSAGE_ONLY' and (ids<>array[m] or cardinality(chunks)>0 or cardinality(skills)>0 or cardinality(memories)>0))
+ then raise insufficient_privilege;end if;
+ select org_id into o from kxra.team_rooms where id=r;
+ select session_version into sv from kxra.account_identities where account_id=auth.uid() and state='ACTIVE';
+ insert into kxra.team_jobs(id,org_id,room_id,agent_id,message_id,request_sha256,requested_by,request_session_version,context_mode,context_ids,context_sha256,
+  chunk_ids,chunk_hashes,skill_ids,skill_hashes,memory_ids,memory_hashes,requested_due_at,due_at,available_at)
+ values(i,o,r,a,m,request_digest,auth.uid(),sv,mode,ids,digest,chunks,chashes,skills,shashes,memories,mhashes,due,coalesce(due,now()),coalesce(due,now()));
+ if not kxra_private.team_job_base_context_active(i) then raise insufficient_privilege;end if;
+ return i;
+end $$;
+
 create or replace function kxra.team_job_claim(request uuid,r uuid,seconds integer) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare j kxra.team_jobs;candidate uuid;token uuid;

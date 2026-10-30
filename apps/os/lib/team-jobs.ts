@@ -165,6 +165,10 @@ type Claim = {
 };
 export async function drainTeamJobs(a: Actor, value: unknown) {
   localWorkerOnly();
+  // Background authority is server-resolved; a browser drain is not a new
+  // target/model review and must not bypass a queued delegation's expiry.
+  if (!(localMode() && !process.env.VERCEL_ENV) && !a.room_worker_grant)
+    throw new HttpError(503, "Hosted drafts require scoped worker delivery");
   const v = z
     .object({ request_id: id, room_id: id.nullable().default(null) })
     .strict()

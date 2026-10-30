@@ -80,7 +80,7 @@ export function RoomJobs({
       <button type="button" onClick={refresh}>
         Refresh queued drafts
       </button>
-      {(local || hostedOperations) && canWrite && (
+      {local && canWrite && (
         <ActionForm
           path="/jobs/drain"
           title="Run next due draft"
