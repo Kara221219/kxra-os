@@ -1,0 +1,31 @@
+--- a/apps/os/components/RoomJobs.tsx
++++ b/apps/os/components/RoomJobs.tsx
+@@ -50,6 +50,7 @@
+       />
+       {canManage && canWrite && <RoomAuditExport roomId={roomId} />}
+       <h2>Queued drafts</h2>
++      <p><Link href={`/os/room-operations/${roomId}`}>Review execution consent and uncertain outcomes</Link></p>
+       <p>
+         100 jobs per page, with pending work first, then uncertain outcomes and
+         completed history. Loaded earlier pages are snapshots; refresh to update
+--- a/.env.example
++++ b/.env.example
+@@ -155,5 +155,7 @@
+ # Existing room drafts: default off. Apply the reviewed room-operations schema
+ # and approve hosted delivery/provider acceptance before enabling.
+ KXRA_HOSTED_ROOM_JOBS=false
++# Reduction/health only; can remain enabled during an execution hold.
++KXRA_ROOM_MAINTENANCE_ENABLED=false
+ # Dedicated 64-hex wakeup bearer; never customer session cookies or billing keys.
+ KXRA_ROOM_WORKER_SECRET=
+--- a/scripts/team-hosted-job-worker.ts
++++ b/scripts/team-hosted-job-worker.ts
+@@ -15,7 +15,7 @@
+     origin.password
+   )
+     throw Error("An exact HTTPS application origin is required");
+-  const response = await fetch(origin + "/api/internal/room-jobs/drain", {
++  const response = await fetch(origin.origin + "/api/internal/room-jobs/drain", {
+     method: "POST",
+     redirect: "error",
+     signal: AbortSignal.timeout(55_000),
