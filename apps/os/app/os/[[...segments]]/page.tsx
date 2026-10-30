@@ -1,3 +1,4 @@
+import { hostedRoomOperations } from "../../../../../packages/workspace/hosted-operations";
 import { WorkspaceStart } from "../../../components/WorkspaceStart";
 import { TeamWorkspace } from "../../../components/TeamWorkspace";
 import { teamKnowledge } from "../../../lib/team-knowledge";
@@ -571,6 +572,7 @@ export default async function Workspace({
           actorId={a.id}
           isOrgOwner={a.role === "owner"}
           local={localMode()}
+          hostedOperations={hostedRoomOperations()}
           candidates={candidates}
         />
       );

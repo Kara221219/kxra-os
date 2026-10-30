@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { localMode, query } from "../../../packages/db";
+import { localMode, query, scoped } from "../../../packages/db";
 import { HttpError, type Actor } from "./auth";
 import { teamRoom } from "./team-room";
 import {
@@ -10,6 +10,7 @@ import {
   type PinnedTeamContext,
 } from "./team-workspace";
 import { catalogAnchor, jobBand, type CatalogCursor } from "./team-catalog";
+import { hostedRoomOperations } from "../../../packages/workspace/hosted-operations";
 const id = z.string().uuid();
 const enqueueInput = teamRunInput
   .extend({
@@ -51,7 +52,7 @@ export type TeamJobAttempt = {
 const columns =
   "id,room_id,agent_id,message_id,requested_by,due_at,available_at,state,attempt_count,lease_expires_at,last_error,version,created_at,kxra_private.team_job_run(id) run_id";
 function localWorkerOnly() {
-  if (!localMode() || process.env.VERCEL_ENV)
+  if (!(localMode() && !process.env.VERCEL_ENV) && !hostedRoomOperations())
     throw new HttpError(503, "Hosted scheduled execution is not activated");
 }
 export async function teamJobs(a: Actor, r: string, cursor?: CatalogCursor) {
@@ -112,27 +113,33 @@ export async function enqueueTeamJob(a: Actor, r: string, value: unknown) {
   }
   const { due_at, ...input } = v;
   const p = await prepareTeamAgent(a, r, input);
-  await query(
-    a,
-    "select kxra.team_job_enqueue($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)",
-    [
-      v.request_id,
-      r,
-      p.agent.id,
-      p.target.id,
-      v.context,
-      p.messages.map((m) => m.id),
-      p.digest,
-      p.chunks.map((c) => c.id),
-      p.chunks.map((c) => c.content_sha256),
-      p.skills.map((s) => s.id),
-      p.skills.map((s) => s.content_sha256),
-      p.memories.map((m) => m.id),
-      p.memories.map((m) => m.content_sha256),
-      due,
-      requestDigest,
-    ],
-  );
+  await scoped(a, async (db) => {
+    await db.query(
+      "select kxra.team_job_enqueue($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)",
+      [
+        v.request_id,
+        r,
+        p.agent.id,
+        p.target.id,
+        v.context,
+        p.messages.map((m) => m.id),
+        p.digest,
+        p.chunks.map((c) => c.id),
+        p.chunks.map((c) => c.content_sha256),
+        p.skills.map((s) => s.id),
+        p.skills.map((s) => s.content_sha256),
+        p.memories.map((m) => m.id),
+        p.memories.map((m) => m.content_sha256),
+        due,
+        requestDigest,
+      ],
+    );
+    if (hostedRoomOperations())
+      await db.query(
+        "select kxra.team_execution_authorize($1,least(coalesce($2::timestamptz,now())+interval '1 hour',now()+interval '8 days'))",
+        [v.request_id, due],
+      );
+  });
   return jobMetadata(a, v.request_id);
 }
 export async function cancelTeamJob(a: Actor, r: string, value: unknown) {

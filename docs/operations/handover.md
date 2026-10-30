@@ -1,3 +1,9 @@
+## 30 October — existing hosted room operations candidate (local only)
+
+An isolated candidate on `d2ee06b` adds a default-off bounded hosted wakeup, target-bound expiring execution grants, authenticated stop controls independent of admissions, and an executable fresh-fixture suite. It reuses the existing requester/tenant/room claims, leases, pinned inputs, retry limits, cancellation and uncertain-outcome semantics; it does not create a new agent product. Billing refresh scheduling is untouched.
+
+The combined local suite passed 20/20, the final native refinement passed 4/4, and the OS build passed. The additive SQL remains a review proposal outside the frozen 112-migration sequence. No hosted schema, role, credential, trigger, scheduler, provider or deployment was created or changed. Shared `team-workspace.ts` and DB transaction changes require integration review; genuine protected delivery, provider acceptance, monitoring and independent QA/security remain launch gates. See [the candidate and approval inventory](hosted-room-operations-candidate-2026-10-30.md).
+
 ## 25 October — separate marketing journey and route inventory (local proposal)
 
 Base `310886b267afb1b9f769c13f058a429a779e3562` remote CI 40204222793 retains its failure: the mobile reference-baseline case exceeded 30 seconds. All 44 fixed phase begin/pass records were emitted, including the final page-error assertion at 31,984ms. Ten catalogue full-page navigations accounted for 20,799ms; screenshot 5,150ms; integrations 3,935ms. This establishes recorded cumulative duration, not a proven product/control defect or memory-exhaustion cause.

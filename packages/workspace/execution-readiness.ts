@@ -15,7 +15,7 @@ export function workspaceExecutionReadiness(
       available: false,
       activated: false,
       blockers: [
-        "SCOPED_WORKER_IDENTITY_UNIMPLEMENTED",
+        "SCOPED_GRANT_MIGRATION_AND_CONFIGURATION_APPROVAL_PENDING",
         "HOSTED_WAKEUP_AND_LEASE_ACCEPTANCE_PENDING",
         "PROVIDER_BUDGET_AND_REVOCATION_ACCEPTANCE_PENDING",
       ],

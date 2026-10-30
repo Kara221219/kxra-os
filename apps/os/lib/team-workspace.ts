@@ -634,8 +634,6 @@ export async function executePreparedTeamAgent(
     )[0]?.ready;
     if (!ready) throw Error("ACCESS_CHANGED");
     let result: { output: string; input_tokens: number; output_tokens: number };
-    if (job && connection.provider !== "FIXTURE")
-      throw Error("FIXTURE_DISABLED");
     if (connection.provider === "FIXTURE") {
       if (!localMode()) throw Error("FIXTURE_DISABLED");
       result = {

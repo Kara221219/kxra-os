@@ -46,6 +46,7 @@ export function TeamWorkspace({
   detail,
   actorId,
   local,
+  hostedOperations = false,
   candidates = [],
   isOrgOwner = false,
   knowledge,
@@ -56,6 +57,7 @@ export function TeamWorkspace({
   detail?: Detail;
   actorId: string;
   local: boolean;
+  hostedOperations?: boolean;
   isOrgOwner?: boolean;
   candidates?: { account_id: string; display_name: string }[];
   knowledge?: Awaited<ReturnType<typeof teamKnowledge>>;
@@ -844,6 +846,7 @@ export function TeamWorkspace({
                     canManage={canManage}
                     canWrite={canWrite}
                     local={local}
+                    hostedOperations={hostedOperations}
                   />
                 )}
               </div>

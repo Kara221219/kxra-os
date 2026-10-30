@@ -9,6 +9,7 @@ import {
   scheduleBand,
   type CatalogCursor,
 } from "./team-catalog";
+import { hostedRoomOperations } from "../../../packages/workspace/hosted-operations";
 const input = teamRunInput
   .extend({
     name: z.string().trim().min(1).max(120),
@@ -60,7 +61,7 @@ export type TeamOccurrence = {
   outcome: string;
 };
 function localOnly() {
-  if (!localMode() || process.env.VERCEL_ENV)
+  if (!(localMode() && !process.env.VERCEL_ENV) && !hostedRoomOperations())
     throw new HttpError(503, "Hosted scheduled execution is not activated");
 }
 const columns =
@@ -164,7 +165,6 @@ export async function proposeTeamSchedule(a: Actor, r: string, value: unknown) {
   return teamSchedules(a, r);
 }
 export async function reviewTeamSchedule(a: Actor, r: string, value: unknown) {
-  localOnly();
   await teamRoom(a, r);
   const v = z
     .object({
@@ -174,11 +174,23 @@ export async function reviewTeamSchedule(a: Actor, r: string, value: unknown) {
     })
     .strict()
     .parse(value);
-  await query(a, "select kxra.team_schedule_review($1,$2,$3,$4)", [
-    r,
-    v.schedule_id,
-    v.version,
-    v.action,
-  ]);
+  if (v.action === "ACTIVATE") localOnly();
+  await scoped(a, async (db) => {
+    // Match the worker's grant-before-job lock order during an active rollout.
+    // A failed schedule authorization rolls this revocation back atomically.
+    if (hostedRoomOperations() && v.action !== "ACTIVATE")
+      await db.query("select kxra.team_execution_revoke($1)", [v.schedule_id]);
+    await db.query("select kxra.team_schedule_review($1,$2,$3,$4)", [
+      r,
+      v.schedule_id,
+      v.version,
+      v.action,
+    ]);
+    if (hostedRoomOperations() && v.action === "ACTIVATE")
+      await db.query(
+        "select kxra.team_execution_authorize($1,expires_at) from kxra.team_schedules where id=$1",
+        [v.schedule_id],
+      );
+  });
   return teamSchedules(a, r);
 }

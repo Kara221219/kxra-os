@@ -14,6 +14,7 @@ export function RoomSchedules({
   chunkIds,
   canManage,
   local,
+  hostedOperations = false,
   actorId,
 }: {
   roomId: string;
@@ -22,6 +23,7 @@ export function RoomSchedules({
   chunkIds: string[];
   canManage: boolean;
   local: boolean;
+  hostedOperations?: boolean;
   actorId: string;
 }) {
   const { data, next, notice, busy, reload, more } = useRoomCatalog(
@@ -38,9 +40,9 @@ export function RoomSchedules({
         states.
       </p>
       <p>
-        Reviewed daily schedules, local fixture only. Hosted execution is not
-        activated. Run next due draft or an explicitly started local worker
-        admits due occurrences. No OS service is installed.
+        {hostedOperations
+          ? "Review and activation require recent MFA verification and delegate only this definition until its selected expiry. Hosted delivery remains subject to current access, connection and occurrence limits."
+          : "Reviewed daily schedules, local fixture only. Hosted execution is not activated. Run next due draft or an explicitly started local worker admits due occurrences. No OS service is installed."}
       </p>
       <p>
         Each definition pins its message, thread, selected file excerpts,
@@ -112,13 +114,13 @@ export function RoomSchedules({
                 </li>
               ))}
           </ol>
-          {local &&
-            canManage &&
+          {canManage &&
             s.created_by === actorId &&
             !["REVOKED", "EXPIRED"].includes(s.state) && (
               <>
                 {[
-                  ...(s.state === "DRAFT" || s.state === "PAUSED"
+                  ...((local || hostedOperations) &&
+                  (s.state === "DRAFT" || s.state === "PAUSED")
                     ? ["ACTIVATE"]
                     : []),
                   ...(s.state !== "PAUSED" ? ["PAUSE"] : []),
@@ -137,7 +139,7 @@ export function RoomSchedules({
                   >
                     <p>
                       {action === "ACTIVATE"
-                        ? "I have reviewed this immutable daily definition, pinned source selection, timezone, expiry and occurrence budget. Activation authorises local fixture drafts only."
+                        ? "I have reviewed this immutable daily definition, pinned source selection, timezone, expiry and occurrence budget. Activation authorises this definition within the selected expiry and budget; current authority is rechecked for every dispatch and publication."
                         : "Stops pending children and fences late output. Previously completed runs remain in scoped history."}
                     </p>
                   </ActionForm>
@@ -151,7 +153,7 @@ export function RoomSchedules({
           Load earlier schedules
         </button>
       )}
-      {local &&
+      {(local || hostedOperations) &&
         canManage &&
         agents.some((a) => a.enabled) &&
         messages.length > 0 && (

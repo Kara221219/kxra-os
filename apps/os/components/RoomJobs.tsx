@@ -16,6 +16,7 @@ export function RoomJobs({
   canManage,
   canWrite,
   local,
+  hostedOperations = false,
 }: {
   roomId: string;
   agents: TeamAgent[];
@@ -25,6 +26,7 @@ export function RoomJobs({
   canManage: boolean;
   canWrite: boolean;
   local: boolean;
+  hostedOperations?: boolean;
 }) {
   const {
     data,
@@ -44,6 +46,7 @@ export function RoomJobs({
         actorId={actorId}
         canManage={canManage && canWrite}
         local={local}
+        hostedOperations={hostedOperations}
       />
       {canManage && canWrite && <RoomAuditExport roomId={roomId} />}
       <h2>Queued drafts</h2>
@@ -53,9 +56,11 @@ export function RoomJobs({
         current states.
       </p>
       <p>
-        Local fixture execution only. Hosted scheduled execution is not
-        activated. A queued due time is a one-off instant; reviewed daily
-        schedules are available in this view. External actions are unavailable.
+        {hostedOperations
+          ? "Hosted room drafts are enabled for scoped execution. Queueing requires recent MFA verification and authorises this draft until one hour after its due time, subject to current access and provider limits."
+          : "Local fixture execution only. Hosted scheduled execution is not activated."}{" "}
+        A queued due time is a one-off instant; reviewed daily schedules are
+        available in this view. External actions are unavailable.
       </p>
       <p>
         Context is pinned when queued. Room, identity, sources and expiry are
@@ -64,9 +69,10 @@ export function RoomJobs({
         uncertain outcome and is never replayed automatically.
       </p>
       <p>
-        Due drafts run while an explicitly started local fixture worker is
-        online, or when you use Run next due draft. Leaving this page does not
-        delete queued work. No OS service is installed.
+        {hostedOperations
+          ? "A configured hosted delivery service checks authorised due work. A due time is eligibility, not a completion guarantee."
+          : "Due drafts run while an explicitly started local fixture worker is online, or when you use Run next due draft. No OS service is installed."}{" "}
+        Leaving this page does not delete queued work.
       </p>
       <p role="status">
         {notice || (!data.jobs.length ? "No queued drafts." : "")}
@@ -74,7 +80,7 @@ export function RoomJobs({
       <button type="button" onClick={refresh}>
         Refresh queued drafts
       </button>
-      {local && canWrite && (
+      {(local || hostedOperations) && canWrite && (
         <ActionForm
           path="/jobs/drain"
           title="Run next due draft"
@@ -164,7 +170,7 @@ export function RoomJobs({
           Load earlier jobs
         </button>
       )}
-      {local &&
+      {(local || hostedOperations) &&
         canWrite &&
         agents.some((a) => a.enabled) &&
         messages.length > 0 && (

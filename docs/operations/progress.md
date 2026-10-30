@@ -1,3 +1,9 @@
+## 30 October — existing hosted room operations candidate (local only)
+
+An isolated candidate on `d2ee06b` adds a default-off bounded hosted wakeup, target-bound expiring execution grants, authenticated stop controls independent of admissions, and an executable fresh-fixture suite. It reuses the existing requester/tenant/room claims, leases, pinned inputs, retry limits, cancellation and uncertain-outcome semantics; it does not create a new agent product. Billing refresh scheduling is untouched.
+
+The combined local suite passed 20/20, the final native refinement passed 4/4, and the OS build passed. The additive SQL remains a review proposal outside the frozen 112-migration sequence. No hosted schema, role, credential, trigger, scheduler, provider or deployment was created or changed. Shared `team-workspace.ts` and DB transaction changes require integration review; genuine protected delivery, provider acceptance, monitoring and independent QA/security remain launch gates. See [the candidate and approval inventory](hosted-room-operations-candidate-2026-10-30.md).
+
 ## 29 October — private recovery-confirmation diagnostics (local only)
 
 Source base is exact deployed `09c2f14abba1a3b5e1de06eb1acd4c4ad72adc2d`. The isolated candidate adds one finite private confirmation-result event: fixed stage/reason/provider category, bounded numeric status, and credential state (`NOT_ATTEMPTED`, `ATTEMPTED_UNCONFIRMED`, or `PROVIDER_CONFIRMED_CHANGED`). No request/response bodies, identities, URLs, password/token/secret values, digests, arbitrary provider text or stack traces are emitted. Logger throws, rejected promises and hostile thenables are contained. Public statuses/bodies, existing guards, provider/database call order and local fixture behavior are preserved. Request-email logging and normal-login behavior are unchanged.
