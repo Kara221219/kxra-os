@@ -300,6 +300,102 @@ test("business eligibility: direct checkout, dispatch, revocation and worldwide 
       review,
     ];
     await db.query(reviewSql, reviewValues);
+    // Drafts remain inert, but an ever-enabled successor is sticky: withdrawing
+    // it must not resurrect an older reviewed clearance. All these inserts share
+    // the transaction's now(), so policy sequence is the deterministic order.
+    await db.query("savepoint policy_supersession");
+    const currentReview = async () =>
+      (
+        await db.query(
+          "select kxra_private.business_current_review($1,$2,$3,$4,$5,$6) value",
+          [org, customer, tag.scope_id, row.offer_key, revision, termsHash],
+        )
+      ).rows[0].value;
+    const successor = uuid(),
+      replacement = uuid(),
+      replacementReview = uuid();
+    const insertPolicy =
+      "insert into kxra_private.business_eligibility_policies(id,version,evidence_sha256,owner_review_reference,effective_at,expires_at,enabled) values($1,$2,$3,'SYNTHETIC_NOT_APPROVAL',now(),now()+interval '1 day',$4)";
+    await db.query("savepoint expired_policy_successor");
+    await db.query(
+      insertPolicy.replace(
+        "now(),now()+interval '1 day'",
+        "now()-interval '2 hours',now()-interval '1 hour'",
+      ),
+      [uuid(), uuid(), review, true],
+    );
+    assert.equal(await currentReview(), null);
+    await db.query("rollback to savepoint expired_policy_successor");
+    assert.equal(await currentReview(), eligibility);
+    await db.query(insertPolicy, [successor, uuid(), review, false]);
+    assert.equal(
+      (
+        await db.query(
+          "select first_enabled_at from kxra_private.business_eligibility_policies where id=$1",
+          [successor],
+        )
+      ).rows[0].first_enabled_at,
+      null,
+    );
+    assert.equal(await currentReview(), eligibility);
+    await db.query(
+      "update kxra_private.business_eligibility_policies set enabled=true where id=$1",
+      [successor],
+    );
+    assert.ok(
+      (
+        await db.query(
+          "select first_enabled_at from kxra_private.business_eligibility_policies where id=$1",
+          [successor],
+        )
+      ).rows[0].first_enabled_at,
+    );
+    assert.equal(await currentReview(), null);
+    await db.query(
+      "update kxra_private.business_eligibility_policies set enabled=false where id=$1",
+      [successor],
+    );
+    assert.equal(await currentReview(), null);
+    await db.query(
+      "update kxra_private.business_eligibility_policies set enabled=false where id=$1",
+      [eligibilityPolicy],
+    );
+    await db.query(
+      "update kxra_private.business_eligibility_policies set enabled=true where id=$1",
+      [eligibilityPolicy],
+    );
+    assert.equal(await currentReview(), null);
+    await reject(
+      "update kxra_private.business_eligibility_policies set first_enabled_at=null where id=$1",
+      [successor],
+      "none",
+    );
+    await reject(
+      "update kxra_private.business_eligibility_policies set first_enabled_at=now()-interval '1 second' where id=$1",
+      [successor],
+      "none",
+    );
+    await reject(
+      "insert into kxra_private.business_eligibility_policies(version,evidence_sha256,owner_review_reference,effective_at,expires_at,enabled,first_enabled_at) values($1,$2,'SYNTHETIC_NOT_APPROVAL',now(),now()+interval '1 day',false,now())",
+      [uuid(), review],
+      "none",
+    );
+    await db.query(insertPolicy, [replacement, uuid(), review, false]);
+    assert.equal(await currentReview(), null);
+    await db.query(
+      "update kxra_private.business_eligibility_policies set enabled=true where id=$1",
+      [replacement],
+    );
+    assert.equal(await currentReview(), null);
+    await db.query(
+      reviewSql,
+      reviewValues.map((value, index) =>
+        index === 0 ? replacementReview : index === 3 ? replacement : value,
+      ),
+    );
+    assert.equal(await currentReview(), replacementReview);
+    await db.query("rollback to savepoint policy_supersession");
+    assert.equal(await currentReview(), eligibility);
     for (const change of [
       ["legal_status", "BLOCKED"],
       ["provider_status", "BLOCKED"],

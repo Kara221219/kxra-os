@@ -17,7 +17,10 @@ create table kxra_private.business_eligibility_policies (
  evidence_sha256 text not null check(evidence_sha256~'^[a-f0-9]{64}$'),
  owner_review_reference text not null check(length(owner_review_reference) between 1 and 160),
  effective_at timestamptz not null, expires_at timestamptz not null check(expires_at>effective_at),
- enabled boolean not null default false
+ enabled boolean not null default false,
+ -- First enablement is sticky and server-managed. Drafts do not supersede the
+ -- current version; withdrawing an activated successor never revives an older one.
+ first_enabled_at timestamptz
 );
 create table kxra_private.business_eligibility_reviews (
  id uuid primary key default gen_random_uuid(), sequence bigint generated always as identity unique,
@@ -55,16 +58,22 @@ create function kxra_private.guard_business_evidence() returns trigger
 language plpgsql set search_path='' as $$
 begin
  if tg_op='DELETE' then raise exception 'Business evidence is append-only';end if;
- if tg_table_name='business_eligibility_reviews' then
+ if tg_table_name='business_eligibility_policies' then
+  if tg_op='INSERT' then
+   if new.first_enabled_at is not null then raise exception 'Policy activation marker is server-managed';end if;
+  else
+   if new.first_enabled_at is distinct from old.first_enabled_at
+   or (to_jsonb(new)-array['enabled','first_enabled_at']) is distinct from (to_jsonb(old)-array['enabled','first_enabled_at']) then raise exception 'Policy evidence is immutable; append a new version';end if;
+  end if;
+  if new.enabled and new.first_enabled_at is null then new.first_enabled_at=now();end if;
+ elsif tg_table_name='business_eligibility_reviews' then
   if old.withdrawn_at is not null or new.withdrawn_at is null or (to_jsonb(new)-array['withdrawn_at','state']) is distinct from (to_jsonb(old)-array['withdrawn_at','state']) then raise exception 'Review evidence is immutable; append a new review';end if;
- elsif tg_table_name='business_eligibility_policies' then
-  if (to_jsonb(new)-'enabled') is distinct from (to_jsonb(old)-'enabled') then raise exception 'Policy evidence is immutable; append a new version';end if;
  else raise exception 'Business declarations are append-only';end if;
  return new;
 end $$;
 create trigger business_declaration_immutable before update or delete on kxra_private.business_declarations for each row execute function kxra_private.guard_business_evidence();
 create trigger business_review_immutable before update or delete on kxra_private.business_eligibility_reviews for each row execute function kxra_private.guard_business_evidence();
-create trigger business_policy_immutable before update or delete on kxra_private.business_eligibility_policies for each row execute function kxra_private.guard_business_evidence();
+create trigger business_policy_immutable before insert or update or delete on kxra_private.business_eligibility_policies for each row execute function kxra_private.guard_business_evidence();
 revoke all on function kxra_private.guard_business_evidence() from public,anon,authenticated,kxra_billing_worker;
 
 -- No client may grant itself a decision. Only a separately reviewed owner/operator
@@ -82,7 +91,7 @@ begin
  is distinct from (d.id,customer,scope,offer,mapping,terms) then return null;end if;
  select * into p from kxra_private.business_eligibility_policies where id=r.policy_id;
  if not found or not p.enabled or p.effective_at>now() or p.expires_at<=now()
- or p.id is distinct from (select id from kxra_private.business_eligibility_policies where enabled order by sequence desc limit 1) then return null;end if;
+ or p.id is distinct from (select id from kxra_private.business_eligibility_policies where first_enabled_at is not null order by sequence desc limit 1) then return null;end if;
  if not exists(select 1 from kxra_private.live_billing_mappings m where m.scope_id=scope and m.offer_key=offer and m.revision=mapping and m.enabled and m.terms_review_sha256=terms and m.tax_review_sha256=r.mapping_tax_sha256) then return null;end if;
  if not exists(select 1 from kxra.legal_documents t
  join kxra_private.live_paid_policies q on q.scope_id=scope and q.offer_key=offer and q.mapping_revision=mapping and q.enabled
@@ -108,7 +117,7 @@ begin
  return jsonb_build_object('state',case when current_id is not null then 'ELIGIBLE'
  when r.state='BLOCKED' and r.withdrawn_at is null and r.reviewed_at<=now() and r.expires_at>now()
  and (r.customer_id,r.scope_id,r.offer_key,r.mapping_revision) is not distinct from (b.customer_id,b.scope_id,b.offer_key,b.mapping_revision)
- and exists(select 1 from kxra_private.business_eligibility_policies p where p.id=r.policy_id and p.enabled and p.effective_at<=now() and p.expires_at>now() and p.id=(select id from kxra_private.business_eligibility_policies where enabled order by sequence desc limit 1))
+ and exists(select 1 from kxra_private.business_eligibility_policies p where p.id=r.policy_id and p.enabled and p.effective_at<=now() and p.expires_at>now() and p.id=(select id from kxra_private.business_eligibility_policies where first_enabled_at is not null order by sequence desc limit 1))
  and exists(select 1 from kxra_private.live_billing_mappings m where m.offer_key=b.offer_key and m.revision=b.mapping_revision and m.enabled and m.terms_review_sha256=r.terms_sha256 and m.tax_review_sha256=r.mapping_tax_sha256)
  and r.declaration_id=(select id from kxra_private.business_declarations where org_id=o order by sequence desc limit 1) then 'BLOCKED'
  else 'REVIEW_REQUIRED' end,'declaration_version','business-byok-v1',

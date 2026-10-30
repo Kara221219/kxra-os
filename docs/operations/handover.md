@@ -1233,3 +1233,6 @@ The isolated operations follow-up rejects/hides ordinary hosted browser drains, 
 ### Local business/BYOK admission candidate — 30 October 2026
 
 Prepared isolated fail-closed business declaration/eligibility candidate on d5, with no hosted actions or shared signup/checkout edits. New page/API, private policy/review schema proposal and payment fences are documented in business-admission-candidate-2026-10-30.md. Signup/billing linkage is an unapplied integration patch requiring parent/release/billing coordination. Final terms, jurisdiction/provider/tax evidence and aggregate acceptance remain gates; worldwide applications do not establish unrestricted coverage.
+# Local admission policy follow-up — 2026-10-30
+
+The policy supersession correction is isolated from root/external checkouts. It records immutable first enablement, selects only the newest ever-enabled policy, and still requires that policy to be enabled/time-valid. Drafts remain inert; withdrawal cannot fall back to earlier clearance. Six pure/source checks passed; native regression cases are added but pending QA's exclusive database window. Use the corrected unapplied proposal in final-source rehearsal, not an unreviewed backfill of an installed older proposal. No hosted actions, role changes, country/provider policy changes, credentials or activation occurred.
