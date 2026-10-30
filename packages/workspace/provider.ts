@@ -115,6 +115,11 @@ export type Transport = (
   headers: Record<string, string>,
   body: unknown,
 ) => Promise<unknown>;
+function requireModelProviderEnabled() {
+  // No caller/fixture hint can enable an external provider. Local demonstration
+  // output is handled separately under the verified local-mode guard.
+  if (process.env.KXRA_AI_ENABLED !== "true") throw Error("PROVIDER_DISABLED");
+}
 export async function resolveProviderAddress(
   hostname: string,
   lookup: (hostname: string) => Promise<{ address: string }[]> = (host) =>
@@ -144,6 +149,7 @@ export async function resolveProviderAddress(
   }
 }
 export const secureTransport: Transport = async (url, headers, body) => {
+  requireModelProviderEnabled();
   // Pin the validated DNS answer to this socket. No redirects, proxies or localhost endpoints.
   const address = await resolveProviderAddress(url.hostname);
   return new Promise((resolve, reject) => {
@@ -204,6 +210,7 @@ export async function generate(
   context: string,
   transport: Transport = secureTransport,
 ) {
+  requireModelProviderEnabled();
   const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`),
     url = endpoint(c);
   const headers: Record<string, string> = {},

@@ -8,6 +8,7 @@ import {
   publicIpv4,
   generate,
   resolveProviderAddress,
+  secureTransport,
   type Connection,
 } from "../packages/workspace/provider";
 test("provider DNS lookup has a deadline, pins a public address and rejects mixed private answers", async () => {
@@ -73,7 +74,13 @@ test("compatible endpoints reject SSRF destinations and unsafe URLs", () => {
   }
   delete process.env.KXRA_MODEL_ENDPOINTS;
 });
-test("model adapters send bounded protocol requests and fail closed on refusals and truncation", async () => {
+test("model adapters send bounded protocol requests and fail closed on refusals and truncation", async (t) => {
+  const previous = process.env.KXRA_AI_ENABLED;
+  t.after(() => {
+    if (previous === undefined) delete process.env.KXRA_AI_ENABLED;
+    else process.env.KXRA_AI_ENABLED = previous;
+  });
+  process.env.KXRA_AI_ENABLED = "true";
   process.env.KXRA_MODEL_VAULT_KEY = crypto.randomBytes(32).toString("hex");
   for (const provider of [
     "OPENAI",
@@ -134,4 +141,38 @@ test("model adapters send bounded protocol requests and fail closed on refusals 
     );
   }
   delete process.env.KXRA_MODEL_VAULT_KEY;
+});
+
+test("external providers require exact server enablement before vault, endpoint or transport work", async (t) => {
+  const previous = process.env.KXRA_AI_ENABLED;
+  t.after(() => {
+    if (previous === undefined) delete process.env.KXRA_AI_ENABLED;
+    else process.env.KXRA_AI_ENABLED = previous;
+  });
+  let touched = false;
+  const connection = new Proxy(
+    { localFixture: true } as unknown as Connection,
+    {
+      get() {
+        touched = true;
+        throw Error("connection must not be read while disabled");
+      },
+    },
+  );
+  for (const flag of [undefined, "false", "0", "TRUE", " true", "true ", ""]) {
+    if (flag === undefined) delete process.env.KXRA_AI_ENABLED;
+    else process.env.KXRA_AI_ENABLED = flag;
+    await assert.rejects(
+      generate(connection, "system", "context", async () => {
+        touched = true;
+        throw Error("transport must not be called while disabled");
+      }),
+      /^Error: PROVIDER_DISABLED$/,
+    );
+    await assert.rejects(
+      secureTransport(new URL("https://127.0.0.1/"), {}, {}),
+      /^Error: PROVIDER_DISABLED$/,
+    );
+    assert.equal(touched, false);
+  }
 });
