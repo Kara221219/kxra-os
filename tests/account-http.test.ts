@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { invitationTokenFromUrl } from "../packages/authz/invitation-link";
 import { runtimeFile, testOrigin } from "./support/runtime";
+import { localModeConfiguration } from "../packages/authz/local-guard";
 
 const base = testOrigin;
 const projects = {
@@ -45,6 +46,11 @@ async function browserFetch(
   pathOrUrl: string,
   init: RequestInit = {},
 ) {
+  const target = new URL(pathOrUrl, base);
+  if (target.origin !== base || target.username || target.password)
+    throw Error("Fixture request origin unavailable");
+  if (!localModeConfiguration(process.env))
+    throw Error("Guarded local fixture runtime required");
   const headers = new Headers(init.headers);
   if (jar.size)
     headers.set(
@@ -53,18 +59,35 @@ async function browserFetch(
     );
   if ((init.method || "GET") !== "GET" && !headers.has("origin"))
     headers.set("origin", base);
-  const response = await fetch(
-    pathOrUrl.startsWith("http") ? pathOrUrl : base + pathOrUrl,
-    {
-      ...init,
-      headers,
-      redirect: "manual",
-      signal: AbortSignal.timeout(20_000),
-    },
-  );
+  const response = await fetch(target, {
+    ...init,
+    headers,
+    redirect: "manual",
+    signal: AbortSignal.timeout(20_000),
+  });
   rememberCookies(jar, response);
   return response;
 }
+
+test("fixture browser never attaches cookies to a foreign callback target", async () => {
+  const jar = new Map([["fixture_session", "PLANTED_SYNTHETIC_COOKIE"]]);
+  const current = new URL(base);
+  const foreign = new URL(base);
+  foreign.port = current.port === "65535" ? "65534" : "65535";
+  for (const target of [
+    "https://example.invalid/callback",
+    "//example.invalid/callback",
+    foreign.href,
+    `http://fixture-user@${current.host}/callback`,
+    "data:text/plain,callback",
+  ]) {
+    await assert.rejects(
+      browserFetch(jar, target),
+      /^Error: Fixture request origin unavailable$/,
+    );
+  }
+  assert.equal(jar.get("fixture_session"), "PLANTED_SYNTHETIC_COOKIE");
+});
 
 async function postJson(jar: CookieJar, path: string, data: unknown) {
   return browserFetch(jar, path, {
