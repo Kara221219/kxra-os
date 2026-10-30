@@ -1,6 +1,9 @@
+import {
+  openPrivateFile,
+  privateDirectory,
+} from "./private-operator-files.mjs";
 import { applicationNext } from "./application-next.mjs";
 import { execFileSync, spawn } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 const root = path.resolve(import.meta.dirname, "..");
@@ -39,15 +42,22 @@ const environment = {
   KXRA_RUNTIME: runtime,
   KXRA_CI_RUN_ID: process.env.KXRA_CI_RUN_ID || crypto.randomUUID(),
 };
+privateDirectory(runtime);
 execFileSync(process.execPath, ["scripts/database.mjs", "start"], {
   stdio: "inherit",
   env: environment,
 });
 const key = path.join(runtime, "session-key");
-if (!fs.existsSync(key))
-  fs.writeFileSync(key, crypto.randomBytes(48).toString("hex"), {
-    mode: 0o600,
-  });
+const keyFile = openPrivateFile(key);
+let localSecret;
+try {
+  if (keyFile.created) keyFile.write(crypto.randomBytes(48).toString("hex"));
+  localSecret = keyFile.read();
+  if (!/^[a-f0-9]{96}$/.test(localSecret))
+    throw Error("PRIVATE_SESSION_KEY_INVALID");
+} finally {
+  keyFile.close();
+}
 const child = spawn(
   process.execPath,
   [
@@ -64,7 +74,7 @@ const child = spawn(
     stdio: "inherit",
     env: {
       ...environment,
-      KXRA_LOCAL_SECRET: fs.readFileSync(key, "utf8"),
+      KXRA_LOCAL_SECRET: localSecret,
     },
   },
 );
@@ -93,7 +103,7 @@ const jobWorker = jobIdentity
         env: {
           ...environment,
           NODE_ENV: "development",
-          KXRA_LOCAL_SECRET: fs.readFileSync(key, "utf8"),
+          KXRA_LOCAL_SECRET: localSecret,
         },
       },
     )

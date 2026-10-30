@@ -1,0 +1,59 @@
+# Security triage for the October 31 launch
+
+Reviewed local base: `d5e16baef6ea918e775d6e967973984a3faef98e`. Independent checkout; no shared checkout, browser, auth implementation, billing implementation, migration, deployment setting, flag or remote ref changed.
+
+## Evidence and scope
+
+A read-only GitHub query on October 30, 2026 confirms **21 open CodeQL alerts: 11 high, 10 medium** on `refs/heads/codex/release-e37ce73-ci`. The unqualified default-branch API query returns an empty list; it must not be cited as a clean release scan. Latest release analysis at inspection: `2065767525`, commit `d5e16ba`, created `2026-10-30T21:12:55Z`. Sanitized metadata is supplied with the local handoff. The historical October 23 triage classified these same findings under production fixture/build exclusions. This patch does not claim any GitHub alert closed; exact integrated source must be analyzed again.
+
+Nine high findings concern operator/build filesystem custody. This patch removes the check-then-overwrite patterns, keeps verified descriptors across asynchronous waits, uses exclusive output creation, validates current-user private custody, and preserves existing/uncertain submission ledgers. Download tools reject credentials, non-HTTPS/nonstandard ports, redirects and any non-public DNS answer; the approved IPv4 address is pinned to TLS (IPv6-only destinations fail closed). Video bodies are read with a 40 MB streaming cap and cancelled on overflow. Signed output URLs are retained in the private ledger rather than printed by the example tool. No generation or provider/payment request was executed.
+
+The custody boundary assumes a trusted workspace and current OS user; it does not defend against a malicious process running as that same user. Existing runtime directories must be owner-private (0700), records owner-private (0600), regular, not symlinked and not hardlinked. Unsafe existing state fails closed without chmod, overwrite or resubmission. Inspect/correct ownership manually before any separately authorized operator run. A crash can leave an empty/partial ledger, which requires manual reconciliation and must never trigger resubmission. Existing video files are preserved; a repeated download cannot overwrite them.
+
+## Finding disposition
+
+| Alert | Severity | Rule | Location at inspected analysis | Current disposition |
+| --- | --- | --- | --- | --- |
+| 1 | high | `js/insufficient-password-hash` | `apps/os/app/api/password-reset/route.ts:77` | Reviewer disposition pending: SHA-256 digests random 32-byte tokens / idempotency values; passwords use salted scrypt. No auth change in this patch. |
+| 2 | high | `js/insufficient-password-hash` | `packages/authz/fake-provider.ts:36` | Reviewer disposition pending: SHA-256 digests random 32-byte tokens / idempotency values; passwords use salted scrypt. No auth change in this patch. |
+| 3 | high | `js/file-system-race` | `scripts/local.mjs:48` | Locally mitigated: exclusive no-follow creation, private ownership/mode checks, descriptor read, fixed-size random key validation. |
+| 4 | high | `js/file-system-race` | `scripts/verify-secrets.mjs:49` | Locally mitigated: no-follow descriptor scan, owner/non-writable custody, symlink parent rejection, regular-file checks. |
+| 5 | medium | `js/file-access-to-http` | `tests/account-http.test.ts:57` | Pending recovery owner: assert callback URL origin equals guarded loopback origin before attaching fixture cookies. Synthetic harness only; file left untouched to avoid auth overlap. |
+| 8 | high | `js/file-system-race` | `scripts/higgsfield-example/index.ts:32` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 9 | high | `js/file-system-race` | `scripts/higgsfield-example/index.ts:67` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 10 | high | `js/file-system-race` | `scripts/higgsfield-example/index.ts:104` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 11 | high | `js/file-system-race` | `scripts/higgsfield-consultancy-journey.ts:49` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 12 | high | `js/file-system-race` | `scripts/higgsfield-sprint-hero.ts:28` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 13 | high | `js/file-system-race` | `scripts/higgsfield-sprint-hero.ts:49` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 14 | high | `js/file-system-race` | `scripts/higgsfield-industry-walkthrough.ts:68` | Locally mitigated: exclusive initial creation, private custody, retained descriptor updates across waits, no-follow resume, exclusive outputs. Provider execution not performed. |
+| 15 | medium | `js/file-access-to-http` | `scripts/higgsfield-consultancy-journey.ts:95` | Expected reviewed flow: saved request ID is encoded into a fixed HTTPS provider endpoint; provider credential is operator supplied. Keep manual approval/fixture exclusion; no arbitrary recipient or file path. |
+| 16 | medium | `js/file-access-to-http` | `scripts/higgsfield-consultancy-journey.ts:121` | Expected reviewed flow: saved request ID is encoded into a fixed HTTPS provider endpoint; provider credential is operator supplied. Keep manual approval/fixture exclusion; no arbitrary recipient or file path. |
+| 17 | medium | `js/file-access-to-http` | `scripts/higgsfield-industry-walkthrough.ts:114` | Expected reviewed flow: saved request ID is encoded into a fixed HTTPS provider endpoint; provider credential is operator supplied. Keep manual approval/fixture exclusion; no arbitrary recipient or file path. |
+| 18 | medium | `js/file-access-to-http` | `scripts/higgsfield-industry-walkthrough.ts:140` | Expected reviewed flow: saved request ID is encoded into a fixed HTTPS provider endpoint; provider credential is operator supplied. Keep manual approval/fixture exclusion; no arbitrary recipient or file path. |
+| 19 | medium | `js/http-to-file-access` | `scripts/higgsfield-consultancy-journey.ts:24` | Expected fixed-path provider persistence; related risk locally mitigated through private descriptor/exclusive outputs and public-address-pinned, redirect-free, bounded video download. |
+| 20 | medium | `js/http-to-file-access` | `scripts/higgsfield-consultancy-journey.ts:49` | Expected fixed-path provider persistence; related risk locally mitigated through private descriptor/exclusive outputs and public-address-pinned, redirect-free, bounded video download. |
+| 21 | medium | `js/http-to-file-access` | `scripts/higgsfield-industry-walkthrough.ts:41` | Expected fixed-path provider persistence; related risk locally mitigated through private descriptor/exclusive outputs and public-address-pinned, redirect-free, bounded video download. |
+| 22 | medium | `js/http-to-file-access` | `scripts/higgsfield-sprint-hero.ts:78` | Expected fixed-path provider persistence; related risk locally mitigated through private descriptor/exclusive outputs and public-address-pinned, redirect-free, bounded video download. |
+| 23 | medium | `js/http-to-file-access` | `scripts/higgsfield-industry-walkthrough.ts:68` | Expected fixed-path provider persistence; related risk locally mitigated through private descriptor/exclusive outputs and public-address-pinned, redirect-free, bounded video download. |
+
+## Launch risk register
+
+| Priority / owner | Target and risk | Status / exact acceptance gate |
+| --- | --- | --- |
+| P0 / release-auth owner | Customer recovery/login and authenticated session revocation/replay behavior on protected staging | Pending hosted evidence. Complete exact-candidate recovery/login, nonce/TOTP replay, concurrency and session-revocation acceptance. Local source/provider mocks do not prove hosted policy. |
+| P0 / release + QA | Tenant boundary in deployed HTTP/Data API and private tables/RPC grants | Local database visibility and negative DML checks passed; hosted deployment, role grants, exposed schemas, views and SECURITY DEFINER execution boundaries still need exact-environment verification. Never infer authorization from user-editable metadata or caller org/user IDs. |
+| P0 / billing owner | Real payment account/mode/catalogue scope, worker and webhook isolation, authoritative collected-payment proof | Local synthetic checks provide code evidence only. Keep disabled flags/holds until owner validates exact environment mappings and the approved end-to-end provider lane. No customer payment or entitlement proof is asserted here. |
+| P1 / release owner | New local operator/security patches have no exact-source CI/CodeQL result or deployment artifact | Pending integration, review, CI and alert reconciliation. Preserve All Deployments authentication, Skew Protection, three holds and 13 disabled flags. No independent publication requested/performed. |
+| P1 / tooling owner | Manual billable scripts under unsafe directory custody or uncertain prior submission | Source mitigations implemented and adversarially tested; provider execution untested and unauthorized in this task. Inspect existing ledger before any later authorized run; do not retry uncertain work. |
+| P2 / recovery owner | Alert 5 fixture callback cookie origin | Pending small harness change before future non-synthetic credentials. Reject any URL whose origin differs from explicit guarded loopback test origin before cookie attachment. |
+| P2 / security reviewer | Alerts 1/2 and expected fixed-path file/network flows | Keep open until explicit evidence-backed review and exact-source analysis. No suppression, rule disablement or dismissal based on age. |
+
+## Validation
+
+Passed: 26 existing tenant/RLS database tests against a new isolated fixture; 148 focused operator/payment/HTTP tests against a second fresh fixture with a loopback server and synthetic providers; seven final adversarial tooling tests after the IPv4-only transport refinement; TypeScript; changed-file Prettier and diff whitespace checks; publication secret scan. The 148-case run covers seven new tooling tests and 141 existing tests. No hosted database/provider/browser was used.
+
+Initial billing runs deliberately failed closed without fixture environment/server, then an attempted reuse correctly failed the empty-catalogue precondition. A new fixture whose socket pathname exceeded macOS's 103-byte limit did not start. The final successful run used a new shorter private fixture, checked server health and stopped its owned server/database afterward. These setup failures were not removed from the handoff logs and no assertions were weakened.
+
+Production artifact exclusion remains supported by the historical source/artifact receipt and current `.vercelignore`/conditional production stubs; no fresh production build of this tooling-only patch was claimed. Exact integrated CI and alert review are pending. These are local synthetic checks, not a complete penetration test or confirmation of paying-customer readiness.
+
+Supabase review references: [RLS guidance](https://supabase.com/docs/guides/database/postgres/row-level-security) and [current changelog](https://supabase.com/changelog), consulted October 30. No Supabase product configuration or schema change was made.

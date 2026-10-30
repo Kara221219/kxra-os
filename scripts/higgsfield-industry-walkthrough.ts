@@ -5,7 +5,12 @@ import {
   AuthenticationError,
   NotEnoughCreditsError,
 } from "@higgsfield/client/v2";
-import fs from "node:fs";
+import {
+  openPrivateFile,
+  privateDirectory,
+  writePrivateOutput,
+} from "./private-operator-files.mjs";
+import { downloadOperatorVideo } from "./higgsfield-download";
 import path from "node:path";
 const directory = path.resolve(".runtime/industry-walkthrough");
 const ledger = path.join(directory, "generation.json");
@@ -37,17 +42,21 @@ type RecordState = {
   [key: string]: unknown;
 };
 let record: RecordState;
+let ledgerFile: ReturnType<typeof openPrivateFile> | undefined;
 function save() {
-  fs.writeFileSync(ledger, JSON.stringify(record, null, 2), { mode: 0o600 });
+  if (!ledgerFile) throw Error("LEDGER_NOT_OPEN");
+  ledgerFile.write(JSON.stringify(record, null, 2));
 }
 async function main() {
   if (process.env.KXRA_HIGGSFIELD_APPROVED_RUN !== "INDUSTRY-WALKTHROUGH-V2")
     throw Error("APPROVAL_REQUIRED");
   const credentials = process.env.HF_CREDENTIALS;
   if (!credentials) throw Error("CREDENTIAL_REQUIRED");
-  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  if (fs.existsSync(ledger)) {
-    record = JSON.parse(fs.readFileSync(ledger, "utf8"));
+  privateDirectory(path.dirname(directory));
+  privateDirectory(directory);
+  ledgerFile = openPrivateFile(ledger);
+  if (!ledgerFile.created) {
+    record = JSON.parse(ledgerFile.read());
     if (!record.requestId)
       throw Error("UNCONFIRMED_SUBMISSION_REQUIRES_REVIEW");
   } else {
@@ -65,10 +74,7 @@ async function main() {
       conservativeProjectCapUsd: budget.conservativeProjectCapUsd,
       actualProviderCost: null,
     };
-    fs.writeFileSync(ledger, JSON.stringify(record, null, 2), {
-      mode: 0o600,
-      flag: "wx",
-    });
+    save();
     config({ credentials, maxRetries: 0, timeout: 60000 });
     const submitted = await higgsfield.subscribe(
       "bytedance/seedance-2.5/text-to-video",
@@ -134,43 +140,23 @@ async function main() {
   );
   if (record.status !== "completed" || !record.videoUrl)
     throw Error("NO_COMPLETED_VIDEO");
-  const url = new URL(record.videoUrl);
-  if (url.protocol !== "https:" || url.username || url.password)
-    throw Error("OUTPUT_URL_INVALID");
-  const response = await fetch(url, { signal: AbortSignal.timeout(60000) });
-  if (
-    !response.ok ||
-    !response.headers.get("content-type")?.startsWith("video/") ||
-    !response.body
-  )
-    throw Error("VIDEO_DOWNLOAD_FAILED");
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  const reader = response.body.getReader();
-  while (true) {
-    const { done, value: chunk } = await reader.read();
-    if (done) break;
-    size += chunk.length;
-    if (size > 40000000) {
-      await reader.cancel();
-      throw Error("VIDEO_TOO_LARGE");
-    }
-    chunks.push(chunk);
-  }
-  if (size < 1000) throw Error("VIDEO_TOO_SMALL");
+  const bytes = await downloadOperatorVideo(record.videoUrl);
   const output = path.join(directory, "source.mp4");
-  fs.writeFileSync(output, Buffer.concat(chunks), { mode: 0o600 });
+  writePrivateOutput(output, bytes);
+  const size = bytes.length;
   console.log(JSON.stringify({ status: "downloaded", output, bytes: size }));
 }
-main().catch((error) => {
-  const code =
-    error instanceof AuthenticationError
-      ? "AUTHENTICATION_REJECTED"
-      : error instanceof NotEnoughCreditsError
-        ? "API_CREDITS_REQUIRED"
-        : error instanceof Error && /^[A-Z_0-9]+$/.test(error.message)
-          ? error.message
-          : "PROVIDER_REQUEST_UNAVAILABLE";
-  console.error(code);
-  process.exitCode = 1;
-});
+main()
+  .finally(() => ledgerFile?.close())
+  .catch((error) => {
+    const code =
+      error instanceof AuthenticationError
+        ? "AUTHENTICATION_REJECTED"
+        : error instanceof NotEnoughCreditsError
+          ? "API_CREDITS_REQUIRED"
+          : error instanceof Error && /^[A-Z_0-9]+$/.test(error.message)
+            ? error.message
+            : "PROVIDER_REQUEST_UNAVAILABLE";
+    console.error(code);
+    process.exitCode = 1;
+  });
