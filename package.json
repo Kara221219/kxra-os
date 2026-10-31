@@ -33,6 +33,7 @@
     "test:restart": "node scripts/verify-persistence.mjs",
     "test:restore": "node scripts/verify-backup-restore.mjs",
     "worker:paid-proof-refresh": "tsx scripts/paid-proof-refresh-worker.ts --once",
+    "billing:reconciliation-status": "node --import tsx scripts/billing-webhook-reconciliation-status.ts --once",
     "worker:reduced-billing-shadow": "node --import tsx scripts/reduced-billing-shadow.ts --once",
     "worker:billing-refresh-scheduler": "node --import tsx scripts/billing-refresh-scheduler.ts --run",
     "test:billing-lifecycle": "node scripts/billing-lifecycle-acceptance.mjs --synthetic",
