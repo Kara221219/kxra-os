@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { actor } from "../../../../lib/auth";
-import { roomOperationRecovery } from "../../../../lib/room-operation-recovery";
-import { RoomOperationRecovery } from "../../../../components/RoomOperationRecovery";
+import { actor } from "../../../../../lib/auth";
+import { roomOperationRecovery } from "../../../../../lib/room-operation-recovery";
+import { RoomOperationRecovery } from "../../../../../components/RoomOperationRecovery";
 export default async function Page({
   params,
 }: {
