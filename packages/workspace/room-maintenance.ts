@@ -1,3 +1,4 @@
+import { hostedSupabaseConfiguration } from "../authz/hosted-supabase";
 import crypto from "node:crypto";
 import { z } from "zod";
 import { getPool } from "../db";
@@ -5,14 +6,13 @@ export function roomMaintenanceAuthorized(
   header: string | null,
   environment: Record<string, string | undefined> = process.env,
 ) {
-  const key = environment.KXRA_ROOM_WORKER_SECRET;
   if (
     environment.KXRA_ROOM_MAINTENANCE_ENABLED !== "true" ||
-    environment.KXRA_AUTH_MODE !== "supabase" ||
-    !key ||
-    !/^[a-f0-9]{64}$/i.test(key)
+    hostedSupabaseConfiguration(environment) === null
   )
     return false;
+  const key = environment.KXRA_ROOM_WORKER_SECRET;
+  if (!key || !/^[a-f0-9]{64}$/i.test(key)) return false;
   const expected = Buffer.from(`Bearer ${key}`),
     actual = Buffer.from(header || "");
   return (

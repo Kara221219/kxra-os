@@ -92,7 +92,12 @@ test("hosted delivery authentication is explicit, default off and independent fr
   const key = "a".repeat(64),
     env = {
       KXRA_HOSTED_ROOM_JOBS: "true",
-      KXRA_AUTH_MODE: "supabase",
+      NODE_ENV: "production",
+      KXRA_ENVIRONMENT: "staging",
+      KXRA_ORIGIN: "https://synthetic-staging.example.invalid",
+      NEXT_PUBLIC_SUPABASE_URL: "https://jlebgsxcvhvpueuibekd.supabase.co",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+        "synthetic-public-key-not-a-credential",
       KXRA_ROOM_WORKER_SECRET: key,
     };
   assert.equal(hostedRoomOperations({}), false);
@@ -109,7 +114,13 @@ test("hosted delivery authentication is explicit, default off and independent fr
   for (const bad of [
     {},
     { ...env, KXRA_HOSTED_ROOM_JOBS: "false" },
-    { ...env, KXRA_AUTH_MODE: "fixture" },
+    {
+      ...env,
+      NODE_ENV: "development",
+      KXRA_ORIGIN: "http://127.0.0.1:3210",
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+      KXRA_AUTH_MODE: "fixture",
+    },
     { ...env, KXRA_ROOM_WORKER_SECRET: "short" },
   ])
     assert.equal(roomWorkerAuthorized("Bearer " + key, bad), false);

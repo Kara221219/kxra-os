@@ -1,10 +1,16 @@
+import { hostedSupabaseConfiguration } from "../../packages/authz/hosted-supabase";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { roomMaintenanceAuthorized } from "../../packages/workspace/room-maintenance";
 test("reduction-only maintenance is separately default off and can operate while admissions are suspended", () => {
   const secret = "a".repeat(64),
     env = {
-      KXRA_AUTH_MODE: "supabase",
+      NODE_ENV: "production",
+      KXRA_ENVIRONMENT: "staging",
+      KXRA_ORIGIN: "https://synthetic-staging.example.invalid",
+      NEXT_PUBLIC_SUPABASE_URL: "https://jlebgsxcvhvpueuibekd.supabase.co",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+        "synthetic-public-key-not-a-credential",
       KXRA_ROOM_WORKER_SECRET: secret,
       KXRA_ROOM_MAINTENANCE_ENABLED: "true",
       KXRA_HOSTED_ROOM_JOBS: "false",
@@ -13,7 +19,13 @@ test("reduction-only maintenance is separately default off and can operate while
   for (const bad of [
     {},
     { ...env, KXRA_ROOM_MAINTENANCE_ENABLED: "false" },
-    { ...env, KXRA_AUTH_MODE: "fixture" },
+    {
+      ...env,
+      NODE_ENV: "development",
+      KXRA_ORIGIN: "http://127.0.0.1:3210",
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+      KXRA_AUTH_MODE: "fixture",
+    },
   ])
     assert.equal(roomMaintenanceAuthorized("Bearer " + secret, bad), false);
   for (const header of [null, "", secret, "Bearer " + "b".repeat(64)])
@@ -149,7 +161,9 @@ test("maintenance uses only fixed private reducer/health RPCs, bounds transactio
       require: (name: string) =>
         name === "../db"
           ? { getPool: () => ({ connect: async () => db }) }
-          : require(name),
+          : name === "../authz/hosted-supabase"
+            ? { hostedSupabaseConfiguration }
+            : require(name),
     },
   );
   await assert.rejects(

@@ -1,3 +1,4 @@
+import { hostedSupabaseConfiguration } from "./hosted-supabase";
 import { z } from "zod";
 
 /** Server configuration only. No request/JWT metadata can enable admission.
@@ -8,39 +9,8 @@ import { z } from "zod";
 export function hostedSelfServiceConfiguration(
   environment: Record<string, string | undefined> = process.env,
 ) {
-  if (
-    environment.KXRA_HOSTED_SELF_SERVICE_ENABLED !== "true" ||
-    environment.NODE_ENV !== "production" ||
-    !environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  )
-    return null;
-  const project: "jlebgsxcvhvpueuibekd" | "lhbgeucifxxcdoyrnesf" | null =
-    environment.KXRA_ENVIRONMENT === "staging"
-      ? "jlebgsxcvhvpueuibekd"
-      : environment.KXRA_ENVIRONMENT === "production"
-        ? "lhbgeucifxxcdoyrnesf"
-        : null;
-  if (
-    !project ||
-    environment.NEXT_PUBLIC_SUPABASE_URL !== `https://${project}.supabase.co`
-  )
-    return null;
-  try {
-    const origin = new URL(environment.KXRA_ORIGIN || "");
-    if (
-      origin.protocol !== "https:" ||
-      origin.origin !== environment.KXRA_ORIGIN ||
-      origin.username ||
-      origin.password ||
-      origin.pathname !== "/" ||
-      origin.search ||
-      origin.hash
-    )
-      return null;
-    return { origin: origin.origin, project };
-  } catch {
-    return null;
-  }
+  if (environment.KXRA_HOSTED_SELF_SERVICE_ENABLED !== "true") return null;
+  return hostedSupabaseConfiguration(environment);
 }
 
 export const hostedRegistration = z
