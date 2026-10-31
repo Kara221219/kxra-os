@@ -8,11 +8,7 @@ export const sprintExclusions =
   "Implementation, advertising spend, software subscriptions, third-party fees, additional business processes and ongoing support are excluded unless expressly included in this proposal. No guaranteed revenue or business outcome.";
 export const sprintAssumptions =
   "Delivery timing starts after the agreed inputs and access are supplied. Recommendations depend on the accuracy of customer information. Unverified claims and estimates must be identified. One clarification round is included; new scope requires a separate change agreement.";
-export function sprintConstraints(key: string, context: string) {
-  const selected = sprintPackage(key);
-  if (!selected) throw Error("SPRINT_PACKAGE_INVALID");
-  return `Requested package: ${selected.name}\n${context.trim()}`;
-}
+export { sprintConstraints } from "./options";
 export function sprintDraft(
   key: string,
   problem: string,
