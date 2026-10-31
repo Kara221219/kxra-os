@@ -5,6 +5,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 
 const root = path.resolve(import.meta.dirname, "..");
 const serviceCases = [
+  "billing-webhook-reconciliation",
   "live-webhook",
   "live-stripe-payment-evidence",
   "live-paid-access",
@@ -34,6 +35,7 @@ const serviceCases = [
   "billing-refresh-alternative",
 ].map((name) => `tests/${name}.test.ts`);
 const databaseCases = [
+  "billing-webhook-reconciliation",
   "live-stripe-customer",
   "live-billing-concurrency",
   "live-paid-access",

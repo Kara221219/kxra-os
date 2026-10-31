@@ -86,3 +86,11 @@ test("unknown-format BYOK values cannot hide in otherwise allowed categorical fi
     "GOOGLE",
   );
 });
+
+test("telemetry rejects non-string request identifiers", () => {
+  for (const request_id of [true, false, 1, 0, null, {}, []])
+    assert.throws(
+      () => telemetryEnvelope("http.request.completed", { request_id }),
+      /TELEMETRY_REQUEST_ID_INVALID/,
+    );
+});

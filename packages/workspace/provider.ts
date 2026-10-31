@@ -345,6 +345,7 @@ export async function generate(
     return await generateWithCustomerKey(c, system, context, transport);
   } catch (error) {
     const allowed = new Set([
+      "PROVIDER_DISABLED",
       "VAULT_NOT_CONFIGURED",
       "ENDPOINT_NOT_CONFIGURED",
       "ENDPOINT_REJECTED",

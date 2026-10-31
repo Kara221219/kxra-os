@@ -93,13 +93,29 @@ test("business eligibility: direct checkout, dispatch, revocation and worldwide 
   try {
     await db.query("begin");
     await db.query("set local statement_timeout='5s'");
-    if (
-      !(
-        await db.query(
-          "select to_regclass('kxra_private.business_eligibility_reviews') installed",
-        )
-      ).rows[0].installed
-    ) {
+    const admissionInstalled = (
+      await db.query(
+        "select to_regclass('kxra_private.business_eligibility_reviews') installed",
+      )
+    ).rows[0].installed;
+    const admissionPromoted = fs.existsSync(
+      path.resolve("supabase/migrations/0115_business_admission.sql"),
+    );
+    if (admissionPromoted) {
+      assert.ok(
+        admissionInstalled,
+        "Promoted admission schema must already be installed; no proposal repair",
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::int n from public.kxra_local_migrations where name='0115_business_admission.sql'",
+          )
+        ).rows[0].n,
+        1,
+      );
+    }
+    if (!admissionPromoted && !admissionInstalled) {
       await db.query(
         fs
           .readFileSync(

@@ -51,8 +51,76 @@ async function main() {
     assert.equal(identity.db, cfg.database);
     assert.equal(identity.listen, "");
     assert.equal(fs.realpathSync(identity.socket), cfg.host);
-    // If release has integrated it as a numbered migration, do not apply twice.
+    const promotedFile = path.resolve(
+      "supabase/migrations/0115_business_admission.sql",
+    );
+    const promoted = fs.existsSync(promotedFile);
+    if (promoted) {
+      const canonical = fs.readFileSync(
+        path.resolve("database/proposals/business-admission.sql"),
+        "utf8",
+      );
+      assert.equal(fs.readFileSync(promotedFile, "utf8"), canonical);
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::int n from public.kxra_local_migrations where name='0115_business_admission.sql'",
+          )
+        ).rows[0].n,
+        1,
+        "Promoted admission must already be migrated",
+      );
+      const definitions = [
+        ...canonical.matchAll(
+          /create(?: or replace)? function ([\w.]+)\(([\s\S]*?)\) returns ([\s\S]*?)as \$\$([\s\S]*?)\$\$;/g,
+        ),
+      ];
+      assert.equal(
+        definitions.length,
+        10,
+        "Complete admission function contract required",
+      );
+      for (const [, name, args, header, body] of definitions) {
+        const types = args.trim()
+          ? args
+              .split(",")
+              .map((p) => p.trim().split(/\s+/).slice(1).join(" "))
+              .join(",")
+          : "";
+        const signature = `${name}(${types})`;
+        const result = await db.query(
+          "select prosrc,prosecdef,proconfig from pg_proc where oid=to_regprocedure($1)",
+          [signature],
+        );
+        assert.equal(
+          result.rowCount,
+          1,
+          `Missing admission function ${signature}`,
+        );
+        assert.equal(
+          result.rows[0].prosrc,
+          body,
+          `Admission body drift ${signature}`,
+        );
+        assert.equal(
+          result.rows[0].prosecdef,
+          /security definer/i.test(header),
+        );
+        assert.ok(
+          result.rows[0].proconfig?.some((v: string) =>
+            /^search_path=(?:\"\"|)$/.test(v),
+          ),
+        );
+      }
+      const tables = await db.query(
+        "select relname,relrowsecurity from pg_class where oid in ('kxra_private.business_declarations'::regclass,'kxra_private.business_eligibility_policies'::regclass,'kxra_private.business_eligibility_reviews'::regclass)",
+      );
+      assert.equal(tables.rowCount, 3);
+      assert.ok(tables.rows.every((r) => r.relrowsecurity));
+    }
+    // Promoted schema is verified, never repaired using an older standalone fixture.
     if (
+      !promoted &&
       !(
         await db.query(
           "select to_regclass('kxra_private.business_eligibility_reviews') present",

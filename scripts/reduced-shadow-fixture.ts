@@ -50,8 +50,38 @@ async function main() {
     assert.equal(identity.db, cfg.database);
     assert.equal(identity.listen, "");
     assert.equal(fs.realpathSync(identity.socket), cfg.host);
-    // If release has integrated it as a numbered migration, do not apply twice.
+    const promoted = fs.existsSync(
+      path.resolve("supabase/migrations/0116_reduced_billing_shadow.sql"),
+    );
+    if (promoted) {
+      assert.equal(
+        fs.readFileSync(
+          path.resolve("supabase/migrations/0116_reduced_billing_shadow.sql"),
+          "utf8",
+        ),
+        sql,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::int n from public.kxra_local_migrations where name='0116_reduced_billing_shadow.sql'",
+          )
+        ).rows[0].n,
+        1,
+        "Promoted shadow schema must already be migrated",
+      );
+      assert.ok(
+        (
+          await db.query(
+            "select to_regclass('kxra_private.reduced_billing_shadow_jobs') present",
+          )
+        ).rows[0].present,
+        "No proposal repair of missing promoted schema",
+      );
+    }
+    // Standalone generated fixtures only; promoted schema is verified, never reapplied.
     if (
+      !promoted &&
       !(
         await db.query(
           "select to_regclass('kxra_private.reduced_billing_shadow_jobs') present",

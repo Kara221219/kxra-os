@@ -105,6 +105,8 @@ function cleanValue(key: string, value: unknown): MetadataValue {
     (typeof value !== "string" || !/^[a-f0-9]{40}$/.test(value))
   )
     throw Error("TELEMETRY_VALUE_REJECTED");
+  if (key === "request_id" && typeof value !== "string")
+    throw Error("TELEMETRY_REQUEST_ID_INVALID");
   if (!["string", "number", "boolean"].includes(typeof value))
     throw Error("TELEMETRY_VALUE_NOT_SCALAR");
   if (typeof value === "string") {

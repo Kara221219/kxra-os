@@ -659,6 +659,7 @@ export async function executePreparedTeamAgent(
       ]);
   } catch (error) {
     const allowed = [
+      "PROVIDER_DISABLED",
       "VAULT_NOT_CONFIGURED",
       "ENDPOINT_NOT_CONFIGURED",
       "ENDPOINT_REJECTED",

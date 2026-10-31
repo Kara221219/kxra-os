@@ -1,7 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import ReleaseReviewSubmission from "./ReleaseReviewSubmission";
 import {
   releaseReviewPackets,
   type ReleaseReviewType,
@@ -23,9 +20,6 @@ export default function ReleaseReviewForm({
   finalized: boolean;
 }) {
   const packet = releaseReviewPackets[kind];
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
 
   if (recorded)
     return (
@@ -45,43 +39,12 @@ export default function ReleaseReviewForm({
     );
 
   return (
-    <form
-      className="panel release-review"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        if (busy) return;
-        setBusy(true);
-        setMessage("");
-        const form = new FormData(event.currentTarget);
-        const checklist = Object.fromEntries(
-          packet.checks.map(([key]) => [key, form.get(key) === "on"]),
-        );
-        try {
-          const response = await fetch("/api/release-reviews", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              manifest_id: manifestId,
-              review_type: kind,
-              candidate_sha256: candidateSha256,
-              evidence_sha256: evidenceSha256,
-              checklist,
-              notes: form.get("notes"),
-            }),
-          });
-          const result = await response.json();
-          if (!response.ok)
-            throw new Error(result.error || "Review unavailable");
-          setMessage("Review recorded.");
-          router.refresh();
-        } catch (error) {
-          setMessage(
-            error instanceof Error ? error.message : "Review unavailable",
-          );
-        } finally {
-          setBusy(false);
-        }
-      }}
+    <ReleaseReviewSubmission
+      kind={kind}
+      manifestId={manifestId}
+      candidateSha256={candidateSha256}
+      evidenceSha256={evidenceSha256}
+      checkKeys={packet.checks.map(([key]) => key)}
     >
       <p className="eyebrow">Named human review</p>
       <h2>{packet.title}</h2>
@@ -119,10 +82,6 @@ export default function ReleaseReviewForm({
         Signing records your authenticated name, exact candidate and evidence
         digests. Recent MFA is required. This does not deploy or publish KXRA.
       </p>
-      <button disabled={busy}>
-        {busy ? "Recording…" : "Sign completed review"}
-      </button>
-      {message && <p role="status">{message}</p>}
-    </form>
+    </ReleaseReviewSubmission>
   );
 }
