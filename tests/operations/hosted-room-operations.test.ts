@@ -250,6 +250,17 @@ test("native hosted grant scope, authority withdrawal, replay and concurrent del
   )
     .flatMap((r) => r.rows.map((r) => r.scope))
     .filter(Boolean);
+  // Maintenance may hold both rows while concurrent deliveries SKIP LOCKED.
+  // A burst may therefore emit only one scope, but never duplicate a grant.
+  for (const id of [grant, peerGrant])
+    assert.ok(scopes.filter((scope) => scope.grant_id === id).length <= 1);
+  const serial = await fixtureWorkerQuery(
+    app,
+    config,
+    "select kxra_room_worker.next($1) scope",
+    [crypto.randomUUID()],
+  );
+  if (serial.rows[0].scope) scopes.push(serial.rows[0].scope);
   assert.equal(scopes.filter((s) => s.grant_id === grant).length, 1);
   assert.equal(scopes.filter((s) => s.grant_id === peerGrant).length, 1);
   const selected = scopes.find((s) => s.grant_id === grant);
@@ -818,13 +829,36 @@ test("failed MFA rolls admission and activation back; canonical replays never re
       db.release();
     }
   }
+  // Snapshot only this owned synthetic row through guarded fixture admin.
+  // The authenticated transaction must not SELECT private pinned columns just
+  // to construct the enqueue call whose later MFA denial is under test.
+  const pinned = (
+    await admin.query(
+      "select room_id,agent_id,message_id,context_mode,context_ids,context_sha256,chunk_ids,chunk_hashes,skill_ids,skill_hashes,memory_ids,memory_hashes from kxra.team_jobs where id=$1 and requested_by=$2 and org_id=$3",
+      [job.id, owner, org],
+    )
+  ).rows[0];
+  assert.ok(pinned);
   const canonical = crypto.randomUUID();
   await deniedAtomic(async (db, beforeAuthorize) => {
     await db.query(
-      `select kxra.team_job_enqueue($1,room_id,agent_id,message_id,context_mode,context_ids,context_sha256,
-      chunk_ids,chunk_hashes,skill_ids,skill_hashes,memory_ids,memory_hashes,null,$3)
-      from kxra.team_jobs where id=$2`,
-      [canonical, job.id, crypto.randomBytes(32).toString("hex")],
+      "select kxra.team_job_enqueue($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,null,$14)",
+      [
+        canonical,
+        pinned.room_id,
+        pinned.agent_id,
+        pinned.message_id,
+        pinned.context_mode,
+        pinned.context_ids,
+        pinned.context_sha256,
+        pinned.chunk_ids,
+        pinned.chunk_hashes,
+        pinned.skill_ids,
+        pinned.skill_hashes,
+        pinned.memory_ids,
+        pinned.memory_hashes,
+        crypto.randomBytes(32).toString("hex"),
+      ],
     );
     beforeAuthorize();
     await db.query(

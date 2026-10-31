@@ -118,10 +118,10 @@ test("root service discovery includes both native and boundary suites without cl
     "hosted-room-boundary",
     "room-maintenance-boundary",
   ])
-    assert.ok(entry.includes(`./operations/${file}.test`));
+    assert.ok(entry.includes(`tests/operations/${file}.test.ts`));
   assert.ok(
-    entry.indexOf('"./operations/hosted-room-operations.test"') <
-      entry.indexOf('"./operations/room-maintenance.test"'),
+    entry.indexOf('"tests/operations/hosted-room-operations.test.ts"') <
+      entry.indexOf('"tests/operations/room-maintenance.test.ts"'),
   );
   assert.doesNotMatch(entry, /spawn|database\.mjs|initdb/);
   assert.ok(

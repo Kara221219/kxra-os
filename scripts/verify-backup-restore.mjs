@@ -6,6 +6,11 @@ import os from "node:os";
 import path from "node:path";
 import pg from "pg";
 import {
+  operationsRecoveryEvidence,
+  operationsRecoveryPhaseAllowed,
+  operationsRecoveryConfigurationAllowed,
+} from "./operations-recovery-evidence.mjs";
+import {
   assertBrowserRecoveryFixture,
   browserRecoveryEvidence,
 } from "./browser-recovery-evidence.mjs";
@@ -19,7 +24,19 @@ if (!fs.existsSync(configPath))
   throw Error("Local database is not initialized");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const browserProof = process.argv.includes("--browser-proof");
-if (browserProof) assertBrowserRecoveryFixture(config);
+const operationsProof = process.argv.includes("--operations-proof");
+assert.ok(!(browserProof && operationsProof), "RECOVERY_DATASET_MODE_CONFLICT");
+if (operationsProof)
+  assert.ok(
+    operationsRecoveryConfigurationAllowed(config, runtime),
+    "OPERATIONS_RECOVERY_CONFIGURATION_REJECTED",
+  );
+if (operationsProof)
+  assert.ok(
+    operationsRecoveryPhaseAllowed(runtime, process.env.KXRA_CI_PHASE),
+    "OPERATIONS_RECOVERY_PHASE_REJECTED",
+  );
+if (browserProof || operationsProof) assertBrowserRecoveryFixture(config);
 const admin = { ...config, user: os.userInfo().username };
 const targetName = `kxra_restore_${crypto.randomBytes(6).toString("hex")}`;
 const drill = path.join(runtime, "restore-drill");
@@ -109,6 +126,9 @@ async function evidence(database) {
       focus,
       ...(browserProof
         ? { browserEvidence: await browserRecoveryEvidence(client) }
+        : {}),
+      ...(operationsProof
+        ? { operationsEvidence: await operationsRecoveryEvidence(client) }
         : {}),
     };
   } finally {

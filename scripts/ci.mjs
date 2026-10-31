@@ -1,3 +1,4 @@
+import { postgresBin } from "./postgres-bin.mjs";
 import { applicationNext } from "./application-next.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -10,6 +11,8 @@ import { ciLogDestination } from "./ci-output-policy.mjs";
 import {
   ciPhaseConfiguration,
   serviceVerificationCommands,
+  runPrerequisitePhases,
+  disposablePostgresCleanupPassed,
 } from "./ci-phases.mjs";
 import {
   mintDiagnosticsAttestation,
@@ -122,13 +125,14 @@ async function waitForServer(origin, child, runId, timeout = 90_000) {
 }
 
 if (phase.needsServicePhase) {
-  const services = spawnSync(
-    process.execPath,
-    ["scripts/ci.mjs", "--services-only"],
-    { cwd: root, env: process.env, stdio: "inherit" },
+  runPrerequisitePhases(
+    (flag) =>
+      spawnSync(process.execPath, ["scripts/ci.mjs", flag], {
+        cwd: root,
+        env: process.env,
+        stdio: "inherit",
+      }).status,
   );
-  if (services.status !== 0)
-    throw Error(`Isolated CI service phase failed with ${services.status}`);
 }
 
 fs.rmSync(runtime, { recursive: true, force: true });
@@ -165,6 +169,7 @@ Object.assign(environment, {
   KXRA_PG_PORT: String(postgresPort),
   KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
   KXRA_CI_RUN_ID: runId,
+  KXRA_CI_PHASE: phase.runtimeDirectory,
   KXRA_NEXT_DIST_DIR: ciDistDir,
   KXRA_SAFE_DIAGNOSTICS_ENABLED: diagnosticsEnabled ? "true" : "false",
 });
@@ -272,7 +277,41 @@ try {
   delete productionEnvironment.KXRA_PG_PORT;
   delete productionEnvironment.KXRA_NEXT_DIST_DIR;
   run("npm", ["run", "lint"], environment);
-  if (focusedTeam) {
+  if (phase.operations) {
+    run(
+      process.execPath,
+      [
+        "--conditions=development",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1",
+        ...phase.operations.files,
+      ],
+      environment,
+    );
+    run("npm", ["run", "test:migrations"], environment);
+    run(
+      process.execPath,
+      ["scripts/verify-operations-recovery.mjs", "--snapshot"],
+      environment,
+    );
+    run(process.execPath, ["scripts/database.mjs", "stop"], environment);
+    run(process.execPath, ["scripts/database.mjs", "start"], environment);
+    run(
+      process.execPath,
+      ["scripts/verify-operations-recovery.mjs", "--verify"],
+      environment,
+    );
+    run(
+      "npm",
+      ["run", "test:restore", "--", "--operations-proof"],
+      environment,
+    );
+    console.log(
+      `Isolated ${phase.operations.directory} verification PASS; separate generated dataset, original quotas unchanged.`,
+    );
+  } else if (focusedTeam) {
     run(
       process.execPath,
       [
@@ -383,34 +422,6 @@ try {
   }
   harnessOutcome = "PASSED";
 } finally {
-  if (diagnosticsReady) {
-    try {
-      const memory = process.memoryUsage(),
-        cpu = process.resourceUsage();
-      harnessEvents.push({
-        phase: "RESOURCE_SNAPSHOT",
-        elapsedMs: elapsed(),
-        rssMiB: memory.rss / 1048576,
-        heapMiB: memory.heapUsed / 1048576,
-        load1: os.loadavg()[0],
-        cpuUserMs: cpu.userCPUTime / 1000,
-        cpuSystemMs: cpu.systemCPUTime / 1000,
-        freeMiB: os.freemem() / 1048576,
-        totalMiB: os.totalmem() / 1048576,
-        cpuCount: os.cpus().length,
-      });
-      writeHarnessDiagnostics({
-        root,
-        runtime,
-        environment,
-        metadata: diagnosticsMetadata,
-        events: harnessEvents,
-        outcome: harnessOutcome,
-      });
-    } catch {
-      console.error("SAFE_DIAGNOSTICS_CAPTURE_REJECTED");
-    }
-  }
   if (application && application.exitCode === null) {
     application.kill("SIGTERM");
     await new Promise((resolve) => {
@@ -467,11 +478,22 @@ try {
     ["scripts/database.mjs", "stop"],
     { cwd: root, env: environment, stdio: "inherit" },
   );
+  const postgresAbsent = spawnSync(
+    path.join(postgresBin(environment), "pg_ctl"),
+    ["-D", path.join(runtime, "postgres"), "status"],
+    { cwd: root, env: environment, stdio: "ignore", timeout: 5000 },
+  );
+  const cleanupPassed = disposablePostgresCleanupPassed(
+    stopped.status,
+    postgresAbsent.status,
+  );
   if (process.env.KXRA_CI_BOUNDED_OUTPUT === "true")
     fs.writeFileSync(
       path.join(runtime, "bounded-cleanup.json"),
       JSON.stringify({
         postgresStopExitCode: stopped.status,
+        postgresStatusExitCode: postgresAbsent.status,
+        postgresAbsent: cleanupPassed,
         applicationExited:
           !application ||
           application.exitCode !== null ||
@@ -487,6 +509,37 @@ try {
       }) + "\n",
       { mode: 0o600 },
     );
-  if (stopped.status !== 0)
-    console.error("Disposable PostgreSQL cleanup did not complete cleanly");
+  if (!cleanupPassed) {
+    console.error("CI_DISPOSABLE_POSTGRES_CLEANUP_UNCONFIRMED");
+    process.exitCode = 1;
+    harnessOutcome = "FAILED";
+  }
+  if (diagnosticsReady) {
+    try {
+      const memory = process.memoryUsage(),
+        cpu = process.resourceUsage();
+      harnessEvents.push({
+        phase: "RESOURCE_SNAPSHOT",
+        elapsedMs: elapsed(),
+        rssMiB: memory.rss / 1048576,
+        heapMiB: memory.heapUsed / 1048576,
+        load1: os.loadavg()[0],
+        cpuUserMs: cpu.userCPUTime / 1000,
+        cpuSystemMs: cpu.systemCPUTime / 1000,
+        freeMiB: os.freemem() / 1048576,
+        totalMiB: os.totalmem() / 1048576,
+        cpuCount: os.cpus().length,
+      });
+      writeHarnessDiagnostics({
+        root,
+        runtime,
+        environment,
+        metadata: diagnosticsMetadata,
+        events: harnessEvents,
+        outcome: harnessOutcome,
+      });
+    } catch {
+      console.error("SAFE_DIAGNOSTICS_CAPTURE_REJECTED");
+    }
+  }
 }

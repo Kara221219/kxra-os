@@ -535,3 +535,34 @@ test("native MFA fixture reaches issuance guard and discovery never bypasses loc
       maintenance.indexOf("insert into kxra.organisations(id,name,slug)"),
   );
 });
+
+test("native delivery burst preserves duplicates bound then uses one serial tick; MFA enqueue passes captured owned inputs", () => {
+  const native = fs.readFileSync(
+    "tests/operations/hosted-room-operations.test.ts",
+    "utf8",
+  );
+  assert.match(
+    native,
+    /for \(const id of \[grant, peerGrant\]\)[\s\S]*?length <= 1/,
+  );
+  assert.match(native, /const serial = await fixtureWorkerQuery/);
+  assert.match(native, /scopes.push\(serial.rows\[0\].scope\)/);
+  assert.match(
+    native,
+    /scopes.filter\(\(s\) => s.grant_id === peerGrant\).length, 1/,
+  );
+  assert.match(
+    native,
+    /from kxra.team_jobs where id=\$1 and requested_by=\$2 and org_id=\$3/,
+  );
+  const callbackStart = native.indexOf(
+    "await deniedAtomic(async (db, beforeAuthorize) => {",
+  );
+  const callback = native.slice(
+    callbackStart,
+    native.indexOf("\n  });", callbackStart),
+  );
+  assert.doesNotMatch(callback, /from kxra.team_jobs/);
+  assert.match(callback, /pinned.context_ids/);
+  assert.match(callback, /beforeAuthorize\(\)/);
+});
