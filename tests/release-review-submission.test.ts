@@ -3,6 +3,10 @@ import fs from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
 import ts from "typescript";
+import {
+  releaseReviewPackets,
+  type ReleaseReviewType,
+} from "../apps/os/lib/release-review-packets";
 
 // Execute the shipped form handler with synthetic ports; server/database/MFA
 // review authority is still exercised by the existing HTTP and native suites.
@@ -120,4 +124,83 @@ test("rejected review does not claim recording or refresh and releases busy stat
   assert.equal(h.refreshes(), 0);
   assert.equal(h.state[0], false);
   assert.equal(h.state[1], "Review unavailable");
+});
+
+test("server review wrapper preserves required checklists and recorded receipts without client packet data", () => {
+  const server = ts.transpileModule(
+    fs.readFileSync("apps/os/components/ReleaseReviewForm.tsx", "utf8"),
+    {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+        jsx: ts.JsxEmit.ReactJSX,
+      },
+    },
+  ).outputText;
+  const client = function SyntheticSubmission() {};
+  const jsx = (type: unknown, props: Record<string, any>) => ({ type, props });
+  const scope = vm.createContext(
+    {
+      exports: {},
+      require: (name: string) => {
+        if (name === "react/jsx-runtime") return { jsx, jsxs: jsx };
+        if (name === "./ReleaseReviewSubmission")
+          return { __esModule: true, default: client };
+        if (name === "../lib/release-review-packets")
+          return { releaseReviewPackets };
+        throw Error("UNEXPECTED_SERVER_REVIEW_DEPENDENCY");
+      },
+    },
+    { codeGeneration: { strings: false, wasm: false } },
+  );
+  new vm.Script(server).runInContext(scope);
+  const render = (scope.exports as any).default;
+  function elements(node: any): any[] {
+    if (Array.isArray(node)) return node.flatMap(elements);
+    if (!node || typeof node !== "object") return [];
+    return [node, ...elements(node.props?.children)];
+  }
+  for (const kind of Object.keys(releaseReviewPackets) as ReleaseReviewType[]) {
+    const packet = releaseReviewPackets[kind];
+    const props = {
+      kind,
+      manifestId: "synthetic-manifest",
+      candidateSha256: "a".repeat(64),
+      evidenceSha256: "b".repeat(64),
+      finalized: false,
+    };
+    const view = render(props);
+    assert.equal(view.type, client);
+    assert.deepEqual(
+      Array.from(view.props.checkKeys),
+      packet.checks.map(([key]) => key),
+    );
+    const checks = elements(view).filter((e) => e.type === "input");
+    assert.deepEqual(
+      checks.map((e) => e.props.name),
+      packet.checks.map(([key]) => key),
+    );
+    assert.ok(
+      checks.every(
+        (e) => e.props.required === true && e.props.type === "checkbox",
+      ),
+    );
+    assert.ok(JSON.stringify(view).includes(props.candidateSha256));
+    assert.ok(JSON.stringify(view).includes(props.evidenceSha256));
+    const recorded = render({
+      ...props,
+      recorded: {
+        reviewer_name: "Synthetic reviewer",
+        attested_at: "2026-10-31T00:00:00Z",
+      },
+    });
+    assert.equal(recorded.type, "section");
+    assert.ok(
+      !elements(recorded).some(
+        (e) => e.type === client || e.type === "input" || e.type === "button",
+      ),
+    );
+    assert.ok(JSON.stringify(recorded).includes("Synthetic reviewer"));
+  }
+  assert.doesNotMatch(compiled, /require\([^)]*release-review-packets/);
 });

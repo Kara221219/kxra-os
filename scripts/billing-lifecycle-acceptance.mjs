@@ -35,6 +35,8 @@ const serviceCases = [
   "billing-refresh-alternative",
 ].map((name) => `tests/${name}.test.ts`);
 const databaseCases = [
+  "live-billing-entry-status",
+  "business-admission",
   "billing-webhook-reconciliation",
   "live-stripe-customer",
   "live-billing-concurrency",
@@ -65,6 +67,7 @@ async function main() {
   ];
   const selectedDatabase = [
     ...databaseCases,
+    "tests/staging-runtime-roles.test.ts",
     ...(includeShadow ? ["tests/reduced-billing-shadow.db.test.ts"] : []),
   ];
   process.umask(0o077);

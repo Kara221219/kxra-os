@@ -368,3 +368,170 @@ test("maintenance route budget accommodates bounded body, pool and SQL cleanup",
     /statement_timeout='5s'/,
   );
 });
+
+import type pg from "pg";
+import {
+  fixtureWorkerQuery,
+  OperationsFixtureScope,
+} from "./fixture-isolation";
+const generatedOperationsEnvironment: NodeJS.ProcessEnv = {
+  NODE_ENV: "development",
+  KXRA_AUTH_MODE: "fixture",
+  KXRA_ORIGIN: "http://127.0.0.1:3210",
+  KXRA_RUNTIME: "/tmp/synthetic-operations-unit",
+  KXRA_LOCAL_SECRET: "a".repeat(64),
+};
+test("fixture discovery uses transaction-local mode for success/failure and rejects hosted targets before connect", async () => {
+  const calls: string[] = [];
+  let fail = false;
+  const db = {
+    query: async (sql: string) => {
+      calls.push(sql);
+      if (fail && sql === "select synthetic_discovery")
+        throw Error("synthetic");
+      return { rows: [] };
+    },
+    release: () => calls.push("release"),
+  };
+  const pool = {
+    connect: async () => {
+      calls.push("connect");
+      return db;
+    },
+  } as unknown as pg.Pool;
+  const cfg = { host: "/tmp/synthetic-operations-socket" };
+  await fixtureWorkerQuery(
+    pool,
+    cfg,
+    "select synthetic_discovery",
+    [],
+    generatedOperationsEnvironment,
+  );
+  assert.deepEqual(calls, [
+    "connect",
+    "begin",
+    "select set_config('request.kxra.execution_mode','fixture',true)",
+    "select synthetic_discovery",
+    "commit",
+    "release",
+  ]);
+  calls.length = 0;
+  fail = true;
+  await assert.rejects(
+    fixtureWorkerQuery(
+      pool,
+      cfg,
+      "select synthetic_discovery",
+      [],
+      generatedOperationsEnvironment,
+    ),
+  );
+  assert.deepEqual(calls.slice(-2), ["rollback", "release"]);
+  calls.length = 0;
+  await assert.rejects(
+    fixtureWorkerQuery(pool, cfg, "select synthetic_discovery", [], {
+      ...generatedOperationsEnvironment,
+      VERCEL_ENV: "preview",
+    }),
+  );
+  await assert.rejects(
+    fixtureWorkerQuery(
+      pool,
+      { host: "remote.example" },
+      "select synthetic_discovery",
+      [],
+      generatedOperationsEnvironment,
+    ),
+  );
+  assert.equal(calls.length, 0);
+});
+test("test failure cleanup fences every mutation to registered rooms/tenants and revokes only added memberships", async () => {
+  const room = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    tenant = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    actor = "20000000-0000-4000-8000-000000000001";
+  const calls: { sql: string; values: unknown[] }[] = [];
+  const db = {
+    query: async (sql: string, values: unknown[] = []) => {
+      calls.push({ sql, values });
+      return {
+        rows: sql.startsWith("select id,created_by")
+          ? [{ id: room, created_by: actor }]
+          : sql.startsWith("select (select count")
+            ? [{ n: 0 }]
+            : [],
+      };
+    },
+    release: () => {},
+  };
+  const pool = { connect: async () => db } as unknown as pg.Pool;
+  const scope = new OperationsFixtureScope(
+    { host: "/tmp/synthetic-operations-socket" },
+    generatedOperationsEnvironment,
+  );
+  scope.room(room);
+  scope.tenant(tenant, actor);
+  assert.throws(() =>
+    scope.tenant("10000000-0000-4000-8000-000000000001", actor),
+  );
+  await assert.rejects(
+    (async () => {
+      try {
+        throw Error("simulated failed test");
+      } finally {
+        await scope.cleanup(pool);
+      }
+    })(),
+  );
+  const mutations = calls.filter((call) => call.sql.startsWith("update"));
+  assert.ok(mutations.length >= 5);
+  for (const { sql, values } of mutations) {
+    assert.match(
+      sql,
+      /where (?:room_id=\$1|org_id=\$1|job.room_id=\$1|id=\$1)/,
+    );
+    assert.equal(values[0], sql.includes("kxra.organisation") ? tenant : room);
+    assert.doesNotMatch(sql, /delete|truncate/i);
+  }
+  const membership = mutations.find((call) =>
+    call.sql.includes("organisation_memberships"),
+  )!;
+  assert.deepEqual(membership.values, [tenant, actor]);
+  assert.match(membership.sql, /account_id=\$2/);
+  const organisation = mutations.find((call) =>
+    call.sql.startsWith("update kxra.organisations"),
+  )!;
+  assert.deepEqual(organisation.values, [tenant, "byok-" + tenant]);
+  assert.match(organisation.sql, /organisation_kind='CUSTOMER' and slug=\$2/);
+  const job = mutations.find((call) =>
+    call.sql.startsWith("update kxra.team_jobs"),
+  )!;
+  assert.match(job.sql, /when state='DISPATCHED' then 'UNCERTAIN'/);
+  assert.match(calls.at(-1)!.sql, /commit/);
+  calls.length = 0;
+  await scope.cleanup(pool);
+  assert.equal(calls.length, 0);
+});
+test("native MFA fixture reaches issuance guard and discovery never bypasses local transaction helper", () => {
+  const native = fs.readFileSync(
+    "tests/operations/hosted-room-operations.test.ts",
+    "utf8",
+  );
+  assert.doesNotMatch(native, /app.query\("select kxra_room_worker.next/);
+  assert.match(
+    native,
+    /set_config\('request.kxra.execution_mode','fixture',true\)/,
+  );
+  assert.match(native, /assert.equal\(\s*reachedAuthorize,\s*true/);
+  assert.match(
+    native,
+    /afterEach\(async \(\) => fixtureScope.cleanup\(admin\)\)/,
+  );
+  const maintenance = fs.readFileSync(
+    "tests/operations/room-maintenance.test.ts",
+    "utf8",
+  );
+  assert.ok(
+    maintenance.indexOf("fixtureScope.tenant(tenant, actor)") <
+      maintenance.indexOf("insert into kxra.organisations(id,name,slug)"),
+  );
+});

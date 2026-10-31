@@ -1,12 +1,13 @@
-import { test, after } from "node:test";
+import { test, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
+import { OperationsFixtureScope } from "./fixture-isolation";
 import { runtimeFile, testOrigin } from "../support/runtime";
 import {
-  knowledgeFixture,
+  knowledgeFixture as baseKnowledgeFixture,
   knowledgeLogin,
   knowledgeOk as ok,
 } from "../support/team-knowledge";
@@ -23,10 +24,23 @@ assert.ok(
 );
 const app = new pg.Pool(cfg),
   admin = new pg.Pool({ ...cfg, user: os.userInfo().username });
+const fixtureScope = new OperationsFixtureScope(cfg);
+afterEach(async () => fixtureScope.cleanup(admin));
 after(async () => {
-  await app.end();
-  await admin.end();
+  try {
+    await fixtureScope.cleanup(admin);
+  } finally {
+    await app.end();
+    await admin.end();
+  }
 });
+async function knowledgeFixture(
+  ...args: Parameters<typeof baseKnowledgeFixture>
+) {
+  const fixture = await baseKnowledgeFixture(...args);
+  fixtureScope.room(fixture.room);
+  return fixture;
+}
 const owner = "20000000-0000-4000-8000-000000000001",
   partner = "20000000-0000-4000-8000-000000000002",
   org = "10000000-0000-4000-8000-000000000001";
@@ -661,6 +675,7 @@ test("two real-tenant SQL scopes require customer BYOK consent and exact rollout
     const tenant = crypto.randomUUID(),
       project = crypto.randomUUID(),
       connection = crypto.randomUUID();
+    fixtureScope.tenant(tenant, actor);
     await admin.query(
       "insert into kxra.organisations(id,name,slug) values($1,'Synthetic BYOK customer',$2)",
       [tenant, "byok-" + tenant],

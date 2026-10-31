@@ -1,11 +1,18 @@
-import { test, after } from "node:test";
+import { test, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
+import {
+  OperationsFixtureScope,
+  fixtureWorkerQuery,
+} from "./fixture-isolation";
 import { runtimeFile } from "../support/runtime";
-import { knowledgeFixture, knowledgeOk as ok } from "../support/team-knowledge";
+import {
+  knowledgeFixture as baseKnowledgeFixture,
+  knowledgeOk as ok,
+} from "../support/team-knowledge";
 import { roomWorkerAuthorized } from "../../packages/workspace/room-worker-auth";
 import { hostedRoomOperations } from "../../packages/workspace/hosted-operations";
 import { ensureRoomOperationsSchema } from "../support/room-operations-schema";
@@ -25,10 +32,23 @@ assert.ok(
 );
 const app = new pg.Pool(config),
   admin = new pg.Pool({ ...config, user: os.userInfo().username });
+const fixtureScope = new OperationsFixtureScope(config);
+afterEach(async () => fixtureScope.cleanup(admin));
 after(async () => {
-  await app.end();
-  await admin.end();
+  try {
+    await fixtureScope.cleanup(admin);
+  } finally {
+    await app.end();
+    await admin.end();
+  }
 });
+async function knowledgeFixture(
+  ...args: Parameters<typeof baseKnowledgeFixture>
+) {
+  const fixture = await baseKnowledgeFixture(...args);
+  fixtureScope.room(fixture.room);
+  return fixture;
+}
 const org = "10000000-0000-4000-8000-000000000001",
   owner = "20000000-0000-4000-8000-000000000001",
   partner = "20000000-0000-4000-8000-000000000002";
@@ -219,9 +239,12 @@ test("native hosted grant scope, authority withdrawal, replay and concurrent del
   const scopes = (
     await Promise.all(
       Array.from({ length: 12 }, () =>
-        app.query("select kxra_room_worker.next($1) scope", [
-          crypto.randomUUID(),
-        ]),
+        fixtureWorkerQuery(
+          app,
+          config,
+          "select kxra_room_worker.next($1) scope",
+          [crypto.randomUUID()],
+        ),
       ),
     )
   )
@@ -234,10 +257,18 @@ test("native hosted grant scope, authority withdrawal, replay and concurrent del
   assert.equal(selected.actor.organisation_id, org);
   assert.equal(selected.actor.room_worker_grant, grant);
   const replay = crypto.randomUUID();
-  await app.query("select kxra_room_worker.next($1)", [replay]);
+  await fixtureWorkerQuery(app, config, "select kxra_room_worker.next($1)", [
+    replay,
+  ]);
   assert.equal(
-    (await app.query("select kxra_room_worker.next($1) scope", [replay]))
-      .rows[0].scope,
+    (
+      await fixtureWorkerQuery(
+        app,
+        config,
+        "select kxra_room_worker.next($1) scope",
+        [replay],
+      )
+    ).rows[0].scope,
     null,
   );
   assert.equal(
@@ -489,7 +520,7 @@ test("hosted queued execution cannot omit a grant or outlive its authority; fres
     try {
       await db.query("begin");
       await db.query(
-        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.kxra.org_id',$2,true)",
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.kxra.org_id',$2,true),set_config('request.kxra.execution_mode','fixture',true)",
         [owner, org],
       );
       return (
@@ -751,13 +782,16 @@ test("failed MFA rolls admission and activation back; canonical replays never re
       [job.id],
     )
   )[0].id;
-  async function deniedAtomic(work: (db: pg.PoolClient) => Promise<void>) {
+  async function deniedAtomic(
+    work: (db: pg.PoolClient, beforeAuthorize: () => void) => Promise<void>,
+  ) {
+    let reachedAuthorize = false;
     const db = await app.connect();
     try {
       await db.query("begin");
       await db.query("set local role authenticated");
       await db.query(
-        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true),set_config('request.kxra.hosted_room_jobs','on',true),set_config('request.kxra.execution_mode','hosted',true),set_config('request.kxra.team_grant','',true)",
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true),set_config('request.kxra.hosted_room_jobs','on',true),set_config('request.kxra.execution_mode','fixture',true),set_config('request.kxra.team_grant','',true)",
         [
           owner,
           JSON.stringify({
@@ -768,23 +802,31 @@ test("failed MFA rolls admission and activation back; canonical replays never re
           org,
         ],
       );
-      await work(db);
+      await work(db, () => {
+        reachedAuthorize = true;
+      });
       assert.fail("Fresh MFA must be required before committing a delegation");
     } catch (error) {
       await db.query("rollback");
+      assert.equal(
+        reachedAuthorize,
+        true,
+        "The transaction must pass fixture admission/review before testing the MFA issuance guard",
+      );
       assert.equal((error as { code?: string }).code, "42501");
     } finally {
       db.release();
     }
   }
   const canonical = crypto.randomUUID();
-  await deniedAtomic(async (db) => {
+  await deniedAtomic(async (db, beforeAuthorize) => {
     await db.query(
       `select kxra.team_job_enqueue($1,room_id,agent_id,message_id,context_mode,context_ids,context_sha256,
       chunk_ids,chunk_hashes,skill_ids,skill_hashes,memory_ids,memory_hashes,null,$3)
       from kxra.team_jobs where id=$2`,
       [canonical, job.id, crypto.randomBytes(32).toString("hex")],
     );
+    beforeAuthorize();
     await db.query(
       "select kxra.team_execution_authorize($1,now()+interval '1 hour')",
       [canonical],
@@ -825,12 +867,13 @@ test("failed MFA rolls admission and activation back; canonical replays never re
       [definition],
     )
   ).rows[0];
-  await deniedAtomic(async (db) => {
+  await deniedAtomic(async (db, beforeAuthorize) => {
     await db.query("select kxra.team_schedule_review($1,$2,$3,'ACTIVATE')", [
       f.room,
       definition,
       before.version,
     ]);
+    beforeAuthorize();
     await db.query(
       "select kxra.team_execution_authorize($1,expires_at) from kxra.team_schedules where id=$1",
       [definition],

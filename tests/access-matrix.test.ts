@@ -1614,6 +1614,14 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
     // Dedicated workspace/collaboration/case/bridge suites populate these tables and
     // test positive access plus private-room, cross-tenant, revocation and SQL denials.
     const sliceOneTables = [
+      // Numbered 0114: populated positive/private-room/cross-tenant and
+      // revocation cases execute in the root room-operations native suites.
+      "team_execution_grants",
+      "team_worker_deliveries",
+      "team_room_rollouts",
+      "team_byok_consents",
+      "team_uncertainty_cases",
+      "team_maintenance_receipts",
       "team_rooms",
       "team_room_members",
       "team_connections",
@@ -1814,6 +1822,24 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
         );
         await db.query("rollback to savepoint hosted_admission_visibility");
         await db.query("release savepoint hosted_admission_visibility");
+      }
+      // All principals must be unable to read worker internals or the
+      // deliberately ungranted grant/rollout/consent columns directly.
+      for (const table of [
+        "team_execution_grants",
+        "team_worker_deliveries",
+        "team_room_rollouts",
+        "team_byok_consents",
+        "team_maintenance_receipts",
+      ]) {
+        await db.query("savepoint room_operation_columns");
+        await assert.rejects(
+          db.query(`select * from kxra.${table}`),
+          { code: "42501" },
+          `${actor}:${table}:restricted columns`,
+        );
+        await db.query("rollback to savepoint room_operation_columns");
+        await db.query("release savepoint room_operation_columns");
       }
       for (const check of expectations) {
         const actual = (await db.query(check.sql, check.values)).rows
