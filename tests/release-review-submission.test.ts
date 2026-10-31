@@ -113,12 +113,10 @@ test("release review client submits exact server-selected checklist/digests with
 });
 test("rejected review does not claim recording or refresh and releases busy state", async () => {
   const h = harness(false);
-  await h
-    .render()
-    .props.onSubmit({
-      preventDefault() {},
-      currentTarget: new Map([["notes", "Synthetic rejected review notes"]]),
-    });
+  await h.render().props.onSubmit({
+    preventDefault() {},
+    currentTarget: new Map([["notes", "Synthetic rejected review notes"]]),
+  });
   assert.equal(h.refreshes(), 0);
   assert.equal(h.state[0], false);
   assert.equal(h.state[1], "Review unavailable");

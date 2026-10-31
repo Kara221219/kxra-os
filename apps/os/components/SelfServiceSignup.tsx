@@ -167,11 +167,13 @@ export function SelfServiceSignup({
         </button>
       </form>
       <p>
-        KXRA is for business customers. Before payment, you must provide business
-        details and confirm your authority to act for the business. You connect
-        and pay for your own AI-provider account and usage; provider credits are
-        not included in your workspace subscription.
-        <a href="/business-admission">Complete business details before payment</a>
+        KXRA is for business customers. Before payment, you must provide
+        business details and confirm your authority to act for the business. You
+        connect and pay for your own AI-provider account and usage; provider
+        credits are not included in your workspace subscription.
+        <a href="/business-admission">
+          Complete business details before payment
+        </a>
       </p>
       <p role="status">{notice}</p>
       <a href="/login">Already registered? Sign in</a>
