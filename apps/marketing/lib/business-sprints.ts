@@ -1,9 +1,8 @@
-import { sprintOptions } from "./business-sprint-options";
-
 /** Public starting prices are indicative. Only an issued database proposal is payable. */
 export const sprintPackages = [
   {
-    ...sprintOptions[0],
+    key: "decision-review",
+    name: "Decision Review",
     priceMinor: 25000,
     turnaround: "3 working days",
     summary: "Make one business decision with clearer evidence and trade-offs.",
@@ -16,7 +15,8 @@ export const sprintPackages = [
     ],
   },
   {
-    ...sprintOptions[1],
+    key: "improvement-sprint",
+    name: "Business Improvement Sprint",
     priceMinor: 75000,
     turnaround: "7 working days",
     summary:
@@ -31,7 +31,8 @@ export const sprintPackages = [
     ],
   },
   {
-    ...sprintOptions[2],
+    key: "implementation",
+    name: "Implementation Project",
     priceMinor: null,
     turnaround: "Agreed in your proposal",
     summary:

@@ -13,6 +13,10 @@ export default {
     // bounded diagnostics rather than raw request/browser logs.
     mcpServer: false,
   },
+  webpack(config, { dev, isServer }) {
+    if (!dev && !isServer) config.optimization.moduleIds = "size";
+    return config;
+  },
   async headers() {
     return [
       {

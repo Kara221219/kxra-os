@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  sprintOptions as sprintPackages,
+  sprintPackages,
   sprintConstraints,
-} from "../../../packages/business-sprints/options";
+} from "../../../packages/business-sprints";
 
 type LegalDocument = {
   id: string;
