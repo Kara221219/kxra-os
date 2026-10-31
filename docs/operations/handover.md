@@ -1298,3 +1298,5 @@ Prepared isolated fail-closed business declaration/eligibility candidate on d5, 
 # Local admission policy follow-up — 2026-10-30
 
 The policy supersession correction is isolated from root/external checkouts. It records immutable first enablement, selects only the newest ever-enabled policy, and still requires that policy to be enabled/time-valid. Drafts remain inert; withdrawal cannot fall back to earlier clearance. Six pure/source checks passed; native regression cases are added but pending QA's exclusive database window. Use the corrected unapplied proposal in final-source rehearsal, not an unreviewed backfill of an installed older proposal. No hosted actions, role changes, country/provider policy changes, credentials or activation occurred.
+
+- 2026-10-31 local correction: see [CI/security correction](ci-correction-2026-10-31.md) for the proven 288-byte remote budget overrun, unchanged ActionButton extraction and minimal follow-redirects 1.16.2 patch. Publication/hosted acceptance remain gated.

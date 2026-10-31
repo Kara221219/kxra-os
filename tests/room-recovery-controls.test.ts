@@ -7,9 +7,9 @@ import { setImmediate as turn } from "node:timers/promises";
 
 // Exercise the actual handler with synthetic hook/fetch/router ports. This is
 // not a browser or hydration proof; it verifies synchronous intent ordering.
-const source = fs.readFileSync("apps/os/components/Forms.tsx", "utf8");
+const source = fs.readFileSync("apps/os/components/ActionButton.tsx", "utf8");
 const ast = ts.createSourceFile(
-  "Forms.tsx",
+  "ActionButton.tsx",
   source,
   ts.ScriptTarget.Latest,
   true,
