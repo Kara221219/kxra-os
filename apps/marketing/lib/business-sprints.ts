@@ -1,4 +1,4 @@
-import { sprintOptions } from "../../../packages/business-sprints/options";
+import { sprintOptions } from "./business-sprint-options";
 
 /** Public starting prices are indicative. Only an issued database proposal is payable. */
 export const sprintPackages = [

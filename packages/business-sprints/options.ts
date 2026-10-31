@@ -1,9 +1,5 @@
-// Canonical package choices shared by the compact client and full catalogue.
-export const sprintOptions = [
-  { key: "decision-review", name: "Decision Review" },
-  { key: "improvement-sprint", name: "Business Improvement Sprint" },
-  { key: "implementation", name: "Implementation Project" },
-] as const;
+import { sprintOptions } from "../../apps/marketing/lib/business-sprint-options";
+export { sprintOptions } from "../../apps/marketing/lib/business-sprint-options";
 
 export function sprintConstraints(key: string, context: string) {
   const selected = sprintOptions.find((item) => item.key === key);
