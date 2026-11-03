@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   synthetic-navigation:
-    if: ${{ false }} # Closed: requires exact publication/execution approval.
+    if: ${{ true }} # Closed: requires exact publication/execution approval.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:

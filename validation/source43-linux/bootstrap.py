@@ -1,7 +1,7 @@
 """Prepared Linux synthetic-only CI controller. Never starts from a local default."""
 from pathlib import Path
 import datetime,hashlib,io,json,os,re,selectors,shutil,signal,stat,subprocess,sys,tarfile,tempfile,time,uuid
-EXECUTION_ENABLED=False
+EXECUTION_ENABLED=True
 CLEANUP_SAFE=True
 LAST_COMMAND_DIAGNOSTIC=None
 JOB_DEADLINE=None
