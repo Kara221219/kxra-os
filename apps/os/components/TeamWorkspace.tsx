@@ -214,6 +214,9 @@ export function TeamWorkspace({
           </p>
         </div>
         <Link href="/os/workspace">All rooms</Link>
+        {local && room ? (
+          <Link href={`/os/custom-apps/${room.id}`}>Local custom apps</Link>
+        ) : null}
       </div>
       {local && (
         <p className="notice">
