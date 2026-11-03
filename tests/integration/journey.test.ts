@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import pg from "pg";
+import { spawn } from "node:child_process";
 import { testOrigin as base, runtimeFile } from "../support/runtime";
 import {
   knowledgeLogin,
@@ -248,7 +249,85 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
     process.env.KXRA_GITHUB_FAKE_RUNTIME!,
     "github-provider-mode",
   );
-  fs.writeFileSync(modeFile, "drop-after-commit");
+  const providerFile = path.join(
+    process.env.KXRA_GITHUB_FAKE_RUNTIME!,
+    "github-provider-store.json",
+  );
+  const beforePosts = JSON.parse(fs.readFileSync(providerFile, "utf8")).posts;
+  fs.writeFileSync(modeFile, "hang-after-commit");
+  fs.writeFileSync(
+    runtimeFile("paired-dispatch-plan.json"),
+    JSON.stringify({
+      token: f.token,
+      delegation: f.delegation.delegation_token,
+      request: {
+        task_id: f.task,
+        fence: f.leased.fence,
+        command: {
+          action: "dispatch",
+          connection_id: cid,
+          write_id: uncertain.id,
+        },
+      },
+    }),
+    { mode: 0o600 },
+  );
+  const worker = spawn(
+    process.execPath,
+    [
+      "--conditions=development",
+      "--import",
+      "tsx",
+      "scripts/integration-device-worker-fixture.ts",
+    ],
+    { env: process.env, stdio: "ignore" },
+  );
+  try {
+    for (
+      let n = 0;
+      n < 150 &&
+      JSON.parse(fs.readFileSync(providerFile, "utf8")).posts === beforePosts;
+      n++
+    ) {
+      assert.equal(
+        worker.exitCode,
+        null,
+        "Worker exited before provider commit",
+      );
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    assert.equal(
+      JSON.parse(fs.readFileSync(providerFile, "utf8")).posts,
+      beforePosts + 1,
+    );
+    const exited = new Promise((resolve) => worker.once("exit", resolve));
+    worker.kill("SIGKILL");
+    await exited;
+  } finally {
+    if (worker.exitCode === null && worker.signalCode === null)
+      worker.kill("SIGKILL");
+  }
+  const cfg = JSON.parse(fs.readFileSync(runtimeFile("database.json"), "utf8"));
+  const crashDb = new pg.Client({ ...cfg, user: os.userInfo().username });
+  await crashDb.connect();
+  try {
+    assert.equal(
+      (
+        await crashDb.query(
+          "select state from kxra_private.github_writes where id=$1",
+          [uncertain.id],
+        )
+      ).rows[0].state,
+      "DISPATCHING",
+    );
+    await crashDb.query(
+      "update kxra_private.github_writes set dispatch_at=clock_timestamp()-interval '10 seconds' where id=$1",
+      [uncertain.id],
+    );
+  } finally {
+    await crashDb.end();
+  }
+  await f.github({ action: "recover", connection_id: cid });
   assert.equal(
     (
       await ok(
@@ -260,6 +339,10 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
       )
     ).result.state,
     "UNCERTAIN",
+  );
+  assert.equal(
+    JSON.parse(fs.readFileSync(providerFile, "utf8")).posts,
+    beforePosts + 1,
   );
   fs.writeFileSync(modeFile, "normal");
   const schema = (
