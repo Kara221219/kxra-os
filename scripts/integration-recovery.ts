@@ -112,6 +112,14 @@ async function main() {
         [],
         t.name,
       );
+    assert.deepEqual(
+      catalogue.columnAcls.filter(
+        (c: { schema: string; acl: unknown }) =>
+          c.schema === "kxra_private" && c.acl !== null,
+      ),
+      [],
+      "No private table may acquire a column-level ACL",
+    );
     const journey = JSON.parse(
       fs.readFileSync(path.join(runtime, "integration-journey.json"), "utf8"),
     );
