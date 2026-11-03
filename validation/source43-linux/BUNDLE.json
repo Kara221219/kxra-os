@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "status": "PREPARED_DISABLED_NOT_EXECUTION_AUTHORITY",
+  "sourceSha": "43e3906859b58e69370a1069a44e6dc1cefc6d03",
+  "mode": "CLEAN_SOURCE_EQUIVALENT_NOT_MAC_ARTIFACT",
+  "files": {
+    "build.mjs": "f3d70a672241b345213fdb60d38395a3870416c9bc4550579d128744020320ce",
+    "inventory.mjs": "a672714a6cad74dcdf064db85ab220a80e1a652a4e1e1a24c55a7046ca726b6e",
+    "plan.json": "8c8c6b91f4bcc0652289d3cf03767c61b41ae683308da8e6a34e3cb6befe1d59",
+    "runtime.mjs": "ad256e506f82a452b9501ebbbecb402b0830df0a0bb802d9baa4a068fdf6a5b8",
+    "server.mjs": "c468aec48d0ad6a0ec911ede5315f489d8115ed3799145075fec439367c3f703",
+    "unit-build.mjs": "2a7b021dc760ae5c785ee4c15a7a718dbcbd69dd8ba03fd3fe7823ee7a652f44"
+  },
+  "bootstrapDormantSha256": "07e7750160cb13806d249bd3df66d6fd4528f82248d01872591d8ce5e6a9815a",
+  "bootstrapProspectiveEnabledSha256": "72f2cf5b7e20d3e1a7439e1c4f3b3907e47516071a0a9726b59a3decbbd0e448",
+  "workflowDormantSha256": "047152e9c242485052ca559c3888d5df8d6babb585dd2595e4432d5df8f24b47",
+  "workflowProspectiveEnabledSha256": "434465b7129f246054e640a72a337997b8b6beaadf5e5bc37a6ac9703a03aa51",
+  "originalMacArtifactInputPermitted": false,
+  "artifactExportPermitted": false,
+  "liveCredentialsPermitted": false,
+  "maximumWorkflowInvocations": 1,
+  "automaticRetry": false
+}

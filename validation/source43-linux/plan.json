@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "mode": "CLEAN_SOURCE_EQUIVALENT_NOT_MAC_ARTIFACT",
+  "sourceSha": "43e3906859b58e69370a1069a44e6dc1cefc6d03",
+  "sourceRepository": "Kara221219/kxra-os",
+  "validationBranch": "validation/source43-linux-v1",
+  "nodeVersion": "22.22.3",
+  "nextVersion": "16.4.3",
+  "packageLockSha256": "ce48430caddc9238be58bc3b72a9d8a3a168e7cd21ff3907b59f06f5505e6314",
+  "packageSha256": "96e1ba54023209963b45c05022e889931bc609919747225a8914f772223956f6",
+  "osPackageSha256": "ee34f9a06594fc33c5951f96269673a2662745f70e6ab5d44b7d7b69b056c190",
+  "nextConfigSha256": "918e16b761fe173efa650081bd852d968499a5ea9fa82c73f63098d85fb24f5f",
+  "jobMinutes": 15,
+  "startupSeconds": 30,
+  "proofSeconds": 180,
+  "unitMaxSeconds": 240,
+  "maximumInvocations": 1,
+  "automaticRetry": false,
+  "oldArtifactInputPermitted": false,
+  "privateDataOrCredentialsPermitted": false,
+  "artifactExportPermitted": false,
+  "approvedSourceEnvTemplate": {
+    "path": ".env.example",
+    "sha256": "40f553f54c9cbbd402abb78f75ce25d0c9a0308ee024b10b23a4355cce23da6b"
+  },
+  "buildUnitMaxSeconds": 360,
+  "perFileInventoryCapBytes": 268435456,
+  "controllerWindowSeconds": 780,
+  "ownedCleanupReserveSeconds": 120,
+  "jobBudgetIsCeilingNotSuccessGuarantee": true
+}

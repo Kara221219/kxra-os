@@ -1,0 +1,37 @@
+name: Source43 synthetic Linux navigation
+on:
+  push:
+    branches: [validation/source43-linux-v1]
+permissions:
+  contents: read
+concurrency:
+  group: source43-linux-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  synthetic-navigation:
+    if: ${{ false }} # Closed: requires exact publication/execution approval.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KXRA_CLEAN_VALIDATION: ENABLED
+    steps:
+      - name: Start bounded job clock
+        run: echo "KXRA_JOB_STARTED_MONOTONIC=$(python3 -c 'import time; print(time.monotonic())')" >> "$GITHUB_ENV"
+      - name: Check out reviewed harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: harness
+          persist-credentials: false
+      - name: Check out exact application source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 43e3906859b58e69370a1069a44e6dc1cefc6d03
+          path: source
+          persist-credentials: false
+      - name: Select pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.22.3
+      - name: One synthetic build and contained navigation
+        run: python3 -B harness/validation/source43-linux/bootstrap.py
+      # No caches, artifact upload, environment secrets, deployment or provider jobs.
