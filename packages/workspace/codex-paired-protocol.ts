@@ -1,5 +1,7 @@
 import { StringDecoder } from "node:string_decoder";
 import type { Readable, Writable } from "node:stream";
+import { z } from "zod";
+import { assertCodexConfigRead, codexStubIdentity } from "./codex-text-policy";
 import {
   boundedDraft,
   leasedDraftSchema,
@@ -15,9 +17,13 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
     private readonly channel: {
       input: Writable;
       output: Readable;
+      syntheticProcess: true;
       close: () => unknown | Promise<unknown>;
     },
-  ) {}
+  ) {
+    if (channel.syntheticProcess !== true)
+      throw Error("CODEX_INSTALLED_ACCEPTANCE_REQUIRED");
+  }
   async generate(raw: LeasedDraft, signal?: AbortSignal): Promise<string> {
     const task = leasedDraftSchema.parse(raw),
       c = this.channel;
@@ -30,7 +36,8 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
       draft = "",
       received = 0,
       eventCount = 0,
-      deltaBytes = 0;
+      deltaBytes = 0,
+      phase: "PREFLIGHT" | "THREAD" | "TURN" = "PREFLIGHT";
     const pending = new Map<
         number,
         { resolve: (v: any) => void; reject: (e: Error) => void }
@@ -45,6 +52,7 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
       wake?.();
     };
     const onData = (bytes: Buffer) => {
+      if (closed) return;
       received += bytes.length;
       if (received > 100000) {
         fail("CODEX_STREAM_LIMIT");
@@ -71,20 +79,69 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
           fail("CODEX_FRAME_INVALID");
           return;
         }
-        if (m.method && m.id !== undefined) {
+        if (Object.hasOwn(m, "method") && Object.hasOwn(m, "id")) {
           fail("CODEX_TOOL_REQUEST_DENIED");
           return;
         }
-        if (m.id !== undefined) {
+        if (Object.hasOwn(m, "id")) {
+          const keys = Object.keys(m).sort().join(",");
+          if (
+            !Number.isSafeInteger(m.id) ||
+            m.id < 1 ||
+            !["id,result", "error,id"].includes(keys)
+          ) {
+            fail("CODEX_RESPONSE_INVALID");
+            return;
+          }
           const p = pending.get(m.id);
           if (!p) {
             fail("CODEX_RESPONSE_UNKNOWN");
             return;
           }
           pending.delete(m.id);
-          if (m.error) p.reject(Error("CODEX_RPC_REJECTED"));
+          if (Object.hasOwn(m, "error")) p.reject(Error("CODEX_RPC_REJECTED"));
           else p.resolve(m.result);
         } else {
+          if (
+            phase === "PREFLIGHT" ||
+            Object.keys(m).sort().join(",") !== "method,params" ||
+            typeof m.method !== "string" ||
+            !m.method ||
+            !m.params ||
+            typeof m.params !== "object" ||
+            Array.isArray(m.params)
+          ) {
+            fail("CODEX_NOTIFICATION_INVALID");
+            return;
+          }
+          // Do not defer forbidden notifications until after task transmission.
+          const p = m.params;
+          if (
+            ![
+              "thread/started",
+              "turn/started",
+              "item/started",
+              "item/completed",
+              "item/agentMessage/delta",
+              "turn/completed",
+            ].includes(m.method) ||
+            (phase === "THREAD" && m.method !== "thread/started") ||
+            ((m.method === "item/started" || m.method === "item/completed") &&
+              !["agentMessage", "userMessage", "reasoning"].includes(
+                p.item?.type,
+              )) ||
+            (m.method === "thread/started" &&
+              (!z
+                .object({
+                  thread: z.object({ id: z.string().min(1).max(200) }).strict(),
+                })
+                .strict()
+                .safeParse(p).success ||
+                (thread && p.thread.id !== thread)))
+          ) {
+            fail("CODEX_NOTIFICATION_DENIED");
+            return;
+          }
           if (++eventCount > 256) {
             fail("CODEX_EVENT_LIMIT");
             return;
@@ -114,26 +171,60 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
         c.input.write(JSON.stringify({ id, method, params }) + "\n");
       });
     try {
-      await send("initialize", {
+      const initialized = await send("initialize", {
         clientInfo: {
           name: "kxra_paired_text",
           title: "KXRA paired text draft",
           version: "1.0.0",
         },
       });
+      z.object({ userAgent: z.literal(codexStubIdentity) })
+        .strict()
+        .parse(initialized);
       c.input.write(
         JSON.stringify({ method: "initialized", params: {} }) + "\n",
       );
+      const requirements = await send("configRequirements/read", {});
+      z.object({
+        requirements: z.null(),
+        supportsIndependentSpeedModes: z.boolean().optional(),
+      })
+        .strict()
+        .parse(requirements);
+      assertCodexConfigRead(
+        await send("config/read", { includeLayers: false }),
+      );
+      const servers = await send("mcpServerStatus/list", {
+        cursor: null,
+        limit: 1,
+      });
+      z.object({ data: z.array(z.never()).max(0), nextCursor: z.null() })
+        .strict()
+        .parse(servers);
+      phase = "THREAD";
       const t = await send("thread/start", {
         sandbox: "read-only",
-        approvalPolicy: "untrusted",
+        approvalPolicy: "on-request",
       });
-      thread = t?.thread?.id;
+      z.object({
+        thread: z.object({ id: z.string().min(1).max(200) }).strict(),
+      })
+        .strict()
+        .parse(t);
+      thread = t.thread.id;
       if (typeof thread !== "string" || !thread)
         throw Error("CODEX_THREAD_INVALID");
+      for (const event of events.splice(0)) {
+        if (
+          event.method !== "thread/started" ||
+          event.params?.thread?.id !== thread
+        )
+          throw Error("CODEX_PRETURN_EVENT_DENIED");
+      }
+      phase = "TURN";
       const r = await send("turn/start", {
         threadId: thread,
-        approvalPolicy: "untrusted",
+        approvalPolicy: "on-request",
         sandboxPolicy: {
           type: "readOnly",
           access: {
@@ -154,7 +245,10 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
           },
         ],
       });
-      turn = r?.turn?.id;
+      z.object({ turn: z.object({ id: z.string().min(1).max(200) }).strict() })
+        .strict()
+        .parse(r);
+      turn = r.turn.id;
       if (typeof turn !== "string" || !turn) throw Error("CODEX_TURN_INVALID");
       while (!closed) {
         if (!events.length) {
@@ -183,6 +277,8 @@ export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
           ["userMessage", "reasoning"].includes(p.item?.type)
         )
           continue;
+        if (m.method === "turn/started" && p.turn?.id !== turn)
+          throw Error("CODEX_SCOPE_MISMATCH");
         if (m.method === "item/completed") {
           if (p.item?.type !== "agentMessage" || draft)
             throw Error("CODEX_NON_DRAFT_ITEM");

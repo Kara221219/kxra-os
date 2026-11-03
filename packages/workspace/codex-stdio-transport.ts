@@ -1,19 +1,20 @@
 import {
   execFile,
-  spawn,
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
 import path from "node:path";
+import fs from "node:fs";
+import { codexTextOverrides } from "./codex-text-policy";
 import { CodexStdioProtocolAdapter } from "./codex-paired-protocol";
 import {
   leasedDraftSchema,
   type LeasedDraft,
   type PairedDraftAdapter,
 } from "./paired-runtime";
-/** Operator-selected paths only, never values from a task/model/HTTP body.
- * No installation, discovery, sign-in or credential reading is performed here.
- * Calling generate launches a process and may incur provider usage: live use
- * requires separate action-specific acceptance. Tests inject an inert spawn. */
+/** Only an injected local fixture launcher can run. Real installed versions
+ * remain refused. Legacy operator path fields are validated, but HOME, config
+ * and cwd are always replaced by an owned disposable configuration tree.
+ * No installation, sign-in, credential reading or OS policy change occurs. */
 export type CodexProcessConfiguration = Readonly<{
   executable: string;
   workingDirectory: string;
@@ -30,7 +31,10 @@ export type SpawnCodex = (
     stdio: ["pipe", "pipe", "pipe"];
   },
 ) => ChildProcessWithoutNullStreams;
-export function codexProcessPlan(config: CodexProcessConfiguration) {
+export function codexProcessPlan(
+  config: CodexProcessConfiguration,
+  root = "/tmp/kxra-codex-plan-preview",
+) {
   for (const p of [
     config.executable,
     config.workingDirectory,
@@ -46,12 +50,24 @@ export function codexProcessPlan(config: CodexProcessConfiguration) {
     )
   )
     throw Error("CODEX_ENVIRONMENT_DENIED");
+  if (!root.startsWith("/tmp/kxra-codex-") || path.resolve(root) !== root)
+    throw Error("CODEX_ISOLATION_PATH_REQUIRED");
   return {
     executable: config.executable,
-    args: ["app-server", "--listen", "stdio://"] as const,
+    args: [
+      "app-server",
+      "--listen",
+      "stdio://",
+      ...codexTextOverrides().flatMap((value) => ["-c", value]),
+    ],
     options: {
-      cwd: config.workingDirectory,
-      env: { ...config.environment, NODE_ENV: "production" as const },
+      cwd: path.join(root, "work"),
+      env: {
+        PATH: "/usr/bin:/bin",
+        HOME: path.join(root, "home"),
+        CODEX_HOME: path.join(root, "home/.codex"),
+        NODE_ENV: "production" as const,
+      },
       shell: false as const,
       detached: true as const,
       stdio: ["pipe", "pipe", "pipe"] as ["pipe", "pipe", "pipe"],
@@ -60,13 +76,16 @@ export function codexProcessPlan(config: CodexProcessConfiguration) {
 }
 export class CodexStdioProcessAdapter implements PairedDraftAdapter {
   readonly kind = "CODEX_STDIO" as const;
-  private readonly plan;
+  private readonly configuration: CodexProcessConfiguration;
+  private readonly launch: SpawnCodex;
   private active = false;
-  constructor(
-    config: CodexProcessConfiguration,
-    private readonly launch: SpawnCodex = spawn,
-  ) {
-    this.plan = codexProcessPlan(config);
+  constructor(config: CodexProcessConfiguration, launch?: SpawnCodex) {
+    // No installed CLI/version/capability profile has been accepted. An injected
+    // stub launcher is a test boundary, not a real-provider activation flag.
+    if (!launch) throw Error("CODEX_INSTALLED_ACCEPTANCE_REQUIRED");
+    codexProcessPlan(config);
+    this.configuration = structuredClone(config);
+    this.launch = launch;
   }
   async generate(raw: LeasedDraft, signal?: AbortSignal) {
     if (process.platform === "win32")
@@ -78,12 +97,27 @@ export class CodexStdioProcessAdapter implements PairedDraftAdapter {
     if (this.active) throw Error("CODEX_PROCESS_BUSY");
     this.active = true;
     let child: ChildProcessWithoutNullStreams | undefined;
+    let root: string | undefined;
+    let safeToRemove = true;
     try {
-      child = this.launch(
-        this.plan.executable,
-        this.plan.args,
-        this.plan.options,
+      root = fs.mkdtempSync("/tmp/kxra-codex-");
+      fs.chmodSync(root, 0o700);
+      const plan = codexProcessPlan(this.configuration, root);
+      for (const directory of [
+        plan.options.cwd,
+        plan.options.env.HOME!,
+        plan.options.env.CODEX_HOME!,
+      ])
+        fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+      fs.writeFileSync(
+        path.join(plan.options.env.CODEX_HOME!, "config.toml"),
+        codexTextOverrides()
+          .map((line) => line.replace("=", " = "))
+          .join("\n") + "\n",
+        { mode: 0o600, flag: "wx" },
       );
+      child = this.launch(plan.executable, plan.args, plan.options);
+      safeToRemove = false;
       const p = child;
       let stderrBytes = 0;
       // Drain but never log provider stderr (may contain source or credentials).
@@ -103,6 +137,7 @@ export class CodexStdioProcessAdapter implements PairedDraftAdapter {
       return await new CodexStdioProtocolAdapter({
         input: p.stdin,
         output: p.stdout,
+        syntheticProcess: true,
         close: async () => {
           const signalGroup = (signal: NodeJS.Signals) => {
             if (!p.pid) return;
@@ -167,11 +202,15 @@ export class CodexStdioProcessAdapter implements PairedDraftAdapter {
             p.stderr.off("data", onStderr);
             p.off("error", onError);
           }
-          if (shutdownError) throw Error("CODEX_GROUP_SHUTDOWN_UNCERTAIN");
+          if (shutdownError || (await groupAlive()))
+            throw Error("CODEX_GROUP_SHUTDOWN_UNCERTAIN");
+          safeToRemove = true;
         },
       }).generate(task, signal);
     } finally {
       this.active = false;
+      if (root && safeToRemove)
+        fs.rmSync(root, { recursive: true, force: false });
     }
   }
 }

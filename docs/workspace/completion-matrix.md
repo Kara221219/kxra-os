@@ -93,3 +93,5 @@ Full `stripe-full-1-ci.log` exited 0: **295** service/DB/HTTP/security tests, **
 This source is isolated from release43e3906859b58e69370a1069a44e6dc1cefc6d03, proposed0118 only in disposable fixtures. See paired-agent-slice.md. Full parity and real-provider acceptance remain unfinished.
 
 Paired transport follow-up: executable Codex stdio process/foreground client source and local stub protocol acceptance are described in [paired transport](paired-agent-transport.md). Device/API activation remains fixture-only. Real installed provider, customer credentials, deny-all tool isolation, live pairing, installation and hosted acceptance remain pending; this does not supersede earlier unimplemented parity rows.
+
+Codex policy correction: [offline/stub acceptance](paired-codex-policy-correction.md) replaces retired approval configuration and adds explicit controls/config isolation. Real CLI execution remains refused until version/capability acceptance. Neither stub success nor read-only settings establish live no-tools enforcement or commercial authentication eligibility.

@@ -1599,3 +1599,7 @@ Follow-up production proof passed against the built OS with no database/provider
 ## 2026-11-03 — durable GitHub connector outbox and reconciliation (local only)
 
 Added fixed GitHub issue-comment protocol code against a persistent local fake endpoint, durable exact-approval outbox/receipts, single-attempt claim fencing, cross-connection uncertainty holds, fake grant-reference lifecycle and customer outcome recovery. Dedicated proof 39/39 plus actual worker/database/provider restart passed; extra isolated wire regressions 6/6 and independent review 6/6 passed. Fresh current-source legacy aggregate 1,242/1242 plus migrations/RLS/restart/restore passed. Production build/artifact/budget/CSP/source checks and actual denied-page/API HTTP checks passed. Frozen release 117 discovery is unchanged. See [outbox handoff](github-outbox-slice-2026-11-03.md); real OAuth/provider acceptance and hosted activation are neither implemented nor approved.
+
+## Offline Codex policy correction aftera9a025f
+
+The isolated paired-agent branch replaces retired untrusted approval with on-request plus request termination, explicit capability disables, disposable configuration and strict pre-turn stub acknowledgements. Real/default CLI launch now refuses because no installed version is accepted. Independent review's early-notification ordering finding is fixed. No migration/auth architecture, OS permission, credential, real provider or hosted state change. See [policy correction](../workspace/paired-codex-policy-correction.md) for scope, evidence and remaining live gates.

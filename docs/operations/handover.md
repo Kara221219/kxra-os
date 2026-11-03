@@ -1337,3 +1337,7 @@ Final actual production-artifact HTTP proof passed (mock page404, agent API503, 
 ## 2026-11-03 GitHub outbox local checkpoint
 
 The connector branch now contains an isolated GitHub issue-comments wire adapter, durable queued/claimed/uncertain/accepted/rejected/nonexecuted/cancelled state, single-attempt receipts and read-only reconciliation. New DDL remains in `database/proposals/github-connector-outbox.sql`; release 117 discovery and other worktrees are untouched. Fresh dedicated 39-test and current-source 1,242-test aggregates, actual crash/restart proofs, isolated wire 6-test regressions and independent review pass. Production remains denied. [Detailed evidence, exact boundaries, integration overlaps and remaining real-provider work](github-outbox-slice-2026-11-03.md).
+
+## Paired Codex policy correction — integrate aftera9a025f
+
+The [offline/stub correction](../workspace/paired-codex-policy-correction.md) supersedes a9a025f's retired untrusted protocol setting and unrestricted default launcher. Integrate its exact forthcoming correction commit/manifest before combined acceptance; do not treat stub identity/config acknowledgements as installed-version or provider authorization. Existing corrected118/119, source-bound approvals, manual guard and tenant/session authority remain unchanged. No other branch was merged.

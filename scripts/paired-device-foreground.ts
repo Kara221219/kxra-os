@@ -18,6 +18,8 @@ if (
   !["--stub-only", "--codex-stdio"].includes(mode)
 )
   throw Error("EXPLICIT_TRANSPORT_MODE_REQUIRED");
+if (mode === "--codex-stdio")
+  throw Error("CODEX_INSTALLED_ACCEPTANCE_REQUIRED");
 const configuration = z
   .object({
     operation: z.literal("SETUP"),
