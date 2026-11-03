@@ -54,9 +54,9 @@ export function CustomApps({
     <section>
       <h1>Local custom apps</h1>
       <p>
-        Synthetic forms only. Publish creates an immutable local artifact.
-        Preview entries are discarded. No external hosting or application
-        actions are connected.
+        Synthetic local forms. Publication selects an immutable saved version.
+        Preview entries are discarded. Published forms can save typed local
+        records. External hosting and provider actions are not connected.
       </p>
       <ul>
         {apps.map((a) => (
@@ -67,7 +67,8 @@ export function CustomApps({
             >
               {a.title}
             </button>{" "}
-            — latest v{a.latest_version}, active {a.active_version ?? "none"}
+            <a href={`/os/apps/${room}/${a.id}`}>Use app</a> — latest v
+            {a.latest_version}, active {a.active_version ?? "none"}
           </li>
         ))}
       </ul>
@@ -173,9 +174,7 @@ export function CustomApps({
                             app_id: detail.app.id,
                             expected_revision: detail.app.revision,
                             version: v.version,
-                            operation: detail.releases.some(
-                              (r) => r.version === v.version,
-                            )
+                            operation: v.previously_released
                               ? "ROLLBACK_LOCAL"
                               : "PUBLISH_LOCAL",
                           }),

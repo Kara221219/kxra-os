@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import net from "node:net";
 import crypto from "node:crypto";
+import { acquireNativeFixtureLease } from "./native-fixture-lease.mjs";
 import { applicationNext } from "./application-next.mjs";
 const root = path.resolve(import.meta.dirname, ".."),
   runtime = path.join(
@@ -57,6 +58,7 @@ const generated = ["tsconfig.json", "next-env.d.ts"].map((name) => {
   return { file, bytes: fs.readFileSync(file) };
 });
 let server, log;
+const releaseLease = acquireNativeFixtureLease("custom-app-records");
 try {
   run(["scripts/database.mjs", "start"]);
   run(["--import", "tsx", "scripts/custom-apps-install.ts"]);
@@ -95,7 +97,9 @@ try {
     "--test",
     "--test-concurrency=1",
     "tests/custom-apps.test.ts",
+    "tests/custom-app-records.test.ts",
     "tests/custom-apps/lifecycle.test.ts",
+    "tests/custom-apps/records.test.ts",
   ]);
   run(["scripts/verify-migrations.mjs"]);
   console.log("CUSTOM_APPS_SYNTHETIC_VERIFICATION_PASS");
@@ -118,4 +122,5 @@ try {
     { cwd: root, env, stdio: "inherit" },
   );
   if (stopped.status !== 0) process.exitCode = 1;
+  else releaseLease();
 }

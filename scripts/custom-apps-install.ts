@@ -46,24 +46,33 @@ export async function installCustomApps() {
       .data_directory;
     if (fs.realpathSync(directory) !== path.join(runtime, "postgres"))
       throw Error("Disposable database directory mismatch");
-    if (
-      (await db.query("select to_regclass('kxra.custom_apps') present")).rows[0]
-        .present
-    )
-      return;
-    await db.query(
-      fs.readFileSync(
-        path.join(root, "packages/custom-apps/local-schema.sql"),
-        "utf8",
-      ),
-    );
+    // Each reviewed local extension is installed independently, without touching
+    // the release migration ledger. Existing immutable artifacts remain intact.
+    for (const [table, file] of [
+      ["custom_apps", "local-schema.sql"],
+      ["custom_app_records", "local-records-schema.sql"],
+    ]) {
+      if (
+        !(await db.query("select to_regclass($1) present", [`kxra.${table}`]))
+          .rows[0].present
+      )
+        await db.query(
+          fs.readFileSync(
+            path.join(root, "packages/custom-apps", file),
+            "utf8",
+          ),
+        );
+    }
   } finally {
     await db.end();
   }
 }
 if (process.argv[1]?.endsWith("/scripts/custom-apps-install.ts")) {
-  installCustomApps().catch(() => {
-    console.error("Local custom-app installation failed");
+  installCustomApps().catch((error: unknown) => {
+    console.error(
+      "Local custom-app installation failed:",
+      error instanceof Error ? error.message : "Unavailable",
+    );
     process.exitCode = 1;
   });
 }
