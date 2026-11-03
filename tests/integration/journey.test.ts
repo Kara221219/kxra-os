@@ -282,6 +282,9 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
     ],
     { env: process.env, stdio: "ignore" },
   );
+  const exited = new Promise<boolean>((resolve) =>
+    worker.once("exit", () => resolve(true)),
+  );
   try {
     for (
       let n = 0;
@@ -300,12 +303,26 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
       JSON.parse(fs.readFileSync(providerFile, "utf8")).posts,
       beforePosts + 1,
     );
-    const exited = new Promise((resolve) => worker.once("exit", resolve));
     worker.kill("SIGKILL");
     await exited;
   } finally {
     if (worker.exitCode === null && worker.signalCode === null)
       worker.kill("SIGKILL");
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const confirmed = await Promise.race([
+      exited,
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), 2000);
+      }),
+    ]);
+    if (timer) clearTimeout(timer);
+    if (!confirmed) {
+      fs.writeFileSync(
+        runtimeFile("integration-worker-cleanup-uncertain.json"),
+        JSON.stringify({ pid: worker.pid }),
+      );
+      throw Error("OWNED_WORKER_CLEANUP_UNCONFIRMED");
+    }
   }
   const cfg = JSON.parse(fs.readFileSync(runtimeFile("database.json"), "utf8"));
   const crashDb = new pg.Client({ ...cfg, user: os.userInfo().username });

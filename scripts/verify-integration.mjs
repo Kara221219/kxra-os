@@ -169,6 +169,9 @@ try {
     stdio: "inherit",
   });
   if (
+    !fs.existsSync(
+      path.join(runtime, "integration-worker-cleanup-uncertain.json"),
+    ) &&
     r.status === 0 &&
     (!server || server.exitCode !== null || server.signalCode !== null) &&
     (!fake || fake.exitCode !== null || fake.signalCode !== null)
