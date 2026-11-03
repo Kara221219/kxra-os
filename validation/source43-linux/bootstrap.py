@@ -111,14 +111,14 @@ def launch_unit(unit,kind,source,harness,node,id,tree,operation,env,root,records
  runtime=Path('/run')/unit;before=unit_state(unit,env,root);require(before.get('LoadState')=='not-found' and not runtime.exists() and not runtime.is_symlink(),'UNIT_NOT_FRESH')
  record={'unit':unit,'operation':operation,'owned':False};records.append(record)
  props=unit_properties(unit,source,harness,kind);script='unit-build.mjs' if kind=='build' else 'runtime.mjs';args=[id,operation] if kind=='build' else [id,tree,operation]
- argv=['sudo','-n','systemd-run','--quiet','--wait','--unit='+unit,'--description=KXRA_CLEAN:'+operation]+['--property='+x for x in props]+['/usr/bin/env','-i','PATH='+str(Path(node).parent)+':/usr/bin:/bin','HOME=/work/runtime/home','TMPDIR=/work/runtime/tmp','XDG_CONFIG_HOME=/work/runtime/xdg','NODE_ENV=production','KXRA_CLEAN_UNIT=SYNTHETIC_ONLY_REVIEWED',node,'/work/harness/'+script,*args]
+ argv=['sudo','-n','systemd-run','--quiet','--wait','--unit='+unit,'--description=KXRA_CLEAN:'+operation]+['--property='+x for x in props]+['/usr/bin/env','-i','PATH='+str(Path(node).parent)+':/usr/bin:/bin','HOME=/work/runtime/home','TMPDIR=/work/runtime/tmp','XDG_CONFIG_HOME=/work/runtime/xdg','NODE_ENV=production','KXRA_CLEAN_UNIT=SYNTHETIC_ONLY_REVIEWED','KXRA_CLEAN_RUNTIME_BASENAME='+unit,node,'/work/harness/'+script,*args]
  _,diag=execute(argv,env,root,380 if kind=='build' else 260)
  if report is not None:report.setdefault('unitObservations',[]).append({'kind':kind,'diagnostic':diag})
  state=unit_state(unit,env,root)
  if state.get('Description')=='KXRA_CLEAN:'+operation:record['owned']=True
  else:require(state.get('LoadState')=='not-found','UNIT_IDENTITY_DRIFT')
  raw,rd=execute(['sudo','-n','cat','--',str(runtime/'receipt.json')],env,root,10,65536);require(rd['exitCode']==0 and not rd['reason'],'RECEIPT_UNAVAILABLE');value=json.loads(raw);require(value.get('operationId')==operation,'UNIT_RECEIPT_IDENTITY');record['owned']=True
- if report is not None and type(value.get('failure')) is dict:report.setdefault('unitFailures',[]).append({'kind':kind,'category':value['failure'].get('category') if value['failure'].get('category') in ('SCOPE','CONTAINMENT','BUILD','TIMEOUT','UNCLASSIFIED','SERVER','BROWSER','CLEANUP') else 'UNCLASSIFIED'})
+ if report is not None and type(value.get('failure')) is dict:report.setdefault('unitFailures',[]).append({'kind':kind,'predicate':value['failure'].get('containmentPredicate') if value['failure'].get('containmentPredicate') in ('INTERFACES','HOST_RUN_HOME_MASK','ARTIFACT_READ_ONLY','PRIVATE_RUNTIME_WRITE','LOOPBACK_CONNECTION','EXTERNAL_CONNECTION_DENIED') else None,'category':value['failure'].get('category') if value['failure'].get('category') in ('SCOPE','CONTAINMENT','BUILD','TIMEOUT','UNCLASSIFIED','SERVER','BROWSER','CLEANUP') else 'UNCLASSIFIED'})
  if str(value.get('status','')).endswith('_PASS'):require(diag['exitCode']==0 and not diag['reason'],'UNIT_OUTCOME_UNCERTAIN')
  cgroup=Path('/sys/fs/cgroup/system.slice/'+unit+'.service/cgroup.events');require(not cgroup.exists() or 'populated 0' in cgroup.read_text(),'UNIT_CGROUP_POPULATED');return value
 
@@ -156,26 +156,33 @@ def main():
   report['failedPhase']=report['phase'];report['lastCommandDiagnostic']=LAST_COMMAND_DIAGNOSTIC;report['failureCategory']='UNCLASSIFIED_NO_RAW_ERROR';report['errorType']=type(e).__name__ if type(e).__name__ in ('ValueError','TypeError','KeyError','FileNotFoundError','PermissionError','OSError','TimeoutError') else 'UNCLASSIFIED';report['errno']=getattr(e,'errno',None) if getattr(e,'errno',None) in (1,2,13,28,30) else None
  finally:
   IN_CLEANUP=True;report['phase']='CLEANUP'
+  cleanup_step='UNIT_METADATA'
   try:
    for record in unit_records:
+    cleanup_step='UNIT_METADATA'
     unit_name=record['unit'];state=unit_state(unit_name,env,root)
+    cleanup_step='UNIT_IDENTITY'
     if not cleanup_owned(record,state,Path('/run',unit_name).exists()):continue
     if state.get('LoadState')!='not-found':
      require(state.get('Description')=='KXRA_CLEAN:'+record['operation'],'UNIT_IDENTITY_DRIFT');_,stop_diag=execute(['sudo','-n','systemctl','stop',unit_name],env,root,20);require(not stop_diag['finiteFlags']['permission'],'UNIT_STOP_DENIED')
+    cleanup_step='UNIT_INACTIVE_AND_CGROUP'
     _,state_diag=execute(['sudo','-n','systemctl','is-active',unit_name],env,root,10);require(state_diag['exitCode'] in (3,4),'UNIT_ABSENCE_UNCERTAIN');cgroup=Path('/sys/fs/cgroup/system.slice/'+unit_name+'.service/cgroup.events');require(not cgroup.exists() or 'populated 0' in cgroup.read_text(),'UNIT_CGROUP_POPULATED')
    report['ownedUnitsInactive']=True
+   cleanup_step='CHILD_GROUPS'
    require(CLEANUP_SAFE,'CHILD_CLEANUP_UNCERTAIN')
+   cleanup_step='STAGE_REMOVAL'
    if stage is not None:
     require(stage.parent==Path('/var/tmp') and stage.name.startswith(unit+'-') and not stage.is_symlink(),'CLEANUP_SCOPE');
     # Read-only source inputs are in our exclusive generated tree only.
     for base,dirs,files in os.walk(stage,followlinks=False):os.chmod(base,0o700)
     shutil.rmtree(stage);cleaned=True
    report['stageRemoved']=cleaned or stage is None
+   cleanup_step='RUNTIME_REMOVAL'
    for record in unit_records:
     if record['owned']:
      _,remove_diag=execute(['sudo','-n','rm','-rf','--','/run/'+record['unit']],env,root,15);require(remove_diag['exitCode']==0,'RUNTIME_CLEANUP');require(not Path('/run',record['unit']).exists(),'RUNTIME_CLEANUP')
    report['runtimeRemoved']=True
-  except BaseException:report['status']='FAILED';report['cleanupCategory']='OWNED_CLEANUP_UNCERTAIN'
+  except BaseException as error:report['status']='FAILED';report['cleanupCategory']='OWNED_CLEANUP_UNCERTAIN';report['cleanupStep']=cleanup_step;report['cleanupGuard']=str(error) if type(error) is Stop and str(error) in ('UNIT_IDENTITY_DRIFT','UNIT_OWNERSHIP_UNCERTAIN','UNIT_STOP_DENIED','UNIT_ABSENCE_UNCERTAIN','UNIT_CGROUP_POPULATED','CHILD_CLEANUP_UNCERTAIN','CLEANUP_SCOPE','RUNTIME_CLEANUP','UNIT_METADATA_DENIED','CHILD_SIGNAL_DENIED','CHILD_EXIT_UNCERTAIN','CHILD_GROUP_UNCERTAIN','CHILD_DESCRIPTOR_CLOSE_UNCERTAIN','JOB_BUDGET') else 'UNCLASSIFIED';report['cleanupErrno']=getattr(error,'errno',None) if getattr(error,'errno',None) in (1,2,13,28,30) else None
   report['completedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat();print(json.dumps(report));return 0 if report['status']=='PASS' else 1
 if __name__=='__main__':
  try:code=main()
