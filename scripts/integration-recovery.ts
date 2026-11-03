@@ -255,6 +255,26 @@ async function main() {
           ).rows[0].n,
           1,
         );
+        const restoredApp = (
+          await restored.query(
+            "select revision,latest_version,active_version from kxra.custom_apps where id=$1",
+            [journey.app],
+          )
+        ).rows[0];
+        assert.deepEqual(restoredApp, {
+          revision: 5,
+          latest_version: 2,
+          active_version: 1,
+        });
+        assert.equal(
+          (
+            await restored.query(
+              "select count(*)::int n from kxra.custom_app_releases where app_id=$1",
+              [journey.app],
+            )
+          ).rows[0].n,
+          3,
+        );
         const history = (
           await restored.query(
             "select version,data from kxra.custom_app_record_versions where record_id=$1 order by version",

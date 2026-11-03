@@ -53,7 +53,7 @@ function run(args) {
   if (r.status !== 0)
     throw Error("Integration phase failed: " + args.join(" "));
 }
-let server, fake, log;
+let server, fake, log, originalDatabaseConfiguration;
 async function stop(child) {
   if (!child || child.exitCode !== null) return;
   child.kill("SIGTERM");
@@ -153,10 +153,62 @@ try {
     throw Error("Provider restart changed persistent effects");
   run(["--import", "tsx", "--test", "tests/integration/browser.test.ts"]);
   run(["--import", "tsx", "scripts/integration-recovery.ts"]);
+  const proof = JSON.parse(
+    fs.readFileSync(
+      path.join(runtime, "extension-recovery-proof.json"),
+      "utf8",
+    ),
+  );
+  await stop(server);
+  originalDatabaseConfiguration = fs.readFileSync(
+    path.join(runtime, "database.json"),
+  );
+  const restoredConfig = {
+    ...JSON.parse(originalDatabaseConfiguration),
+    database: proof.target,
+  };
+  fs.writeFileSync(
+    path.join(runtime, "database.json"),
+    JSON.stringify(restoredConfig),
+    { mode: 0o600 },
+  );
+  env.KXRA_INTEGRATION_BROWSER_PHASE = "restored";
+  server = spawn(
+    process.execPath,
+    [
+      applicationNext("os").binary,
+      "dev",
+      ...applicationNext("os").webpackArguments,
+      "--hostname",
+      "127.0.0.1",
+      "--port",
+      String(appPort),
+    ],
+    { cwd: path.join(root, "apps/os"), env, stdio: ["ignore", log, log] },
+  );
+  let restoredReady = false;
+  for (let n = 0; n < 180; n++) {
+    if (server.exitCode !== null) throw Error("Restored application exited");
+    try {
+      const r = await fetch(env.KXRA_ORIGIN + "/api/health");
+      if (r.ok && (await r.json()).run_id === env.KXRA_CI_RUN_ID) {
+        restoredReady = true;
+        break;
+      }
+    } catch {}
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  if (!restoredReady) throw Error("Restored application readiness failed");
+  run(["--import", "tsx", "--test", "tests/integration/browser.test.ts"]);
   console.log("INTEGRATION_FOCUSED_PASS " + runtime);
 } finally {
   await stop(server);
   await stop(fake);
+  if (originalDatabaseConfiguration)
+    fs.writeFileSync(
+      path.join(runtime, "database.json"),
+      originalDatabaseConfiguration,
+    );
   if (log !== undefined) fs.closeSync(log);
   fs.rmSync(path.join(root, "apps/os", env.KXRA_NEXT_DIST_DIR), {
     recursive: true,

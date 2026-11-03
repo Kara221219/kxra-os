@@ -63,7 +63,13 @@ test("desktop and mobile restore human delegation/app history UI after database 
         page.getByText("Revised integrated persistent value", { exact: true }),
       ).toBeVisible();
       await page.screenshot({
-        path: runtimeFile("integration-debug-" + width + ".png"),
+        path: runtimeFile(
+          "integration-debug-" +
+            (process.env.KXRA_INTEGRATION_BROWSER_PHASE || "source") +
+            "-" +
+            width +
+            ".png",
+        ),
         fullPage: true,
       });
       assert.equal(
@@ -73,7 +79,13 @@ test("desktop and mobile restore human delegation/app history UI after database 
         true,
       );
       await page.screenshot({
-        path: runtimeFile("integration-ui-" + width + ".png"),
+        path: runtimeFile(
+          "integration-ui-" +
+            (process.env.KXRA_INTEGRATION_BROWSER_PHASE || "source") +
+            "-" +
+            width +
+            ".png",
+        ),
         fullPage: true,
       });
       assert.deepEqual(errors, []);

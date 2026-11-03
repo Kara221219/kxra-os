@@ -485,6 +485,45 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
   );
   await ok(
     post(
+      "/api/custom-apps/" + f.room,
+      {
+        operation: "register",
+        app_id: app,
+        expected_revision: 2,
+        schema: {
+          ...exampleCustomApp,
+          title: "Second reviewed integration schema",
+        },
+      },
+      f.cookie,
+    ),
+  );
+  await ok(
+    post(
+      "/api/custom-apps/" + f.room,
+      {
+        operation: "PUBLISH_LOCAL",
+        app_id: app,
+        expected_revision: 3,
+        version: 2,
+      },
+      f.cookie,
+    ),
+  );
+  await ok(
+    post(
+      "/api/custom-apps/" + f.room,
+      {
+        operation: "ROLLBACK_LOCAL",
+        app_id: app,
+        expected_revision: 4,
+        version: 1,
+      },
+      f.cookie,
+    ),
+  );
+  await ok(
+    post(
       "/api/paired-integration",
       {
         operation: "REVOKE",
