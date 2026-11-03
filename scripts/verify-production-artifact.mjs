@@ -29,6 +29,9 @@ const outputs = [
   path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
+  "Dispatch once to local fake",
+  "fixture:github:",
+  "kxra-local-github-fixture-only",
   "Connect Mock Notes",
   "Allow approved note writes",
   "Open local connections preview",

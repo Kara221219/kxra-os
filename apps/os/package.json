@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "imports": {
+    "#kxra/github-connectors-page": {"development":"./components/GithubConnectionsPage.local.tsx","default":"./components/CustomerConnections.production.tsx"},
+    "#kxra/github-connectors-runtime": {"development":"./lib/github-connectors.local.ts","default":"./lib/github-connectors.production.ts"},
     "#kxra/customer-connectors-page": {
       "development": "./components/CustomerConnectionsPage.local.tsx",
       "default": "./components/CustomerConnections.production.tsx"

@@ -135,6 +135,11 @@ export function CustomerConnections({
         <span className={styles.badge}>Local mock preview</span>
       </header>
       <h1>Connections</h1>
+      <p>
+        <Link href="/os/connections/github">
+          Open GitHub local adapter and durable outcomes
+        </Link>
+      </p>
       <p className={styles.intro}>
         Choose what a connection can do, inspect what it reads, and review every
         write before it runs.

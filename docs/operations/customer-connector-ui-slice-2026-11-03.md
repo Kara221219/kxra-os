@@ -1,5 +1,7 @@
 # Customer connector UI and mock adapter follow-up
 
+Historical checkpoint `0334917`. The later [GitHub durable-outbox slice](github-outbox-slice-2026-11-03.md) adds local fake HTTP protocol delivery and reconciliation; this report retains the earlier UI-only evidence.
+
 The secure synthetic checkpoint is retained at `5962a56cfdcaa7104426f6ba95bd78f85ef74e4f`, based exactly on `43e3906859b58e69370a1069a44e6dc1cefc6d03`. This follow-up stays on `codex/customer-connectors-local` in `/Users/kara/Documents/Codex/2026-11-03/task-2/customer-connectors`.
 
 The customer story is: open the local Connections preview → explicitly choose read-only or approved-write scope → read mock notes → prepare an exact write → confirm and approve it → execute separately → read the single saved result. Rejection and revocation are separate actions. No external account is connected, and this is not production readiness or Kylon parity.

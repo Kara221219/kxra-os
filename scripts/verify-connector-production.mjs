@@ -71,6 +71,18 @@ try {
     "Local mock preview",
   ])
     assert.equal(html.includes(text), false);
+  const githubPage = await fetch(`${origin}/os/connections/github`, {
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.equal(githubPage.status, 404);
+  assert.equal(
+    (await githubPage.text()).includes("Dispatch once to local fake"),
+    false,
+  );
+  const githubApi = await fetch(`${origin}/api/customer-connectors/github`, {
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.equal(githubApi.status, 401);
   const agent = await fetch(`${origin}/api/customer-connectors/agent`, {
     method: "POST",
     headers: { "content-type": "application/json" },
