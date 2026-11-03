@@ -64,6 +64,62 @@ test("runtime roles remain non-bypass, non-owning and limited to exact reviewed 
   await database.connect();
   await database.query("begin");
   try {
+    // The unpublished canonical fixture 0118 adds one dedicated resolver.
+    // Verify its exact ACL, then transactionally test the original hosted 0114
+    // role profile without that local-only addition. The production operator
+    // and its complete unknown-grant assertions remain unchanged.
+    const fixtureAcl = (await inspectRuntimeRoles(database)).directAcl.filter(
+      (x: { identity: string }) =>
+        x.identity === "kxra_pairing" || x.identity.startsWith("kxra_pairing."),
+    );
+    assert.deepEqual(
+      fixtureAcl
+        .map(
+          (x: {
+            object_kind: string;
+            identity: string;
+            privilege_type: string;
+            is_grantable: boolean;
+            owner_grantor: boolean;
+          }) => ({
+            kind: x.object_kind,
+            identity: x.identity,
+            privilege: x.privilege_type,
+            grantable: x.is_grantable,
+            ownerGrantor: x.owner_grantor,
+          }),
+        )
+        .sort((a: { identity: string }, b: { identity: string }) =>
+          a.identity.localeCompare(b.identity),
+        ),
+      [
+        {
+          kind: "SCHEMA",
+          identity: "kxra_pairing",
+          privilege: "USAGE",
+          grantable: false,
+          ownerGrantor: true,
+        },
+        {
+          kind: "FUNCTION",
+          identity: "kxra_pairing.paired_resolve(text, text)",
+          privilege: "EXECUTE",
+          grantable: false,
+          ownerGrantor: true,
+        },
+      ],
+    );
+    assert.equal(
+      (
+        await database.query(
+          "select has_schema_privilege('kxra_app','kxra_private','USAGE') allowed",
+        )
+      ).rows[0].allowed,
+      false,
+    );
+    await database.query(
+      "revoke execute on function kxra_pairing.paired_resolve(text,text) from kxra_app; revoke usage on schema kxra_pairing from kxra_app",
+    );
     await applyRuntimeRoles(database, password("a"), password("b"));
     assert.deepEqual(
       runtimeRoleFindings(await inspectRuntimeRoles(database)),
