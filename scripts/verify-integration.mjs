@@ -55,18 +55,34 @@ function run(args) {
 }
 let server, fake, log, originalDatabaseConfiguration;
 async function stop(child) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || child.exitCode !== null || child.signalCode !== null)
+    return true;
+  const exited = new Promise((resolve) =>
+    child.once("exit", () => resolve(true)),
+  );
+  async function observed(ms) {
+    let timer;
+    try {
+      return await Promise.race([
+        exited,
+        new Promise((resolve) => {
+          timer = setTimeout(() => resolve(false), ms);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   child.kill("SIGTERM");
-  await new Promise((resolve) => {
-    const t = setTimeout(() => {
-      if (child.exitCode === null) child.kill("SIGKILL");
-      resolve();
-    }, 5000);
-    child.once("exit", () => {
-      clearTimeout(t);
-      resolve();
-    });
-  });
+  if (await observed(5000)) return true;
+  child.kill("SIGKILL");
+  if (await observed(1000)) return true;
+  fs.writeFileSync(
+    path.join(runtime, "integration-process-cleanup-uncertain.json"),
+    JSON.stringify({ pid: child.pid }),
+    { mode: 0o600 },
+  );
+  return false;
 }
 const applicationStarts = [];
 async function startApplication(phase) {
@@ -142,10 +158,10 @@ try {
     "tests/integration/journey.test.ts",
   ]);
   run(["scripts/verify-migrations.mjs"]);
-  await stop(server);
+  if (!(await stop(server))) throw Error("OWNED_APP_CLEANUP_UNCONFIRMED");
   run(["scripts/database.mjs", "stop"]);
   run(["scripts/database.mjs", "start"]);
-  await stop(fake);
+  if (!(await stop(fake))) throw Error("OWNED_PROVIDER_CLEANUP_UNCONFIRMED");
   const providerSnapshot = fs.readFileSync(
     path.join(fakeRuntime, "github-provider-store.json"),
   );
@@ -180,7 +196,7 @@ try {
       "utf8",
     ),
   );
-  await stop(server);
+  if (!(await stop(server))) throw Error("OWNED_APP_CLEANUP_UNCONFIRMED");
   originalDatabaseConfiguration = fs.readFileSync(
     path.join(runtime, "database.json"),
   );
@@ -217,6 +233,9 @@ try {
     stdio: "inherit",
   });
   if (
+    !fs.existsSync(
+      path.join(runtime, "integration-process-cleanup-uncertain.json"),
+    ) &&
     !fs.existsSync(
       path.join(runtime, "integration-worker-cleanup-uncertain.json"),
     ) &&
