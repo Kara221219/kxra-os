@@ -88,6 +88,40 @@ test("desktop and mobile restore human delegation/app history UI after database 
         ),
         fullPage: true,
       });
+      const replay = await page.request.post(
+        testOrigin +
+          "/api/custom-apps/" +
+          saved.room +
+          "/" +
+          saved.app +
+          "/records",
+        {
+          headers: { origin: testOrigin },
+          data: {
+            operation_id: saved.operation,
+            record_id: saved.record,
+            expected_app_revision: 2,
+            schema_version: 1,
+            expected_record_revision: 0,
+            data: {
+              brief: "Integrated persistent value",
+              priority: "High",
+              reviewed: true,
+            },
+          },
+        },
+      );
+      assert.equal(replay.status(), 200, await replay.text());
+      assert.deepEqual(await replay.json(), {
+        record_id: saved.record,
+        version: 1,
+        schema_version: 1,
+        operation_id: saved.operation,
+      });
+      await page.reload();
+      await expect(
+        page.getByText("Revised integrated persistent value", { exact: true }),
+      ).toBeVisible();
       assert.deepEqual(errors, []);
       await context.close();
     }
