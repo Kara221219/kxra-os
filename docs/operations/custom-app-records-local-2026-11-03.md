@@ -1,5 +1,7 @@
 # Persistent local custom-app records — 3 November 2026
 
+Follow-up: the dedicated [custom-app graceful-restart/fresh-database restore proof](custom-app-recovery-local-2026-11-03.md) now passes for the installed extension. The original checkpoint's unverified restore statement below is historical; crash and independent-cluster/role recovery are still unverified.
+
 Continuation of `3e14d4113a28ff560442b56fd279d7c5274dfe34`, in `/Users/kara/Documents/Codex/2026-11-03/task-3/custom-apps`, branch `codex/custom-app-local-lifecycle`. This adds a functional synthetic local form/data slice. It does not establish hosted availability, arbitrary app building, external publishing, or Kylon parity.
 
 ## Delivered behavior
