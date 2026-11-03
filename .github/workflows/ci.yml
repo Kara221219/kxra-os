@@ -35,8 +35,14 @@ jobs:
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
+      - name: Run disposable synthetic customer connector verification
+        run: npm run test:connectors
+
       - name: Run disposable full verification
         run: npm run test:ci
+
+      - name: Verify local production connector boundary
+        run: npm run test:connector-production
 
       - name: Audit production dependencies
         run: npm audit --omit=dev

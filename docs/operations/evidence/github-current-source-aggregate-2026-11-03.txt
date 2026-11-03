@@ -1,0 +1,78 @@
+Current-source aggregate log SHA-256: f59744b55363cdf944dcba2be0898244c2b05f441a4a32a9d3dc80b98c91d714
+Full log retained: /tmp/kxra-github-current-source-aggregate.log
+
+  type: 'test'
+  ...
+# Subtest: synthetic approved exact UTF8 bytes preserve Unicode, CRLF and final newlines
+ok 1237 - synthetic approved exact UTF8 bytes preserve Unicode, CRLF and final newlines
+  ---
+  duration_ms: 1.968708
+  type: 'test'
+  ...
+# Subtest: approval metadata never appears in a successful body or headers
+ok 1238 - approval metadata never appears in a successful body or headers
+  ---
+  duration_ms: 0.858292
+  type: 'test'
+  ...
+# Subtest: each exact byte sequence has its own immutable digest
+ok 1239 - each exact byte sequence has its own immutable digest
+  ---
+  duration_ms: 1.018
+  type: 'test'
+  ...
+# Subtest: unknown hashes and noncanonical query shapes always return fixed no-store 404
+ok 1240 - unknown hashes and noncanonical query shapes always return fixed no-store 404
+  ---
+  duration_ms: 3.579125
+  type: 'test'
+  ...
+# Subtest: draft, missing, invalid and future publication approvals cannot release bytes
+ok 1241 - draft, missing, invalid and future publication approvals cannot release bytes
+  ---
+  duration_ms: 0.917583
+  type: 'test'
+  ...
+# Subtest: invalid Unicode and inherited entries cannot bypass byte publication checks
+ok 1242 - invalid Unicode and inherited entries cannot bypass byte publication checks
+  ---
+  duration_ms: 0.412958
+  type: 'test'
+  ...
+1..1242
+# tests 1242
+# suites 0
+# pass 1242
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 214140.565209
+
+> kxra-genesis-os@0.1.0 test:migrations
+> node scripts/verify-migrations.mjs
+
+Migration/RLS verification PASS (117 migrations, 214 protected tables).
+
+> kxra-genesis-os@0.1.0 test:restart
+> node scripts/verify-persistence.mjs
+
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+Isolated local PostgreSQL ready (Unix socket only).
+AT-08/10 restart persistence PASS (1 completed task(s), 2 accepted supersession(s), 49 private object version(s)).
+
+> kxra-genesis-os@0.1.0 test:restore
+> node scripts/verify-backup-restore.mjs
+
+(node:41113) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/tmp/kxra-connector-aggregate-oW7eDI/packages/authz/local-guard.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /private/tmp/kxra-connector-aggregate-oW7eDI/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+AT-29 empty-target restore PASS (214 tables, 7902 rows, 49 objects, RTO 3s).
+Isolated service, restart and restore verification PASS; service runtime retained.
+waiting for server to shut down.... done
+server stopped
+Current-source connector aggregate service phase PASS: /tmp/kxra-connector-aggregate-oW7eDI

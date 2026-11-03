@@ -1,0 +1,262 @@
+
+> kxra-genesis-os@0.1.0 test:connectors
+> node scripts/verify-customer-connectors.mjs
+
+waiting for server to start.... done
+server started
+Isolated local PostgreSQL ready (Unix socket only).
+TAP version 13
+# Subtest: mock adapter has fixed no-credential metadata and rejects injected provider configuration before querying
+ok 1 - mock adapter has fixed no-credential metadata and rejects injected provider configuration before querying
+  ---
+  duration_ms: 4.827333
+  type: 'test'
+  ...
+# Subtest: mock adapter uses one fixed scoped RPC and rejects malformed or mismatched provider outcomes
+ok 2 - mock adapter uses one fixed scoped RPC and rejects malformed or mismatched provider outcomes
+  ---
+  duration_ms: 7.559958
+  type: 'test'
+  ...
+# Subtest: desktop customer sees read-only scope, reviews exact escaped content, approves and executes once
+ok 3 - desktop customer sees read-only scope, reviews exact escaped content, approves and executes once
+  ---
+  duration_ms: 6327.478
+  type: 'test'
+  ...
+# Subtest: mobile customer rejects writes, switches connections without approval carryover, and revokes
+ok 4 - mobile customer rejects writes, switches connections without approval carryover, and revokes
+  ---
+  duration_ms: 1951.909083
+  type: 'test'
+  ...
+# Subtest: server expiry and failed requests clear review state instead of enabling execution or retrying
+ok 5 - server expiry and failed requests clear review state instead of enabling execution or retrying
+  ---
+  duration_ms: 1322.210416
+  type: 'test'
+  ...
+# Subtest: connection page requires authentication and another user's notes never enter its DOM
+ok 6 - connection page requires authentication and another user's notes never enter its DOM
+  ---
+  duration_ms: 1627.447583
+  type: 'test'
+  ...
+# Subtest: lost response after committed execution is not retried; a fresh read reconciles the single note
+ok 7 - lost response after committed execution is not retried; a fresh read reconciles the single note
+  ---
+  duration_ms: 1390.63775
+  type: 'test'
+  ...
+# Subtest: client expiry timer disables review without attempting approval
+ok 8 - client expiry timer disables review without attempting approval
+  ---
+  duration_ms: 1164.767458
+  type: 'test'
+  ...
+# Subtest: malformed successful connect and list results never enter React state
+ok 9 - malformed successful connect and list results never enter React state
+  ---
+  duration_ms: 983.27
+  type: 'test'
+  ...
+# Subtest: database scopes connections to current active tenant and user; no direct table mutation
+ok 10 - database scopes connections to current active tenant and user; no direct table mutation
+  ---
+  duration_ms: 39.843125
+  type: 'test'
+  ...
+# Subtest: scoped read -> immutable proposal -> digest approval -> atomic single-use synthetic write
+ok 11 - scoped read -> immutable proposal -> digest approval -> atomic single-use synthetic write
+  ---
+  duration_ms: 21.417084
+  type: 'test'
+  ...
+# Subtest: read-only grants, cross-connection receipts, expiry, rejection and stale snapshots fail closed
+ok 12 - read-only grants, cross-connection receipts, expiry, rejection and stale snapshots fail closed
+  ---
+  duration_ms: 26.691167
+  type: 'test'
+  ...
+# Subtest: revocation invalidates approved writes and cannot reactivate; reconnect has a new identity
+ok 13 - revocation invalidates approved writes and cannot reactivate; reconnect has a new identity
+  ---
+  duration_ms: 10.609375
+  type: 'test'
+  ...
+# Subtest: HTTP authenticates, rejects foreign origins and spoofed fields, and returns private responses
+ok 14 - HTTP authenticates, rejects foreign origins and spoofed fields, and returns private responses
+  ---
+  duration_ms: 234.611416
+  type: 'test'
+  ...
+# Subtest: tool contract accepts no identity, endpoint, credentials, payload override or implicit write grant
+ok 15 - tool contract accepts no identity, endpoint, credentials, payload override or implicit write grant
+  ---
+  duration_ms: 3.813375
+  type: 'test'
+  ...
+# Subtest: agent capability permits read/prepare/execute only, bound to connection, tenant, user and human approval
+ok 16 - agent capability permits read/prepare/execute only, bound to connection, tenant, user and human approval
+  ---
+  duration_ms: 498.469292
+  type: 'test'
+  ...
+# Subtest: capability expires, rejects wrong secret and cannot be extended by tampering
+ok 17 - capability expires, rejects wrong secret and cannot be extended by tampering
+  ---
+  duration_ms: 1.845708
+  type: 'test'
+  ...
+# Subtest: expiry is checked after a blocked execution obtains the connection lock
+ok 18 - expiry is checked after a blocked execution obtains the connection lock
+  ---
+  duration_ms: 509.080334
+  type: 'test'
+  ...
+# Subtest: concurrent revocation and execution serialize; no writes follow revocation
+ok 19 - concurrent revocation and execution serialize; no writes follow revocation
+  ---
+  duration_ms: 12.098083
+  type: 'test'
+  ...
+# Subtest: agent capability cannot approve through customer route and account session revocation invalidates it
+ok 20 - agent capability cannot approve through customer route and account session revocation invalidates it
+  ---
+  duration_ms: 46.735292
+  type: 'test'
+  ...
+# Subtest: mock read returns at most the latest fifty notes and an explicit total
+ok 21 - mock read returns at most the latest fifty notes and an explicit total
+  ---
+  duration_ms: 7.208167
+  type: 'test'
+  ...
+# Subtest: GitHub outbox binds exact scope and payload, rejects writes without fresh reads/approval, and dispatches only once
+ok 22 - GitHub outbox binds exact scope and payload, rejects writes without fresh reads/approval, and dispatches only once
+  ---
+  duration_ms: 135.040041
+  type: 'test'
+  ...
+# Subtest: rejection before dispatch, definite local nonexecution, provider rejection and ambiguous5xx remain distinct
+ok 23 - rejection before dispatch, definite local nonexecution, provider rejection and ambiguous5xx remain distinct
+  ---
+  duration_ms: 96.64875
+  type: 'test'
+  ...
+# Subtest: lost/malformed acknowledgements reconcile by exact author/body/target read and never POST again
+ok 24 - lost/malformed acknowledgements reconcile by exact author/body/target read and never POST again
+  ---
+  duration_ms: 127.828625
+  type: 'test'
+  ...
+# Subtest: duplicate and reordered receipt delivery is idempotent and cannot downgrade acceptance or cross attempts
+ok 25 - duplicate and reordered receipt delivery is idempotent and cannot downgrade acceptance or cross attempts
+  ---
+  duration_ms: 28.303209
+  type: 'test'
+  ...
+# Subtest: previously queued writes across connections are held behind dispatch uncertainty
+ok 26 - previously queued writes across connections are held behind dispatch uncertainty
+  ---
+  duration_ms: 153.104542
+  type: 'test'
+  ...
+# Subtest: cancel/revoke before claim prevents sending; revocation after claim records the possible completed effect
+ok 27 - cancel/revoke before claim prevents sending; revocation after claim records the possible completed effect
+  ---
+  duration_ms: 69.859791
+  type: 'test'
+  ...
+# Subtest: grant rotation, read-only permissions, expired grants and account-session revocation deny old authority
+ok 28 - grant rotation, read-only permissions, expired grants and account-session revocation deny old authority
+  ---
+  duration_ms: 53.844041
+  type: 'test'
+  ...
+# Subtest: tampered approved payload and foreign tenant/user/ref scopes cannot dispatch or read outcomes
+ok 29 - tampered approved payload and foreign tenant/user/ref scopes cannot dispatch or read outcomes
+  ---
+  duration_ms: 28.52675
+  type: 'test'
+  ...
+# Subtest: incomplete, malformed, foreign or duplicate provider read evidence never proves nonexecution or enables replay
+ok 30 - incomplete, malformed, foreign or duplicate provider read evidence never proves nonexecution or enables replay
+  ---
+  duration_ms: 58.200083
+  type: 'test'
+  ...
+# Subtest: redirected provider write remains uncertain and never follows another origin
+ok 31 - redirected provider write remains uncertain and never follows another origin
+  ---
+  duration_ms: 20.925875
+  type: 'test'
+  ...
+# Subtest: actual worker process crash after provider commit survives restart with no automatic POST replay
+ok 32 - actual worker process crash after provider commit survives restart with no automatic POST replay
+  ---
+  duration_ms: 746.920292
+  type: 'test'
+  ...
+# Subtest: customer UI resumes durable uncertain outcome after reload and reconciles by reading only
+ok 33 - customer UI resumes durable uncertain outcome after reload and reconciles by reading only
+  ---
+  duration_ms: 3502.326125
+  type: 'test'
+  ...
+# Subtest: retain accepted and uncertain rows and receipts for actual database/provider restart proof
+ok 34 - retain accepted and uncertain rows and receipts for actual database/provider restart proof
+  ---
+  duration_ms: 46.017584
+  type: 'test'
+  ...
+# Subtest: GitHub transport refuses real endpoints, URL credentials, nonloopback hosts and redirects as configuration
+ok 35 - GitHub transport refuses real endpoints, URL credentials, nonloopback hosts and redirects as configuration
+  ---
+  duration_ms: 0.84125
+  type: 'test'
+  ...
+# Subtest: customer commands cannot inject provider credentials, identity, write payload replacement or worker receipts
+ok 36 - customer commands cannot inject provider credentials, identity, write payload replacement or worker receipts
+  ---
+  duration_ms: 2.632167
+  type: 'test'
+  ...
+# Subtest: native fixture lock preserves another owner's lock and releases only its own
+ok 37 - native fixture lock preserves another owner's lock and releases only its own
+  ---
+  duration_ms: 2.356834
+  type: 'test'
+  ...
+# Subtest: production conditional runtime denies every connector entry without querying a database or accessing a secret
+ok 38 - production conditional runtime denies every connector entry without querying a database or accessing a secret
+  ---
+  duration_ms: 44.671458
+  type: 'test'
+  ...
+# Subtest: production page selects a not-found component with no mock UI imports
+ok 39 - production page selects a not-found component with no mock UI imports
+  ---
+  duration_ms: 2.167459
+  type: 'test'
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23538.648083
+Migration/RLS verification PASS (117 migrations, 214 protected tables).
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+Isolated local PostgreSQL ready (Unix socket only).
+GitHub durable restart PASS (2 retained writes, 1 uncertain, 4 receipts; provider file unchanged; no POST replay).
+Customer connector disposable proof PASS
+Synthetic browser evidence: /tmp/kxra-connectors-6kt08l
+waiting for server to shut down.... done
+server stopped
