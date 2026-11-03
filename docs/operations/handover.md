@@ -1314,3 +1314,7 @@ Contracts/evidence: docs/workspace/paired-agent-slice.md and .runtime/paired-che
 ## Paired transport follow-up to35eb760 — isolated source only
 
 Use the new [transport handoff](../workspace/paired-agent-transport.md) for executable foreground Codex stdio source, memory-only setup/reconnect/revocation behavior, stub acceptance and live gates. The unpublished0118 definition now creates pre-principal resolution directly in a dedicated schema with no transient private-schema grant; proposed0119 asserts that fresh boundary and adds task/fence status. Reconcile0118/0119 order and explicit resolver-schema privileges before later release integration. Frozen release/other worktrees and hosted grants/data remain untouched. Do not run the real CLI mode or live pairing without separate action-specific approval.
+
+## Paired Codex policy correction — integrate aftera9a025f
+
+The [offline/stub correction](../workspace/paired-codex-policy-correction.md) supersedes a9a025f's retired untrusted protocol setting and unrestricted default launcher. Integrate its exact forthcoming correction commit/manifest before combined acceptance; do not treat stub identity/config acknowledgements as installed-version or provider authorization. Existing corrected118/119, source-bound approvals, manual guard and tenant/session authority remain unchanged. No other branch was merged.

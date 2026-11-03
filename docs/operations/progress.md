@@ -1576,3 +1576,7 @@ Base43e3906859b58e69370a1069a44e6dc1cefc6d03, separate codex/byoa-paired-agent w
 ## Paired agent executable transport follow-up — local only
 
 The isolated `codex/byoa-paired-agent` follow-up to35eb760 adds a fixed-argv Codex stdio process supervisor, memory-only foreground device lifecycle/command runner and stub-only subprocess/HTTP acceptance. The unpublished0118 definition is corrected to use its own resolver schema from first installation; proposed0119 asserts the safe boundary and adds exact task status for cancellation. Independent source review findings are fixed; live provider, credentials, installation, pairing and hosted changes remain pending approval. See [transport contract and acceptance](../workspace/paired-agent-transport.md); exact final source/evidence is retained in this worktree's ignored runtime manifest.
+
+## Offline Codex policy correction aftera9a025f
+
+The isolated paired-agent branch replaces retired untrusted approval with on-request plus request termination, explicit capability disables, disposable configuration and strict pre-turn stub acknowledgements. Real/default CLI launch now refuses because no installed version is accepted. Independent review's early-notification ordering finding is fixed. No migration/auth architecture, OS permission, credential, real provider or hosted state change. See [policy correction](../workspace/paired-codex-policy-correction.md) for scope, evidence and remaining live gates.

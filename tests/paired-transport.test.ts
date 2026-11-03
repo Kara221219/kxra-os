@@ -2,6 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  codexTextConfiguration,
+  codexTextOverrides,
+} from "../packages/workspace/codex-text-policy";
 import { fileURLToPath } from "node:url";
 import {
   CodexStdioProcessAdapter,
@@ -36,7 +42,15 @@ export function stubAdapter(
   onSpawn: (p: ReturnType<typeof spawn>) => void = () => {},
 ) {
   const launch: SpawnCodex = (_exe, args, options) => {
-    assert.deepEqual(args, ["app-server", "--listen", "stdio://"]);
+    assert.deepEqual(args, [
+      "app-server",
+      "--listen",
+      "stdio://",
+      ...codexTextOverrides().flatMap((value) => ["-c", value]),
+    ]);
+    assert.notEqual(options.cwd, config.workingDirectory);
+    assert.notEqual(options.env.HOME, config.environment.HOME);
+    assert.ok(options.env.CODEX_HOME?.startsWith("/tmp/kxra-codex-"));
     assert.equal(options.shell, false);
     assert.deepEqual(Object.keys(options.env).sort(), [
       "CODEX_HOME",
@@ -247,4 +261,128 @@ test("closing during redemption or reconnect cannot restore local authority", as
   release();
   await assert.rejects(setup);
   assert.equal(c.state, "CLOSED");
+});
+
+test("unknown installed CLI is refused before launch; policy and temporary config are isolated", async () => {
+  assert.throws(
+    () => new CodexStdioProcessAdapter(config),
+    /INSTALLED_ACCEPTANCE_REQUIRED/,
+  );
+  assert.equal(Object.isFrozen(codexTextConfiguration.features), true);
+  let home = "",
+    working = "";
+  const adapter = new CodexStdioProcessAdapter(config, (_e, args, options) => {
+    home = options.env.CODEX_HOME!;
+    working = options.cwd;
+    assert.equal(
+      fs.statSync(path.join(home, "config.toml")).mode & 0o777,
+      0o600,
+    );
+    assert.equal(fs.statSync(home).mode & 0o777, 0o700);
+    assert.match(
+      fs.readFileSync(path.join(home, "config.toml"), "utf8"),
+      /features.shell_tool = false/,
+    );
+    return spawn(process.execPath, [peer, "success", ...args], options);
+  });
+  await adapter.generate(task());
+  assert.equal(fs.existsSync(home), false);
+  assert.equal(fs.existsSync(working), false);
+});
+test("policy preflight refuses enabled, missing, unknown, layered and malformed acknowledgements", async () => {
+  for (const mode of [
+    "unknown-version",
+    "startup-tool",
+    "managed-requirements",
+    "config-enabled",
+    "config-unknown",
+    "config-missing",
+    "config-result-error",
+    "config-method-response",
+    "config-early-event",
+    "config-layer",
+    "config-close",
+    "config-duplicate",
+    "mcp-enabled",
+    "mcp-cursor",
+    "thread-config-extra",
+    "thread-tool-early",
+    "thread-tool-item",
+    "thread-foreign",
+    "thread-context-extra",
+    "tool-null-id",
+    "tool-no-id",
+  ]) {
+    const methods: string[] = [];
+    await assert.rejects(
+      stubAdapter(mode, (p) => {
+        const original = p.stdin!.write.bind(p.stdin);
+        (p.stdin as any).write = (...args: any[]) => {
+          try {
+            methods.push(JSON.parse(String(args[0])).method);
+          } catch {}
+          return (original as any)(...args);
+        };
+      }).generate(task()),
+      () => true,
+      mode,
+    );
+    assert.equal(
+      methods.includes("turn/start"),
+      ["tool-null-id", "tool-no-id"].includes(mode),
+      mode,
+    );
+  }
+});
+test("abort during delayed preflight closes stdio and never starts generation or reconnect replay", async () => {
+  const controller = new AbortController();
+  let child: ReturnType<typeof spawn> | undefined;
+  const running = stubAdapter("config-delay", (p) => {
+    child = p;
+  }).generate(task(), controller.signal);
+  const timeout = setTimeout(() => controller.abort(), 50);
+  try {
+    await assert.rejects(running);
+  } finally {
+    clearTimeout(timeout);
+  }
+  assert.ok(child && (child.exitCode !== null || child.signalCode !== null));
+  const s = server(),
+    client = new PairedDeviceClient("http://127.0.0.1:9", s.request);
+  await client.setup("a".repeat(64));
+  assert.equal(
+    (await client.runOnce(stubAdapter("config-enabled"))).state,
+    "UNCERTAIN",
+  );
+  const starts = s.calls.filter((x) => x === "START").length;
+  await client.reconnect();
+  assert.equal(s.calls.filter((x) => x === "START").length, starts);
+  client.close();
+});
+
+test("foreground real mode refuses before setup or any provider executable", async () => {
+  const p = spawn(
+    process.execPath,
+    [
+      "--import",
+      "tsx",
+      fileURLToPath(
+        new URL("../scripts/paired-device-foreground.ts", import.meta.url),
+      ),
+      "--codex-stdio",
+    ],
+    {
+      env: { PATH: process.env.PATH, NODE_ENV: "test" },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  let output = "";
+  p.stderr.on("data", (b) => {
+    output += b.toString();
+  });
+  const status = await new Promise<number | null>((resolve) =>
+    p.once("close", resolve),
+  );
+  assert.notEqual(status, 0);
+  assert.match(output, /CODEX_INSTALLED_ACCEPTANCE_REQUIRED/);
 });
