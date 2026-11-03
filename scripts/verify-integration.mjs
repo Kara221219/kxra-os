@@ -68,26 +68,9 @@ async function stop(child) {
     });
   });
 }
-const release = acquireNativeFixtureLease("feature-integration");
-try {
-  run(["scripts/database.mjs", "start"]);
-  run(["scripts/integration-install.mjs"]);
-  fake = spawn(process.execPath, ["scripts/github-fake-server.mjs"], {
-    cwd: root,
-    env: { ...env, KXRA_RUNTIME: fakeRuntime },
-    stdio: ["ignore", "ignore", "inherit"],
-  });
-  for (
-    let i = 0;
-    i < 100 && !fs.existsSync(path.join(fakeRuntime, "github-fake-origin"));
-    i++
-  )
-    await new Promise((r) => setTimeout(r, 100));
-  env.KXRA_GITHUB_FAKE_ORIGIN = fs.readFileSync(
-    path.join(fakeRuntime, "github-fake-origin"),
-    "utf8",
-  );
-  log = fs.openSync(path.join(runtime, "application.log"), "w", 0o600);
+const applicationStarts = [];
+async function startApplication(phase) {
+  env.KXRA_CI_RUN_ID = crypto.randomUUID();
   server = spawn(
     process.execPath,
     [
@@ -114,6 +97,42 @@ try {
     await new Promise((r) => setTimeout(r, 400));
   }
   if (!ready) throw Error("Readiness failed");
+  const dbConfig = JSON.parse(
+    fs.readFileSync(path.join(runtime, "database.json"), "utf8"),
+  );
+  applicationStarts.push({
+    phase,
+    runId: env.KXRA_CI_RUN_ID,
+    database: dbConfig.database,
+    pid: server.pid,
+  });
+  fs.writeFileSync(
+    path.join(runtime, "application-recovery-identities.json"),
+    JSON.stringify(applicationStarts, null, 2) + "\n",
+    { mode: 0o600 },
+  );
+}
+const release = acquireNativeFixtureLease("feature-integration");
+try {
+  run(["scripts/database.mjs", "start"]);
+  run(["scripts/integration-install.mjs"]);
+  fake = spawn(process.execPath, ["scripts/github-fake-server.mjs"], {
+    cwd: root,
+    env: { ...env, KXRA_RUNTIME: fakeRuntime },
+    stdio: ["ignore", "ignore", "inherit"],
+  });
+  for (
+    let i = 0;
+    i < 100 && !fs.existsSync(path.join(fakeRuntime, "github-fake-origin"));
+    i++
+  )
+    await new Promise((r) => setTimeout(r, 100));
+  env.KXRA_GITHUB_FAKE_ORIGIN = fs.readFileSync(
+    path.join(fakeRuntime, "github-fake-origin"),
+    "utf8",
+  );
+  log = fs.openSync(path.join(runtime, "application.log"), "w", 0o600);
+  await startApplication("initial");
   run([
     "--import",
     "tsx",
@@ -123,6 +142,7 @@ try {
     "tests/integration/journey.test.ts",
   ]);
   run(["scripts/verify-migrations.mjs"]);
+  await stop(server);
   run(["scripts/database.mjs", "stop"]);
   run(["scripts/database.mjs", "start"]);
   await stop(fake);
@@ -151,6 +171,7 @@ try {
       .equals(providerSnapshot)
   )
     throw Error("Provider restart changed persistent effects");
+  await startApplication("source-restarted");
   run(["--import", "tsx", "--test", "tests/integration/browser.test.ts"]);
   run(["--import", "tsx", "scripts/integration-recovery.ts"]);
   const proof = JSON.parse(
@@ -173,32 +194,7 @@ try {
     { mode: 0o600 },
   );
   env.KXRA_INTEGRATION_BROWSER_PHASE = "restored";
-  server = spawn(
-    process.execPath,
-    [
-      applicationNext("os").binary,
-      "dev",
-      ...applicationNext("os").webpackArguments,
-      "--hostname",
-      "127.0.0.1",
-      "--port",
-      String(appPort),
-    ],
-    { cwd: path.join(root, "apps/os"), env, stdio: ["ignore", log, log] },
-  );
-  let restoredReady = false;
-  for (let n = 0; n < 180; n++) {
-    if (server.exitCode !== null) throw Error("Restored application exited");
-    try {
-      const r = await fetch(env.KXRA_ORIGIN + "/api/health");
-      if (r.ok && (await r.json()).run_id === env.KXRA_CI_RUN_ID) {
-        restoredReady = true;
-        break;
-      }
-    } catch {}
-    await new Promise((r) => setTimeout(r, 400));
-  }
-  if (!restoredReady) throw Error("Restored application readiness failed");
+  await startApplication("restored");
   run(["--import", "tsx", "--test", "tests/integration/browser.test.ts"]);
   console.log("INTEGRATION_FOCUSED_PASS " + runtime);
 } finally {
