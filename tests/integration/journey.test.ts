@@ -304,7 +304,6 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
       beforePosts + 1,
     );
     worker.kill("SIGKILL");
-    await exited;
   } finally {
     if (worker.exitCode === null && worker.signalCode === null)
       worker.kill("SIGKILL");
