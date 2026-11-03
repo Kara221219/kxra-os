@@ -1302,3 +1302,11 @@ The policy supersession correction is isolated from root/external checkouts. It 
 
 
 - 2026-10-31 final local correction: OS production-client Webpack uses size module identifiers; follow-redirects is patched to 1.16.2. Marketing, catalogue and all OS components remain identical to `8319`. See [CI/security correction](ci-correction-2026-10-31.md) for validation, cache tradeoff and remaining remote/hosted gates.
+
+## 3 November — paired-agent isolated branch handover
+
+Use only .runtime/byoa-paired-agent / codex/byoa-paired-agent based on exact43e3906859b58e69370a1069a44e6dc1cefc6d03. This is a new bounded fixture-only architecture, not a modification of the frozen release or old rc0091. Proposed migration0118 adds two protected KXRA tables and two private credential ledgers; expected118/216/209. Server-resolved opaque capabilities enter authenticated RLS transactions, with tenant/private-owner/session/source/approval gates and no general login. One-time START permission, duplicate receipt binding, offline/reconnect, cancellation/revoke/late-publication and uncertainty all have executable acceptance.
+
+Final paired-check-4.log:10focused tests +118/216RLS +1440/390px actual UI cycles pass. Lint/typecheck, OSproductionbuild and compressed201971/204800budget pass; source secret scan passes. Independent read-only review reports no remaining concrete blocker after fixes; tests were executed by implementation, not reviewer. All test app/PG processes stopped. Own generated build caches are ignored, no destructive cleanup. Next16 generated apps/os/AGENTS.md guidance is retained as framework support.
+
+Contracts/evidence: docs/workspace/paired-agent-slice.md and .runtime/paired-check-{1,2,3,4}.log in this isolated worktree; successful synthetic UI screenshots/result are in /tmp/kxra-paired-ukU5cP. No actual provider/CLI/authentication, real access grant, installer, background service, arbitrary filesystem/shell, publish/push/deploy or hosted mutation. Original native interface still throws for real adapters, manual provenance unchanged. Customer-paid provider intent does not authorize sign-in/installation. Parent must review real-provider/hosted acceptance and migration ordering before any later activation. No broad connector or marketing redesign was added.

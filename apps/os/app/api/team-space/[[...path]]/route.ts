@@ -56,6 +56,7 @@ import {
   collaborationMutation,
 } from "../../../../lib/team-collaboration";
 import { workspaceStart } from "../../../../lib/workspace-start";
+import { pairedControl } from "../../../../lib/paired-agent";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 async function handle(
@@ -67,6 +68,34 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (p.length === 1 && p[0] === "paired-agents") {
+      if (method === "GET")
+        return privateJson(
+          await pairedControl(
+            a,
+            "LIST",
+            Object.fromEntries(new URL(req.url).searchParams),
+          ),
+        );
+      const input = z
+        .object({
+          operation: z.enum([
+            "CREATE",
+            "INVITE",
+            "REVOKE",
+            "PROPOSE",
+            "APPROVE",
+            "CANCEL",
+            "VIEW",
+          ]),
+          payload: z.unknown(),
+        })
+        .strict()
+        .parse(await readJson(req));
+      return privateJson(
+        await pairedControl(a, input.operation, input.payload),
+      );
+    }
     if (p.length >= 2 && p[1] === "bridge") {
       if (p.length === 2 && method === "GET")
         return privateJson(
