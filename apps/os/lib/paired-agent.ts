@@ -64,7 +64,7 @@ export async function pairedControl(actor: Actor, op: string, input: unknown) {
     provider_verified: false,
   };
 }
-async function resolveCredential(
+export async function resolveCredential(
   value: string,
   kind: "INVITATION" | "SESSION",
 ): Promise<Principal> {

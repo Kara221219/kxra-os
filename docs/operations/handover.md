@@ -1345,3 +1345,8 @@ The connector branch now contains an isolated GitHub issue-comments wire adapter
 ## Paired Codex policy correction — integrate aftera9a025f
 
 The [offline/stub correction](../workspace/paired-codex-policy-correction.md) supersedes a9a025f's retired untrusted protocol setting and unrestricted default launcher. Integrate its exact forthcoming correction commit/manifest before combined acceptance; do not treat stub identity/config acknowledgements as installed-version or provider authorization. Existing corrected118/119, source-bound approvals, manual guard and tenant/session authority remain unchanged. No other branch was merged.
+
+
+## 3 November — isolated combined local integration
+
+Final paired5e724, connector f51ef62 and custom-app2278702 histories are composed only in the task-4 clone. Task/account-specific dual-credential orchestration, independent human write approval and schema review import are implemented as an unnumbered fixture extension. Combined restart/restore, ACL, UI, budget and full CI acceptance is in progress; see [contract and exact remaining scope](local-feature-integration-2026-11-03.md). Frozen release, source feature worktrees and hosted/provider state are unchanged.

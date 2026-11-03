@@ -144,7 +144,7 @@ export function CustomAppRecords({
       draft.appRevision !== page.app.revision),
   );
   return (
-    <section>
+    <section style={{ overflowWrap: "anywhere", minWidth: 0 }}>
       <h1>{page.active_schema?.title ?? "Local app"}</h1>
       <p>{page.active_schema?.description}</p>
       <p>{copy.intro}</p>
@@ -258,6 +258,9 @@ export function CustomAppRecords({
                 ) : (
                   <input
                     {...common}
+                    style={
+                      f.type === "checkbox" ? { width: "auto" } : undefined
+                    }
                     type={f.type}
                     value={f.type === "text" ? value : undefined}
                     checked={

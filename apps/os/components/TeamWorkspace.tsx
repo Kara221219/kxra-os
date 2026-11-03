@@ -33,7 +33,11 @@ import { ActionForm } from "./TeamActionForm";
 import { RoomKnowledge } from "./RoomKnowledge";
 import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
-import { RoomPairedAgents } from "./RoomPairedAgents";
+import dynamic from "next/dynamic";
+const RoomPairedAgents = dynamic(
+  () => import("./RoomPairedAgents").then((module) => module.RoomPairedAgents),
+  { loading: () => <p>Loading paired agents…</p> },
+);
 import { RoomBridge } from "./RoomBridge";
 import { RoomCases } from "./RoomCases";
 import { RoomCollaboration } from "./RoomCollaboration";

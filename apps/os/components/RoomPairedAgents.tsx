@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { TeamMessage } from "../lib/team-workspace";
 type Agent = { id: string; name: string; presence: string };
@@ -314,6 +315,9 @@ export function RoomPairedAgents({
       {tasks.map((t) => (
         <article key={t.id} aria-label={"Paired task " + t.objective}>
           <h3>{t.objective}</h3>
+          <Link href={`/os/delegations/${t.id}`}>
+            Review local task delegation
+          </Link>
           <p>
             State {t.state} · Original thread {t.thread_id}
           </p>

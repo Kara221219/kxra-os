@@ -107,7 +107,9 @@
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\"",
     "dev:custom-apps": "node scripts/local.mjs --custom-apps",
     "test:custom-apps": "node scripts/custom-apps-verify.mjs",
-    "test:custom-app-recovery": "node scripts/custom-app-recovery.mjs"
+    "test:custom-app-recovery": "node scripts/custom-app-recovery.mjs",
+    "test:integration": "node scripts/verify-integration.mjs",
+    "test:integration-ci": "node scripts/integration-ci.mjs"
   },
   "dependencies": {
     "@higgsfield/client": "^0.2.6",

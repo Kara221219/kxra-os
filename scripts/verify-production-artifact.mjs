@@ -29,6 +29,10 @@ const outputs = [
   path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
+  "Delegate scoped access",
+  "Accept schema into human review",
+  "paired_integration_device",
+  "paired_integration_control",
   "Dispatch once to local fake",
   "fixture:github:",
   "kxra-local-github-fixture-only",

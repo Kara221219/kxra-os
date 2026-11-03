@@ -1607,3 +1607,8 @@ Added fixed GitHub issue-comment protocol code against a persistent local fake e
 ## Offline Codex policy correction aftera9a025f
 
 The isolated paired-agent branch replaces retired untrusted approval with on-request plus request termination, explicit capability disables, disposable configuration and strict pre-turn stub acknowledgements. Real/default CLI launch now refuses because no installed version is accepted. Independent review's early-notification ordering finding is fixed. No migration/auth architecture, OS permission, credential, real provider or hosted state change. See [policy correction](../workspace/paired-codex-policy-correction.md) for scope, evidence and remaining live gates.
+
+
+## 3 November — isolated combined local integration
+
+Final paired5e724, connector f51ef62 and custom-app2278702 histories are composed only in the task-4 clone. Task/account-specific dual-credential orchestration, independent human write approval and schema review import are implemented as an unnumbered fixture extension. Combined restart/restore, ACL, UI, budget and full CI acceptance is in progress; see [contract and exact remaining scope](local-feature-integration-2026-11-03.md). Frozen release, source feature worktrees and hosted/provider state are unchanged.
