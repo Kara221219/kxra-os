@@ -1,0 +1,93 @@
+
+> kxra-genesis-os@0.1.0 test:connectors
+> node scripts/verify-customer-connectors.mjs
+
+waiting for server to start.... done
+server started
+Isolated local PostgreSQL ready (Unix socket only).
+TAP version 13
+# Subtest: database scopes connections to current active tenant and user; no direct table mutation
+ok 1 - database scopes connections to current active tenant and user; no direct table mutation
+  ---
+  duration_ms: 96.376167
+  type: 'test'
+  ...
+# Subtest: scoped read -> immutable proposal -> digest approval -> atomic single-use synthetic write
+ok 2 - scoped read -> immutable proposal -> digest approval -> atomic single-use synthetic write
+  ---
+  duration_ms: 49.830583
+  type: 'test'
+  ...
+# Subtest: read-only grants, cross-connection receipts, expiry, rejection and stale snapshots fail closed
+ok 3 - read-only grants, cross-connection receipts, expiry, rejection and stale snapshots fail closed
+  ---
+  duration_ms: 82.738833
+  type: 'test'
+  ...
+# Subtest: revocation invalidates approved writes and cannot reactivate; reconnect has a new identity
+ok 4 - revocation invalidates approved writes and cannot reactivate; reconnect has a new identity
+  ---
+  duration_ms: 50.429041
+  type: 'test'
+  ...
+# Subtest: HTTP authenticates, rejects foreign origins and spoofed fields, and returns private responses
+ok 5 - HTTP authenticates, rejects foreign origins and spoofed fields, and returns private responses
+  ---
+  duration_ms: 3640.607625
+  type: 'test'
+  ...
+# Subtest: tool contract accepts no identity, endpoint, credentials, payload override or implicit write grant
+ok 6 - tool contract accepts no identity, endpoint, credentials, payload override or implicit write grant
+  ---
+  duration_ms: 4.507667
+  type: 'test'
+  ...
+# Subtest: agent capability permits read/prepare/execute only, bound to connection, tenant, user and human approval
+ok 7 - agent capability permits read/prepare/execute only, bound to connection, tenant, user and human approval
+  ---
+  duration_ms: 766.501
+  type: 'test'
+  ...
+# Subtest: capability expires, rejects wrong secret and cannot be extended by tampering
+ok 8 - capability expires, rejects wrong secret and cannot be extended by tampering
+  ---
+  duration_ms: 3.416167
+  type: 'test'
+  ...
+# Subtest: expiry is checked after a blocked execution obtains the connection lock
+ok 9 - expiry is checked after a blocked execution obtains the connection lock
+  ---
+  duration_ms: 523.379166
+  type: 'test'
+  ...
+# Subtest: concurrent revocation and execution serialize; no writes follow revocation
+ok 10 - concurrent revocation and execution serialize; no writes follow revocation
+  ---
+  duration_ms: 22.862542
+  type: 'test'
+  ...
+# Subtest: agent capability cannot approve through customer route and account session revocation invalidates it
+ok 11 - agent capability cannot approve through customer route and account session revocation invalidates it
+  ---
+  duration_ms: 91.090917
+  type: 'test'
+  ...
+# Subtest: production conditional runtime denies every connector entry without querying a database or accessing a secret
+ok 12 - production conditional runtime denies every connector entry without querying a database or accessing a secret
+  ---
+  duration_ms: 75.602959
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6124.536041
+Migration/RLS verification PASS (117 migrations, 214 protected tables).
+Customer connector disposable proof PASS
+waiting for server to shut down.... done
+server stopped

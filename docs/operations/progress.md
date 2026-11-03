@@ -1568,3 +1568,9 @@ Truth-table disclosure: a contradictory legacy selector label with otherwise val
 
 
 - 2026-10-31 final local correction: OS production-client Webpack uses size module identifiers; follow-redirects is patched to 1.16.2. Marketing, catalogue and all OS components remain identical to `8319`. See [CI/security correction](ci-correction-2026-10-31.md) for validation, cache tradeoff and remaining remote/hosted gates.
+
+## 2026-11-03 — isolated local customer connector slice
+
+Added a synthetic-notes connector registry, durable scoped lifecycle, restricted agent capability and exact-payload customer approval with atomic synthetic execution. No external integration or hosted activation. Focused local SQL/HTTP proof passed 12/12 tests and all 117 release migrations plus the connector proposal/RLS checks. See [scope, architecture and limitations](customer-connector-slice-2026-11-03.md). Independent review fixes were applied and retested. This does not establish launch readiness or Kylon parity.
+
+Final broader validation: 1,242/1,242 legacy service tests passed on fresh release117 fixtures, plus migration/RLS, restart and restore verification. All three builds and artifact/budget/CSP checks passed. Frozen staging migration discovery remains unchanged; connector DDL is a disposable-harness-only proposal.

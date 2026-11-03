@@ -1302,3 +1302,9 @@ The policy supersession correction is isolated from root/external checkouts. It 
 
 
 - 2026-10-31 final local correction: OS production-client Webpack uses size module identifiers; follow-redirects is patched to 1.16.2. Marketing, catalogue and all OS components remain identical to `8319`. See [CI/security correction](ci-correction-2026-10-31.md) for validation, cache tradeoff and remaining remote/hosted gates.
+
+## 2026-11-03 local connector development handoff
+
+Branch `codex/customer-connectors-local`, based exactly on `43e3906859b58e69370a1069a44e6dc1cefc6d03`, adds the isolated local synthetic connector slice. Run `npm run test:connectors`; see [connector implementation evidence and production limits](customer-connector-slice-2026-11-03.md). The connector DDL proposal is applied only by its disposable harness, is absent from staging migration discovery, and has not been applied to staging or production. No real credentials, provider calls, grants, deployment or payments were used. The frozen release and paired-agent work were left untouched.
+
+Final verified stopping point: dedicated connector proof 12/12, legacy service suite 1,242/1,242, migration/RLS, restart and restore all passed; production builds/artifact/budgets/CSP and independent review passed. No external acceptance or hosted activation was performed.
