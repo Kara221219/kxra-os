@@ -1482,7 +1482,7 @@ test("AT-01 anonymous can execute only bounded public RPCs", () =>
       call: string;
       anonymous_execute: boolean;
     }[];
-    assert.equal(functions.length, 209);
+    assert.equal(functions.length, 210);
     assert.deepEqual(
       functions
         .filter((entry) => entry.anonymous_execute)

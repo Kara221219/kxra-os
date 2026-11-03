@@ -81,7 +81,7 @@ async function resolveCredential(
         owner_id: string;
         org_id: string;
         session_version: number;
-      }>("select * from kxra_private.paired_resolve($1,$2)", [
+      }>("select * from kxra_pairing.paired_resolve($1,$2)", [
         credentialHash(value),
         kind,
       ])
@@ -106,6 +106,7 @@ async function resolveCredential(
 }
 const deviceSchemas = {
   HEARTBEAT: z.object({}).strict(),
+  STATUS: z.object({ task_id: id, fence: id }).strict(),
   POLL: z.object({ request_id: id }).strict(),
   ABANDON: z.object({ task_id: id, fence: id }).strict(),
   START: z.object({ task_id: id, fence: id }).strict(),
@@ -144,8 +145,16 @@ export async function pairedDevice(op: string, token: unknown, input: unknown) {
   };
   const rows = await query<{ value: unknown }>(
     actor,
-    "select kxra.paired_device($1,$2,$3::jsonb) value",
-    [credentialHash(credential), op, JSON.stringify(payload)],
+    op === "STATUS"
+      ? "select kxra.paired_task_status($1,$2::uuid,$3::uuid) value"
+      : "select kxra.paired_device($1,$2,$3::jsonb) value",
+    op === "STATUS"
+      ? [
+          credentialHash(credential),
+          (v as { task_id: string }).task_id,
+          (v as { fence: string }).fence,
+        ]
+      : [credentialHash(credential), op, JSON.stringify(payload)],
   );
   return {
     ...(rows[0].value as Record<string, unknown>),

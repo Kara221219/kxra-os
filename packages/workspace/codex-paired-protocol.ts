@@ -6,24 +6,19 @@ import {
   type LeasedDraft,
   type PairedDraftAdapter,
 } from "./paired-runtime";
-/** Source-only app-server protocol boundary. There is deliberately no Codex
- * executable launcher, provider sign-in, shell, filesystem or live registration.
- * Acceptance here describes a synthetic process, never a verified provider.
- */
-export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
-  readonly kind = "CODEX_PROTOCOL_FIXTURE" as const;
+/** Bounded app-server stdio protocol. The supervisor supplies the channel.
+ * No sign-in, registration or tool dispatch is implemented; provider acceptance
+ * remains separate from the synthetic peer acceptance. */
+export class CodexStdioProtocolAdapter implements PairedDraftAdapter {
+  readonly kind: PairedDraftAdapter["kind"] = "CODEX_STDIO";
   constructor(
     private readonly channel: {
       input: Writable;
       output: Readable;
-      syntheticProcess: true;
-      close: () => void;
+      close: () => unknown | Promise<unknown>;
     },
-  ) {
-    if (channel.syntheticProcess !== true)
-      throw Error("LIVE_CODEX_ADAPTER_NOT_ACCEPTED");
-  }
-  async generate(raw: LeasedDraft): Promise<string> {
+  ) {}
+  async generate(raw: LeasedDraft, signal?: AbortSignal): Promise<string> {
     const task = leasedDraftSchema.parse(raw),
       c = this.channel;
     const decoder = new StringDecoder("utf8");
@@ -32,7 +27,10 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
       closed = false,
       thread = "",
       turn = "",
-      draft = "";
+      draft = "",
+      received = 0,
+      eventCount = 0,
+      deltaBytes = 0;
     const pending = new Map<
         number,
         { resolve: (v: any) => void; reject: (e: Error) => void }
@@ -47,6 +45,11 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
       wake?.();
     };
     const onData = (bytes: Buffer) => {
+      received += bytes.length;
+      if (received > 100000) {
+        fail("CODEX_STREAM_LIMIT");
+        return;
+      }
       buffer += decoder.write(bytes);
       if (Buffer.byteLength(buffer) > 100000) {
         fail("CODEX_FRAME_LIMIT");
@@ -82,7 +85,7 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
           if (m.error) p.reject(Error("CODEX_RPC_REJECTED"));
           else p.resolve(m.result);
         } else {
-          if (events.length >= 256) {
+          if (++eventCount > 256) {
             fail("CODEX_EVENT_LIMIT");
             return;
           }
@@ -92,11 +95,17 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
       }
     };
     const onEnd = () => fail("CODEX_CONNECTION_LOST");
+    const onAbort = () => fail("CODEX_CANCELLED");
+    signal?.addEventListener("abort", onAbort, { once: true });
     c.output.on("data", onData);
     c.output.on("end", onEnd);
     c.output.on("error", onEnd);
     c.input.on("error", onEnd);
-    const timer = setTimeout(() => fail("CODEX_PROTOCOL_TIMEOUT"), 5000);
+    if (signal?.aborted) onAbort();
+    const timer = setTimeout(
+      () => fail("CODEX_PROTOCOL_TIMEOUT"),
+      Math.max(1, Math.min(25000, Date.parse(task.lease_until) - Date.now())),
+    );
     const send = (method: string, params: unknown) =>
       new Promise<any>((resolve, reject) => {
         if (closed) return reject(Error("CODEX_CLOSED"));
@@ -107,8 +116,8 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
     try {
       await send("initialize", {
         clientInfo: {
-          name: "kxra_synthetic_pairing",
-          title: "KXRA synthetic paired draft",
+          name: "kxra_paired_text",
+          title: "KXRA paired text draft",
           version: "1.0.0",
         },
       });
@@ -169,6 +178,11 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
           throw Error("CODEX_SCOPE_MISMATCH");
         if (m.method === "turn/completed" && p.threadId !== thread)
           throw Error("CODEX_SCOPE_MISMATCH");
+        if (
+          m.method === "item/completed" &&
+          ["userMessage", "reasoning"].includes(p.item?.type)
+        )
+          continue;
         if (m.method === "item/completed") {
           if (p.item?.type !== "agentMessage" || draft)
             throw Error("CODEX_NON_DRAFT_ITEM");
@@ -186,11 +200,16 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
           ].includes(m.method)
         )
           throw Error("CODEX_EVENT_DENIED");
-        if (m.method === "item/started" && p.item?.type !== "agentMessage")
+        if (
+          m.method === "item/started" &&
+          !["agentMessage", "userMessage", "reasoning"].includes(p.item?.type)
+        )
           throw Error("CODEX_TOOL_ITEM_DENIED");
+        if (m.method === "item/agentMessage/delta")
+          deltaBytes += Buffer.byteLength(p.delta || "");
         if (
           m.method === "item/agentMessage/delta" &&
-          (typeof p.delta !== "string" || Buffer.byteLength(p.delta) > 20000)
+          (typeof p.delta !== "string" || deltaBytes > 20000)
         )
           throw Error("CODEX_DRAFT_LIMIT");
       }
@@ -198,11 +217,30 @@ export class CodexProtocolFixtureAdapter implements PairedDraftAdapter {
     } finally {
       clearTimeout(timer);
       fail("CODEX_CLOSED");
-      c.output.off("data", onData);
-      c.output.off("end", onEnd);
-      c.output.off("error", onEnd);
-      c.input.off("error", onEnd);
-      c.close();
+      try {
+        await c.close();
+      } finally {
+        c.output.off("data", onData);
+        c.output.off("end", onEnd);
+        c.output.off("error", onEnd);
+        c.input.off("error", onEnd);
+        signal?.removeEventListener("abort", onAbort);
+      }
     }
+  }
+}
+
+/** Compatibility boundary: existing fixture provenance cannot be promoted by a caller. */
+export class CodexProtocolFixtureAdapter extends CodexStdioProtocolAdapter {
+  readonly kind = "CODEX_PROTOCOL_FIXTURE" as const;
+  constructor(channel: {
+    input: Writable;
+    output: Readable;
+    syntheticProcess: true;
+    close: () => unknown | Promise<unknown>;
+  }) {
+    if (channel.syntheticProcess !== true)
+      throw Error("LIVE_CODEX_ADAPTER_NOT_ACCEPTED");
+    super(channel);
   }
 }

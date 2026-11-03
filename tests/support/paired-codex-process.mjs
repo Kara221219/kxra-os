@@ -1,5 +1,6 @@
 // Synthetic app-server peer only. No provider imports, credentials, tools or task execution.
 import readline from 'node:readline';
+import { spawn } from 'node:child_process';
 const mode=process.argv[2]||'success',thread='synthetic-thread',turn='synthetic-turn';
 const send=m=>process.stdout.write(JSON.stringify(m)+'\n');
 readline.createInterface({input:process.stdin}).on('line',line=>{
@@ -12,6 +13,13 @@ readline.createInterface({input:process.stdin}).on('line',line=>{
  }else if(m.method==='turn/start'){
   if(m.params.sandboxPolicy.access.readableRoots.length||m.params.sandboxPolicy.access.includePlatformDefaults!==false)process.exit(11);
   send({id:m.id,result:{turn:{id:turn}}});
+  if(mode==='descendant'||mode==='descendant-no-pipes'){
+   const child=spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"],{stdio:mode==='descendant-no-pipes'?'ignore':['ignore',process.stdout,process.stderr],env:{PATH:'/usr/bin:/bin'}});
+   process.stdout.write(JSON.stringify({method:'stub/descendant',params:{pid:child.pid}})+'\n');
+   process.exit(0);return;
+  }
+  if(mode==='hang'){process.on('SIGTERM',()=>{});setInterval(()=>{},1000);return;}
+  if(mode==='stderr'){process.stderr.write('x'.repeat(70000));return;}
   if(mode==='disconnect'){process.exit(0);return;}
   if(mode==='tool'){send({id:900,method:'item/commandExecution/requestApproval',params:{}});return;}
   if(mode==='malformed'){process.stdout.write('null\n');return;}

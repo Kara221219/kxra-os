@@ -13,6 +13,7 @@ export async function POST(req: Request) {
           "RESULT",
           "ABANDON",
           "HEARTBEAT",
+          "STATUS",
         ]),
         payload: z.unknown(),
       })

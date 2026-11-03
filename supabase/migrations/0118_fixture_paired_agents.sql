@@ -1,4 +1,7 @@
 -- Generated fixture credentials only; no hosted identity, provider or installation.
+-- Unpublished definition corrected before release: no broad private-schema USAGE.
+create schema kxra_pairing;
+revoke all on schema kxra_pairing from public,anon,authenticated;
 create table kxra.paired_agents(
  id uuid primary key,org_id uuid not null,room_id uuid not null,owner_id uuid not null references kxra.account_identities(account_id),
  name text not null check(length(trim(name)) between 1 and 80),created_at timestamptz not null default now(),
@@ -120,7 +123,7 @@ begin
 end $$;
 
 -- Server-only hashed-credential identity lookup; does not mint a cookie or JWT.
-create function kxra_private.paired_resolve(h text,kind text) returns table(owner_id uuid,org_id uuid,session_version integer)
+create function kxra_pairing.paired_resolve(h text,kind text) returns table(owner_id uuid,org_id uuid,session_version integer)
 language plpgsql security definer set search_path='' as $$
 begin
  if session_user<>'kxra_app' or current_setting('request.kxra.execution_mode',true) is distinct from 'fixture' or h is null or h!~'^[a-f0-9]{64}$' then raise insufficient_privilege;end if;
@@ -196,9 +199,9 @@ begin
  end if;
  raise exception 'Paired task unavailable';
 end $$;
-revoke all on function kxra_private.paired_actor(uuid),kxra_private.paired_sources(uuid,uuid[]),kxra_private.paired_current(uuid),kxra_private.paired_resolve(text,text) from public,anon,authenticated;
-grant usage on schema kxra_private to kxra_app;
-grant execute on function kxra_private.paired_resolve(text,text) to kxra_app;
+revoke all on function kxra_private.paired_actor(uuid),kxra_private.paired_sources(uuid,uuid[]),kxra_private.paired_current(uuid),kxra_pairing.paired_resolve(text,text) from public,anon,authenticated;
+grant usage on schema kxra_pairing to kxra_app;
+grant execute on function kxra_pairing.paired_resolve(text,text) to kxra_app;
 revoke all on function kxra.paired_control(text,jsonb),kxra.paired_device(text,text,jsonb) from public,anon;
 grant execute on function kxra.paired_control(text,jsonb),kxra.paired_device(text,text,jsonb) to authenticated;
 

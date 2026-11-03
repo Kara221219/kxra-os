@@ -7,7 +7,7 @@ export const leasedDraftSchema = z
     thread_id: z.uuid(),
     content_hash: z.string().regex(/^[a-f0-9]{64}$/),
     fence: z.uuid(),
-    lease_until: z.string().datetime(),
+    lease_until: z.string().datetime({ offset: true }),
     objective: z.string().max(2000),
     sources: z
       .array(
@@ -25,8 +25,8 @@ export const leasedDraftSchema = z
   .strict();
 export type LeasedDraft = z.infer<typeof leasedDraftSchema>;
 export interface PairedDraftAdapter {
-  readonly kind: "SYNTHETIC" | "CODEX_PROTOCOL_FIXTURE";
-  generate(task: LeasedDraft): Promise<string>;
+  readonly kind: "SYNTHETIC" | "CODEX_PROTOCOL_FIXTURE" | "CODEX_STDIO";
+  generate(task: LeasedDraft, signal?: AbortSignal): Promise<string>;
 }
 export const boundedDraft = z
   .string()
@@ -52,7 +52,9 @@ export async function runPairedCycle(
   transport: DeviceTransport,
   adapter: PairedDraftAdapter,
   requestId: string,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   const polled = await transport("POLL", {
     request_id: z.uuid().parse(requestId),
   });
@@ -62,6 +64,7 @@ export async function runPairedCycle(
   try {
     if (Date.parse(task.lease_until) <= Date.now())
       throw Error("LEASE_EXPIRED");
+    signal?.throwIfAborted();
     const result = await transport("START", {
       task_id: task.id,
       fence: task.fence,
@@ -71,7 +74,8 @@ export async function runPairedCycle(
     if (result.state !== "RUNNING" || result.dispatched !== true)
       throw Error("DISPATCH_UNAVAILABLE");
     started = true;
-    const draft = boundedDraft.parse(await adapter.generate(task));
+    const draft = boundedDraft.parse(await adapter.generate(task, signal));
+    signal?.throwIfAborted();
     const saved = await transport("RESULT", {
       task_id: task.id,
       fence: task.fence,

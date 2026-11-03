@@ -8,6 +8,7 @@ import { spawn, spawnSync } from "node:child_process";
 const root = path.resolve(import.meta.dirname, "..");
 if (!process.argv.includes("--isolated-synthetic"))
   throw Error("Explicit --isolated-synthetic required");
+const uiOnly = process.argv.includes("--ui-only");
 const runtime = fs.mkdtempSync("/tmp/kxra-paired-");
 const available = () =>
   new Promise((resolve, reject) => {
@@ -57,11 +58,31 @@ const generated = ["next-env.d.ts", "tsconfig.json"].map((f) => ({
   p: path.join(root, "apps/os", f),
   bytes: fs.readFileSync(path.join(root, "apps/os", f)),
 }));
+// Cooperate with serial native cohorts in every checkout. Never clear someone
+// else's lock, infer staleness, or terminate its processes.
+const lock = "/tmp/kxra-native-serial.lock";
+const lockReceipt = lock;
+const lockDeadline = Date.now() + 180000;
+while (true) {
+  try {
+    fs.writeFileSync(
+      lockReceipt,
+      JSON.stringify({ pid: process.pid, runId, root }),
+      { mode: 0o600, flag: "wx" },
+    );
+    break;
+  } catch (e) {
+    if (e.code !== "EEXIST" || Date.now() >= lockDeadline) throw e;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+}
 let app,
   started = false;
 try {
   started = true;
   run(["scripts/database.mjs", "start"]);
+  if (!uiOnly)
+    run(["--import", "tsx", "scripts/paired-install-boundary-check.ts"]);
   const log = fs.openSync(path.join(runtime, "application.log"), "a", 0o600);
   app = spawn(
     process.execPath,
@@ -91,20 +112,22 @@ try {
     await new Promise((r) => setTimeout(r, 300));
   }
   if (!ready) throw Error("Isolated app readiness timed out");
-  run([
-    "--import",
-    "tsx",
-    "--test",
-    "--test-concurrency=1",
-    "tests/paired-runtime.test.ts",
-    "tests/paired-agent-http.test.ts",
-  ]);
+  if (!uiOnly)
+    run([
+      "--import",
+      "tsx",
+      "--test",
+      "--test-concurrency=1",
+      "tests/paired-runtime.test.ts",
+      "tests/paired-transport.test.ts",
+      "tests/paired-agent-http.test.ts",
+    ]);
   run(["scripts/verify-migrations.mjs"]);
-  if (process.argv.includes("--ui"))
-    run(["--import", "tsx", "scripts/paired-agent-ui-check.ts"]);
+  if (uiOnly) run(["--import", "tsx", "scripts/paired-agent-ui-check.ts"]);
   console.log(
     JSON.stringify({
       status: "PAIRED_SYNTHETIC_CHECK_PASS",
+      phase: uiOnly ? "UI_FRESH_STORE" : "NATIVE_PROTOCOL_HTTP",
       runtime,
       origin,
       pgPort,
@@ -134,4 +157,17 @@ try {
     if (stop.status !== 0) process.exitCode = 1;
   }
   for (const f of generated) fs.writeFileSync(f.p, f.bytes);
+  if (JSON.parse(fs.readFileSync(lockReceipt, "utf8")).runId === runId) {
+    fs.unlinkSync(lockReceipt);
+  }
+}
+
+// Browser setup needs its own owner quota, not deletion of accepted task data
+// or a raised product limit. Both cohorts remain serial and separately locked.
+if (process.argv.includes("--ui") && !uiOnly) {
+  run([
+    "scripts/paired-agent-fixture-check.mjs",
+    "--isolated-synthetic",
+    "--ui-only",
+  ]);
 }

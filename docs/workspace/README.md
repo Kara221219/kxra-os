@@ -93,3 +93,5 @@ Full `stripe-full-1-ci.log` exited 0: **295** service/DB/HTTP/security tests, **
 ## Isolated paired-agent implementation
 
 The `codex/byoa-paired-agent` slice adds database-backed synthetic pairing and a scoped text-task runtime while preserving the manual bridge. In a guarded local fixture, current private-room creators who are workspace owners can open Bridge and exercise create → pair → inspect/approve → dispatch → original-thread draft → revoke. No real provider is connected or installed. See [paired-agent contract and evidence](paired-agent-slice.md) for the exact source boundary, tests and live-acceptance gates.
+
+Executable customer-owned transport source and fixture acceptance: [paired Codex stdio transport](paired-agent-transport.md). The unpublished118 migration is corrected before release;119 adds exact task status. Live pairing/provider/install acceptance remains separately gated.
