@@ -22,6 +22,12 @@ async function port() {
 }
 const appPort = await port(),
   pgPort = await port();
+const retainedKeyFile = process.env.KXRA_CONNECTOR_TEST_KEY_FILE;
+const signingKey = retainedKeyFile
+  ? fs.readFileSync(retainedKeyFile, "utf8")
+  : crypto.randomBytes(48).toString("hex");
+if (!/^[a-f0-9]{96}$/.test(signingKey))
+  throw Error("Fixture signing key invalid");
 const env = {
   ...process.env,
   NODE_ENV: "development",
@@ -30,7 +36,11 @@ const env = {
   KXRA_RUNTIME: runtime,
   KXRA_ORIGIN: `http://127.0.0.1:${appPort}`,
   KXRA_PG_PORT: String(pgPort),
-  KXRA_LOCAL_SECRET: crypto.randomBytes(48).toString("hex"),
+  KXRA_LOCAL_SECRET: signingKey,
+  KXRA_CONNECTOR_SCREENSHOT: path.join(
+    runtime,
+    "customer-connections-desktop.png",
+  ),
   KXRA_NEXT_DIST_DIR: `.next-connector-proof-${crypto.randomUUID()}`,
 };
 for (const key of [
@@ -118,9 +128,12 @@ try {
     "--test-concurrency=1",
     "tests/connectors/customer-connectors.test.ts",
     "tests/connectors/production-boundary.test.ts",
+    "tests/connectors/adapter.test.ts",
+    "tests/connectors/customer-connections-browser.test.ts",
   ]);
   run(["scripts/verify-migrations.mjs"]);
   console.log("Customer connector disposable proof PASS");
+  console.log(`Synthetic browser evidence: ${runtime}`);
 } catch (error) {
   console.error(error.message);
   console.error(`Local diagnostics: ${runtime}`);

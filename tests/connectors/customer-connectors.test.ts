@@ -576,3 +576,21 @@ test("agent capability cannot approve through customer route and account session
     );
   }
 });
+
+test("mock read returns at most the latest fifty notes and an explicit total", async () => {
+  const connector_id = await connect();
+  await admin.query(
+    `with created as (
+ insert into kxra_private.connector_requests(connector_id,revision,state,payload,digest)
+ select $1,1,'EXECUTED',jsonb_build_object('tool','notes.append','note','bounded note '||n),'synthetic' from generate_series(1,55) n returning id,connector_id,payload
+ ) insert into kxra_private.connector_notes(request_id,connector_id,note,created_at) select id,connector_id,payload->>'note',timestamptz '2000-01-01'+interval '1 second'*substring(payload->>'note' from '[0-9]+$')::integer from created`,
+    [connector_id],
+  );
+  const result = await rpc("read", { connector_id });
+  assert.equal(result.total_count, 55);
+  assert.equal(result.notes.length, 50);
+  assert.deepEqual(
+    result.notes.map((note: { note: string }) => note.note),
+    Array.from({ length: 50 }, (_, i) => `bounded note ${i + 6}`),
+  );
+});

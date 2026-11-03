@@ -30,3 +30,9 @@ export const connectorCommand = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reject"), ...request }).strict(),
   z.object({ action: z.literal("execute"), ...request }).strict(),
 ]);
+
+export const connectorOperation = z.union([
+  connectorCommand,
+  z.object({ action: z.literal("list") }).strict(),
+]);
+export type ConnectorOperation = z.infer<typeof connectorOperation>;

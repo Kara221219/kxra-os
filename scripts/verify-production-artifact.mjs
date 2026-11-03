@@ -29,6 +29,9 @@ const outputs = [
   path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
+  "Connect Mock Notes",
+  "Allow approved note writes",
+  "Open local connections preview",
   "Local fixture identities",
   "Synthetic identity",
   "owner@fixture.invalid",

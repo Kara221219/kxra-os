@@ -45,3 +45,38 @@ test("production conditional runtime denies every connector entry without queryi
       (error: unknown) => error instanceof HttpError && error.status === 503,
     );
 });
+
+test("production page selects a not-found component with no mock UI imports", () => {
+  const manifest = JSON.parse(fs.readFileSync("apps/os/package.json", "utf8"));
+  assert.equal(
+    manifest.imports["#kxra/customer-connectors-page"].default,
+    "./components/CustomerConnections.production.tsx",
+  );
+  const module = { exports: {} as { default: () => unknown } };
+  const marker = new Error("NOT_FOUND");
+  vm.runInNewContext(
+    transformSync(
+      fs.readFileSync(
+        "apps/os/components/CustomerConnections.production.tsx",
+        "utf8",
+      ),
+      { loader: "tsx", format: "cjs" },
+    ).code,
+    {
+      module,
+      exports: module.exports,
+      require: (name: string) => {
+        assert.equal(name, "next/navigation");
+        return {
+          notFound: () => {
+            throw marker;
+          },
+        };
+      },
+    },
+  );
+  assert.throws(
+    () => module.exports.default(),
+    (error) => error === marker,
+  );
+});

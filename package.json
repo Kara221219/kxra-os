@@ -26,6 +26,7 @@
     "start": "npm run start -w @kxra/os",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test:connector-production": "node scripts/verify-connector-production.mjs",
     "test:connectors": "node scripts/verify-customer-connectors.mjs",
     "test:artifact": "node scripts/verify-production-artifact.mjs",
     "test:marketing": "playwright test -c playwright.marketing.config.ts",

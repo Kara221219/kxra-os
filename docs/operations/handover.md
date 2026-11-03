@@ -1308,3 +1308,9 @@ The policy supersession correction is isolated from root/external checkouts. It 
 Branch `codex/customer-connectors-local`, based exactly on `43e3906859b58e69370a1069a44e6dc1cefc6d03`, adds the isolated local synthetic connector slice. Run `npm run test:connectors`; see [connector implementation evidence and production limits](customer-connector-slice-2026-11-03.md). The connector DDL proposal is applied only by its disposable harness, is absent from staging migration discovery, and has not been applied to staging or production. No real credentials, provider calls, grants, deployment or payments were used. The frozen release and paired-agent work were left untouched.
 
 Final verified stopping point: dedicated connector proof 12/12, legacy service suite 1,242/1,242, migration/RLS, restart and restore all passed; production builds/artifact/budgets/CSP and independent review passed. No external acceptance or hosted activation was performed.
+
+## 2026-11-03 customer UI/mock-adapter follow-up
+
+On the same isolated connector branch, `/os/connections` now provides a local mock customer flow; production uses a not-found page and existing denied API runtime. The atomic mock adapter invokes the scoped SQL RPC and validates results before commit/UI state updates. The final focused proof passed 23/23; independent pure checks passed 4/4 and review found no blocking issue. The original checkpoint `5962a56` remains retained, including its historical 1,242-test legacy result. See [UI verification and remaining real-provider work](customer-connector-ui-slice-2026-11-03.md). No release migration, provider credential, OAuth grant, new signing key, hosted activation, deployment or spending was introduced.
+
+Final actual production-artifact HTTP proof passed (mock page404, agent API503, unauthenticated customer API401), alongside final lint, OS build, artifact, budget, CSP and secret checks. No checks remain running or blocked.

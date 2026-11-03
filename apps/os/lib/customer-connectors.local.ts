@@ -8,6 +8,11 @@ import {
   verifyConnectorCapability,
 } from "../../../packages/connectors/agent-capability";
 import { HttpError, type Actor } from "./auth";
+import {
+  mockNotesAdapter,
+  adapterCommand,
+  connectionSchema,
+} from "../../../packages/connectors/adapter";
 
 function requireSyntheticRuntime() {
   if (!localMode() || process.env.VERCEL_ENV)
@@ -38,12 +43,13 @@ async function dispatch(
       ).rowCount
     )
       throw new HttpError(403, "Agent capability unavailable");
-    return (
-      await db.query("select kxra.customer_connector($1,$2::jsonb) result", [
+    return mockNotesAdapter.invokeInScopedTransaction(
+      db,
+      adapterCommand.parse({
         action,
-        JSON.stringify(parameters),
-      ])
-    ).rows[0].result;
+        ...(parameters as Record<string, unknown>),
+      }),
+    );
   });
 }
 export async function listCustomerConnectors(actor: Actor) {
@@ -52,6 +58,7 @@ export async function listCustomerConnectors(actor: Actor) {
     throw new HttpError(403, "Synthetic identity required");
   return {
     registry: connectorRegistry,
+    adapter: mockNotesAdapter.descriptor,
     result: await dispatch(actor, "human", "list", {}),
   };
 }
@@ -68,7 +75,7 @@ export async function customerConnectorCommand(actor: Actor, input: unknown) {
         {
           user_id: actor.id,
           org_id: actor.org_id,
-          connector_id: result.id,
+          connector_id: connectionSchema.parse(result).id,
           session_version: actor.session_version,
         },
         process.env.KXRA_LOCAL_SECRET || "",

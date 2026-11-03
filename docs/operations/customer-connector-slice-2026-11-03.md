@@ -1,5 +1,7 @@
 # Local synthetic customer connector slice
 
+Historical checkpoint: `5962a56`. The later local UI/mock-adapter follow-up is documented in [the UI slice handoff](customer-connector-ui-slice-2026-11-03.md); limitations below describe this original checkpoint.
+
 Base: `43e3906859b58e69370a1069a44e6dc1cefc6d03`. Branch: `codex/customer-connectors-local`.
 
 This is a local API/database vertical slice, not a live integration or evidence of Kylon parity. It adds no OAuth, provider grants, credentials, network transport, hosted changes or spending. The DDL is an unnumbered proposal in `database/proposals/customer-connectors.sql`, applied only by the disposable connector harness. The frozen 117-migration release manifest is unchanged. A future release needs separately reviewed migration integration.

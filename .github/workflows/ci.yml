@@ -41,6 +41,9 @@ jobs:
       - name: Run disposable full verification
         run: npm run test:ci
 
+      - name: Verify local production connector boundary
+        run: npm run test:connector-production
+
       - name: Audit production dependencies
         run: npm audit --omit=dev
 

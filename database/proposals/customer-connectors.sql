@@ -81,8 +81,8 @@ begin
  if action='read' then
   insert into kxra_private.connector_requests(connector_id,revision) values(c.id,c.revision) returning * into r;
   select coalesce(jsonb_agg(jsonb_build_object('note',note,'created_at',created_at) order by created_at,request_id),'[]'::jsonb) into result
-   from kxra_private.connector_notes where connector_id=c.id;
-  return jsonb_build_object('read_id',r.id,'revision',c.revision,'expires_at',r.expires_at,'notes',result,'untrusted_content',true);
+   from (select * from kxra_private.connector_notes where connector_id=c.id order by created_at desc,request_id desc limit 50) bounded;
+  return jsonb_build_object('read_id',r.id,'revision',c.revision,'expires_at',r.expires_at,'notes',result,'total_count',(select count(*) from kxra_private.connector_notes where connector_id=c.id),'untrusted_content',true);
  end if;
  if not c.allow_write then raise exception 'Write scope unavailable' using errcode='42501';end if;
  select * into r from kxra_private.connector_requests where id=coalesce(input->>'read_id',input->>'request_id')::uuid and connector_id=c.id for update;

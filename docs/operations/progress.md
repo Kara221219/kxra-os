@@ -1573,4 +1573,10 @@ Truth-table disclosure: a contradictory legacy selector label with otherwise val
 
 Added a synthetic-notes connector registry, durable scoped lifecycle, restricted agent capability and exact-payload customer approval with atomic synthetic execution. No external integration or hosted activation. Focused local SQL/HTTP proof passed 12/12 tests and all 117 release migrations plus the connector proposal/RLS checks. See [scope, architecture and limitations](customer-connector-slice-2026-11-03.md). Independent review fixes were applied and retested. This does not establish launch readiness or Kylon parity.
 
-Final broader validation: 1,242/1,242 legacy service tests passed on fresh release117 fixtures, plus migration/RLS, restart and restore verification. All three builds and artifact/budget/CSP checks passed. Frozen staging migration discovery remains unchanged; connector DDL is a disposable-harness-only proposal.
+Final broader validation: 1,242/1,242 legacy service tests passed on fresh release 117 fixtures, plus migration/RLS, restart and restore verification. All three builds and artifact/budget/CSP checks passed. Frozen staging migration discovery remains unchanged; connector DDL is a disposable-harness-only proposal.
+
+## 2026-11-03 — local customer connections UI and mock adapter
+
+Retained secure checkpoint `5962a56` and added a development-only customer Connections page, explicit scope/review/approval/execution lifecycle, and a fixed mock adapter with shared server/client result validation. Final focused proof passed 23/23, including desktop/mobile browser flows, lost-response reconciliation, malformed-success responses, expiry, cross-user isolation and latest 50 ordering. Independent final review found no blocking issue and passed 4/4 pure tests. Frozen release 117 migration discovery remains unchanged. See [UI handoff and limits](customer-connector-ui-slice-2026-11-03.md). No external provider or hosted action occurred.
+
+Follow-up production proof passed against the built OS with no database/provider credentials/signing key: Connections page404, agent API503 and unauthenticated customer API401. Final OS build, artifact/budget/CSP and source checks passed; no running checks or local blockers remain.
