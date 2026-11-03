@@ -58,6 +58,25 @@ try {
 } finally {
   keyFile.close();
 }
+if (process.argv.includes("--custom-apps"))
+  execFileSync(
+    process.execPath,
+    [
+      "--conditions=development",
+      "--import",
+      "tsx",
+      "scripts/custom-apps-install.ts",
+    ],
+    {
+      cwd: root,
+      stdio: "inherit",
+      env: {
+        ...environment,
+        NODE_ENV: "development",
+        KXRA_LOCAL_SECRET: localSecret,
+      },
+    },
+  );
 const child = spawn(
   process.execPath,
   [
