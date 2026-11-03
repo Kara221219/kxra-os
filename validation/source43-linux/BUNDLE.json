@@ -11,8 +11,8 @@
     "server.mjs": "c468aec48d0ad6a0ec911ede5315f489d8115ed3799145075fec439367c3f703",
     "unit-build.mjs": "2a7b021dc760ae5c785ee4c15a7a718dbcbd69dd8ba03fd3fe7823ee7a652f44"
   },
-  "bootstrapDormantSha256": "07e7750160cb13806d249bd3df66d6fd4528f82248d01872591d8ce5e6a9815a",
-  "bootstrapProspectiveEnabledSha256": "72f2cf5b7e20d3e1a7439e1c4f3b3907e47516071a0a9726b59a3decbbd0e448",
+  "bootstrapDormantSha256": "0defc127dc322a5987d277047668199bee6a3ab7f267abb279a0a77bcf4ea4cd",
+  "bootstrapProspectiveEnabledSha256": "b6b7701656bcb3b62280838bbb5c87b3a5ffe605109d50e7d9d1cffc095b619b",
   "workflowDormantSha256": "047152e9c242485052ca559c3888d5df8d6babb585dd2595e4432d5df8f24b47",
   "workflowProspectiveEnabledSha256": "434465b7129f246054e640a72a337997b8b6beaadf5e5bc37a6ac9703a03aa51",
   "originalMacArtifactInputPermitted": false,
