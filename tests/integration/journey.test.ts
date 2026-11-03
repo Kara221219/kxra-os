@@ -158,6 +158,51 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
     ).status,
     200,
   );
+  const mockCommand = (body: unknown) =>
+    ok(post("/api/customer-connectors", body, f.cookie));
+  const mock = await mockCommand({ action: "connect", allow_write: true });
+  assert.notEqual(
+    (
+      await f.invoke(
+        { action: "read", connection_id: cid },
+        mock.agent_capability,
+        f.token,
+      )
+    ).status,
+    200,
+  );
+  assert.notEqual(
+    (
+      await f.invoke(
+        { action: "read", connection_id: cid },
+        f.delegation.delegation_token,
+        mock.agent_capability,
+      )
+    ).status,
+    200,
+  );
+  const mockRead = (
+    await mockCommand({ action: "read", connector_id: mock.result.id })
+  ).result;
+  const mockWrite = (
+    await mockCommand({
+      action: "prepare",
+      connector_id: mock.result.id,
+      read_id: mockRead.read_id,
+      note: "Persistent integration mock note",
+    })
+  ).result;
+  await mockCommand({
+    action: "approve",
+    connector_id: mock.result.id,
+    request_id: mockWrite.id,
+    digest: mockWrite.digest,
+  });
+  await mockCommand({
+    action: "execute",
+    connector_id: mock.result.id,
+    request_id: mockWrite.id,
+  });
   const read = (await ok(f.invoke({ action: "read", connection_id: cid })))
     .result;
   assert.equal(read.untrusted_content, true);
@@ -462,6 +507,7 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
       write: w.id,
       comment: receipt.provider_comment_id,
       uncertain: uncertain.id,
+      mock: mock.result.id,
       record,
       operation,
       revisionOperation,

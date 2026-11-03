@@ -246,6 +246,15 @@ async function main() {
             (c: { id: number }) => c.id === reconciled.provider_comment_id,
           ),
         );
+        assert.equal(
+          (
+            await restored.query(
+              "select count(*)::int n from kxra_private.connector_notes where connector_id=$1",
+              [journey.mock],
+            )
+          ).rows[0].n,
+          1,
+        );
         const history = (
           await restored.query(
             "select version,data from kxra.custom_app_record_versions where record_id=$1 order by version",
