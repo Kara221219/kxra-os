@@ -1622,6 +1622,8 @@ test("AT-01 every table enforces the complete principal visibility matrix", asyn
       "team_byok_consents",
       "team_uncertainty_cases",
       "team_maintenance_receipts",
+      "paired_agents",
+      "paired_tasks",
       "team_rooms",
       "team_room_members",
       "team_connections",

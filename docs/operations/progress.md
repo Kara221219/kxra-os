@@ -1568,3 +1568,11 @@ Truth-table disclosure: a contradictory legacy selector label with otherwise val
 
 
 - 2026-10-31 final local correction: OS production-client Webpack uses size module identifiers; follow-redirects is patched to 1.16.2. Marketing, catalogue and all OS components remain identical to `8319`. See [CI/security correction](ci-correction-2026-10-31.md) for validation, cache tradeoff and remaining remote/hosted gates.
+
+## 3 November — isolated paired-agent slice
+
+Base43e3906859b58e69370a1069a44e6dc1cefc6d03, separate codex/byoa-paired-agent worktree under .runtime/byoa-paired-agent. Added proposed0118 fixture-gated pairing, private agent capability sessions, exact approved text-task leases, one-time dispatch, uncertainty/no replay, original-thread synthetic drafts and revocation fences. Manual bridge/guard/MANUAL_UNVERIFIED unchanged. Ten unit/protocol+DB/HTTP cases and desktop/mobile UI paths pass in a fresh small serial cohort,118/216RLS verification, lint/OSbuild/200KiB OSbudget/source-secret checks pass. Independent review findings resolved. See docs/workspace/paired-agent-slice.md for exact failures/fixes, resources, protocol reference and non-activation gates. No full-platform competing fixtures, real credentials/provider calls, live pairing, installation, file/shell tools, push or hosted changes. Frozen release/original dirty files untouched.
+
+## Paired agent executable transport follow-up — local only
+
+The isolated `codex/byoa-paired-agent` follow-up to35eb760 adds a fixed-argv Codex stdio process supervisor, memory-only foreground device lifecycle/command runner and stub-only subprocess/HTTP acceptance. The unpublished0118 definition is corrected to use its own resolver schema from first installation; proposed0119 asserts the safe boundary and adds exact task status for cancellation. Independent source review findings are fixed; live provider, credentials, installation, pairing and hosted changes remain pending approval. See [transport contract and acceptance](../workspace/paired-agent-transport.md); exact final source/evidence is retained in this worktree's ignored runtime manifest.

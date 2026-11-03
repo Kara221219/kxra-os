@@ -81,3 +81,15 @@ Full `stripe-full-1-ci.log` exited 0: **295** service/DB/HTTP/security tests, **
 **Preserved preview:** http://127.0.0.1:3244/os/workspace. Guarded0091-only upgrade preserved all original columns in **195 tables / 1,397 rows**, no seeds/reset/bootstrap. Normal fixture sign-in/anonymous401,11existingrooms and knowledge/memory/jobs/schedules/Workflow/Settings smoke pass. Pilot remains unassigned; no demonstration records, provider call or agent/job worker activated. App/file worker are ephemeral task processes only. Never bootstrap this store. Applied0085–0091 are frozen; next migration0092.
 
 **Release:** [artifact contract](release-artifact-contract.md), [staging sequence](../operations/staging-release-sequence.md), [Stripe test boundary](pilot-stripe-test.md). Parent assembles a separate clean dependency-complete candidate from the final source manifest; no blanket stage/reset of the active tree. Staging82 hashes match per parent;0083–0091 remain additive. Vercel team-list403 is denied (no bypass); existing secure TLS operator/CA/backup inputs, owner handoff/MFA and actual hosted/provider acceptance remain pending. No commit/push/deploy, real credentials/account mutation, external send/spend or live charge occurred here. Full parity is unfinished. No further feature slice starts after this freeze.
+
+## 3 November isolated paired-agent acceptance
+
+| Scope | Implemented/tested | Remaining |
+|---|---|---|
+| Private paired text agent | Generated fixture invitation/session, least-privilege room/agent scope, exact reviewed source, single lease/start, original-thread draft receipt, revoke/cancel/uncertainty, offline/reconnect;10focused tests and1440/390px UI | Live pairing/installation, secure device lifecycle and hostile-network/hosted acceptance |
+| Runtime adapters | Synthetic runtime and official Codex App Server NDJSON source tested through a synthetic process; commands/files/tools denied | Real Codex/other-provider sign-in, installed-version/managed-policy compatibility and customer-funded provider acceptance |
+| Existing manual bridge | Interface and MANUAL_UNVERIFIED provenance retained; real adapter guard still throws | No silent promotion to verified provider or hosted activation |
+
+This source is isolated from release43e3906859b58e69370a1069a44e6dc1cefc6d03, proposed0118 only in disposable fixtures. See paired-agent-slice.md. Full parity and real-provider acceptance remain unfinished.
+
+Paired transport follow-up: executable Codex stdio process/foreground client source and local stub protocol acceptance are described in [paired transport](paired-agent-transport.md). Device/API activation remains fixture-only. Real installed provider, customer credentials, deny-all tool isolation, live pairing, installation and hosted acceptance remain pending; this does not supersede earlier unimplemented parity rows.

@@ -33,6 +33,7 @@ import { ActionForm } from "./TeamActionForm";
 import { RoomKnowledge } from "./RoomKnowledge";
 import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
+import { RoomPairedAgents } from "./RoomPairedAgents";
 import { RoomBridge } from "./RoomBridge";
 import { RoomCases } from "./RoomCases";
 import { RoomCollaboration } from "./RoomCollaboration";
@@ -800,13 +801,22 @@ export function TeamWorkspace({
                   />
                 )}
                 {tab === "bridge" && (
-                  <RoomBridge
-                    key={room!.id}
-                    roomId={room!.id}
-                    messages={messages}
-                    local={local}
-                    canManage={canManage}
-                  />
+                  <>
+                    {local && isOrgOwner && canManage && (
+                      <RoomPairedAgents
+                        key={room!.id + "paired"}
+                        roomId={room!.id}
+                        messages={messages}
+                      />
+                    )}
+                    <RoomBridge
+                      key={room!.id}
+                      roomId={room!.id}
+                      messages={messages}
+                      local={local}
+                      canManage={canManage}
+                    />
+                  </>
                 )}
                 {(
                   ["remodeling", "roles", "recruiting", "travel"] as string[]
