@@ -1419,3 +1419,7 @@ The exact committed complete runner clones a fresh owned source/runtime, preserv
 
 
 2026-11-04 production composition: full requested feature launch remains the objective. Hus explicitly rejected reducing scope for speed. No pilot substitution, terms/financial-policy change, hosted operation or deployment is authorized by this local composition.
+
+## Full-feature production composition
+
+Use the separate composition checkout and [review packet](production-composition-2026-11-04.md). Preserve full launch scope and existing terms/financial commitments. New AI118 review source is not a full-feature deployment manifest; original hosted guard remains closed. Native117/fresh118/rollback/legacy/recovery evidence is distinct from canonical119 CI. Never promote fixture pairing/connectors/apps or manufacture legacy AI authority. Final exact-source receipts are retained outside the worktree; source branches remain unchanged.

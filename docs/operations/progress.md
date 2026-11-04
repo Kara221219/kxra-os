@@ -1682,3 +1682,7 @@ The exact committed complete runner clones a fresh owned source/runtime, preserv
 
 
 2026-11-04 production composition: full requested feature launch remains the objective. Hus explicitly rejected reducing scope for speed. No pilot substitution, terms/financial-policy change, hosted operation or deployment is authorized by this local composition.
+
+## 4 November — full-feature production composition review
+
+Hus rejected scope reduction; full-feature launch remains required. A separate checkout combines b3b5 release guard and3b4 resume without changing source branches. Reviewed production AI payload targets exact117→genuine118, with no policy/financial seeds and hosted operators unchanged/closed. Native117 and fresh118 each pass38 cases, transactional rollback/legacy denial and250-table568-function populated restore pass. All remaining feature bundles stay required and blocked; no pilot substitution or deployment. See [composition boundaries, evidence and genuine policy decisions](production-composition-2026-11-04.md).
