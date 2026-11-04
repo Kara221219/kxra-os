@@ -29,6 +29,7 @@ const ownerNav = [
   ["Knowledge", "knowledge"],
   ["Assets", "files"],
   ["Admin", "admin"],
+  ["Eligibility reviews", "review-operations"],
 ];
 const partnerNav = [
   ["Home", ""],
