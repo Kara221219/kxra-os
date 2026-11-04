@@ -109,7 +109,9 @@
     "test:custom-apps": "node scripts/custom-apps-verify.mjs",
     "test:custom-app-recovery": "node scripts/custom-app-recovery.mjs",
     "test:integration": "node scripts/verify-integration.mjs",
-    "test:integration-ci": "node scripts/integration-ci.mjs"
+    "test:integration-ci": "node scripts/integration-ci.mjs",
+    "release:check": "node scripts/verify-hosted-release-source.mjs",
+    "test:release-guard-native": "node scripts/verify-hosted-release-native.mjs"
   },
   "dependencies": {
     "@higgsfield/client": "^0.2.6",
