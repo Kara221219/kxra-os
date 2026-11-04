@@ -719,10 +719,26 @@ async function main() {
           noCredentialOrBinding: true,
         });
       } finally {
-        await racer.query("rollback");
-        await racer.end();
-        await locker.query("rollback");
-        await locker.end();
+        let cleanupError;
+        try {
+          try {
+            await locker.query("rollback");
+          } finally {
+            await locker.end();
+          }
+        } catch (e) {
+          cleanupError = e;
+        }
+        try {
+          try {
+            await racer.query("rollback");
+          } finally {
+            await racer.end();
+          }
+        } catch (e) {
+          cleanupError ||= e;
+        }
+        if (cleanupError) throw cleanupError;
       }
     }
     assert.equal(providerAttempts, 0);
