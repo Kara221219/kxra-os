@@ -111,7 +111,8 @@
     "test:integration": "node scripts/verify-integration.mjs",
     "test:integration-ci": "node scripts/integration-ci.mjs",
     "release:check": "node scripts/verify-hosted-release-source.mjs",
-    "test:release-guard-native": "node scripts/verify-hosted-release-native.mjs"
+    "test:release-guard-native": "node scripts/verify-hosted-release-native.mjs",
+    "release:prepare-review": "node scripts/prepare-production-review-candidate.mjs"
   },
   "dependencies": {
     "@higgsfield/client": "^0.2.6",

@@ -1393,3 +1393,8 @@ Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key
 ## 2026-11-04 hosted release guard and next-work handoff
 
 Additive source/target guards refuse fixture migrations/extensions in hosted migration/seed/bootstrap operators while local119 discovery remains. Current integration intentionally reports BLOCKED offline. Exact117 native verification and final checks are recorded outside source. See [release guard](production-release-guard-2026-11-04.md) and [provider eligibility/setup handoff](provider-eligibility-setup-handoff-2026-11-04.md). No hosted action or new provider feature.
+
+
+## 2026-11-04 production117 review strategy
+
+No enabled production dependency on fixture0118/0119 was found. An exact-hash local builder prepares a separate117 review candidate with explicit exclusions, preserving the integrated119 lane and guard. The target-prefix planner remains read-only/no-apply; initialized production still needs a separately reviewed upgrade path. See [production117 strategy](production117-manifest-strategy-2026-11-04.md) for dependency, CI-cohort, failure/rollback and remaining-decision evidence. No migration execution is claimed while the no-apply scope is clarified.

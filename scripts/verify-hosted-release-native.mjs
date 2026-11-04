@@ -15,6 +15,13 @@ import {
   hostedFixtureObjects,
 } from "./hosted-release-guard.mjs";
 import assert from "node:assert/strict";
+if (
+  process.argv.length > 3 ||
+  (process.argv[2] && process.argv[2] !== "--upgrade-rehearsal")
+)
+  throw Error(
+    "Usage: node scripts/verify-hosted-release-native.mjs [--upgrade-rehearsal]",
+  );
 const root = path.resolve(import.meta.dirname, "..");
 assert.equal(
   execFileSync("git", ["status", "--porcelain"], {
@@ -157,6 +164,23 @@ try {
     }
   await assertNoHostedFixtureObjects(db);
   assert.deepEqual(await inventory(), before);
+  if (process.argv[2] === "--upgrade-rehearsal") {
+    const { verifyReleaseUpgradeFixtures } =
+      await import("./release-upgrade-fixture.mjs");
+    const upgrade = await verifyReleaseUpgradeFixtures(
+      db,
+      cfg,
+      manifest,
+      source,
+      directory,
+      runtime,
+    );
+    fs.writeFileSync(
+      path.join(runtime, "production-upgrade-proof.json"),
+      JSON.stringify(upgrade, null, 2) + "\n",
+      { mode: 0o600 },
+    );
+  }
   fs.writeFileSync(
     path.join(runtime, "hosted-release-native-proof.json"),
     JSON.stringify(
