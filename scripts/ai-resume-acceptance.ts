@@ -282,7 +282,9 @@ async function main() {
       return connection;
     }
     await page.locator("input[name=key]").waitFor();
-    await page.locator("input[name=name]").fill("Synthetic browser resume");
+    await page
+      .getByLabel("Connection name", { exact: true })
+      .fill("Synthetic browser resume");
     await page.locator("input[name=model]").fill("synthetic-model");
     await page
       .locator("input[name=key]")
@@ -333,7 +335,9 @@ async function main() {
       await page.locator("input[name=model]").getAttribute("readonly"),
       "",
     );
-    await page.locator("input[name=name]").fill("Synthetic browser resume");
+    await page
+      .getByLabel("Connection name", { exact: true })
+      .fill("Synthetic browser resume");
     await page
       .locator("input[name=key]")
       .fill("SYNTHETIC_BROWSER_ONLY_NOT_A_CREDENTIAL");
