@@ -1664,3 +1664,8 @@ Own-intent status API, strict public DTO and lazy resume UI prepared on the sepa
 ### Disposable native acceptance after scope clarification
 
 Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.
+
+
+### Complete structured-resume local acceptance
+
+The exact committed complete runner clones a fresh owned source/runtime, preserves fixture-only restrictions, and uses unchanged application routes with signed loopback Auth and real disposable PostgreSQL. Browser pending/review/exact-reference save, graceful restart, exact extension catalogue/data/sequence restore and restored-only browser marker passed at c436346; final source retains full snapshots/hashes for reproduction. All five deterministic concurrent authority-loss cases deny saves without persisting credentials/bindings. A replacement private helper's inherited PUBLIC EXECUTE was revoked; the strict allowlist remains unchanged. Full canonical CI is separately keyed to the exact candidate head, never inferred from focused results. Run `node scripts/verify-ai-resume-complete.mjs` and `node scripts/integration-ci.mjs` from a clean committed candidate with the shared native lease free. No merge, hosted changes or policy approval is implied.

@@ -510,6 +510,16 @@ async function main() {
     await refreshPaid(admin);
     const beforeCatalog = await integrationCatalog(admin),
       beforeData = await integrationData(admin, beforeCatalog);
+    fs.writeFileSync(
+      path.join(runtime, "catalogue-source.json"),
+      JSON.stringify(beforeCatalog, null, 2) + "\n",
+      { mode: 0o600 },
+    );
+    fs.writeFileSync(
+      path.join(runtime, "data-source.json"),
+      JSON.stringify(beforeData, null, 2) + "\n",
+      { mode: 0o600 },
+    );
     const dump = path.join(runtime, "ai-resume-extensions.dump"),
       passfile = path.join(runtime, "empty-libpq");
     fs.writeFileSync(passfile, "", { mode: 0o600, flag: "wx" });
@@ -779,6 +789,31 @@ async function main() {
       JSON.stringify(
         {
           status: "PASS",
+          sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: root,
+            encoding: "utf8",
+          }).trim(),
+          snapshotHashes: Object.fromEntries(
+            [
+              "catalogue-source.json",
+              "catalogue-restored.json",
+              "data-source.json",
+              "data-restored.json",
+              "ai-resume-extensions.dump",
+            ].map((name) => [
+              name,
+              crypto
+                .createHash("sha256")
+                .update(fs.readFileSync(path.join(runtime, name)))
+                .digest("hex"),
+            ]),
+          ),
+          proposalSha256: crypto
+            .createHash("sha256")
+            .update(
+              fs.readFileSync("database/proposals/ai-business-admission.sql"),
+            )
+            .digest("hex"),
           phases,
           authCounts,
           providerAttempts,
