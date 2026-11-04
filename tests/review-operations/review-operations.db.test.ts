@@ -355,6 +355,134 @@ test("independent business and AI operator decisions use exact current scope wit
       },
     );
     await t.test(
+      "blocked decisions recheck reviewer session, membership, platform and current policy after subject locks",
+      async () => {
+        for (const race of ["session", "membership", "platform", "policy"]) {
+          const reviewer = uuid();
+          await admin.query(
+            "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1,'SUPABASE',$2,'ACTIVE',clock_timestamp())",
+            [reviewer, "synthetic-reviewer-" + reviewer],
+          );
+          await admin.query(
+            "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'KXRA_OWNER','INTERNAL','ACTIVE','Synthetic independent operator','LOCAL_REVIEW_RACE')",
+            [platform, reviewer],
+          );
+          await grant("BUSINESS", reviewer);
+          const subject = await newDeclaration(),
+            d = await open("BUSINESS", subject, reviewer),
+            op = uuid();
+          const locker = new pg.Client({
+            ...cfg,
+            user: os.userInfo().username,
+          });
+          await locker.connect();
+          await locker.query("begin");
+          await locker.query(
+            "select id from kxra_private.business_declarations where id=$1 for update",
+            [subject],
+          );
+          const c = await connection(reviewer);
+          const pid = (await c.query("select pg_backend_pid() pid")).rows[0]
+            .pid;
+          const pending = c
+            .query(
+              "select kxra.review_operations('DECIDE',$1::jsonb,$2) value",
+              [
+                JSON.stringify({
+                  request_id: d.request_id,
+                  operation_id: op,
+                  decision: businessDecision(),
+                  attested: true,
+                }),
+                f.review,
+              ],
+            )
+            .then(
+              () => ({ ok: true, error: null as any }),
+              (error) => ({ ok: false, error }),
+            );
+          try {
+            let blocked = false;
+            for (let n = 0; n < 100; n++) {
+              const row = (
+                await admin.query(
+                  "select wait_event_type from pg_stat_activity where pid=$1",
+                  [pid],
+                )
+              ).rows[0];
+              if (row?.wait_event_type === "Lock") {
+                blocked = true;
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 10));
+            }
+            assert.equal(
+              blocked,
+              true,
+              "decision must reach the locked subject before changing authority",
+            );
+            if (race === "session")
+              await admin.query(
+                "update kxra.account_identities set session_version=session_version+1 where account_id=$1",
+                [reviewer],
+              );
+            if (race === "membership")
+              await admin.query(
+                "update kxra.organisation_memberships set state='REVOKED',revoked_at=clock_timestamp() where org_id=$1 and account_id=$2",
+                [platform, reviewer],
+              );
+            if (race === "platform")
+              await admin.query(
+                "update kxra.organisations set state='SUSPENDED' where id=$1",
+                [platform],
+              );
+            if (race === "policy")
+              await admin.query(
+                "insert into kxra_private.business_eligibility_policies(version,evidence_sha256,owner_review_reference,effective_at,expires_at,enabled) values($1,$2,'SYNTHETIC_RACE_NOT_APPROVAL',clock_timestamp(),clock_timestamp()+interval '1 day',true)",
+                ["SYNTHETIC_RACE_" + uuid(), f.review],
+              );
+            await locker.query("rollback");
+            const outcome = await pending;
+            assert.equal(
+              outcome.ok,
+              false,
+              race + " drift must reject a queued decision",
+            );
+            assert.equal(outcome.error.code, "42501");
+            await done(c);
+            assert.equal(
+              (
+                await admin.query(
+                  "select count(*)::int n from kxra_private.review_operation_receipts where id=$1",
+                  [op],
+                )
+              ).rows[0].n,
+              0,
+            );
+            assert.equal(
+              (
+                await admin.query(
+                  "select count(*)::int n from kxra_private.business_eligibility_reviews where declaration_id=$1",
+                  [subject],
+                )
+              ).rows[0].n,
+              0,
+            );
+          } finally {
+            await locker.query("rollback");
+            await locker.end();
+            await pending;
+            if (created.includes(c)) await done(c);
+            if (race === "platform")
+              await admin.query(
+                "update kxra.organisations set state='ACTIVE' where id=$1",
+                [platform],
+              );
+          }
+        }
+      },
+    );
+    await t.test(
       "private grants, contexts, snapshots and receipts are inaccessible to customers and workers",
       async () => {
         for (const role of [

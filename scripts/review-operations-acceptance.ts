@@ -230,7 +230,13 @@ async function main() {
       .getByRole("button", { name: "Use fixture", exact: true })
       .click();
     await page.waitForURL(/\/os/);
+    const initialQueue = page.waitForResponse(
+      (r) =>
+        r.url() === origin + "/api/review-operations" &&
+        r.request().method() === "GET",
+    );
     await page.goto(origin + "/os/review-operations");
+    assert.equal((await initialQueue).status(), 200);
     await page
       .getByRole("button", { name: "Refresh review queue", exact: true })
       .waitFor();
@@ -280,7 +286,10 @@ async function main() {
           name: "Next review page",
           exact: true,
         });
-        if (!(await next.count())) break;
+        if (!(await next.count())) {
+          await button.waitFor({ state: "visible", timeout: 10000 });
+          continue;
+        }
         await next.click();
         await page
           .getByRole("status")
@@ -348,10 +357,56 @@ async function main() {
         { exact: true },
       )
       .check();
+    let lostCommand: any,
+      decisionPosts = 0;
+    await page.route(origin + "/api/review-operations", async (route) => {
+      const req = route.request();
+      if (req.method() === "POST" && req.postDataJSON()?.action === "DECIDE") {
+        decisionPosts++;
+        lostCommand = req.postDataJSON();
+        const committed = await route.fetch();
+        assert.equal(committed.status(), 200, await committed.text());
+        await route.abort("failed");
+        return;
+      }
+      await route.continue();
+    });
     await page
       .getByRole("button", { name: "Record exact decision", exact: true })
       .click();
+    await page
+      .getByRole("status")
+      .filter({ hasText: "Outcome not confirmed" })
+      .waitFor();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Record exact decision", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(decisionPosts, 1);
+    await page
+      .getByLabel("Review request reference", { exact: true })
+      .fill(lostCommand.request_id);
+    await page
+      .getByRole("button", { name: "Check review request", exact: true })
+      .click();
     await page.getByText("Recorded receipt:", { exact: false }).waitFor();
+    assert.equal(
+      decisionPosts,
+      1,
+      "read-only lost-ack recovery must not repeat a decision POST",
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from kxra_private.review_operation_receipts where id=$1",
+          [lostCommand.operation_id],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await page.unroute(origin + "/api/review-operations");
     assert.equal(
       (await customer("select kxra.ai_connection_status($1) value", [aiId]))
         .state,
@@ -493,6 +548,8 @@ async function main() {
       restoredTarget: target,
       fullCatalogueDataSequencesEqual: true,
       grantsAndReceiptsRecovered: true,
+      committedDecisionLostAckReadOnlyRecovery: true,
+      decisionPostsAfterLostAck: decisionPosts,
       providerAcceptance: false,
       paymentAuthority: false,
       fullFeatureLaunchRequired: true,
@@ -541,13 +598,28 @@ async function main() {
         ["-D", path.join(runtime, "postgres"), "status"],
         { stdio: "ignore", timeout: 5000 },
       );
+    let appPortFree = false;
+    const portProbe = net.createServer();
+    try {
+      await new Promise<void>((r, j) => {
+        portProbe.once("error", j);
+        portProbe.listen(appPort, "127.0.0.1", r);
+      });
+      appPortFree = true;
+    } catch {
+    } finally {
+      if (portProbe.listening)
+        await new Promise<void>((r) => portProbe.close(() => r()));
+    }
     clean =
+      appPortFree &&
       clean &&
       stopped.status === 0 &&
       status.status === 3 &&
       !fs.existsSync(path.join(runtime, "postgres/postmaster.pid"));
     write("cleanup.json", {
       clean,
+      appPortFree,
       postgresStop: stopped.status,
       postgresStatus: status.status,
       postmasterPidAbsent: !fs.existsSync(
