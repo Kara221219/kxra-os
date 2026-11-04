@@ -177,9 +177,25 @@ async function main() {
         ).rows[0].n,
         0,
       );
+      assert.equal(
+        (
+          await restored.query(
+            "select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname not like 'pg_%' and n.nspname<>'information_schema'",
+          )
+        ).rows[0].n,
+        0,
+        "Fresh target must contain no user routines",
+      );
       execFileSync(
         path.join(postgresBin(), "pg_restore"),
-        [...options, "-d", target, "--exit-on-error", dump],
+        [
+          ...options,
+          "-d",
+          target,
+          "--single-transaction",
+          "--exit-on-error",
+          dump,
+        ],
         { stdio: "inherit", env: subprocessEnv },
       );
       assert.deepEqual(await integrationCatalog(restored), catalogue);
