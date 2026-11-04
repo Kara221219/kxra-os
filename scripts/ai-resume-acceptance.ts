@@ -773,7 +773,11 @@ async function main() {
     } catch {
       clean = false;
     }
-    if (!(await stop(app))) clean = false;
+    try {
+      if (!(await stop(app))) clean = false;
+    } catch {
+      clean = false;
+    }
     try {
       if (auth) {
         auth.closeAllConnections();
@@ -787,8 +791,18 @@ async function main() {
     } catch {
       clean = false;
     }
-    if (log !== undefined) fs.closeSync(log);
-    for (const item of generated) fs.writeFileSync(item.file, item.bytes);
+    try {
+      if (log !== undefined) fs.closeSync(log);
+    } catch {
+      clean = false;
+    }
+    for (const item of generated) {
+      try {
+        fs.writeFileSync(item.file, item.bytes);
+      } catch {
+        clean = false;
+      }
+    }
     const stopped = spawnSync(
         process.execPath,
         ["scripts/database.mjs", "stop"],

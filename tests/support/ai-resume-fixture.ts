@@ -224,6 +224,7 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
         .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
         .replace(/commit;\s*$/i, ""),
     );
+  let seeding = true;
   async function appCall(
     sql: string,
     values: unknown[] = [],
@@ -232,7 +233,7 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
     sv = 1,
     execution = "hosted",
   ) {
-    await fixtureQuery("savepoint app_call");
+    await fixtureQuery(seeding ? "savepoint app_call" : "begin");
     try {
       await fixtureQuery("set session authorization kxra_app");
       await fixtureQuery("set local role authenticated");
@@ -252,12 +253,14 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
       );
       const result = (await fixtureQuery(sql, values)).rows[0]?.value;
       await fixtureQuery("reset session authorization");
-      await fixtureQuery("release savepoint app_call");
+      await fixtureQuery(seeding ? "release savepoint app_call" : "commit");
       return result;
     } catch (e) {
-      await fixtureQuery("rollback to savepoint app_call");
+      await fixtureQuery(
+        seeding ? "rollback to savepoint app_call" : "rollback",
+      );
       await fixtureQuery("reset session authorization");
-      await fixtureQuery("release savepoint app_call");
+      if (seeding) await fixtureQuery("release savepoint app_call");
       throw e;
     }
   }
@@ -390,6 +393,7 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
   }
   const gate = (run: string, h = ep, k = sha(cipher)) =>
     appCall("select kxra.ai_run_admission($1,$2,$3) value", [run, h, k]);
+  seeding = false;
   return {
     org,
     actor,
