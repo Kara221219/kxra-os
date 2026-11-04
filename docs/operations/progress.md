@@ -1612,3 +1612,8 @@ The isolated paired-agent branch replaces retired untrusted approval with on-req
 ## 3 November — isolated combined local integration
 
 Final paired5e724, connector f51ef62 and custom-app2278702 histories are composed only in the task-4 clone. Task/account-specific dual-credential orchestration, independent human write approval and schema review import are implemented as an unnumbered fixture extension. Combined restart/restore, ACL, UI, budget and full CI acceptance is in progress; see [contract and exact remaining scope](local-feature-integration-2026-11-03.md). Frozen release, source feature worktrees and hosted/provider state are unchanged.
+
+
+## 4 November — full canonical CI passed; native lease handed off
+
+The isolated integration has passed full canonical CI at56a34ef, complete extension-installed crash/restart/restore and source/restored browser proof, and independent review. Code commitdd0f49d adds final verification-only hardening; its targeted rerun and production/dedicated regressions remain pending the staging-precheck shared-lease opportunity. The previous CI lease was released with all four cleanup receipts confirmed. See [exact evidence and remaining gates](local-feature-integration-2026-11-03.md). No source feature branch, frozen release, hosted/provider state, real credentials, charges, push or deployment changed.
