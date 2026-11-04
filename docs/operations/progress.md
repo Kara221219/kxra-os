@@ -1686,3 +1686,8 @@ The exact committed complete runner clones a fresh owned source/runtime, preserv
 ## 4 November — full-feature production composition review
 
 Hus rejected scope reduction; full-feature launch remains required. A separate checkout combines b3b5 release guard and3b4 resume without changing source branches. Reviewed production AI payload targets exact117→genuine118, with no policy/financial seeds and hosted operators unchanged/closed. Native117 and fresh118 each pass38 cases, transactional rollback/legacy denial and250-table568-function populated restore pass. All remaining feature bundles stay required and blocked; no pilot substitution or deployment. See [composition boundaries, evidence and genuine policy decisions](production-composition-2026-11-04.md).
+
+
+## 4 November — independent human review application wiring
+
+An isolated branch adds default-off internal owner review UI/API backed by exact customer/provider/policy grants, frozen request authority and immutable decision/withdrawal receipts. No authority is seeded. Native blocked-lock races, actual browser lost-ack read recovery and installed-schema restore are exercised separately from canonical119. See [operator review handoff](review-operations-2026-11-04.md) for exact scope, reproduction, custody/grant decisions and production migration gates. Full launch scope and existing customer commitments remain unchanged; no hosted or provider action. Final commit-specific acceptance is retained outside source.

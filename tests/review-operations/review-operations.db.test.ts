@@ -231,9 +231,25 @@ test("independent business and AI operator decisions use exact current scope wit
         const d = await open("BUSINESS", declared);
         assert.equal(d.request_current, true);
         assert.equal(d.can_decide, true);
+        const paidBefore = (
+          await admin.query(
+            "select to_jsonb(p) value from kxra_private.live_paid_access p where org_id=$1",
+            [f.org],
+          )
+        ).rows;
         const decision = businessDecision(),
           { cmd, receipt } = await record(d, decision);
         assert.equal(receipt.state, "ELIGIBLE");
+        assert.deepEqual(
+          (
+            await admin.query(
+              "select to_jsonb(p) value from kxra_private.live_paid_access p where org_id=$1",
+              [f.org],
+            )
+          ).rows,
+          paidBefore,
+          "business clearance cannot mutate paid-access authority",
+        );
         assert.equal(
           (await f.appCall("select kxra.business_admission_status() value"))
             .state,
@@ -352,6 +368,78 @@ test("independent business and AI operator decisions use exact current scope wit
           "update kxra.account_identities set session_version=session_version+1 where account_id=$1",
           [f.actor],
         );
+      },
+    );
+    await t.test(
+      "two independently scoped operators cannot record competing decisions for one frozen subject",
+      async () => {
+        const reviewer = uuid();
+        await admin.query(
+          "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1,'SUPABASE',$2,'ACTIVE',clock_timestamp())",
+          [reviewer, "synthetic-competing-" + reviewer],
+        );
+        await admin.query(
+          "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'KXRA_OWNER','INTERNAL','ACTIVE','Synthetic second reviewer','LOCAL_REVIEW_RACE')",
+          [platform, reviewer],
+        );
+        await grant("BUSINESS", reviewer);
+        const subject = await newDeclaration(),
+          a = await open("BUSINESS", subject),
+          b = await open("BUSINESS", subject, reviewer);
+        const outcomes = await Promise.allSettled([
+          record(a, businessDecision()),
+          record(b, businessDecision(), uuid(), reviewer),
+        ]);
+        assert.equal(
+          outcomes.filter((x) => x.status === "fulfilled").length,
+          1,
+        );
+        assert.equal(outcomes.filter((x) => x.status === "rejected").length, 1);
+        assert.equal(
+          (
+            await admin.query(
+              "select count(*)::int n from kxra_private.business_eligibility_reviews where declaration_id=$1",
+              [subject],
+            )
+          ).rows[0].n,
+          1,
+        );
+        const completed = parseReviewDetail(
+          await command("VIEW", { request_id: a.request_id }),
+        );
+        if (completed.receipt) assert.equal(completed.can_decide, false);
+        const current = await open("BUSINESS", subject);
+        assert.equal(current.can_decide, false);
+        assert.equal(current.reason, "REPLACEMENT_REQUIRES_AUTHORITY");
+      },
+    );
+    await t.test(
+      "expired immutable requests reject decisions and never produce receipts",
+      async () => {
+        const subject = await newDeclaration(),
+          d = await open("BUSINESS", subject),
+          expired = uuid();
+        await admin.query(
+          "insert into kxra_private.review_requests(id,grant_id,reviewer_id,session_version,subject_id,public_snapshot,context_sha256,opened_at,expires_at) select $1,grant_id,reviewer_id,session_version,subject_id,public_snapshot,context_sha256,clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '1 minute' from kxra_private.review_requests where id=$2",
+          [expired, d.request_id],
+        );
+        const view = parseReviewDetail(
+          await command("VIEW", { request_id: expired }),
+        );
+        assert.equal(view.request_current, false);
+        await assert.rejects(
+          record({ ...d, request_id: expired }, businessDecision()),
+        );
+        assert.equal(
+          (
+            await admin.query(
+              "select count(*)::int n from kxra_private.review_operation_receipts where request_id=$1",
+              [expired],
+            )
+          ).rows[0].n,
+          0,
+        );
+        await assert.rejects(command(null as any, {}), { code: "42501" });
       },
     );
     await t.test(

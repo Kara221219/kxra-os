@@ -324,6 +324,8 @@ async function main() {
       .click();
     const businessResponse = await posted;
     assert.equal(businessResponse.status(), 200, await businessResponse.text());
+    const businessCommand = businessResponse.request().postDataJSON();
+    const businessReceipt = (await businessResponse.json()).result;
     await page.getByText("Recorded receipt:", { exact: false }).waitFor();
     assert.equal(
       (await customer("select kxra.business_admission_status() value")).state,
@@ -466,6 +468,16 @@ async function main() {
     browser = undefined;
     assert.equal(await stop(), true);
     server = undefined;
+    const withdrawnReceipt = (
+      await db.query(
+        "select result from kxra_private.review_operation_receipts where result->>'subject_id'=$1 and result->>'state'='WITHDRAWN'",
+        [aiId],
+      )
+    ).rows[0].result;
+    await db.query(
+      "update kxra_private.review_operator_grants set revoked_at=clock_timestamp() where id=$1",
+      [fixture.aiGrant],
+    );
     // Full installed-schema backup/restore, including operator grants, frozen requests and receipts.
     const catalog = await integrationCatalog(db),
       data = await integrationData(db, catalog);
@@ -533,6 +545,58 @@ async function main() {
       assert.deepEqual(rd, data);
       write("catalogue-restored.json", rc);
       write("data-restored.json", rd);
+      async function recoveredCommand(action: string, input: unknown) {
+        const c = new pg.Client({ ...cfg, database: target });
+        await c.connect();
+        try {
+          await c.query("begin");
+          await c.query("set local role authenticated");
+          await c.query(
+            "select set_config('request.jwt.claim.sub',$1,true),set_config('request.kxra.org_id',$2,true),set_config('request.jwt.claims',$3,true),set_config('request.kxra.execution_mode','hosted',true)",
+            [
+              fixture.operator,
+              fixture.platform,
+              JSON.stringify({
+                sub: fixture.operator,
+                aal: "aal2",
+                session_version: 1,
+                auth_time: Math.floor(Date.now() / 1000),
+              }),
+            ],
+          );
+          const v = (
+            await c.query(
+              "select kxra.review_operations($1,$2::jsonb,$3) value",
+              [action, JSON.stringify(input), fixture.policySha],
+            )
+          ).rows[0].value;
+          await c.query("commit");
+          return v;
+        } finally {
+          await c.query("rollback");
+          await c.end();
+        }
+      }
+      const { action: ignored, ...replayed } = businessCommand;
+      assert.deepEqual(
+        await recoveredCommand("DECIDE", replayed),
+        businessReceipt,
+      );
+      await assert.rejects(
+        recoveredCommand("DECIDE", {
+          ...replayed,
+          decision: { ...replayed.decision, legal_status: "BLOCKED" },
+        }),
+      );
+      await assert.rejects(
+        recoveredCommand("VIEW", { request_id: withdrawnReceipt.request_id }),
+        { code: "42501" },
+      );
+      assert.deepEqual(
+        await integrationData(restored, rc),
+        rd,
+        "restored replay and denials must preserve every row/sequence",
+      );
     } finally {
       await restored.end();
     }
@@ -550,6 +614,8 @@ async function main() {
       grantsAndReceiptsRecovered: true,
       committedDecisionLostAckReadOnlyRecovery: true,
       decisionPostsAfterLostAck: decisionPosts,
+      restoredHistoricalReplayNoDuplicate: true,
+      restoredRevokedGrantDenied: true,
       providerAcceptance: false,
       paymentAuthority: false,
       fullFeatureLaunchRequired: true,
