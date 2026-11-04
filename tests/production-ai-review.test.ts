@@ -83,7 +83,14 @@ test("new review profile rejects changed/extra/missing/symlinked migration and u
   );
 });
 test("review payload/source policy/objective remain hash bound and cannot silently drop a feature", () => {
-  for (const kind of ["payload", "proposal", "base", "objective", "feature"]) {
+  for (const kind of [
+    "payload",
+    "proposal",
+    "base",
+    "objective",
+    "feature",
+    "override",
+  ]) {
     const d = cohort(),
       file = path.join(d, "packages/release/production-ai-review-v1.json"),
       m = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -101,6 +108,7 @@ test("review payload/source policy/objective remain hash bound and cannot silent
       );
     if (kind === "objective") m.objective = "PILOT";
     if (kind === "feature") m.fullFeatureDependencies.pop();
+    if (kind === "override") m.fullReleaseEligible = true;
     fs.writeFileSync(file, JSON.stringify(m));
     assert.throws(() => productionAiPayload(d));
   }

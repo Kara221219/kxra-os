@@ -290,12 +290,47 @@ async function main() {
       );
     }
     for (const table of upgradedCatalog.tables.filter(
-      (t: any) => t.schema === "kxra_private" && t.name.startsWith("ai_"),
+      (t: any) =>
+        t.schema === "kxra_private" &&
+        t.kind === "r" &&
+        t.name.startsWith("ai_"),
     )) {
       assert.equal(table.rls, true);
       for (const privilege of table.effective_table_privileges || [])
         assert.equal(privilege.reachable, false);
     }
+    // Sequences cannot have row security; inventory them explicitly and deny every privilege.
+    const aiSequences = upgradedCatalog.tables.filter(
+      (t: any) =>
+        t.schema === "kxra_private" &&
+        t.kind === "S" &&
+        t.name.startsWith("ai_"),
+    );
+    assert.deepEqual(
+      aiSequences.map((t: any) => t.name),
+      ["ai_connection_reviews_sequence_seq"],
+    );
+    for (const role of [
+      "kxra_app",
+      "authenticated",
+      "anon",
+      "kxra_billing_worker",
+      "kxra_ai_worker",
+    ])
+      for (const privilege of ["USAGE", "SELECT", "UPDATE"])
+        assert.equal(
+          (
+            await admin.query(
+              "select has_sequence_privilege($1,$2,$3) permitted",
+              [
+                role,
+                "kxra_private.ai_connection_reviews_sequence_seq",
+                privilege,
+              ],
+            )
+          ).rows[0].permitted,
+          false,
+        );
     await assertNoHostedFixtureObjects(admin);
     assert.equal(
       (

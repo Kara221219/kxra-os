@@ -21,6 +21,24 @@ export function productionAiPayload(root = repo) {
   const spec = JSON.parse(fs.readFileSync(path.join(real, specPath), "utf8")),
     base = JSON.parse(fs.readFileSync(path.join(real, policyPath), "utf8"));
   if (
+    Object.keys(spec).sort().join(",") !==
+      [
+        "version",
+        "classification",
+        "authorization",
+        "objective",
+        "basePolicySha256",
+        "baseMigrationCount",
+        "candidateMigration",
+        "policyDataSeeded",
+        "termsOrFinancialCommitmentsChanged",
+        "hostedExecutorImplemented",
+        "fullFeatureDependencies",
+      ]
+        .sort()
+        .join(",") ||
+    spec.classification !==
+      "PRODUCTION_AI_MIGRATION_REVIEW_ONLY_NOT_FULL_RELEASE" ||
     spec.version !== 1 ||
     spec.authorization !== false ||
     spec.baseMigrationCount !== 117 ||
@@ -34,6 +52,10 @@ export function productionAiPayload(root = repo) {
     throw Error("AI_REVIEW_POLICY_INVALID");
   const m = spec.candidateMigration;
   if (
+    Object.keys(m).sort().join(",") !==
+      ["name", "payload", "sha256", "sourceProposal", "sourceProposalSha256"]
+        .sort()
+        .join(",") ||
     m.name !== "0118_ai_connection_admission.sql" ||
     m.payload !== "database/production/ai-connection-admission-v1.sql" ||
     m.sourceProposal !== "database/proposals/ai-business-admission.sql"
@@ -125,12 +147,12 @@ export function productionAiIntegration(root) {
   integrationReleaseSource(root);
   const { spec } = productionAiPayload(root);
   return {
+    ...spec,
     status: "REVIEW_ONLY_FULL_FEATURE_RELEASE_BLOCKED",
     authorization: false,
     sourceMigrations: 119,
     productionBaseMigrations: 117,
     candidateAiMigrations: 118,
     fullReleaseEligible: false,
-    ...spec,
   };
 }
