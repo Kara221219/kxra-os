@@ -179,4 +179,50 @@ revoke all on function kxra.team_connection_toggle(uuid,boolean) from public,ano
 grant execute on function kxra.team_connection_toggle(uuid,boolean) to authenticated;
 revoke all on function kxra.ai_connection_admission(uuid,text,text,text,text,text),kxra.team_connection_save(uuid,text,text,text,text,text),kxra.team_connection_save_admitted(uuid,text,text,text,text,text,text),kxra.team_run_start(uuid,uuid,uuid,uuid,uuid[],text),kxra.ai_run_admission(uuid,text,text) from public,anon;
 grant execute on function kxra.ai_connection_admission(uuid,text,text,text,text,text),kxra.team_connection_save(uuid,text,text,text,text,text),kxra.team_connection_save_admitted(uuid,text,text,text,text,text,text),kxra.team_run_start(uuid,uuid,uuid,uuid,uuid[],text),kxra.ai_run_admission(uuid,text,text) to authenticated;
+-- Read-only own-intent projection. No key/fingerprint/evidence or caller-selected scope.
+create function kxra.ai_connection_status(i uuid default null) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare o uuid=kxra_private.member_org();t kxra_private.ai_connection_intents;r kxra_private.ai_connection_reviews;current_business uuid;current_review uuid;state text;reason text;action text;
+begin
+ if session_user<>'kxra_app' or o is null or not coalesce(kxra_private.mfa_owner(o),false) or not exists(select 1 from kxra.account_identities a where a.account_id=auth.uid() and a.state='ACTIVE' and a.session_version=(auth.jwt()->>'session_version')::integer) then raise insufficient_privilege;end if;
+ if i is null then
+  select * into t from kxra_private.ai_connection_intents where org_id=o and actor_id=auth.uid() order by created_at desc,id desc limit 1;
+ else
+  select * into t from kxra_private.ai_connection_intents where id=i and org_id=o and actor_id=auth.uid();
+ end if;
+ if not found then if i is null then return null;else raise insufficient_privilege;end if;end if;
+ if exists(select 1 from kxra_private.ai_connection_bindings where connection_id=t.id) then
+  if kxra_private.ai_connection_review(t.id) is not null then state='SAVED';reason='SAVED';action='USE_CONNECTIONS';
+  else state='REVIEW_REQUIRED';reason='SAVED_AUTHORITY_CHANGED';action='CONTACT_SUPPORT';end if;
+ elsif t.session_version is distinct from (auth.jwt()->>'session_version')::integer then
+  state='NEW_INTENT_REQUIRED';reason='SESSION_CHANGED';action='CREATE_NEW_INTENT';
+ elsif t.expires_at<=clock_timestamp() then
+  state='NEW_INTENT_REQUIRED';reason='INTENT_EXPIRED';action='CREATE_NEW_INTENT';
+ else
+  current_business=kxra_private.ai_business_review(o);
+  if t.business_review_id is null then
+   state='NEW_INTENT_REQUIRED';reason=case when current_business is null then 'BUSINESS_REVIEW_REQUIRED' else 'BUSINESS_REVIEW_UNBOUND' end;action=case when current_business is null then 'COMPLETE_BUSINESS_REVIEW' else 'CREATE_NEW_INTENT' end;
+  elsif t.business_review_id is distinct from current_business then
+   state='NEW_INTENT_REQUIRED';reason='BUSINESS_REVIEW_CHANGED';action=case when current_business is null then 'COMPLETE_BUSINESS_REVIEW' else 'CREATE_NEW_INTENT' end;
+  elsif not exists(select 1 from kxra_private.business_eligibility_reviews b join kxra_private.business_declarations d on d.id=b.declaration_id where b.id=t.business_review_id and upper(trim(d.provider))=t.provider) then
+   state='NEW_INTENT_REQUIRED';reason='BUSINESS_PROVIDER_MISMATCH';action='COMPLETE_BUSINESS_REVIEW';
+  else
+   current_review=kxra_private.ai_intent_review(t.id);
+   if current_review is not null then state='ELIGIBLE';reason='CLEARED';action='RESUBMIT_SAME_DETAILS';
+   else
+    select * into r from kxra_private.ai_connection_reviews where intent_id=t.id order by sequence desc limit 1;
+    state='REVIEW_REQUIRED';action='CONTACT_SUPPORT';
+    if not found then reason='AWAITING_PROVIDER_REVIEW';action='WAIT_FOR_REVIEW';
+    elsif r.state='BLOCKED' then state='BLOCKED';reason='PROVIDER_REVIEW_BLOCKED';
+    elsif r.withdrawn_at is not null then reason='REVIEW_WITHDRAWN';
+    elsif r.reviewed_at>clock_timestamp() or r.expires_at<=clock_timestamp() then reason='REVIEW_NOT_CURRENT';
+    elsif (t.provider='GOOGLE' and r.account_mode<>'GOOGLE_PAID') or (t.provider<>'GOOGLE' and r.account_mode<>'CUSTOMER_BILLED') then reason='ACCOUNT_MODE_REVIEW_REQUIRED';
+    else reason='AWAITING_PROVIDER_REVIEW';action='WAIT_FOR_REVIEW';end if;
+   end if;
+  end if;
+ end if;
+ return jsonb_build_object('admission_id',t.id,'provider',t.provider,'model',t.model,'endpoint_id',t.endpoint_id,'state',state,'reason',reason,'next_action',action,'expires_at',t.expires_at);
+end $$;
+revoke all on function kxra.ai_connection_status(uuid) from public,anon,kxra_billing_worker,kxra_ai_worker;
+grant execute on function kxra.ai_connection_status(uuid) to authenticated;
 commit;

@@ -1654,3 +1654,8 @@ Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key
 ## 4 November — AI connection admission contract candidate
 
 From accepted `9e2fe569`, isolated `codex/ai-business-admission-20261104` binds real model connection intents, credential generations and run dispatch to exact current business/provider review. Missing/stale review stops vault/network work; shared queued/publication checks remain fail-closed. Focused29/29, lint, OS build/budget/artifact checks and independent review passed. Aggregate baseline1,285-case service/restart/restore regression passed; all own fixture leases released. No release-guard files, baseline migration, shared setup UI or hosted/provider state changed. [Integration contract, evidence and policy/UI/release gates](ai-business-admission-2026-11-04.md).
+
+
+## 4 November — isolated structured AI resume preparation
+
+Own-intent status API, strict public DTO and lazy resume UI prepared on the separate AI admission branch. Exact reviewed references resume with re-entered keys; missing business authority, provider mismatch, expiry and session changes have explicit next steps. No keys enter browser state/storage. Proposal SQL is unapplied, so native authorization/recovery and production policy remain unverified. See [decision packet](ai-resume-policy-packet-2026-11-04.md).

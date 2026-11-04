@@ -1,4 +1,8 @@
 import {
+  readAiConnectionStatus,
+  AiConnectionSetupRequired,
+} from "./ai-connection-status";
+import {
   sealAdmittedAiConnection,
   AiConnectionReviewRequired,
 } from "../../../packages/admission/ai-connection";
@@ -329,12 +333,14 @@ export async function saveTeamConnection(a: Actor, value: unknown) {
       fingerprint = admission.fingerprint;
       encrypted = admission.encrypted;
     } catch (error) {
-      if (error instanceof AiConnectionReviewRequired)
-        throw new HttpError(
-          409,
-          `AI connection ${error.receipt.connection_id} requires a current business and provider review. No provider key was stored. Keep this review reference and re-enter the same connection and key after review.`,
-          "AI_CONNECTION_REVIEW_REQUIRED",
+      if (error instanceof AiConnectionReviewRequired) {
+        const status = await readAiConnectionStatus(
+          a,
+          error.receipt.connection_id,
         );
+        if (!status) throw new HttpError(503, "AI review status unavailable");
+        throw new AiConnectionSetupRequired(status);
+      }
       throw new HttpError(
         503,
         "AI connection admission or secure key storage is unavailable",
