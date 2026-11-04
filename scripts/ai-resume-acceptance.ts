@@ -577,6 +577,10 @@ async function main() {
         await integrationData(restored, beforeCatalog),
         beforeData,
       );
+      await restored.query(
+        "update kxra.team_connections set name='Restored synthetic connection marker' where id=$1",
+        [savedId],
+      );
       phases.push({
         phase: "extension-restore",
         target: restoredTarget,
@@ -605,6 +609,20 @@ async function main() {
     }
     await startApp(restoredTarget);
     await browserPhase(page, "restored", savedId);
+    await page
+      .getByText("Restored synthetic connection marker · synthetic-model", {
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(
+      (
+        await admin.query(
+          "select name from kxra.team_connections where id=$1",
+          [savedId],
+        )
+      ).rows[0].name,
+      "Synthetic browser resume",
+    );
     assert.equal(await stop(app), true);
     app = undefined;
     // Deterministic barriers: final save is queued behind its own intent row while an independent transaction commits revocation.
@@ -806,6 +824,18 @@ async function main() {
       } catch {
         clean = false;
       }
+    }
+    try {
+      const probe = net.createServer();
+      await new Promise<void>((resolve, reject) => {
+        probe.once("error", reject);
+        probe.listen(appPort, "127.0.0.1", resolve);
+      });
+      await new Promise<void>((resolve, reject) =>
+        probe.close((e) => (e ? reject(e) : resolve())),
+      );
+    } catch {
+      clean = false;
     }
     const stopped = spawnSync(
         process.execPath,

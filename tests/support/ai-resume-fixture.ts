@@ -22,7 +22,12 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
   const syntheticTag = "syntheticAdmission" + org.replaceAll("-", "");
   const fixtureQuery = (sql: string, values?: unknown[]) =>
     db.query(
-      sql.replaceAll("syntheticAdmission", syntheticTag),
+      sql
+        .replaceAll("syntheticAdmission", syntheticTag)
+        .replaceAll(
+          "SYNTHETIC_ONLY",
+          "SYNTHETIC_ONLY_" + org.replaceAll("-", ""),
+        ),
       values?.map((v) =>
         typeof v === "string"
           ? v.replaceAll("syntheticAdmission", syntheticTag)
@@ -126,6 +131,11 @@ export async function seedAiResumeFixture(db: pg.Client, install = true) {
     "update kxra_private.live_billing_activation set enabled=true,review_sha256=$1 where singleton",
     [review],
   );
+  if (!install)
+    await fixtureQuery(
+      "update kxra_private.live_billing_mappings set enabled=false where enabled and offer_key=$1",
+      [row.offer_key],
+    );
   await fixtureQuery(
     `insert into kxra_private.live_billing_mappings(offer_key,revision,enabled,account_id,price_id,product_id,portal_configuration_id,activation_review_sha256,terms_review_sha256,tax_review_sha256,tax_behavior,automatic_tax,payment_method,mode)
     values($1,$2,true,$3,$4,$5,'bpc_syntheticPresentation',$6,$7,$6,'inclusive',false,'card',$8)`,
