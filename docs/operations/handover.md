@@ -1369,3 +1369,8 @@ After the corrected staging precheck confirmed seven native cases and released i
 ## 4 November — synthetic GitHub vault/receipt branch
 
 Isolated `codex/github-vault-synthetic-20261104` starts at integration `8016c2e`; no integration or frozen-release edits. It provides opt-in encrypted fake-token custody and exact installation/scope binding through the local adapter, plus receipt-only historical publication after customer identity withdrawal. The proposal DDL is outside migration discovery and only the new disposable verifier installs it. Focused 13/13 plus existing wire 6/6, lint and independent read-only source review passed; aggregate 1,285-case service/restart/restore and dedicated 39-case connector plus six overlapping wire/restart regressions passed. All fixture leases released. See [report](github-vault-synthetic-2026-11-04.md) for limits and later real-provider/vault/access approvals. Real provider access, external acceptance and production readiness remain unproven.
+
+
+## 2026-11-04 synthetic vault integration
+
+Reviewed checkpoint `70d2072` merged into the isolated integration lane. The combined fixture/recovery catalogue now includes its private vault and receipt state; concurrent worker permit capacity is reserved before awaiting a claim. See [local vault integration](vault-integration-local-2026-11-04.md) for scope, evidence and remaining real-provider gates. No hosted or real-provider activation.

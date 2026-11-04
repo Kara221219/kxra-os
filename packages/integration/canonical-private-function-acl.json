@@ -104,9 +104,10 @@
   "extensionRoles": {
     "app": [],
     "authenticated": [
-      "kxra_private.custom_apps_local()"
+      "kxra_private.custom_apps_local()",
+      "kxra_github_receipt.publish(token text, attempt uuid, payload_digest text, outcome text, evidence jsonb)"
     ],
     "anon": []
   },
-  "extensionRationale": "custom_apps_local is the explicit authenticated-only boolean fixture gate used by custom-app read policies; no other extension helper is directly reachable."
+  "extensionRationale": "custom_apps_local is the explicit authenticated-only boolean fixture gate used by custom-app read policies; no other extension helper is directly reachable. kxra_github_receipt.publish is the explicit authenticated-only receipt capability; it can only record a bound attempt outcome and returns a minimal acknowledgement. It grants no ordinary identity, read, claim or dispatch authority."
 }

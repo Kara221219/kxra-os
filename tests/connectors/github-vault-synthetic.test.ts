@@ -725,3 +725,38 @@ test("synthetic broker and receipt scope fail closed outside explicit fixture mo
     process.env.KXRA_AUTH_MODE = prior;
   }
 });
+
+test("receipt worker reserves capacity for concurrent claims and releases failures", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let entered = 0;
+  const limited = syntheticReceiptScope(
+    scope,
+    async () => {
+      entered++;
+      await gate;
+      throw Error("EXPECTED_CLAIM_FAILURE");
+    },
+    publish,
+  );
+  const pending = Array.from({ length: 100 }, () =>
+    assert.rejects(limited("worker", "claim", {}), /EXPECTED_CLAIM_FAILURE/),
+  );
+  try {
+    await assert.rejects(
+      limited("worker", "claim", {}),
+      /RECEIPT_WORKER_CAPACITY/,
+    );
+    assert.equal(entered, 100);
+  } finally {
+    release();
+    await Promise.all(pending);
+  }
+  await assert.rejects(
+    limited("worker", "claim", {}),
+    /EXPECTED_CLAIM_FAILURE/,
+  );
+  assert.equal(entered, 101);
+});

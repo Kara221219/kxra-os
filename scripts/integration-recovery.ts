@@ -13,6 +13,7 @@ import {
   LocalGithubAdapter,
   type ScopeCall,
 } from "../packages/connectors/github";
+import { verifyRestoredVault } from "./integration-vault-proof";
 async function main() {
   const root = fs.realpathSync(path.resolve(__dirname, ".."));
   const runtime = fs.realpathSync(process.env.KXRA_RUNTIME!);
@@ -54,6 +55,10 @@ async function main() {
       "github_reads",
       "github_writes",
       "github_receipts",
+      "github_binding_challenges",
+      "github_vault_bindings",
+      "github_vault_leases",
+      "github_receipt_permits",
       "paired_sessions",
       "paired_invitations",
     ];
@@ -86,8 +91,9 @@ async function main() {
       const reachable = catalogue.functions
         .filter(
           (f: Record<string, unknown>) =>
-            ["kxra_private", "kxra_pairing"].includes(String(f.schema)) &&
-            f[role + "_reachable"],
+            ["kxra_private", "kxra_pairing", "kxra_github_receipt"].includes(
+              String(f.schema),
+            ) && f[role + "_reachable"],
         )
         .map(
           (f: Record<string, unknown>) =>
@@ -231,6 +237,7 @@ async function main() {
         }
       };
       try {
+        await verifyRestoredVault(app, runtime);
         const service = new GithubConnectorService(
           scope,
           new LocalGithubAdapter(process.env.KXRA_GITHUB_FAKE_ORIGIN!),

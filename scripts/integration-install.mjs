@@ -36,6 +36,7 @@ if (
 const files = [
   "database/proposals/customer-connectors.sql",
   "database/proposals/github-connector-outbox.sql",
+  "database/proposals/github-vault-receipts.sql",
   "packages/custom-apps/local-schema.sql",
   "packages/custom-apps/local-records-schema.sql",
   "packages/integration/local-orchestration.sql",
@@ -52,6 +53,7 @@ try {
   const names = [
     "kxra_private.customer_connectors",
     "kxra_private.github_connections",
+    "kxra_private.github_vault_bindings",
     "kxra.custom_apps",
     "kxra.custom_app_records",
     "kxra_private.paired_delegations",
@@ -70,13 +72,17 @@ try {
     const ddl = fs.readFileSync(path.join(root, file), "utf8");
     expectedTables.push(
       ...Array.from(
-        ddl.matchAll(/create table (kxra(?:_private)?\.[a-z_]+)/gi),
+        ddl.matchAll(
+          /create table (kxra(?:_private|_github_receipt)?\.[a-z_]+)/gi,
+        ),
         (m) => m[1],
       ),
     );
     expectedFunctions.push(
       ...Array.from(
-        ddl.matchAll(/create function (kxra(?:_private)?\.[a-z_]+)/gi),
+        ddl.matchAll(
+          /create function (kxra(?:_private|_github_receipt)?\.[a-z_]+)/gi,
+        ),
         (m) => m[1],
       ),
     );

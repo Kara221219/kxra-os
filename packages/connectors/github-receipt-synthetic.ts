@@ -38,31 +38,38 @@ export function syntheticReceiptScope(
     string,
     { token: string; attempt: string; digest: string; connection: string }
   >();
+  let pendingClaims = 0;
   return async (kind, action, input) => {
     requireGithubFixture();
     if (kind === "worker" && action === "claim") {
-      if (permits.size >= 100) throw Error("RECEIPT_WORKER_CAPACITY");
-      const token = crypto.randomBytes(32).toString("base64url");
-      const result = z
-        .object({ write: githubWrite, claimed: z.boolean() })
-        .strict()
-        .parse(
-          await claim(
-            input,
-            crypto.createHash("sha256").update(token).digest("hex"),
-          ),
-        );
-      if (result.claimed) {
-        if (!result.write.attempt_id || result.write.state !== "DISPATCHING")
-          throw Error("RECEIPT_CLAIM_INVALID");
-        permits.set(result.write.id, {
-          token,
-          attempt: result.write.attempt_id,
-          digest: result.write.digest,
-          connection: result.write.connection_id,
-        });
+      if (permits.size + pendingClaims >= 100)
+        throw Error("RECEIPT_WORKER_CAPACITY");
+      pendingClaims++;
+      try {
+        const token = crypto.randomBytes(32).toString("base64url");
+        const result = z
+          .object({ write: githubWrite, claimed: z.boolean() })
+          .strict()
+          .parse(
+            await claim(
+              input,
+              crypto.createHash("sha256").update(token).digest("hex"),
+            ),
+          );
+        if (result.claimed) {
+          if (!result.write.attempt_id || result.write.state !== "DISPATCHING")
+            throw Error("RECEIPT_CLAIM_INVALID");
+          permits.set(result.write.id, {
+            token,
+            attempt: result.write.attempt_id,
+            digest: result.write.digest,
+            connection: result.write.connection_id,
+          });
+        }
+        return result;
+      } finally {
+        pendingClaims--;
       }
-      return result;
     }
     if (kind === "worker" && action === "record_outcome") {
       const permit = permits.get(String(input.write_id));

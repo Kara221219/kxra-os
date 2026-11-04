@@ -1,4 +1,4 @@
--- SYNTHETIC ONLY. Separate from integration migration/extension discovery.
+-- SYNTHETIC ONLY. Explicit combined fixture extension; never a numbered hosted migration.
 begin;
 create table kxra_private.github_binding_challenges(
  id uuid primary key default gen_random_uuid(),connection_id uuid not null references kxra_private.github_connections,

@@ -156,6 +156,7 @@ try {
     "--test-concurrency=1",
     "tests/integration-contracts.test.ts",
     "tests/integration/journey.test.ts",
+    "tests/integration/vault.test.ts",
   ]);
   run(["scripts/verify-migrations.mjs"]);
   if (!(await stop(server))) throw Error("OWNED_APP_CLEANUP_UNCONFIRMED");

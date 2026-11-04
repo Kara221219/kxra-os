@@ -1631,3 +1631,8 @@ After the corrected staging precheck confirmed seven native cases and released i
 ## 4 November — isolated synthetic vault and receipt worker
 
 From integration `8016c2e`, the isolated `codex/github-vault-synthetic-20261104` branch adds an encrypted fake-token broker, exact synthetic installation binding and attempt-only historical receipts after identity withdrawal. The new code remains opt-in and loopback-only; production routes and migration discovery are unchanged. Final focused proof passed 13 new cases plus six existing wire checks; lint and independent source review passed. Aggregate regression passed 1,285 service cases, restart and restore; dedicated connector regression passed 39 cases plus six overlapping wire checks and durable restart. All fixture leases were released. [Implementation, evidence and real-provider prerequisites](github-vault-synthetic-2026-11-04.md).
+
+
+## 2026-11-04 synthetic vault integration
+
+Reviewed checkpoint `70d2072` merged into the isolated integration lane. The combined fixture/recovery catalogue now includes its private vault and receipt state; concurrent worker permit capacity is reserved before awaiting a claim. See [local vault integration](vault-integration-local-2026-11-04.md) for scope, evidence and remaining real-provider gates. No hosted or real-provider activation.
