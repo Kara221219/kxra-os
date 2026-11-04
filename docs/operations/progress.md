@@ -1650,3 +1650,7 @@ From integration `0912eb8`, branch `codex/github-custody-boundary-20261104` move
 ## 2026-11-04 combined custody integration
 
 Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key coverage and adds an isolated custody-envelope cohort; reviewed bounded child cleanup fails closed on uncertain exit. Focused30+6wire andlint pass. See [combined custody integration](custody-integration-local-2026-11-04.md) and the enclosing acceptance receipt for exact-head recovery/CI status. No hosted or real-provider activation.
+
+## 4 November — AI connection admission contract candidate
+
+From accepted `9e2fe569`, isolated `codex/ai-business-admission-20261104` binds real model connection intents, credential generations and run dispatch to exact current business/provider review. Missing/stale review stops vault/network work; shared queued/publication checks remain fail-closed. Focused29/29, lint, OS build/budget/artifact checks and independent review passed. Aggregate baseline1,285-case service/restart/restore regression passed; all own fixture leases released. No release-guard files, baseline migration, shared setup UI or hosted/provider state changed. [Integration contract, evidence and policy/UI/release gates](ai-business-admission-2026-11-04.md).
