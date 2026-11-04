@@ -1379,3 +1379,7 @@ Reviewed checkpoint `70d2072` merged into the isolated integration lane. The com
 ## 2026-11-04 billing deadline test correction
 
 The exact3538071 full canonical CI exposed a reproduced wall-clock/timer ordering assertion. The correction retains the real20ms hung-body timer and production behavior while using an injected logical expiry clock and adding post-expiry provider/SQL/receipt checks. See [deadline correction](billing-deadline-test-correction-2026-11-04.md); the failed original result remains preserved separately.
+
+## 4 November — synthetic custody process checkpoint
+
+`codex/github-custody-boundary-20261104` starts exactly at `0912eb8` in a separate task-2 worktree. A fake custody process owns versioned keys; the async broker revalidates exact current SQL authority after decryption. Key/workload retirement, key-loss no-send, startup/disconnect cleanup and protocol bounds are covered. Focused 29/29 (15 new, 14 existing) plus wire 6/6, lint and independent review passed; aggregate 1,285-case service/restart/restore regression passed; all own fixture leases released. [Report](github-custody-boundary-2026-11-04.md) lists the modified shared broker/proposal/verifier overlap and remaining managed-vault, token/provider, real-access, operational recovery and release approval gates. No real credentials, persistent provider access, external provider actions, hosted changes, deployment or spending occurred.

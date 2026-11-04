@@ -106,14 +106,22 @@ export function verifySyntheticInstallation(
 export type LeaseScope = "issues:read" | "issues:write";
 export const envelopeSchema = z
   .object({
-    key_id: z.literal("synthetic-memory-key-v1"),
+    key_id: z
+      .string()
+      .regex(
+        /^(synthetic-memory-key-v1|synthetic-custody-key-v[1-9][0-9]{0,5})$/,
+      ),
     iv: z.string().regex(/^[A-Za-z0-9_-]{16}$/),
     tag: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
     ciphertext: z.string().regex(/^[A-Za-z0-9_-]{1,256}$/),
   })
   .strict();
 export type Envelope = z.infer<typeof envelopeSchema>;
-function aad(c: GithubConnection, scope: LeaseScope, expiresAt: string) {
+export function syntheticLeaseAAD(
+  c: GithubConnection,
+  scope: LeaseScope,
+  expiresAt: string,
+) {
   const v = githubConnection.parse(c);
   return Buffer.from(
     JSON.stringify({
@@ -144,7 +152,7 @@ export class SyntheticVaultCipher {
     if (this.disposed) throw Error("SYNTHETIC_VAULT_CLOSED");
     const iv = crypto.randomBytes(12),
       cipher = crypto.createCipheriv("aes-256-gcm", this.key, iv);
-    cipher.setAAD(aad(c, scope, expiresAt));
+    cipher.setAAD(syntheticLeaseAAD(c, scope, expiresAt));
     const value = Buffer.concat([
       cipher.update(fixtureGithubToken, "utf8"),
       cipher.final(),
@@ -166,12 +174,13 @@ export class SyntheticVaultCipher {
     try {
       if (this.disposed) throw Error();
       const e = envelopeSchema.parse(input);
+      if (e.key_id !== "synthetic-memory-key-v1") throw Error();
       const decipher = crypto.createDecipheriv(
         "aes-256-gcm",
         this.key,
         Buffer.from(e.iv, "base64url"),
       );
-      decipher.setAAD(aad(c, scope, expiresAt));
+      decipher.setAAD(syntheticLeaseAAD(c, scope, expiresAt));
       decipher.setAuthTag(Buffer.from(e.tag, "base64url"));
       const value = Buffer.concat([
         decipher.update(Buffer.from(e.ciphertext, "base64url")),
@@ -192,6 +201,19 @@ export class SyntheticVaultCipher {
     this.disposed = true;
   }
 }
+export interface SyntheticLeaseCipher {
+  seal(
+    c: GithubConnection,
+    scope: LeaseScope,
+    expiresAt: string,
+  ): Envelope | Promise<Envelope>;
+  open(
+    c: GithubConnection,
+    scope: LeaseScope,
+    expiresAt: string,
+    input: unknown,
+  ): typeof fixtureGithubToken | Promise<typeof fixtureGithubToken>;
+}
 const leaseSchema = z
   .object({
     reference: z.string(),
@@ -204,7 +226,7 @@ const leaseSchema = z
 export class SyntheticVaultBroker implements CredentialBroker {
   constructor(
     private control: VaultControl,
-    private cipher: SyntheticVaultCipher,
+    private cipher: SyntheticLeaseCipher,
     private observer: SyntheticInstallationObserver = new FixtureInstallationObserver(),
   ) {}
   async attest(input: GithubConnection) {
@@ -243,7 +265,7 @@ export class SyntheticVaultBroker implements CredentialBroker {
       (scope === "issues:write" && !c.allow_write)
     )
       throw Error("SYNTHETIC_LEASE_REJECTED");
-    const envelope = this.cipher.seal(c, scope, expiresAt);
+    const envelope = await this.cipher.seal(c, scope, expiresAt);
     return this.control("seal", {
       connection_id: c.id,
       grant_version: c.grant_version,
@@ -278,12 +300,26 @@ export class SyntheticVaultBroker implements CredentialBroker {
         Date.parse(lease.expires_at) > Date.parse(c.expires_at)
       )
         throw Error();
-      const token = this.cipher.open(
+      const token = await this.cipher.open(
         c,
         scope,
         lease.expires_at,
         lease.envelope,
       );
+      // Decryption can now cross a custody boundary. Recheck current database
+      // authority and exact lease after that wait; do not release an obsolete token.
+      const current = leaseSchema.parse(
+        await this.control("resolve", {
+          connection_id: c.id,
+          grant_version: c.grant_version,
+          scope,
+        }),
+      );
+      if (
+        JSON.stringify(current) !== JSON.stringify(lease) ||
+        Date.parse(current.expires_at) <= Date.now()
+      )
+        throw Error();
       return {
         reference: lease.reference,
         version: lease.version,

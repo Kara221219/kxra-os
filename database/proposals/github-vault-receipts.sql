@@ -58,7 +58,7 @@ begin
  if input->>'scope' not in ('issues:read','issues:write') or (input->>'scope'='issues:write' and not c.allow_write) then raise exception 'Vault scope unavailable';end if;
  if action='seal' then
   if (input->>'expires_at')::timestamptz<=clock_timestamp() or (input->>'expires_at')::timestamptz>c.expires_at or jsonb_typeof(input->'envelope') is distinct from 'object'
-   or (input->'envelope'->>'key_id') is distinct from 'synthetic-memory-key-v1'
+   or coalesce(input->'envelope'->>'key_id','')!~'^(synthetic-memory-key-v1|synthetic-custody-key-v[1-9][0-9]{0,5})$'
    or coalesce(input->'envelope'->>'iv','')!~'^[A-Za-z0-9_-]{16}$' or coalesce(input->'envelope'->>'tag','')!~'^[A-Za-z0-9_-]{22}$' or (coalesce(input->'envelope'->>'ciphertext','')!~'^[A-Za-z0-9_-]+$' or length(input->'envelope'->>'ciphertext')>256)
    or (select count(*) from jsonb_object_keys(input->'envelope'))<>4 then raise exception 'Invalid synthetic envelope';end if;
   insert into kxra_private.github_vault_leases values(c.id,c.grant_version,input->>'scope',(input->>'expires_at')::timestamptz,input->'envelope');
