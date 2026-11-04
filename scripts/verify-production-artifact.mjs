@@ -29,6 +29,9 @@ const outputs = [
   path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
+  "synthetic-custody-key-v",
+  "/v1/synthetic/leases/",
+  "SYNTHETIC_CUSTODY_UNAVAILABLE",
   "github-synthetic-lease-v1",
   "synthetic-memory-key-v1",
   "github_receipted_claim",

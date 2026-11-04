@@ -17,6 +17,7 @@ import {
   SyntheticVaultBroker,
   SyntheticVaultCipher,
   type VaultControl,
+  type SyntheticLeaseCipher,
 } from "../packages/connectors/github-vault-synthetic";
 
 type FixtureIdentity = { user: string; org: string };
@@ -76,9 +77,14 @@ export async function seedVaultRecovery(
   pool: pg.Pool,
   runtime: string,
   principal: FixtureIdentity,
+  custody?: SyntheticLeaseCipher,
 ) {
   const { call, scope, vault } = controls(pool, principal);
-  const cipher = new SyntheticVaultCipher(crypto.randomBytes(32));
+  const memory = custody
+    ? undefined
+    : new SyntheticVaultCipher(crypto.randomBytes(32));
+  const cipher = custody ?? memory!;
+  const mode = custody ? "custody" : "vault";
   try {
     const broker = new SyntheticVaultBroker(vault, cipher);
     const service = new GithubConnectorService(
@@ -147,7 +153,7 @@ export async function seedVaultRecovery(
     );
     // The ciphertext and permit hash persist; the key and raw receipt token do not.
     fs.writeFileSync(
-      path.join(runtime, "integration-vault-seed.json"),
+      path.join(runtime, `integration-${mode}-seed.json`),
       JSON.stringify({
         principal,
         connection: connection.id,
@@ -158,15 +164,26 @@ export async function seedVaultRecovery(
       { mode: 0o600 },
     );
   } finally {
-    cipher.dispose();
+    memory?.dispose();
   }
 }
-export async function verifyRestoredVault(pool: pg.Pool, runtime: string) {
+export async function verifyRestoredVault(
+  pool: pg.Pool,
+  runtime: string,
+  custody?: SyntheticLeaseCipher,
+) {
+  const mode = custody ? "custody" : "vault";
   const seed = JSON.parse(
-    fs.readFileSync(path.join(runtime, "integration-vault-seed.json"), "utf8"),
+    fs.readFileSync(
+      path.join(runtime, `integration-${mode}-seed.json`),
+      "utf8",
+    ),
   );
   const { call, scope, vault } = controls(pool, seed.principal);
-  const cipher = new SyntheticVaultCipher(crypto.randomBytes(32));
+  const memory = custody
+    ? undefined
+    : new SyntheticVaultCipher(crypto.randomBytes(32));
+  const cipher = custody ?? memory!;
   try {
     const broker = new SyntheticVaultBroker(vault, cipher);
     const connection = githubConnection.parse(
@@ -177,8 +194,14 @@ export async function verifyRestoredVault(pool: pg.Pool, runtime: string) {
       connection_id: seed.connection,
       grant_version: connection.grant_version,
       scope: "issues:read",
-    })) as { envelope: unknown };
+    })) as { envelope: { key_id: string } };
     assert.ok(lease.envelope);
+    assert.match(
+      lease.envelope.key_id,
+      custody
+        ? /^synthetic-custody-key-v[1-9][0-9]{0,5}$/
+        : /^synthetic-memory-key-v1$/,
+    );
     await assert.rejects(
       broker.resolve(connection, "issues:read"),
       /GRANT_UNAVAILABLE/,
@@ -213,10 +236,12 @@ export async function verifyRestoredVault(pool: pg.Pool, runtime: string) {
       ),
     );
     fs.writeFileSync(
-      path.join(runtime, "integration-vault-recovery-proof.json"),
+      path.join(runtime, `integration-${mode}-recovery-proof.json`),
       JSON.stringify({
         status: "PASS",
         persistedBindingAndCiphertext: true,
+        keyId: lease.envelope.key_id,
+        mode,
         keyLossClosed: true,
         noLeaseOverwrite: true,
         uncertainQuarantined: true,
@@ -225,6 +250,6 @@ export async function verifyRestoredVault(pool: pg.Pool, runtime: string) {
       { mode: 0o600 },
     );
   } finally {
-    cipher.dispose();
+    memory?.dispose();
   }
 }

@@ -1,3 +1,5 @@
+import { EventEmitter } from "node:events";
+import { stopOwnedFixtureChild } from "../../scripts/owned-fixture-child.mjs";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -72,16 +74,18 @@ async function message(
   });
 }
 async function stopProcess(p: ChildProcess) {
-  if (p.exitCode !== null || p.signalCode !== null) return;
-  const stopped = new Promise<void>((r) => p.once("exit", () => r()));
-  p.kill("SIGTERM");
-  const timer = setTimeout(() => p.kill("SIGKILL"), 3000);
-  try {
-    await stopped;
-  } finally {
-    clearTimeout(timer);
-  }
+  const stopped = await stopOwnedFixtureChild(p, {
+    onUncertain: () => {
+      fs.writeFileSync(
+        path.join(runtime, "native-child-cleanup-uncertain.json"),
+        JSON.stringify({ pid: p.pid, purpose: "custody" }),
+        { mode: 0o600 },
+      );
+    },
+  });
+  assert.equal(stopped, true, "Owned custody exit must be confirmed");
 }
+
 async function start(failure?: "validate" | "timeout") {
   const p = fork("scripts/github-custody-fixture.ts", [], {
     execArgv: ["--import", "tsx"],
@@ -213,10 +217,17 @@ before(async () => {
   custody = await start();
 });
 after(async () => {
-  for (const p of processes) await stopProcess(p);
-  for (const c of children) await stop(c);
-  await app.end();
-  await admin.end();
+  const cleanup = await Promise.allSettled(processes.map(stopProcess));
+  try {
+    assert.ok(
+      cleanup.every((v) => v.status === "fulfilled"),
+      "Every owned custody process must confirm exit",
+    );
+    for (const c of children) await stop(c);
+  } finally {
+    await app.end();
+    await admin.end();
+  }
   console.log(
     `Synthetic custody cleanup: ${processes.length} child processes exited; no key files created`,
   );
@@ -561,7 +572,20 @@ test("owner IPC disconnect destroys custody availability rather than leaving a b
     isolated.process.once("exit", () => r()),
   );
   isolated.process.disconnect();
-  await exited;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      exited,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(Error("Owner disconnect exit timed out")),
+          5000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
   assert.equal(isolated.process.exitCode, 0);
   await assert.rejects(
     fetch(isolated.origin, { signal: AbortSignal.timeout(300) }),
@@ -616,5 +640,43 @@ test("custody client and broker remain disabled outside explicit local fixture m
     );
   } finally {
     process.env.KXRA_AUTH_MODE = prior;
+  }
+});
+
+test("owned child cleanup bounds escalation and marks unconfirmed exit without signaling unknown PIDs", async () => {
+  for (const exitAt of ["SIGTERM", "SIGKILL", null]) {
+    const child = new EventEmitter() as EventEmitter & {
+      exitCode: number | null;
+      signalCode: NodeJS.Signals | null;
+      kill: (signal: NodeJS.Signals) => boolean;
+    };
+    child.exitCode = null;
+    child.signalCode = null;
+    const signals: string[] = [];
+    let uncertain = false;
+    child.kill = (signal) => {
+      signals.push(String(signal));
+      if (signal === exitAt)
+        queueMicrotask(() => {
+          child.signalCode = signal;
+          child.emit("exit", null, signal);
+        });
+      return signal !== "SIGTERM"; // A false return is never accepted as exit evidence.
+    };
+    const stopped = await stopOwnedFixtureChild(child as ChildProcess, {
+      termMs: 5,
+      killMs: 5,
+      onUncertain: () => {
+        uncertain = true;
+      },
+    });
+    assert.equal(stopped, exitAt !== null);
+    assert.equal(uncertain, exitAt === null);
+    assert.deepEqual(
+      signals,
+      exitAt === "SIGTERM" ? ["SIGTERM"] : ["SIGTERM", "SIGKILL"],
+    );
+    assert.equal(child.listenerCount("exit"), 0);
+    assert.equal(child.listenerCount("error"), 0);
   }
 });

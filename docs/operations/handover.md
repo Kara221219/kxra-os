@@ -1383,3 +1383,8 @@ The exact3538071 full canonical CI exposed a reproduced wall-clock/timer orderin
 ## 4 November — synthetic custody process checkpoint
 
 `codex/github-custody-boundary-20261104` starts exactly at `0912eb8` in a separate task-2 worktree. A fake custody process owns versioned keys; the async broker revalidates exact current SQL authority after decryption. Key/workload retirement, key-loss no-send, startup/disconnect cleanup and protocol bounds are covered. Focused 29/29 (15 new, 14 existing) plus wire 6/6, lint and independent review passed; aggregate 1,285-case service/restart/restore regression passed; all own fixture leases released. [Report](github-custody-boundary-2026-11-04.md) lists the modified shared broker/proposal/verifier overlap and remaining managed-vault, token/provider, real-access, operational recovery and release approval gates. No real credentials, persistent provider access, external provider actions, hosted changes, deployment or spending occurred.
+
+
+## 2026-11-04 combined custody integration
+
+Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key coverage and adds an isolated custody-envelope cohort; reviewed bounded child cleanup fails closed on uncertain exit. Focused30+6wire andlint pass. See [combined custody integration](custody-integration-local-2026-11-04.md) and the enclosing acceptance receipt for exact-head recovery/CI status. No hosted or real-provider activation.

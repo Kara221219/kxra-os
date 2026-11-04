@@ -1645,3 +1645,8 @@ The exact3538071 full canonical CI exposed a reproduced wall-clock/timer orderin
 ## 4 November — isolated synthetic custody boundary
 
 From integration `0912eb8`, branch `codex/github-custody-boundary-20261104` moves fake-token encryption keys into an IPC-owned disposable process and wires a bounded asynchronous custody port into the existing broker/local provider adapter. Post-decrypt SQL authority, key-retirement and workload-revocation fences pass; no production route or real provider/vault access is enabled. Focused proof passed 15 new custody plus 14 existing vault/receipt cases and six wire checks; lint and independent review passed. Aggregate regression passed 1,285 service cases, restart persistence and empty-target restore; all own fixture leases released. [Evidence, integration overlaps and exact production/approval gates](github-custody-boundary-2026-11-04.md).
+
+
+## 2026-11-04 combined custody integration
+
+Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key coverage and adds an isolated custody-envelope cohort; reviewed bounded child cleanup fails closed on uncertain exit. Focused30+6wire andlint pass. See [combined custody integration](custody-integration-local-2026-11-04.md) and the enclosing acceptance receipt for exact-head recovery/CI status. No hosted or real-provider activation.

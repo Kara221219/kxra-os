@@ -5,10 +5,11 @@ import path from "node:path";
 import pg from "pg";
 import crypto from "node:crypto";
 import os from "node:os";
+import { startIntegrationCustody } from "../../scripts/integration-custody-owner";
 import { seedVaultRecovery } from "../../scripts/integration-vault-proof";
 const runtime = fs.realpathSync(process.env.KXRA_RUNTIME!);
 assert.ok(runtime.startsWith(path.resolve(".runtime/i-")));
-test("combined vault cohort persists encrypted leases and hashed receipt authority without another provider POST", async () => {
+async function seed(useCustody = false) {
   const provider = path.join(
     process.env.KXRA_GITHUB_FAKE_RUNTIME!,
     "github-provider-store.json",
@@ -22,6 +23,9 @@ test("combined vault cohort persists encrypted leases and hashed receipt authori
     ...JSON.parse(fs.readFileSync(path.join(runtime, "database.json"), "utf8")),
     user: os.userInfo().username,
   });
+  const custody = useCustody
+    ? await startIntegrationCustody(runtime)
+    : undefined;
   try {
     await admin.connect();
     await admin.query(
@@ -36,10 +40,18 @@ test("combined vault cohort persists encrypted leases and hashed receipt authori
       "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'ORG_ADMIN','CUSTOMER','ACTIVE','Combined vault fixture','LOCAL_TEST')",
       [principal.org, principal.user],
     );
-    await seedVaultRecovery(pool, runtime, principal);
+    await seedVaultRecovery(pool, runtime, principal, custody?.client);
   } finally {
-    await pool.end();
-    await admin.end();
+    try {
+      await custody?.stop();
+    } finally {
+      await pool.end();
+      await admin.end();
+    }
   }
   assert.equal(JSON.parse(fs.readFileSync(provider, "utf8")).posts, before);
-});
+}
+test("combined memory vault cohort persists encrypted leases and hashed receipt authority without another provider POST", () =>
+  seed());
+test("combined custody cohort persists versioned encrypted leases and receipt authority without another provider POST", () =>
+  seed(true));

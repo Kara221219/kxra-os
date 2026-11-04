@@ -13,6 +13,7 @@ import {
   LocalGithubAdapter,
   type ScopeCall,
 } from "../packages/connectors/github";
+import { startIntegrationCustody } from "./integration-custody-owner";
 import { verifyRestoredVault } from "./integration-vault-proof";
 async function main() {
   const root = fs.realpathSync(path.resolve(__dirname, ".."));
@@ -238,6 +239,12 @@ async function main() {
       };
       try {
         await verifyRestoredVault(app, runtime);
+        const custody = await startIntegrationCustody(runtime);
+        try {
+          await verifyRestoredVault(app, runtime, custody.client);
+        } finally {
+          await custody.stop();
+        }
         const service = new GithubConnectorService(
           scope,
           new LocalGithubAdapter(process.env.KXRA_GITHUB_FAKE_ORIGIN!),

@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import os from "node:os";
 import pg from "pg";
 import { acquireNativeFixtureLease } from "./native-fixture-lease.mjs";
+import { stopOwnedFixtureChild } from "./owned-fixture-child.mjs";
 import { postgresBin } from "./postgres-bin.mjs";
 const root = path.resolve(import.meta.dirname, "..");
 const release = acquireNativeFixtureLease("github-vault-synthetic");
@@ -101,16 +102,16 @@ try {
   console.error(e);
   process.exitCode = 1;
 } finally {
-  if (fake && fake.exitCode === null) {
-    fake.kill("SIGTERM");
-    await new Promise((r) => {
-      const timer = setTimeout(() => fake.kill("SIGKILL"), 5000);
-      fake.once("exit", () => {
-        clearTimeout(timer);
-        r();
-      });
-    });
-  }
+  const fakeStopped = await stopOwnedFixtureChild(fake, {
+    termMs: 5000,
+    onUncertain: () => {
+      fs.writeFileSync(
+        path.join(runtime, "native-child-cleanup-uncertain.json"),
+        JSON.stringify({ pid: fake?.pid, purpose: "provider" }),
+        { mode: 0o600 },
+      );
+    },
+  });
   const stop = spawnSync(process.execPath, ["scripts/database.mjs", "stop"], {
     cwd: root,
     env,
@@ -124,7 +125,8 @@ try {
   const cleaned =
     (!fs.existsSync(path.join(runtime, "postgres")) ||
       (stop.status === 0 && absent.status === 3)) &&
-    (!fake || fake.exitCode !== null || fake.signalCode !== null);
+    fakeStopped &&
+    !fs.existsSync(path.join(runtime, "native-child-cleanup-uncertain.json"));
   if (cleaned) release();
   else {
     process.exitCode = 1;
