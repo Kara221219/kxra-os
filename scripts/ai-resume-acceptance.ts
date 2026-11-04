@@ -582,10 +582,19 @@ async function main() {
         ],
         { env: dumpEnv, stdio: "inherit", timeout: 120_000 },
       );
-      assert.deepEqual(await integrationCatalog(restored), beforeCatalog);
-      assert.deepEqual(
-        await integrationData(restored, beforeCatalog),
-        beforeData,
+      const restoredCatalog = await integrationCatalog(restored),
+        restoredData = await integrationData(restored, beforeCatalog);
+      assert.deepEqual(restoredCatalog, beforeCatalog);
+      assert.deepEqual(restoredData, beforeData);
+      fs.writeFileSync(
+        path.join(runtime, "catalogue-restored.json"),
+        JSON.stringify(restoredCatalog, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      fs.writeFileSync(
+        path.join(runtime, "data-restored.json"),
+        JSON.stringify(restoredData, null, 2) + "\n",
+        { mode: 0o600 },
       );
       // Fixture-only post-comparison marker; preserve the real audit trigger and actor.
       await restored.query("begin");
