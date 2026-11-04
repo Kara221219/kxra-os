@@ -1617,3 +1617,8 @@ Final paired5e724, connector f51ef62 and custom-app2278702 histories are compose
 ## 4 November — full canonical CI passed; native lease handed off
 
 The isolated integration has passed full canonical CI at56a34ef, complete extension-installed crash/restart/restore and source/restored browser proof, and independent review. Code commitdd0f49d adds final verification-only hardening; its targeted rerun and production/dedicated regressions remain pending the staging-precheck shared-lease opportunity. The previous CI lease was released with all four cleanup receipts confirmed. See [exact evidence and remaining gates](local-feature-integration-2026-11-03.md). No source feature branch, frozen release, hosted/provider state, real credentials, charges, push or deployment changed.
+
+
+## 4 November — final recovery, production denial and connector regressions passed
+
+The final combined run from `b661c7c` verified the current `dd0f49d` code: complete extension-installed atomic restore, three fresh application identities, actual worker crash with no POST replay, exact private ACL/data/sequence inventories, and source/restored desktop/mobile browser and idempotent receipt flows. Production HTTP denial and the dedicated connector checks (39 focused plus six overlapping wire checks) and restart passed. All own leases are released; PostgreSQL status 3 and application port absence are verified. The corrected staging precheck has the next shared-lease opportunity; the dedicated custom-app regression is prepared but unstarted. [Current report and evidence](local-feature-integration-2026-11-03.md). No hosted/provider/real CLI/customer-data/push/deployment activity occurred.
