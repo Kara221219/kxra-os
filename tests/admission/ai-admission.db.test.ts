@@ -93,6 +93,38 @@ test("AI connection and run admission: actual provider/model/key scope and curre
   try {
     await db.query("begin");
     await db.query("set local statement_timeout='5s'");
+    const productionProfile = process.env.KXRA_AI_PRODUCTION_REVIEW_PROFILE;
+    assert.ok(
+      [
+        undefined,
+        "PRODUCTION_117_PAYLOAD",
+        "PRODUCTION_118_INSTALLED",
+      ].includes(productionProfile),
+    );
+    if (productionProfile) {
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::int n from public.kxra_local_migrations",
+          )
+        ).rows[0].n,
+        productionProfile === "PRODUCTION_117_PAYLOAD" ? 117 : 118,
+      );
+      assert.equal(
+        (await db.query("select to_regnamespace('kxra_pairing') value")).rows[0]
+          .value,
+        null,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select to_regclass('kxra_private.paired_sessions') value",
+          )
+        ).rows[0].value,
+        null,
+      );
+    }
+
     const admissionInstalled = (
       await db.query(
         "select to_regclass('kxra_private.business_eligibility_reviews') installed",
@@ -242,12 +274,36 @@ test("AI connection and run admission: actual provider/model/key scope and curre
       review,
     ];
     await db.query(reviewSql, reviewValues);
-    await db.query(
-      fs
-        .readFileSync("database/proposals/ai-business-admission.sql", "utf8")
-        .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
-        .replace(/commit;\s*$/i, ""),
-    );
+    if (productionProfile === "PRODUCTION_118_INSTALLED") {
+      assert.ok(
+        (
+          await db.query(
+            "select to_regclass('kxra_private.ai_connection_intents') value",
+          )
+        ).rows[0].value,
+        "Installed production cohort must not be repaired from a proposal",
+      );
+      assert.equal(
+        (
+          await db.query(
+            "select count(*)::int n from public.kxra_local_migrations where name='0118_ai_connection_admission.sql'",
+          )
+        ).rows[0].n,
+        1,
+      );
+    } else {
+      await db.query(
+        fs
+          .readFileSync(
+            productionProfile === "PRODUCTION_117_PAYLOAD"
+              ? "database/production/ai-connection-admission-v1.sql"
+              : "database/proposals/ai-business-admission.sql",
+            "utf8",
+          )
+          .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
+          .replace(/commit;\s*$/i, ""),
+      );
+    }
     async function appCall(
       sql: string,
       values: unknown[] = [],

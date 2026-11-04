@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "classification": "PRODUCTION_AI_MIGRATION_REVIEW_ONLY_NOT_FULL_RELEASE",
+  "authorization": false,
+  "objective": "FULL_FEATURE_LAUNCH_NO_PILOT_SUBSTITUTION",
+  "basePolicySha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557",
+  "baseMigrationCount": 117,
+  "candidateMigration": {
+    "name": "0118_ai_connection_admission.sql",
+    "payload": "database/production/ai-connection-admission-v1.sql",
+    "sha256": "0799585191c249be5dfbe6d99dd634c81ec31fcd00a1285c9f2e2890df8ea654",
+    "sourceProposal": "database/proposals/ai-business-admission.sql",
+    "sourceProposalSha256": "73f469c33b4abb2e2e8358a3841dea3b7878f60df67d7716daeb1c3a5aeed356"
+  },
+  "policyDataSeeded": false,
+  "termsOrFinancialCommitmentsChanged": false,
+  "hostedExecutorImplemented": false,
+  "fullFeatureDependencies": [
+    {
+      "feature": "Paired agents",
+      "required": true,
+      "status": "BLOCKED_PRODUCTION_ACCEPTANCE",
+      "reason": "Fixture pairing migrations cannot be promoted; installed CLI/tool isolation and commercial authentication support remain gated."
+    },
+    {
+      "feature": "Customer connectors",
+      "required": true,
+      "status": "BLOCKED_PRODUCTION_ACCEPTANCE",
+      "reason": "Real broker/vault, account installation binding, scoped transport and provider write acceptance remain unimplemented or unaccepted; synthetic custody is not production custody."
+    },
+    {
+      "feature": "Schema-defined apps and records",
+      "required": true,
+      "status": "BLOCKED_PRODUCTION_ACCEPTANCE",
+      "reason": "Local schemas remain fixture-only; production publication, record lifecycle and target recovery require a separate reviewed production migration profile."
+    },
+    {
+      "feature": "Signup, payment, AI connection and useful execution",
+      "required": true,
+      "status": "BLOCKED_HOSTED_ACCEPTANCE",
+      "reason": "Local acceptance passed; actual target Auth/email, financial terms/proof delivery, AI key custody/provider use and operational recovery remain separately required."
+    }
+  ]
+}

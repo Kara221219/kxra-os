@@ -50,7 +50,10 @@ export function integrationReleaseSource(root) {
   return { manifest, exclusions };
 }
 export function reviewHostedUpgrade(root, snapshot) {
-  const manifest = hostedMigrationManifest(root);
+  return reviewMigrationUpgrade(hostedMigrationManifest(root), snapshot);
+}
+// Offline plan over already validated in-memory source; grants no apply authority.
+export function reviewMigrationUpgrade(manifest, snapshot) {
   if (
     !snapshot ||
     typeof snapshot !== "object" ||
