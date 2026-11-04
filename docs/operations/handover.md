@@ -1374,3 +1374,8 @@ Isolated `codex/github-vault-synthetic-20261104` starts at integration `8016c2e`
 ## 2026-11-04 synthetic vault integration
 
 Reviewed checkpoint `70d2072` merged into the isolated integration lane. The combined fixture/recovery catalogue now includes its private vault and receipt state; concurrent worker permit capacity is reserved before awaiting a claim. See [local vault integration](vault-integration-local-2026-11-04.md) for scope, evidence and remaining real-provider gates. No hosted or real-provider activation.
+
+
+## 2026-11-04 billing deadline test correction
+
+The exact3538071 full canonical CI exposed a reproduced wall-clock/timer ordering assertion. The correction retains the real20ms hung-body timer and production behavior while using an injected logical expiry clock and adding post-expiry provider/SQL/receipt checks. See [deadline correction](billing-deadline-test-correction-2026-11-04.md); the failed original result remains preserved separately.
