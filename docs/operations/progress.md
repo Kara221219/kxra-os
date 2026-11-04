@@ -1660,3 +1660,25 @@ Additive source/target guards refuse fixture migrations/extensions in hosted mig
 ## 2026-11-04 production117 review strategy
 
 No enabled production dependency on fixture0118/0119 was found. An exact-hash local builder prepares a separate117 review candidate with explicit exclusions, preserving the integrated119 lane and guard. The target-prefix planner remains read-only/no-apply; initialized production still needs a separately reviewed upgrade path. See [production117 strategy](production117-manifest-strategy-2026-11-04.md) for dependency, CI-cohort, failure/rollback and remaining-decision evidence. No migration execution is claimed while the no-apply scope is clarified.
+
+## 4 November — AI connection admission contract candidate
+
+From accepted `9e2fe569`, isolated `codex/ai-business-admission-20261104` binds real model connection intents, credential generations and run dispatch to exact current business/provider review. Missing/stale review stops vault/network work; shared queued/publication checks remain fail-closed. Focused29/29, lint, OS build/budget/artifact checks and independent review passed. Aggregate baseline1,285-case service/restart/restore regression passed; all own fixture leases released. No release-guard files, baseline migration, shared setup UI or hosted/provider state changed. [Integration contract, evidence and policy/UI/release gates](ai-business-admission-2026-11-04.md).
+
+
+## 4 November — isolated structured AI resume preparation
+
+Own-intent status API, strict public DTO and lazy resume UI prepared on the separate AI admission branch. Exact reviewed references resume with re-entered keys; missing business authority, provider mismatch, expiry and session changes have explicit next steps. No keys enter browser state/storage. Proposal SQL is unapplied, so native authorization/recovery and production policy remain unverified. See [decision packet](ai-resume-policy-packet-2026-11-04.md).
+
+
+### Disposable native acceptance after scope clarification
+
+Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.
+
+
+### Complete structured-resume local acceptance
+
+The exact committed complete runner clones a fresh owned source/runtime, preserves fixture-only restrictions, and uses unchanged application routes with signed loopback Auth and real disposable PostgreSQL. Browser pending/review/exact-reference save, graceful restart, exact extension catalogue/data/sequence restore and restored-only browser marker passed at c436346; final source retains full snapshots/hashes for reproduction. All five deterministic concurrent authority-loss cases deny saves without persisting credentials/bindings. A replacement private helper's inherited PUBLIC EXECUTE was revoked; the strict allowlist remains unchanged. Full canonical CI is separately keyed to the exact candidate head, never inferred from focused results. Run `node scripts/verify-ai-resume-complete.mjs` and `node scripts/integration-ci.mjs` from a clean committed candidate with the shared native lease free. No merge, hosted changes or policy approval is implied.
+
+
+2026-11-04 production composition: full requested feature launch remains the objective. Hus explicitly rejected reducing scope for speed. No pilot substitution, terms/financial-policy change, hosted operation or deployment is authorized by this local composition.

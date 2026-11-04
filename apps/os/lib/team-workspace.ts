@@ -1,3 +1,11 @@
+import {
+  readAiConnectionStatus,
+  AiConnectionSetupRequired,
+} from "./ai-connection-status";
+import {
+  sealAdmittedAiConnection,
+  AiConnectionReviewRequired,
+} from "../../../packages/admission/ai-connection";
 import crypto from "node:crypto";
 import { z } from "zod";
 import { query, scoped, localMode } from "../../../packages/db";
@@ -273,7 +281,9 @@ export async function createTeamRoom(a: Actor, value: unknown) {
 }
 export async function saveTeamConnection(a: Actor, value: unknown) {
   const v = connectionInput.parse(value),
-    connectionId = crypto.randomUUID();
+    candidateId = crypto.randomUUID();
+  let connectionId: string = candidateId,
+    fingerprint: string | undefined;
   let encrypted: string;
   if (v.provider === "FIXTURE") {
     if (
@@ -292,18 +302,67 @@ export async function saveTeamConnection(a: Actor, value: unknown) {
         400,
         "Local demonstration accepts synthetic models only",
       );
-    endpoint(v);
     try {
-      encrypted = sealKey(v.key, `${a.org_id}:${connectionId}`);
-    } catch {
-      throw new HttpError(503, "Secure model key storage is not configured");
+      const admission = await sealAdmittedAiConnection(
+        {
+          ...v,
+          endpoint_sha256: crypto
+            .createHash("sha256")
+            .update(endpoint(v).href)
+            .digest("hex"),
+        },
+        a.org_id,
+        async (input) =>
+          (
+            await query<{ result: unknown }>(
+              a,
+              "select kxra.ai_connection_admission($1,$2,$3,$4,$5,$6) result",
+              [
+                input.connection_id,
+                input.provider,
+                input.model,
+                input.endpoint_id,
+                input.fingerprint,
+                input.endpoint_sha256,
+              ],
+            )
+          )[0]?.result,
+        sealKey,
+      );
+      connectionId = admission.connection_id;
+      fingerprint = admission.fingerprint;
+      encrypted = admission.encrypted;
+    } catch (error) {
+      if (error instanceof AiConnectionReviewRequired) {
+        const status = await readAiConnectionStatus(
+          a,
+          error.receipt.connection_id,
+        );
+        if (!status) throw new HttpError(503, "AI review status unavailable");
+        throw new AiConnectionSetupRequired(status);
+      }
+      throw new HttpError(
+        503,
+        "AI connection admission or secure key storage is unavailable",
+        "AI_CONNECTION_ADMISSION_UNAVAILABLE",
+      );
     }
   }
   return (
     await query<{ id: string }>(
       a,
-      "select kxra.team_connection_save($1,$2,$3,$4,$5,$6) id",
-      [connectionId, v.name, v.provider, v.model, v.endpoint_id, encrypted],
+      v.provider === "FIXTURE"
+        ? "select kxra.team_connection_save($1,$2,$3,$4,$5,$6) id"
+        : "select kxra.team_connection_save_admitted($1,$2,$3,$4,$5,$6,$7) id",
+      [
+        connectionId,
+        v.name,
+        v.provider,
+        v.model,
+        v.endpoint_id,
+        encrypted,
+        ...(fingerprint ? [fingerprint] : []),
+      ],
     )
   )[0];
 }
@@ -641,7 +700,33 @@ export async function executePreparedTeamAgent(
         input_tokens: 0,
         output_tokens: 0,
       };
-    } else result = await generate(connection, system, context);
+    } else
+      result = await generate(
+        connection,
+        system,
+        context,
+        undefined,
+        async (target) => {
+          if (endpoint(connection).href !== target.href)
+            throw Error("AI_ADMISSION_REQUIRED");
+          const h = crypto
+              .createHash("sha256")
+              .update(target.href)
+              .digest("hex"),
+            k = crypto
+              .createHash("sha256")
+              .update(connection.encrypted_key)
+              .digest("hex");
+          const current = (
+            await query<{ ready: boolean }>(
+              a,
+              "select kxra.ai_run_admission($1,$2,$3) ready",
+              [v.request_id, h, k],
+            )
+          )[0]?.ready;
+          if (!current) throw Error("AI_ADMISSION_REQUIRED");
+        },
+      );
     if (job)
       await query(a, "select kxra.team_job_finish($1,$2,$3,null,$4,$5)", [
         job.id,
@@ -672,6 +757,7 @@ export async function executePreparedTeamAgent(
       "PROVIDER_INCOMPLETE",
       "FIXTURE_DISABLED",
       "ACCESS_CHANGED",
+      "AI_ADMISSION_REQUIRED",
     ];
     const code =
       error instanceof Error && allowed.includes(error.message)

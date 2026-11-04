@@ -1398,3 +1398,24 @@ Additive source/target guards refuse fixture migrations/extensions in hosted mig
 ## 2026-11-04 production117 review strategy
 
 No enabled production dependency on fixture0118/0119 was found. An exact-hash local builder prepares a separate117 review candidate with explicit exclusions, preserving the integrated119 lane and guard. The target-prefix planner remains read-only/no-apply; initialized production still needs a separately reviewed upgrade path. See [production117 strategy](production117-manifest-strategy-2026-11-04.md) for dependency, CI-cohort, failure/rollback and remaining-decision evidence. No migration execution is claimed while the no-apply scope is clarified.
+
+## 4 November — provider/business eligibility binding
+
+Candidate branch `codex/ai-business-admission-20261104` starts exactly at `9e2fe569`; source is isolated under task-2/ai-business-admission. New proposal and server helper bind two-stage connection review to provider/model/resolved endpoint/credential fingerprint and current business review, pin stored ciphertext/run authority, and recheck before key access and after DNS. Focused29/29 plus lint/OS build/budget/artifact and independent review passed; aggregate baseline1,285-case service/restart/restore regression passed; all own fixture leases released. The separate UI lane must adopt the review-reference resume contract; release owns numbering/cohort/manifest. [Exact handoff and unresolved policy decisions](ai-business-admission-2026-11-04.md). No real credentials, provider actions, hosted changes, deployment or spending occurred.
+
+## Isolated AI resume preparation — 4 November
+
+See [policy and verification boundary](ai-resume-policy-packet-2026-11-04.md). Own-intent GET and conflict DTO support reload/manual reference, exact reviewed resubmission and explicit business/provider mismatch/expiry/session/withdrawal actions. Passwords are cleared on dispatch; malformed/unconfirmed responses require fresh status. Lazy model connection component preserves fixture setup and the unchanged byte limit. SQL remains proposal-only and NOT EXECUTED under parent hold; do not merge/apply/deploy based on mocked acceptance. Required native RLS/ACL/race/recovery and policy decisions remain open.
+
+
+### Disposable native acceptance after scope clarification
+
+Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.
+
+
+### Complete structured-resume local acceptance
+
+The exact committed complete runner clones a fresh owned source/runtime, preserves fixture-only restrictions, and uses unchanged application routes with signed loopback Auth and real disposable PostgreSQL. Browser pending/review/exact-reference save, graceful restart, exact extension catalogue/data/sequence restore and restored-only browser marker passed at c436346; final source retains full snapshots/hashes for reproduction. All five deterministic concurrent authority-loss cases deny saves without persisting credentials/bindings. A replacement private helper's inherited PUBLIC EXECUTE was revoked; the strict allowlist remains unchanged. Full canonical CI is separately keyed to the exact candidate head, never inferred from focused results. Run `node scripts/verify-ai-resume-complete.mjs` and `node scripts/integration-ci.mjs` from a clean committed candidate with the shared native lease free. No merge, hosted changes or policy approval is implied.
+
+
+2026-11-04 production composition: full requested feature launch remains the objective. Hus explicitly rejected reducing scope for speed. No pilot substitution, terms/financial-policy change, hosted operation or deployment is authorized by this local composition.

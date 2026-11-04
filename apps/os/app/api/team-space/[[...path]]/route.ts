@@ -1,3 +1,4 @@
+import { AiConnectionSetupRequired } from "../../../../lib/ai-connection-status";
 import {
   bridgeCatalog,
   bridgeView,
@@ -386,6 +387,16 @@ async function handle(
       );
     throw new HttpError(404, "Not found");
   } catch (e) {
+    if (e instanceof AiConnectionSetupRequired)
+      return privateJson(
+        {
+          error:
+            "AI connection review is required. Follow the recorded next step.",
+          code: "AI_CONNECTION_REVIEW_REQUIRED",
+          admission: e.admission,
+        },
+        409,
+      );
     return safeHttpError(e);
   }
 }

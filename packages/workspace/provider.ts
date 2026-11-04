@@ -32,6 +32,7 @@ export const connectionInput = z
       .max(8000)
       .refine((value) => !/[\r\n\0]/.test(value)),
     customer_billed_acknowledged: z.boolean().default(false),
+    admission_id: z.string().uuid().optional(),
   })
   .strict()
   .refine(
@@ -124,6 +125,7 @@ export type Transport = (
   url: URL,
   headers: Record<string, string>,
   body: unknown,
+  authorize?: (target: URL) => Promise<void>,
 ) => Promise<unknown>;
 function requireModelProviderEnabled() {
   // No caller/fixture hint can enable an external provider. Local demonstration
@@ -158,10 +160,18 @@ export async function resolveProviderAddress(
     clearTimeout(timer);
   }
 }
-export const secureTransport: Transport = async (url, headers, body) => {
+export const secureTransport: Transport = async (
+  url,
+  headers,
+  body,
+  authorize,
+) => {
   requireModelProviderEnabled();
+  if (!authorize) throw Error("AI_ADMISSION_REQUIRED");
+  await authorize(url);
   // Pin the validated DNS answer to this socket. No redirects, proxies or localhost endpoints.
   const address = await resolveProviderAddress(url.hostname);
+  await authorize(url);
   return new Promise((resolve, reject) => {
     const request = https.request(
       url,
@@ -219,10 +229,14 @@ async function generateWithCustomerKey(
   system: string,
   context: string,
   transport: Transport = secureTransport,
+  authorize?: (target: URL) => Promise<void>,
 ) {
   requireModelProviderEnabled();
-  const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`),
-    url = endpoint(c);
+  if (transport === secureTransport && !authorize)
+    throw Error("AI_ADMISSION_REQUIRED");
+  const url = endpoint(c);
+  if (authorize) await authorize(url);
+  const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`);
   const headers: Record<string, string> = {},
     textRequest = {
       model: c.model,
@@ -258,7 +272,7 @@ async function generateWithCustomerKey(
         max_tokens: 1200,
       };
   }
-  const raw = await transport(url, headers, body);
+  const raw = await transport(url, headers, body, authorize);
   // Provider content is untrusted text, never executable HTML, permissions or tool calls.
   const count = z.number().int().min(0).max(10000000).optional().default(0);
   let output: string,
@@ -340,12 +354,20 @@ export async function generate(
   system: string,
   context: string,
   transport: Transport = secureTransport,
+  authorize?: (target: URL) => Promise<void>,
 ) {
   try {
-    return await generateWithCustomerKey(c, system, context, transport);
+    return await generateWithCustomerKey(
+      c,
+      system,
+      context,
+      transport,
+      authorize,
+    );
   } catch (error) {
     const allowed = new Set([
       "PROVIDER_DISABLED",
+      "AI_ADMISSION_REQUIRED",
       "VAULT_NOT_CONFIGURED",
       "ENDPOINT_NOT_CONFIGURED",
       "ENDPOINT_REJECTED",
