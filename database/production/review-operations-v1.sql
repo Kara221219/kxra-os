@@ -118,7 +118,7 @@ declare g kxra_private.review_operator_grants;r kxra_private.review_requests;rec
  c jsonb;digest text;cmd_digest text;review_id uuid;result jsonb;decision jsonb;until_time timestamptz;state text;prior_id uuid;rows jsonb;next_cursor text;
 begin
  if session_user<>'kxra_app' or coalesce(action,'') not in('LIST','OPEN','VIEW','DECIDE','WITHDRAW') or jsonb_typeof(v)<>'object' or coalesce(policy_sha,'')!~'^[a-f0-9]{64}$' then raise insufficient_privilege;end if;
- if not coalesce(kxra_private.mfa_owner(kxra_private.member_org()),false) or not exists(select 1 from kxra.organisations where id=kxra_private.member_org() and organisation_kind='KXRA' and state='ACTIVE') then raise insufficient_privilege;end if;
+ if not coalesce(kxra_private.mfa_owner(kxra_private.member_org()),false) or not exists(select 1 from kxra.organisations o where o.id=kxra_private.member_org() and o.organisation_kind='KXRA' and o.state='ACTIVE') then raise insufficient_privilege;end if;
  if action='LIST' then
   if (v-'after')<>'{}'::jsonb or (v?'after' and coalesce(v->>'after','')!~'^(BUSINESS|AI):[a-f0-9-]{36}$') then raise exception 'Invalid review query';end if;
   with subjects as(
