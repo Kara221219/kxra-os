@@ -577,10 +577,17 @@ async function main() {
         await integrationData(restored, beforeCatalog),
         beforeData,
       );
+      // Fixture-only post-comparison marker; preserve the real audit trigger and actor.
+      await restored.query("begin");
+      await restored.query(
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.kxra.org_id',$2,true)",
+        [fixture.actor, fixture.org],
+      );
       await restored.query(
         "update kxra.team_connections set name='Restored synthetic connection marker' where id=$1",
         [savedId],
       );
+      await restored.query("commit");
       phases.push({
         phase: "extension-restore",
         target: restoredTarget,
