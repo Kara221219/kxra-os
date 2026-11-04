@@ -28,7 +28,7 @@ const source = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: root,
   encoding: "utf8",
 }).trim();
-const directory = fs.mkdtempSync("/tmp/kxra-rg-");
+const directory = fs.realpathSync(fs.mkdtempSync("/tmp/kxra-rg-"));
 execFileSync(
   "git",
   ["clone", "--no-hardlinks", "--no-checkout", root, directory],
