@@ -425,6 +425,121 @@ test("AI connection and run admission: actual provider/model/key scope and curre
         }
       });
     }
+    const statusOf = (id?: string, who = actor, workspace = org, sv = 1) =>
+      appCall(
+        "select kxra.ai_connection_status($1) value",
+        [id ?? null],
+        who,
+        workspace,
+        sv,
+      );
+    await scenario(
+      "resume own-intent projection follows current clearance, saved state and withdrawal",
+      async () => {
+        assert.equal(await statusOf(), null);
+        const id = uuid();
+        await register(id);
+        const pending = await statusOf(id);
+        assert.equal(pending.reason, "AWAITING_PROVIDER_REVIEW");
+        assert.deepEqual(
+          Object.keys(pending).sort(),
+          [
+            "admission_id",
+            "provider",
+            "model",
+            "endpoint_id",
+            "state",
+            "reason",
+            "next_action",
+            "expires_at",
+          ].sort(),
+        );
+        assert.deepEqual(await statusOf(), pending);
+        const reviewId = await reviewAi(id);
+        assert.equal((await statusOf(id)).next_action, "RESUBMIT_SAME_DETAILS");
+        await save(id);
+        assert.equal((await statusOf(id)).state, "SAVED");
+        await db.query(
+          "update kxra_private.ai_connection_reviews set withdrawn_at=clock_timestamp() where id=$1",
+          [reviewId],
+        );
+        assert.equal((await statusOf(id)).reason, "SAVED_AUTHORITY_CHANGED");
+        await assert.rejects(save(id));
+      },
+    );
+    await scenario(
+      "resume denies foreign, stale-session, unauthorised-role and direct metadata access",
+      async () => {
+        const id = uuid();
+        await register(id);
+        await assert.rejects(statusOf(uuid()));
+        await assert.rejects(statusOf(id, uuid()));
+        await assert.rejects(statusOf(id, actor, uuid()));
+        await assert.rejects(statusOf(id, actor, org, 2));
+        await reject(
+          "select kxra.ai_connection_status(null)",
+          [],
+          "anon",
+          "42501",
+        );
+        await reject(
+          "select kxra.ai_connection_status(null)",
+          [],
+          "kxra_ai_worker",
+          "42501",
+        );
+        await reject(
+          "select kxra.ai_connection_status(null)",
+          [],
+          "kxra_billing_worker",
+          "42501",
+        );
+        await reject(
+          "select * from kxra_private.ai_connection_intents",
+          [],
+          "authenticated",
+          "42501",
+        );
+        await assert.rejects(
+          db.query("select kxra.ai_connection_status(null)"),
+          { code: "42501" },
+        );
+      },
+    );
+    await scenario(
+      "resume reports provider mismatch and latest blocked/withdrawn/expired decisions precisely",
+      async () => {
+        const wrong = uuid();
+        await register(wrong, "ANTHROPIC");
+        await reviewAi(wrong);
+        const mismatch = await statusOf(wrong);
+        assert.equal(mismatch.reason, "BUSINESS_PROVIDER_MISMATCH");
+        assert.equal(mismatch.next_action, "COMPLETE_BUSINESS_REVIEW");
+        for (const [state, mode, expiry, reason] of [
+          ["BLOCKED", "CUSTOMER_BILLED", "1 hour", "PROVIDER_REVIEW_BLOCKED"],
+          ["ELIGIBLE", "UNKNOWN", "1 hour", "ACCOUNT_MODE_REVIEW_REQUIRED"],
+          ["ELIGIBLE", "CUSTOMER_BILLED", "-1 second", "REVIEW_NOT_CURRENT"],
+        ]) {
+          const id = uuid();
+          await register(id);
+          if (expiry === "-1 second")
+            await db.query(
+              "insert into kxra_private.ai_connection_reviews(intent_id,state,account_mode,account_reference_sha256,provider_evidence_sha256,reviewer_reference,reviewed_at,expires_at) values($1,$2,$3,$4,$4,'SYNTHETIC_NOT_APPROVAL',clock_timestamp()-interval '2 seconds',clock_timestamp()-interval '1 second')",
+              [id, state, mode, review],
+            );
+          else await reviewAi(id, state, mode, expiry);
+          assert.equal((await statusOf(id)).reason, reason);
+        }
+        const withdrawn = uuid();
+        await register(withdrawn);
+        const r = await reviewAi(withdrawn);
+        await db.query(
+          "update kxra_private.ai_connection_reviews set withdrawn_at=clock_timestamp() where id=$1",
+          [r],
+        );
+        assert.equal((await statusOf(withdrawn)).reason, "REVIEW_WITHDRAWN");
+      },
+    );
     await scenario(
       "unreviewed intent is finite and stores no credential; exact resume and old RPC bypass denial",
       async () => {

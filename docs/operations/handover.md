@@ -1396,3 +1396,8 @@ Candidate branch `codex/ai-business-admission-20261104` starts exactly at `9e2fe
 ## Isolated AI resume preparation — 4 November
 
 See [policy and verification boundary](ai-resume-policy-packet-2026-11-04.md). Own-intent GET and conflict DTO support reload/manual reference, exact reviewed resubmission and explicit business/provider mismatch/expiry/session/withdrawal actions. Passwords are cleared on dispatch; malformed/unconfirmed responses require fresh status. Lazy model connection component preserves fixture setup and the unchanged byte limit. SQL remains proposal-only and NOT EXECUTED under parent hold; do not merge/apply/deploy based on mocked acceptance. Required native RLS/ACL/race/recovery and policy decisions remain open.
+
+
+### Disposable native acceptance after scope clarification
+
+Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.

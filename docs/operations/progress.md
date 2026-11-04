@@ -1659,3 +1659,8 @@ From accepted `9e2fe569`, isolated `codex/ai-business-admission-20261104` binds 
 ## 4 November — isolated structured AI resume preparation
 
 Own-intent status API, strict public DTO and lazy resume UI prepared on the separate AI admission branch. Exact reviewed references resume with re-entered keys; missing business authority, provider mismatch, expiry and session changes have explicit next steps. No keys enter browser state/storage. Proposal SQL is unapplied, so native authorization/recovery and production policy remain unverified. See [decision packet](ai-resume-policy-packet-2026-11-04.md).
+
+
+### Disposable native acceptance after scope clarification
+
+Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.
