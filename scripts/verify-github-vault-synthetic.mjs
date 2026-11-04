@@ -92,6 +92,7 @@ try {
     "--test",
     "--test-concurrency=1",
     "tests/connectors/github-vault-synthetic.test.ts",
+    "tests/connectors/github-custody-synthetic.test.ts",
   ]);
   run(["scripts/verify-github-wire-pure.mjs"]);
   run(["scripts/verify-migrations.mjs"]);
