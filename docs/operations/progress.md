@@ -1719,3 +1719,7 @@ Merged the complete transport/outbox/external-fence delta into an isolated branc
 ## 2026-11-05 — payment-repair production composition
 
 Merged the compatible8eb3f9d payment-method repair guard onto accepted041d200 in a separate branch. Merge24678ce preserves both exact heads; only the shared modern portal response schema changes at runtime. Customer pricing/terms, paid-proof policy, schedules, release guards and default-off flags are pinned unchanged. Final exact-head local full acceptance and independent evidence review are required; hosted repair/configuration and capacity remain unaccepted.
+
+## 5 November — isolated paired launch-admission contract
+
+From exactd60a463, a separate branch adds a strict source/runtime/session-bound launch gate with mandatory atomic one-shot consumption and publication ports, earliest-expiry aborts and finite uncertainty/no replay. Production ports/schema/measurement/immutable launcher remain unimplemented; no gate or real CLI is activated. See [bounded implementation and integration/live gates](paired-execution-admission-2026-11-05.md). No SQL, credentials, persistent grants, provider, hosted, deployment or spending action.

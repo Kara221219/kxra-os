@@ -1456,3 +1456,7 @@ Use the entire `codex/production-github-integration-20261105` branch delta after
 ## Payment-repair production composition, 2026-11-05
 
 Use the full `codex/production-payment-integration-20261105` branch after041d200, including merge24678ce, pinned payment-policy manifest and exact-head acceptance. See `docs/operations/production-payment-integration-2026-11-05.md`. No hosted setting or Stripe call is authorised. Cancel-only configurations now fail closed; real repair/cancellation configuration and actual capacity require separate acceptance. All existing GitHub ledger continuity/quiescence and full-feature release gates remain held.
+
+## 5 November — paired execution admission follow-up
+
+Review the full isolated `codex/paired-execution-admission` delta afterd60a463 and its [handoff](paired-execution-admission-2026-11-05.md). The helper has no default production ports and leaves503/404/native guards closed. Genuine authenticated RLS authority/reviews, independently durable consume/restore fencing, authenticated measurements, immutable contained launch and atomic publication are required before wiring. Synthetic port tests are not production admission or actual tool-isolation/provider acceptance. No other branch was merged; no migration is proposed by this slice.
