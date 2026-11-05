@@ -17,16 +17,18 @@ export default async function Page({
           room={room}
           initialApps={data.apps}
           canManage={data.can_manage}
+          production={data.production}
+          canReview={data.can_review}
         />
       </main>
     );
   } catch {
     return (
       <main>
-        <h1>Local custom apps unavailable</h1>
+        <h1>Custom apps unavailable</h1>
         <p>
-          Use a synthetic fixture session and an accessible room after
-          installing the local custom-app fixture extension.
+          App access requires an enabled service, current paid workspace access,
+          and room membership.
         </p>
         <Link href="/os/workspace">Rooms</Link>
       </main>

@@ -7,7 +7,7 @@ import {
 } from "../../../packages/custom-apps/records";
 import { customAppSchema } from "../../../packages/custom-apps/contract";
 import { HttpError, type Actor } from "./auth";
-import { requireLocalCustomApps } from "./custom-apps";
+import { requireCustomApps } from "./custom-apps";
 import { teamRoom } from "./team-room";
 export async function customAppRecords(
   a: Actor,
@@ -15,7 +15,7 @@ export async function customAppRecords(
   app: string,
   before?: string,
 ) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   await teamRoom(a, room);
   z.uuid().parse(app);
   if (before !== undefined) {
@@ -49,6 +49,16 @@ export async function customAppRecords(
     [app, room, before ?? null],
   );
   if (!data) throw new HttpError(404, "Custom app unavailable");
+  if (a.source === "supabase") {
+    const [review] = await query<{
+      reviews: { version: number; current: boolean }[];
+    }>(a, "select kxra.custom_app_review_status($1) reviews", [app]);
+    data.can_write =
+      data.can_write &&
+      review.reviews.some(
+        (r) => r.version === data.app.active_version && r.current,
+      );
+  }
   return data;
 }
 export async function saveCustomAppRecord(
@@ -57,7 +67,7 @@ export async function saveCustomAppRecord(
   app: string,
   input: unknown,
 ) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   await teamRoom(a, room);
   z.uuid().parse(app);
   const v = z
@@ -103,7 +113,7 @@ export async function customAppRecordReceipt(
   app: string,
   operation: string,
 ) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   await teamRoom(a, room);
   z.uuid().parse(app);
   z.uuid().parse(operation);

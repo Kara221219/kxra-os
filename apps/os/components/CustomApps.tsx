@@ -11,10 +11,14 @@ export function CustomApps({
   room,
   initialApps,
   canManage,
+  production = false,
+  canReview = false,
 }: {
   room: string;
   initialApps: CustomApp[];
   canManage: boolean;
+  production?: boolean;
+  canReview?: boolean;
 }) {
   const [apps, setApps] = useState(initialApps),
     [detail, setDetail] = useState<Detail | null>(null),
@@ -52,10 +56,10 @@ export function CustomApps({
   }
   return (
     <section>
-      <h1>Local custom apps</h1>
+      <h1>{production ? "Custom apps" : "Local custom apps"}</h1>
       <p>
-        Synthetic local forms. Publication selects an immutable saved version.
-        Preview entries are discarded. Published forms can save typed local
+        Declarative forms. Publication selects an immutable saved version.
+        Preview entries are discarded. Published forms can save typed workspace
         records. External hosting and provider actions are not connected.
       </p>
       <ul>
@@ -139,7 +143,7 @@ export function CustomApps({
         <section>
           <h2>Immutable versions</h2>
           <p>
-            Revision {detail.app.revision}. Active local release:{" "}
+            Revision {detail.app.revision}. Active release:{" "}
             {detail.app.active_version ?? "none"}.
           </p>
           <ul>
@@ -164,6 +168,38 @@ export function CustomApps({
                 >
                   Load v{v.version} into editor
                 </button>{" "}
+                {production ? (
+                  <span>
+                    Review:{" "}
+                    {detail.reviews.find(
+                      (r) => r.version === v.version && r.current,
+                    )?.decision ?? "REVIEW REQUIRED"}
+                    .{" "}
+                  </span>
+                ) : null}
+                {canReview
+                  ? ["APPROVED", "REJECTED", "WITHDRAWN"].map((operation) => (
+                      <button
+                        key={operation}
+                        disabled={busy}
+                        onClick={() =>
+                          act(async () =>
+                            update(
+                              await request("", {
+                                app_id: detail.app.id,
+                                expected_revision: detail.app.revision,
+                                version: v.version,
+                                sha256: v.sha256,
+                                operation,
+                              }),
+                            ),
+                          )
+                        }
+                      >
+                        {operation} v{v.version}
+                      </button>
+                    ))
+                  : null}
                 {canManage && detail.app.active_version !== v.version ? (
                   <button
                     disabled={busy}
@@ -175,23 +211,31 @@ export function CustomApps({
                             expected_revision: detail.app.revision,
                             version: v.version,
                             operation: v.previously_released
-                              ? "ROLLBACK_LOCAL"
-                              : "PUBLISH_LOCAL",
+                              ? production
+                                ? "ROLLBACK"
+                                : "ROLLBACK_LOCAL"
+                              : production
+                                ? "PUBLISH"
+                                : "PUBLISH_LOCAL",
                           }),
                         ),
                       )
                     }
                   >
                     {v.previously_released
-                      ? "Rollback locally"
-                      : "Publish locally"}{" "}
+                      ? production
+                        ? "Rollback"
+                        : "Rollback locally"
+                      : production
+                        ? "Publish"
+                        : "Publish locally"}{" "}
                     v{v.version}
                   </button>
                 ) : null}
               </li>
             ))}
           </ul>
-          <h2>Local release history</h2>
+          <h2>Release history</h2>
           <ol>
             {detail.releases.map((r) => (
               <li key={r.revision}>

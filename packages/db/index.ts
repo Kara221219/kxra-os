@@ -5,6 +5,7 @@ import { localModeConfiguration } from "#kxra/local-guard";
 import { databaseConnectionString, databaseSsl } from "./ssl";
 import { hostedSelfServiceConfiguration } from "../authz/hosted-self-service";
 import { hostedRoomOperations } from "../workspace/hosted-operations";
+import { customAppsIdentityAllowed } from "../custom-apps/access";
 export type Principal = {
   /** Internal server-resolved grant, never accepted from HTTP input. */
   room_worker_grant?: string;
@@ -87,6 +88,7 @@ export async function scoped<T>(
           email: actor?.email,
           email_verified: actor?.email_verified,
           session_version: actor?.session_version,
+          provider_session_version: actor?.provider_session_version,
           role: actor ? "authenticated" : "anon",
         }),
         actor?.organisation_id || "",
@@ -131,6 +133,17 @@ export async function scoped<T>(
       [
         hostedAdmission ? "on" : "off",
         hostedAdmission && actor?.source === "supabase" ? "on" : "off",
+      ],
+    );
+    await db.query(
+      "select set_config('request.kxra.custom_apps_verified',$1,true)",
+      [
+        !localMode() &&
+        customAppsIdentityAllowed(actor?.source, false) &&
+        actor?.provider_session_version !== undefined &&
+        actor.provider_session_version === actor.session_version
+          ? "on"
+          : "off",
       ],
     );
     const result = await work(db);

@@ -25,9 +25,7 @@ export default async function Page({
     return (
       <main>
         <h1>App unavailable</h1>
-        <p>
-          Use a synthetic fixture session and an accessible published local app.
-        </p>
+        <p>Use an accessible published app with current workspace access.</p>
         <a href="/os/workspace">Rooms</a>
       </main>
     );
