@@ -65,7 +65,8 @@ create table kxra_private.ghp_effects(repository_id bigint not null,issue_id big
 create function kxra_private.ghp_immutable() returns trigger language plpgsql set search_path='' as $$
 begin
  if tg_op='UPDATE' then
-  if tg_table_name in('ghp_connections','ghp_capabilities') then if old.revoked_at is null and new.revoked_at is not null and (to_jsonb(new)-'revoked_at')=(to_jsonb(old)-'revoked_at') then return new;end if;
+  if tg_table_name='ghp_connections' then if old.revoked_at is null and new.revoked_at is not null and (to_jsonb(new)-'revoked_at'-'binding_sha256')=(to_jsonb(old)-'revoked_at'-'binding_sha256') then return new;end if;
+  elsif tg_table_name='ghp_capabilities' then if old.revoked_at is null and new.revoked_at is not null and (to_jsonb(new)-'revoked_at')=(to_jsonb(old)-'revoked_at') then return new;end if;
   elsif tg_table_name='ghp_activations' then if (to_jsonb(new)-'revoked_at'-'enabled')=(to_jsonb(old)-'revoked_at'-'enabled') and (new.enabled=old.enabled or (old.enabled and not new.enabled)) and (new.revoked_at is not distinct from old.revoked_at or(old.revoked_at is null and new.revoked_at is not null)) then return new;end if;
   elsif tg_table_name='ghp_reads' then if old.used_by is null and new.used_by is not null and (to_jsonb(new)-'used_by')=(to_jsonb(old)-'used_by') then return new;end if;
   elsif tg_table_name='ghp_writes' then
@@ -81,10 +82,10 @@ do $$declare t text;begin foreach t in array array['ghp_activations','ghp_connec
  end loop;end $$;
 
 -- Common pre-statement writer fence protects authority rows and phantom requirements.
--- Same key as the existing business-policy writer fence; no policy/data changes.
+-- Independent key avoids upgrading existing review-operation shared locks. No policy/data changes.
 create function kxra_private.ghp_authority_writer() returns trigger language plpgsql security definer set search_path='' as $$
-begin perform pg_advisory_xact_lock(hashtextextended('kxra-review-current-policy-v1',0));return null;end $$;
-do $$declare t text;begin foreach t in array array['kxra.account_identities','kxra.organisation_memberships','kxra.organisations','kxra.legal_documents','kxra.legal_document_requirements','kxra.legal_acceptances','kxra_private.live_billing_bindings','kxra_private.live_paid_access','kxra_private.live_paid_policies','kxra_private.live_billing_mappings','kxra_private.live_billing_activation','kxra_private.modern_billing_execution_identity','kxra_private.billing_admission_lanes','kxra_private.live_customer_intents','kxra_private.live_paid_receipts','kxra_private.business_eligibility_reviews'] loop
+begin perform pg_advisory_xact_lock(hashtextextended('kxra-ghp-authority-v1',0));return null;end $$;
+do $$declare t text;begin foreach t in array array['kxra.account_identities','kxra.organisation_memberships','kxra.organisations','kxra.legal_documents','kxra.legal_document_requirements','kxra.legal_acceptances','kxra_private.live_billing_bindings','kxra_private.live_paid_access','kxra_private.live_paid_policies','kxra_private.live_billing_mappings','kxra_private.live_billing_activation','kxra_private.modern_billing_execution_identity','kxra_private.billing_admission_lanes','kxra_private.live_customer_intents','kxra_private.live_paid_receipts','kxra_private.business_eligibility_reviews','kxra_private.business_eligibility_policies'] loop
  execute format('create trigger ghp_authority_writer before insert or update or delete on %s for each statement execute function kxra_private.ghp_authority_writer()',t);
  end loop;end $$;
 
@@ -98,15 +99,9 @@ $$;
 create function kxra_private.ghp_fence(c kxra_private.ghp_connections,policy_sha text) returns void language plpgsql security definer set search_path='' as $$
 declare a kxra_private.ghp_activations;r kxra_private.business_eligibility_reviews;
 begin
- perform pg_advisory_xact_lock_shared(hashtextextended('kxra-review-current-policy-v1',0));
+ perform pg_advisory_xact_lock_shared(hashtextextended('kxra-ghp-authority-v1',0));
  select * into a from kxra_private.ghp_activations where id=c.activation_id for share;
- perform account_id from kxra.account_identities where account_id=c.user_id for share;
- perform id from kxra.organisation_memberships where org_id=c.org_id and account_id=c.user_id for share;
- perform id from kxra.organisations where id=c.org_id for share;
- perform org_id from kxra_private.live_billing_bindings where org_id=c.org_id for share;
- perform org_id from kxra_private.live_paid_access where org_id=c.org_id for share;
- select * into r from kxra_private.business_eligibility_reviews where id=c.business_review_id for share;
- perform id from kxra_private.business_eligibility_policies where id=r.policy_id for share;
+ select * into r from kxra_private.business_eligibility_reviews where id=c.business_review_id;
  if c.revoked_at is not null or not a.enabled or a.revoked_at is not null or a.review_sha256 is distinct from policy_sha or a.valid_from>clock_timestamp() or a.valid_until<=clock_timestamp() or (c.binding->>'expires_at')::timestamptz<=clock_timestamp() then raise insufficient_privilege;end if;
  if not exists(select 1 from kxra.account_identities x join kxra.organisation_memberships m on m.account_id=x.account_id join kxra.organisations o on o.id=m.org_id where x.account_id=c.user_id and x.state='ACTIVE' and x.email_verified_at is not null and x.session_version=(c.binding->>'session_version')::bigint and m.org_id=c.org_id and m.security_role='ORG_ADMIN' and m.relationship_type='CUSTOMER' and m.state='ACTIVE' and m.revoked_at is null and m.starts_at<=clock_timestamp() and (m.expires_at is null or m.expires_at>clock_timestamp()) and o.state='ACTIVE' and o.organisation_kind='CUSTOMER') then raise insufficient_privilege;end if;
  if not coalesce(kxra_private.live_billing_legal_allowed(c.org_id,c.user_id),false) then raise insufficient_privilege;end if;
@@ -135,7 +130,7 @@ declare c kxra_private.ghp_connections;w kxra_private.ghp_writes;r kxra_private.
 begin
  keys=case action when 'PROPOSE' then array['connection_id','write_id','read_id','note'] when 'APPROVE' then array['connection_id','write_id','proposal_digest','attested'] when 'ENQUEUE' then array['connection_id','write_id','approval_digest'] when 'VIEW' then array['connection_id','write_id'] when 'CANCEL' then array['connection_id','write_id'] when 'RECOVER' then array['connection_id','write_id'] when 'REVOKE' then array['connection_id'] else null end;
  if keys is null or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>16000 or (select count(*) from jsonb_object_keys(v))<>cardinality(keys) or exists(select 1 from unnest(keys)t where not(v?t)) then raise exception 'Invalid connector command';end if;
- perform pg_advisory_xact_lock_shared(hashtextextended('kxra-review-current-policy-v1',0));
+ perform pg_advisory_xact_lock_shared(hashtextextended('kxra-ghp-authority-v1',0));
  select * into c from kxra_private.ghp_connections where id=(v->>'connection_id')::uuid and org_id=kxra_private.member_org() and user_id=auth.uid() for update;
  if not found then raise insufficient_privilege;end if;
  if action='PROPOSE' then
@@ -143,10 +138,7 @@ begin
  elsif action<>'REVOKE' then
   select * into w from kxra_private.ghp_writes where id=(v->>'write_id')::uuid and connection_id=c.id for update;if not found then raise insufficient_privilege;end if;
  end if;
- if action in('PROPOSE','APPROVE','ENQUEUE') then perform kxra_private.ghp_fence(c,policy_sha);else
-  perform account_id from kxra.account_identities where account_id=c.user_id for share;
-  perform id from kxra.organisation_memberships where account_id=c.user_id and org_id=c.org_id for share;
-  perform id from kxra.organisations where id=c.org_id for share;end if;
+ if action in('PROPOSE','APPROVE','ENQUEUE') then perform kxra_private.ghp_fence(c,policy_sha);end if;
  if not coalesce(kxra_private.ghp_human(c),false) then raise insufficient_privilege;end if;
  if action='VIEW' then return kxra_private.ghp_projection(c,w);end if;
  if action='REVOKE' then
@@ -188,7 +180,7 @@ begin
  if keys is null or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>20000 or (select count(*) from jsonb_object_keys(v))<>cardinality(keys) or exists(select 1 from unnest(keys)t where not(v?t)) then raise exception 'Invalid connector worker command';end if;
  k=kxra_private.ghp_cap('worker');
  if (action in('READ_CONTEXT','RECORD_READ') and k.purpose<>'READ_WORKER') or(action='CLAIM' and k.purpose<>'DISPATCH_WORKER') or(action='CURRENT' and k.purpose not in('READ_WORKER','ATTEMPT_DISPATCH')) or(action='CONSUME' and k.purpose<>'ATTEMPT_DISPATCH') then raise insufficient_privilege;end if;
- perform pg_advisory_xact_lock_shared(hashtextextended('kxra-review-current-policy-v1',0));
+ perform pg_advisory_xact_lock_shared(hashtextextended('kxra-ghp-authority-v1',0));
  select * into c from kxra_private.ghp_connections where id=k.connection_id for update;if not found then raise insufficient_privilege;end if;
  if action='CLAIM' then select * into w from kxra_private.ghp_writes where id=(v->>'write_id')::uuid and connection_id=c.id for update;if not found then raise insufficient_privilege;end if;
  elsif k.attempt_id is not null then select * into a from kxra_private.ghp_attempts where id=k.attempt_id;select * into w from kxra_private.ghp_writes where id=a.write_id for update;select * into a from kxra_private.ghp_attempts where id=k.attempt_id for update;end if;
@@ -263,7 +255,7 @@ begin
  select exists(select 1 from kxra_private.ghp_receipts where attempt_id=a.id and ghp_receipts.outcome=github_prod_receipt.outcome and evidence_sha256=h) into known;
  if known then return jsonb_build_object('recorded',true,'state',w.state,'duplicate',true);end if;
  if (select count(*) from kxra_private.ghp_receipts where attempt_id=a.id)>=8 then raise exception 'Receipt observation budget exhausted';end if;
- if w.state='ACCEPTED' then if outcome<>'ACCEPTED' or w.provider_comment_id is distinct from comment_id then raise exception 'Conflicting terminal receipt';end if;
+ if w.state='ACCEPTED' then if outcome<>'ACCEPTED' or w.provider_comment_id is distinct from v_comment_id then raise exception 'Conflicting terminal receipt';end if;
  elsif w.state not in('DISPATCHING','UNCERTAIN') or(w.state='UNCERTAIN' and outcome not in('UNCERTAIN','ACCEPTED')) then raise exception 'Conflicting historical receipt';end if;
  if outcome='ACCEPTED' then
   insert into kxra_private.ghp_effects(repository_id,issue_id,comment_id,attempt_id) values((c.binding->>'repository_id')::bigint,(c.binding->>'issue_id')::bigint,v_comment_id,a.id) on conflict do nothing;

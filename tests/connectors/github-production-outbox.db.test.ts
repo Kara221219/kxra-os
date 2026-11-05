@@ -430,6 +430,41 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
         const receipt = await h.publish(accepted);
         assert.equal(receipt.state, "ACCEPTED");
         assert.equal((await h.publish(accepted)).duplicate, true);
+        assert.equal(
+          (
+            await h.publish({
+              ...accepted,
+              evidence: {
+                ...accepted.evidence,
+                reason: "MATCHING_RECONCILIATION",
+                status: 200,
+              },
+            })
+          ).state,
+          "ACCEPTED",
+        );
+        await assert.rejects(
+          h.publish({
+            ...accepted,
+            evidence: {
+              ...accepted.evidence,
+              comment_id: (accepted.evidence as any).comment_id + 1,
+            },
+          }),
+        );
+        await assert.rejects(
+          admin.query(
+            "delete from kxra_private.ghp_consumptions where attempt_id=$1",
+            [(h.operation as any).attempt_id],
+          ),
+        );
+        await assert.rejects(
+          admin.query(
+            "update kxra_private.ghp_writes set state='QUEUED' where id=$1",
+            [(h.operation as any).write_id],
+          ),
+        );
+
         await assert.rejects(
           h.publish({
             ...accepted,
@@ -484,6 +519,164 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
       },
     );
     await t.test(
+      "expired read capability cannot cross a blocked activation fence",
+      async () => {
+        for (const action of ["READ_CONTEXT", "RECORD_READ", "CURRENT"]) {
+          const c = await connection(),
+            raw = newToken();
+          secrets.add(raw);
+          const expiry = new Date(Date.now() + 700);
+          await admin.query(
+            "insert into kxra_private.ghp_capabilities values($1,'READ_WORKER',$2,null,1,1,clock_timestamp()-interval '1 second',$3,null,'SYNTHETIC_EXPIRY_RACE')",
+            [sha(raw), c.id, expiry],
+          );
+          const locker = new pg.Client({
+            ...cfg,
+            user: os.userInfo().username,
+          });
+          await locker.connect();
+          await locker.query("begin");
+          await locker.query(
+            "select id from kxra_private.ghp_activations where id=$1 for update",
+            [c.activation],
+          );
+          const operation = { kind: "REPOSITORY" } as const;
+          const pending = (
+            action === "READ_CONTEXT"
+              ? store.readContext(raw)
+              : action === "RECORD_READ"
+                ? store.recordRead(raw, sha("read"))
+                : store
+                    .authority(raw)
+                    .current(
+                      {
+                        binding: c.binding,
+                        operation,
+                        binding_sha256: githubBindingDigest(c.binding),
+                        operation_sha256: githubOperationDigest(
+                          c.binding,
+                          operation,
+                        ),
+                        scope: "issues:read",
+                      },
+                      new AbortController().signal,
+                    )
+          ).then(
+            () => true,
+            () => false,
+          );
+          try {
+            let blocked = false;
+            for (let n = 0; n < 100; n++) {
+              if (
+                (
+                  await admin.query(
+                    "select 1 from pg_stat_activity where usename='kxra_app' and wait_event_type='Lock'",
+                  )
+                ).rowCount
+              ) {
+                blocked = true;
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 5));
+            }
+            assert.equal(blocked, true);
+            await new Promise((r) =>
+              setTimeout(r, Math.max(0, expiry.getTime() - Date.now() + 40)),
+            );
+            await locker.query("commit");
+            assert.equal(await pending, false);
+          } finally {
+            await locker.query("rollback");
+            await locker.end();
+            await pending;
+          }
+        }
+      },
+    );
+    await t.test(
+      "legal phantom insert and paid policy withdrawal serialize before consume",
+      async () => {
+        for (const change of ["legal", "policy"]) {
+          const c = await connection(),
+            h = await claimed(c);
+          const locker = new pg.Client({
+            ...cfg,
+            user: os.userInfo().username,
+          });
+          await locker.connect();
+          await locker.query("begin");
+          let requirement: string | undefined, policy: string | undefined;
+          try {
+            if (change === "policy") {
+              policy = (
+                await locker.query(
+                  "select policy_id from kxra_private.live_paid_access where org_id=$1",
+                  [f.org],
+                )
+              ).rows[0].policy_id;
+              await locker.query(
+                "update kxra_private.live_paid_policies set enabled=false where id=$1",
+                [policy],
+              );
+            } else {
+              requirement = uuid();
+              await locker.query(
+                "insert into kxra.legal_document_requirements(id,org_id,document_id,document_version,document_sha256,mandatory,state,acceptance_wording,acceptance_wording_version,acceptance_wording_sha256,effective_at) select $1,$2,id,version,content_sha256,true,'ACTIVE','Synthetic mandatory acceptance',1,$3,clock_timestamp() from kxra.legal_documents where org_id=$2 and document_type='TERMS' limit 1",
+                [requirement, f.org, sha("Synthetic mandatory acceptance")],
+              );
+            }
+            const pending = h
+              .authority()
+              .consume(input(h), new AbortController().signal)
+              .then(
+                () => true,
+                () => false,
+              );
+            let blocked = false;
+            for (let n = 0; n < 100; n++) {
+              if (
+                (
+                  await admin.query(
+                    "select 1 from pg_stat_activity where usename='kxra_app' and wait_event_type='Lock'",
+                  )
+                ).rowCount
+              ) {
+                blocked = true;
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 5));
+            }
+            assert.equal(blocked, true);
+            await locker.query("commit");
+            assert.equal(await pending, false);
+            assert.equal(
+              (
+                await admin.query(
+                  "select count(*)::int n from kxra_private.ghp_consumptions where attempt_id=$1",
+                  [(h.operation as any).attempt_id],
+                )
+              ).rows[0].n,
+              0,
+            );
+          } finally {
+            await locker.query("rollback");
+            await locker.end();
+            if (policy)
+              await admin.query(
+                "update kxra_private.live_paid_policies set enabled=true where id=$1",
+                [policy],
+              );
+            if (requirement)
+              await admin.query(
+                "update kxra.legal_document_requirements set state='RETIRED',retired_at=clock_timestamp() where id=$1",
+                [requirement],
+              );
+          }
+        }
+      },
+    );
+    await t.test(
       "cancel, feature withdrawal, grant revocation and account session loss stop consume after a blocked lock",
       async () => {
         for (const change of ["cancel", "activation", "worker", "session"]) {
@@ -498,7 +691,7 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
           await locker.query("begin");
           if (change === "session")
             await locker.query(
-              "select pg_advisory_xact_lock(hashtextextended('kxra-review-current-policy-v1',0))",
+              "select pg_advisory_xact_lock(hashtextextended('kxra-ghp-authority-v1',0))",
             );
           await locker.query(
             "select id from kxra_private.ghp_connections where id=$1 for update",
