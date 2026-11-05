@@ -519,6 +519,70 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
       },
     );
     await t.test(
+      "reviewer account lock cannot deadlock an independently approved write",
+      async () => {
+        const c = await connection(),
+          p = await prepared(c);
+        const reviewer = new pg.Client({
+            ...cfg,
+            user: os.userInfo().username,
+          }),
+          gate = new pg.Client({ ...cfg, user: os.userInfo().username });
+        await reviewer.connect();
+        await gate.connect();
+        await reviewer.query("begin");
+        await gate.query("begin");
+        await reviewer.query(
+          "select account_id from kxra.account_identities where account_id=$1 for update",
+          [f.actor],
+        );
+        await gate.query(
+          "select id from kxra_private.ghp_activations where id=$1 for update",
+          [c.activation],
+        );
+        const approve = store.human(actor(), {
+          action: "APPROVE",
+          connection_id: c.id,
+          write_id: p.write_id,
+          proposal_digest: p.proposal_digest,
+          attested: true,
+        });
+        let writer: Promise<any> | undefined;
+        try {
+          let blocked = false;
+          for (let n = 0; n < 100; n++) {
+            if (
+              (
+                await admin.query(
+                  "select 1 from pg_stat_activity where usename='kxra_app' and wait_event_type='Lock'",
+                )
+              ).rowCount
+            ) {
+              blocked = true;
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 5));
+          }
+          assert.equal(blocked, true);
+          writer = reviewer.query(
+            "update kxra_private.business_eligibility_reviews set withdrawn_at=clock_timestamp() where id=$1",
+            [f.eligibility],
+          );
+          await new Promise((r) => setTimeout(r, 25));
+          await gate.query("commit");
+          assert.equal(((await approve) as any).state, "APPROVED");
+          await writer;
+          await reviewer.query("rollback");
+        } finally {
+          await gate.query("rollback");
+          await reviewer.query("rollback");
+          await Promise.allSettled([approve, ...(writer ? [writer] : [])]);
+          await gate.end();
+          await reviewer.end();
+        }
+      },
+    );
+    await t.test(
       "expired read capability cannot cross a blocked activation fence",
       async () => {
         for (const action of ["READ_CONTEXT", "RECORD_READ", "CURRENT"]) {
@@ -546,21 +610,19 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
               ? store.readContext(raw)
               : action === "RECORD_READ"
                 ? store.recordRead(raw, sha("read"))
-                : store
-                    .authority(raw)
-                    .current(
-                      {
-                        binding: c.binding,
+                : store.authority(raw).current(
+                    {
+                      binding: c.binding,
+                      operation,
+                      binding_sha256: githubBindingDigest(c.binding),
+                      operation_sha256: githubOperationDigest(
+                        c.binding,
                         operation,
-                        binding_sha256: githubBindingDigest(c.binding),
-                        operation_sha256: githubOperationDigest(
-                          c.binding,
-                          operation,
-                        ),
-                        scope: "issues:read",
-                      },
-                      new AbortController().signal,
-                    )
+                      ),
+                      scope: "issues:read",
+                    },
+                    new AbortController().signal,
+                  )
           ).then(
             () => true,
             () => false,
@@ -677,6 +739,77 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
       },
     );
     await t.test(
+      "invitation seat-boundary writer is fenced and cannot overbook",
+      async () => {
+        const c = await connection(),
+          h = await claimed(c),
+          project = uuid();
+        await admin.query(
+          "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'synthetic-seat-boundary','Synthetic seat fixture','LOCAL','HELD','LOCAL')",
+          [project, f.org],
+        );
+        const seats = (
+          await admin.query(
+            "select kxra_private.pilot_seats($1)::int used,kxra_private.workspace_seat_capacity($1)::int capacity",
+            [f.org],
+          )
+        ).rows[0];
+        assert.ok(seats.capacity > seats.used && seats.capacity <= 100);
+        const locker = new pg.Client({ ...cfg, user: os.userInfo().username });
+        await locker.connect();
+        await locker.query("begin");
+        const invite = async (db: pg.Client) => {
+          const i = uuid();
+          return db.query(
+            "insert into kxra.invitations(id,org_id,project_id,email_digest,token_digest,role,approved_by,expires_at) values($1,$2,$3,$4,$5,'viewer',$6,clock_timestamp()+interval '1 hour')",
+            [i, f.org, project, sha("email" + i), sha("token" + i), f.actor],
+          );
+        };
+        let pending: Promise<any> | undefined;
+        try {
+          for (let n = seats.used; n < seats.capacity; n++)
+            await invite(locker);
+          pending = h
+            .authority()
+            .consume(input(h), new AbortController().signal);
+          let blocked = false;
+          for (let n = 0; n < 100; n++) {
+            if (
+              (
+                await admin.query(
+                  "select 1 from pg_stat_activity where usename='kxra_app' and wait_event_type='Lock'",
+                )
+              ).rowCount
+            ) {
+              blocked = true;
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 5));
+          }
+          assert.equal(blocked, true);
+          await locker.query("commit");
+          assert.equal((await pending).consumed, true);
+          assert.equal(
+            (
+              await admin.query("select kxra_private.pilot_seats($1)::int n", [
+                f.org,
+              ])
+            ).rows[0].n,
+            seats.capacity,
+          );
+          await assert.rejects(invite(admin));
+          await h.publish({
+            outcome: "NOT_EXECUTED",
+            evidence: { reason: "AUTHORITY_OR_PREFLIGHT_UNAVAILABLE" },
+          });
+        } finally {
+          await locker.query("rollback");
+          await locker.end();
+          if (pending) await Promise.allSettled([pending]);
+        }
+      },
+    );
+    await t.test(
       "cancel, feature withdrawal, grant revocation and account session loss stop consume after a blocked lock",
       async () => {
         for (const change of ["cancel", "activation", "worker", "session"]) {
@@ -763,6 +896,64 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
       },
     );
     // The final recovery cohort has its own current customer/policy after the deliberate account loss above.
+    await admin.query("begin");
+    f = await seedAiResumeFixture(admin, false);
+    await admin.query("commit");
+    environment.KXRA_GITHUB_OUTBOX_POLICY_SHA256 = f.review;
+    await t.test(
+      "new immutable business declaration invalidates consumption after a blocked writer",
+      async () => {
+        const c = await connection(),
+          h = await claimed(c),
+          locker = new pg.Client({ ...cfg, user: os.userInfo().username });
+        await locker.connect();
+        await locker.query("begin");
+        let pending: Promise<boolean> | undefined;
+        try {
+          await locker.query(
+            "insert into kxra_private.business_declarations(id,org_id,actor_id,legal_name,country,region,provider,business_use,authorised,provider_costs,declaration_version) values($1,$2,$3,'Synthetic changed declaration','NZ','Auckland','OPENAI',true,true,true,'business-byok-v1')",
+            [uuid(), f.org, f.actor],
+          );
+          pending = h
+            .authority()
+            .consume(input(h), new AbortController().signal)
+            .then(
+              () => true,
+              () => false,
+            );
+          let blocked = false;
+          for (let n = 0; n < 100; n++) {
+            if (
+              (
+                await admin.query(
+                  "select 1 from pg_stat_activity where usename='kxra_app' and wait_event_type='Lock'",
+                )
+              ).rowCount
+            ) {
+              blocked = true;
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 5));
+          }
+          assert.equal(blocked, true);
+          await locker.query("commit");
+          assert.equal(await pending, false);
+          assert.equal(
+            (
+              await admin.query(
+                "select count(*)::int n from kxra_private.ghp_consumptions where attempt_id=$1",
+                [(h.operation as any).attempt_id],
+              )
+            ).rows[0].n,
+            0,
+          );
+        } finally {
+          await locker.query("rollback");
+          await locker.end();
+          if (pending) await pending;
+        }
+      },
+    );
     await admin.query("begin");
     f = await seedAiResumeFixture(admin, false);
     await admin.query("commit");

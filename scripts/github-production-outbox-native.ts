@@ -172,6 +172,103 @@ async function main() {
           .map((f: any) => f.name + "(" + f.arguments + ")");
       assert.deepEqual(reach(catalog), reach(before));
     }
+    const newFunctions = catalog.functions.filter(
+      (f: any) =>
+        !before.functions.some(
+          (b: any) =>
+            b.schema === f.schema &&
+            b.name === f.name &&
+            b.arguments === f.arguments,
+        ),
+    );
+    assert.deepEqual(
+      newFunctions.map((f: any) => f.schema + "." + f.name).sort(),
+      [
+        "kxra.github_prod_human",
+        "kxra.github_prod_receipt",
+        "kxra.github_prod_worker",
+        ...[
+          "ghp_object",
+          "ghp_sha",
+          "ghp_iso",
+          "ghp_binding_valid",
+          "ghp_binding_hash",
+          "ghp_operation_text",
+          "ghp_operation_hash",
+          "ghp_utf16",
+          "ghp_immutable",
+          "ghp_authority_writer",
+          "ghp_human",
+          "ghp_fence",
+          "ghp_cap",
+          "ghp_cap_current",
+          "ghp_approval_hash",
+          "ghp_projection",
+        ].map((n) => "kxra_private." + n),
+      ].sort(),
+    );
+    assert.deepEqual(catalog.sequences, before.sequences);
+    const aclRoles = [
+      "kxra_app",
+      "authenticated",
+      "anon",
+      "kxra_billing_worker",
+      "kxra_ai_worker",
+    ];
+    const effective = [];
+    for (const role of aclRoles) {
+      for (const table of newTables) {
+        for (const privilege of [
+          "SELECT",
+          "INSERT",
+          "UPDATE",
+          "DELETE",
+          "TRUNCATE",
+          "REFERENCES",
+          "TRIGGER",
+        ]) {
+          assert.equal(
+            (
+              await db.query("select has_table_privilege($1,$2,$3) allowed", [
+                role,
+                "kxra_private." + table.name,
+                privilege,
+              ])
+            ).rows[0].allowed,
+            false,
+          );
+        }
+      }
+      for (const f of newFunctions) {
+        const signature = f.schema + "." + f.name + "(" + f.arguments + ")";
+        const allowed = (
+          await db.query(
+            "select has_function_privilege($1,$2,'EXECUTE') allowed",
+            [role, signature],
+          )
+        ).rows[0].allowed;
+        assert.equal(
+          allowed,
+          f.schema === "kxra" && ["kxra_app", "authenticated"].includes(role),
+        );
+        effective.push({ role, signature, execute: allowed });
+      }
+    }
+    write("outbox-exact-inventory.json", {
+      tables: newTables,
+      functions: newFunctions,
+      triggers: catalog.triggers.filter(
+        (t: any) =>
+          !before.triggers.some(
+            (b: any) =>
+              b.schema === t.schema &&
+              b.name === t.name &&
+              b.tgname === t.tgname,
+          ),
+      ),
+      effective,
+      sequenceDelta: 0,
+    });
     await assertNoHostedFixtureObjects(db);
     write("installed-catalogue.json", catalog);
     write("schema-proof.json", {
