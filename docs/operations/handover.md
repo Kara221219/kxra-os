@@ -1423,3 +1423,8 @@ The exact committed complete runner clones a fresh owned source/runtime, preserv
 ## Full-feature production composition
 
 Use the separate composition checkout and [review packet](production-composition-2026-11-04.md). Preserve full launch scope and existing terms/financial commitments. New AI118 review source is not a full-feature deployment manifest; original hosted guard remains closed. Native117/fresh118/rollback/legacy/recovery evidence is distinct from canonical119 CI. Never promote fixture pairing/connectors/apps or manufacture legacy AI authority. Final exact-source receipts are retained outside the worktree; source branches remain unchanged.
+
+
+## 4 November — independent human review application wiring
+
+An isolated branch adds default-off internal owner review UI/API backed by exact customer/provider/policy grants, frozen request authority and immutable decision/withdrawal receipts. No authority is seeded. Native blocked-lock races, actual browser lost-ack read recovery and installed-schema restore are exercised separately from canonical119. See [operator review handoff](review-operations-2026-11-04.md) for exact scope, reproduction, custody/grant decisions and production migration gates. Full launch scope and existing customer commitments remain unchanged; no hosted or provider action. Final commit-specific acceptance is retained outside source.
