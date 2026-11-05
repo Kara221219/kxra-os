@@ -651,6 +651,21 @@ export async function runPairedSetupProof(p: {
       );
     },
   );
+  if (process.env.KXRA_PAIRED_SETUP_UI_PROOF === "1") {
+    const { runPairedSetupUiProof } = await import("./paired-setup-ui-native");
+    await runPairedSetupUiProof({
+      root: p.root,
+      runtime: p.runtime,
+      env: p.env,
+      admin,
+      actor,
+      room: f.room,
+      intent,
+      refresh,
+      check,
+      write,
+    });
+  }
   write("setup.json", {
     activation: false,
     credentialIssued: false,

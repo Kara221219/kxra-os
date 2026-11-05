@@ -1,14 +1,23 @@
 import type { Principal } from "../db";
-import { pairedSetupCommand, type PairedSetupStore } from "./paired-setup";
-/** Unwired HTTP boundary. The hosting application must supply its verified
+import type { PairedSetupStore } from "./paired-setup";
+import { pairedSetupHttpCommand } from "./paired-setup-contract";
+import {
+  isPairedSetupFixtureBoundary,
+  type PairedSetupFixtureBoundary,
+} from "./paired-setup-fixture";
+/** Server HTTP boundary; production hosting remains unwired. The hosting application must supply its verified
  * identity resolver and trusted origin; a request-body/paired token is never identity. */
 export async function pairedSetupHttp(
   request: Request,
   ports?: {
     enabled?: boolean;
+    fixtureBoundary?: PairedSetupFixtureBoundary;
     origin: string;
     verifyIdentity(request: Request): Promise<Principal | null>;
-    store(actor: Principal): Pick<PairedSetupStore, "command">;
+    store(
+      actor: Principal,
+    ): Pick<PairedSetupStore, "command"> &
+      Partial<Pick<PairedSetupStore, "options">>;
   },
 ): Promise<Response> {
   const response = (status: number, error: string) =>
@@ -31,7 +40,14 @@ export async function pairedSetupHttp(
   } catch {
     return response(401, "IDENTITY_REQUIRED");
   }
-  if (!actor || actor.source !== "supabase")
+  if (
+    !actor ||
+    (actor.source !== "supabase" &&
+      !(
+        actor.source === "fixture" &&
+        isPairedSetupFixtureBoundary(ports.fixtureBoundary)
+      ))
+  )
     return response(401, "IDENTITY_REQUIRED");
   let value: unknown,
     reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
@@ -56,7 +72,7 @@ export async function pairedSetupHttp(
       bytes.set(chunk, offset);
       offset += chunk.byteLength;
     }
-    value = pairedSetupCommand.parse(
+    value = pairedSetupHttpCommand.parse(
       JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
     );
   } catch {
@@ -65,9 +81,20 @@ export async function pairedSetupHttp(
     reader?.releaseLock();
   }
   try {
-    return Response.json(await ports.store(actor).command(value), {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return Response.json(
+      await (async () => {
+        const store = ports.store(actor);
+        const command = pairedSetupHttpCommand.parse(value);
+        if (command.action === "OPTIONS") {
+          if (!store.options) throw Error("OPTIONS_UNAVAILABLE");
+          return store.options();
+        }
+        return store.command(command);
+      })(),
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch {
     return response(403, "SETUP_UNAVAILABLE");
   }

@@ -826,6 +826,12 @@ async function main() {
     });
   } finally {
     let clean = true;
+    const uiStarted = path.join(runtime, "setup-ui-started.json"),
+      uiCleanup = path.join(runtime, "setup-ui-cleanup.json");
+    if (fs.existsSync(uiStarted))
+      clean =
+        fs.existsSync(uiCleanup) &&
+        JSON.parse(fs.readFileSync(uiCleanup, "utf8")).clean === true;
     for (const pool of pools)
       try {
         await pool.end();

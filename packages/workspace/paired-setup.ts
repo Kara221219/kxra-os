@@ -2,51 +2,36 @@ import { z } from "zod";
 import type { Principal } from "../db";
 import type { PairedSqlPool } from "./paired-admission-store";
 const id = z.uuid();
-export const pairedSetupCommand = z.discriminatedUnion("action", [
-  z
-    .object({
-      action: z.literal("REQUEST"),
-      request_id: id,
-      room_id: id,
-      ai_intent_id: id,
-      auth_route: z.enum(["CUSTOMER_API_KEY", "CHATGPT_SUBSCRIPTION"]),
-      label: z.string().trim().min(1).max(100),
-    })
-    .strict(),
-  z.object({ action: z.literal("STATUS"), request_id: id }).strict(),
-  z.object({ action: z.literal("CANCEL"), request_id: id }).strict(),
-]);
-export const pairedSetupReceipt = z
-  .object({
-    request_id: id,
-    agent_id: id,
-    room_id: id,
-    reason: z.enum([
-      "POLICY_READY_SETUP_HELD",
-      "SUBSCRIPTION_PROVIDER_CONFIRMATION_REQUIRED",
-      "TRANSPORT_REVIEW_REQUIRED",
-      "TERMS_REQUIRED",
-      "PAID_PROOF_REQUIRED",
-      "BUSINESS_REVIEW_REQUIRED",
-      "AI_REVIEW_REQUIRED",
-      "NEW_REQUEST_REQUIRED",
-      "EXPIRED",
-      "CANCELLED",
-    ]),
-    expires_at: z.iso.datetime({ offset: true }),
-    activation_allowed: z.literal(false),
-    credential_issued: z.literal(false),
-  })
-  .strict();
+import {
+  pairedSetupCommand,
+  pairedSetupReceipt,
+  pairedSetupOptions,
+} from "./paired-setup-contract";
+export {
+  pairedSetupCommand,
+  pairedSetupReceipt,
+} from "./paired-setup-contract";
+import {
+  isPairedSetupFixtureBoundary,
+  type PairedSetupFixtureBoundary,
+} from "./paired-setup-fixture";
 /** Server-injected, request-only onboarding. No secret, bearer token, device
  * session or executable authority is issued. Actual activation is deliberately absent. */
 export class PairedSetupStore {
   readonly #pool: PairedSqlPool;
   readonly #actor: Readonly<Principal>;
   readonly #enabled: boolean;
-  constructor(pool: PairedSqlPool, actor: Principal, enabled = false) {
+  constructor(
+    pool: PairedSqlPool,
+    actor: Principal,
+    enabled = false,
+    fixture?: PairedSetupFixtureBoundary,
+  ) {
     if (
-      actor.source !== "supabase" ||
+      (actor.source !== "supabase" &&
+        !(
+          actor.source === "fixture" && isPairedSetupFixtureBoundary(fixture)
+        )) ||
       !id.safeParse(actor.id).success ||
       !id.safeParse(actor.organisation_id).success ||
       !Number.isSafeInteger(actor.session_version) ||
@@ -64,6 +49,40 @@ export class PairedSetupStore {
   }
   [Symbol.for("nodejs.util.inspect.custom")]() {
     return this.toJSON();
+  }
+  async options() {
+    if (!this.#enabled) throw Error("PAIRED_SETUP_DISABLED");
+    const c = await this.#pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("set local statement_timeout='2s'");
+      await c.query("set local role authenticated");
+      await c.query(
+        "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true),set_config('request.kxra.execution_mode','hosted',true)",
+        [
+          this.#actor.id,
+          JSON.stringify({
+            sub: this.#actor.id,
+            aal: this.#actor.aal,
+            session_version: this.#actor.session_version,
+            auth_time: this.#actor.auth_time,
+          }),
+          this.#actor.organisation_id,
+        ],
+      );
+      const rows = (
+        await c.query("select kxra_paired_admission.setup_options() value")
+      ).rows;
+      if (rows.length !== 1) throw Error("INVALID_OPTIONS");
+      const result = pairedSetupOptions.parse(rows[0].value);
+      await c.query("commit");
+      return result;
+    } catch {
+      await c.query("rollback").catch(() => undefined);
+      throw Error("PAIRED_SETUP_UNAVAILABLE");
+    } finally {
+      c.release();
+    }
   }
   async command(raw: unknown) {
     if (!this.#enabled) throw Error("PAIRED_SETUP_DISABLED");
