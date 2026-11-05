@@ -120,7 +120,7 @@
     },
     {
       "path": "scripts/paired-composition-native.ts",
-      "sha256": "04d038eac6b624c207a83634eb6cda1e05536e9639c514754a2f15de126c81b4"
+      "sha256": "34a0835dfe3a643aeeb8f3beb1fb0a05f84d3a3747cd57323272ed8d5ac2b788"
     },
     {
       "path": "scripts/paired-setup-policy-native.ts",

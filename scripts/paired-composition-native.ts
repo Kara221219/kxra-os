@@ -215,10 +215,16 @@ export async function runPairedCompositionProof(p: {
             reviewCompletedAfterPairedRollback: true,
           });
         } finally {
-          if (c) await rollback(c);
-          if (barrier) await admin.query("rollback");
+          const released = await Promise.allSettled([
+            c ? rollback(c) : Promise.resolve(),
+            barrier ? admin.query("rollback") : Promise.resolve(),
+          ]);
           await pending?.catch(() => {});
-          if (rc) await rollback(rc);
+          if (rc) released.push(...(await Promise.allSettled([rollback(rc)])));
+          assert.ok(
+            released.every((r) => r.status === "fulfilled"),
+            "RACE_CONNECTION_CLEANUP_UNCONFIRMED",
+          );
         }
       },
     );
