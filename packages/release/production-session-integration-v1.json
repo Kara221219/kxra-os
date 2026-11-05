@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "classification": "LOCAL_ORIGINAL_SESSION_PRODUCTION_COMPOSITION_NOT_HOSTED_AUTHORIZATION",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "numberedMigrationsChanged": false,
+  "customerPolicyChanged": false,
+  "baseComposition": "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
+  "reviewedSessionHead": "4b3c5a71a3ad4ea8b88935cfbbec699c74a58de2",
+  "wholeBranchMerge": "61e26a3c9c5b97b8c8b8969c2ed7d02bb0f75f3e",
+  "integratedSourceFiles": [
+    {
+      "path": "apps/os/lib/auth.ts",
+      "sha256": "ddce14732e58257f45b55499b8545b5cfb9eeb612d4292cc13abfd41b1896270"
+    },
+    {
+      "path": "database/production/custom-app-session-attestation-v1.sql",
+      "sha256": "14c84faeadddecd2e54cc77b43c533abe7cf5e11793f0078cec93058884644d6"
+    },
+    {
+      "path": "packages/authz/hosted-session-attestation.ts",
+      "sha256": "8207a9c21ea21742224b1a14337138fe0d3e07257fd8be4659e98aebffff8392"
+    },
+    {
+      "path": "packages/db/index.ts",
+      "sha256": "e4df0c2af6939f4016b1bb60fdb4c783dff650968d5eaae36af991b0bac6d85a"
+    },
+    {
+      "path": "packages/release/custom-app-session-attestation-v1.json",
+      "sha256": "a1ac3e8bac6d1f77082baf3c1578d4fe8988fd91bbcc2c5fcc56e24e27fbc4a3"
+    },
+    {
+      "path": "scripts/session-attestation-native.ts",
+      "sha256": "da01087ef363d6508fa9cac57bb649a9bf41aa4ce89ceb4b004ec125ed5c5ad7"
+    },
+    {
+      "path": "scripts/session-attestation-payload.mjs",
+      "sha256": "4473ed9f541553dd3e211b43c10f3b98e6a3f0d7f064b67d262f80e85d142c70"
+    },
+    {
+      "path": "scripts/session-attestation-probe.ts",
+      "sha256": "41dc8a763ebd97b80dfe518d7b9cec60e27d401cb90f83319697bd4c6f71a5f4"
+    },
+    {
+      "path": "scripts/session-attestation-role-catalog.mjs",
+      "sha256": "708323238a7a24b022a99d384e997fce3591cac70c53bbccd443774bdf0fd399"
+    },
+    {
+      "path": "scripts/verify-session-attestation.mjs",
+      "sha256": "0317da82cc985a5ebcfd01444c6020059eb0b20873680a6dfe0349815640a5fa"
+    },
+    {
+      "path": "tests/hosted-session-attestation.test.ts",
+      "sha256": "7e5c292a0a6785abe143ef45a1d95bb7d42eef4352c5dae88cc077a2c0a5ff86"
+    },
+    {
+      "path": "tests/production-apps-composition.test.ts",
+      "sha256": "8a1099b3f3523cf5976c3b96d809940eea938fad0ab271a2d5339557c218b151"
+    },
+    {
+      "path": "tests/production-session-composition.test.ts",
+      "sha256": "253b17f0f1daa7463ad40f8568e069909f3e7c5fa414860a8a5d17f5fdf2fd7f"
+    },
+    {
+      "path": "tests/support/synthetic-session-attestation.ts",
+      "sha256": "a3c947788f0e4493df2a3e178c8f31d624afdf73ef8d46a434228a7dbb129fee"
+    }
+  ],
+  "preservedCompositionFiles": [
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-apps-integration-v1.json",
+      "sha256": "b1a12b9c83899054db6b47e27a4929439133c2bb3b01969e3d503191beecad30"
+    },
+    {
+      "path": "packages/release/production-github-integration-v1.json",
+      "sha256": "380e941ae76c8fbc1ad9f86a09dede2f6859198dbaf0a8afed3a26654b60e5aa"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    },
+    {
+      "path": "packages/release/production-paired-integration-v1.json",
+      "sha256": "38b9b43a226211647d61529b250e2040213c9f9e7ceedcc19a3e2055cf24af33"
+    },
+    {
+      "path": "packages/release/production-payment-integration-v1.json",
+      "sha256": "2320140c02adfd04835866033afca8b91b9beda4e9be2d100e544294b9cc6b70"
+    },
+    {
+      "path": "packages/release/production-refresh-integration-v1.json",
+      "sha256": "c43660a8faaaae96342760a321625198a92bf1b5ea3cae551d4675aa970272cd"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+    }
+  ],
+  "hookConfigured": false,
+  "hostedExecutorImplemented": false,
+  "oldSessionsBackfilled": false,
+  "newTables": 1,
+  "functionDefinitions": 8,
+  "newFunctions": 7,
+  "replacedOriginalPredicateOidPreserved": true,
+  "proofExtensions": [
+    "all non-superuser application/Auth effective privilege delta",
+    "exact prior paid predicate body/config",
+    "shipped desktop/mobile browser forms with SDK-verified synthetic session",
+    "retained source/restarted/restored complete catalogue/data snapshots",
+    "bounded independent cleanup and owned PGprocess/port confirmation"
+  ],
+  "liveGates": [
+    "Same authoritative real Auth/application DB schema and actual hook/session transaction ordering",
+    "Reviewed migration cohort/numbering, hook URI configuration and real Supabase getUser/getClaims/MFA/refresh/tenant/pay/browser acceptance before activation",
+    "Older Auth/app restore must reconcile independent revocations and invalidate affected provider sessions before resuming; this samebackup binding is not an external continuity fence"
+  ]
+}

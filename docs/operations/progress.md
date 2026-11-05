@@ -1762,3 +1762,6 @@ Closed the fixture-only HTTP/SQL and independent-review gaps on an isolated bran
 
 
 Production apps integration: see `production-apps-combined-2026-11-05.md` and `packages/release/production-apps-integration-v1.json`. Entire reviewed branch integrated locally; exact-head combined acceptance pending. No hosted change or activation.
+
+
+Original-session combined local integration: see `production-session-combined-2026-11-05.md` and exact source manifest `packages/release/production-session-integration-v1.json`. Hook/configuration/activation remain off; current exact-head acceptance is tracked by the retained task evidence handoff.

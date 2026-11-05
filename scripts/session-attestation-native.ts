@@ -1,3 +1,5 @@
+import { customAppsBrowserFixture } from "./custom-apps-browser-native";
+import { sessionRoleCatalogue } from "./session-attestation-role-catalog.mjs";
 import { sessionAttestationPayload } from "./session-attestation-payload.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -67,6 +69,8 @@ async function main() {
     provider: pg.Client | undefined,
     server: http.Server | undefined,
     pool: any;
+  let browserFixture:
+    Awaited<ReturnType<typeof customAppsBrowserFixture>> | undefined;
   const receipt: any = {
     classification: "LOCAL_SYNTHETIC_AUTH_SESSION_HOOK_NOT_PROVIDER_ACCEPTANCE",
     baseCommit: "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
@@ -164,6 +168,13 @@ async function main() {
       "insert into auth.sessions(id,user_id,created_at) values($1,$2,clock_timestamp())",
       [existing, author],
     );
+    const rolesBefore = await sessionRoleCatalogue(admin);
+    write("role-access-before.json", rolesBefore);
+    const paidBefore = (
+      await admin.query(
+        "select prosrc,provolatile,prosecdef,proconfig,prorettype::regtype::text return_type from pg_proc where oid='kxra_private.custom_apps_access()'::regprocedure",
+      )
+    ).rows[0];
     const before = await catalog(admin),
       oldOID = (
         await admin.query(
@@ -184,6 +195,63 @@ async function main() {
     assert.deepEqual(await catalog(admin), before);
     await admin.query(sql);
     const afterAttestation = await catalog(admin);
+    const paidAfter = (
+      await admin.query(
+        "select prosrc,provolatile,prosecdef,proconfig,prorettype::regtype::text return_type from pg_proc where oid='kxra_private.custom_apps_paid_access_v1()'::regprocedure",
+      )
+    ).rows[0];
+    assert.deepEqual(
+      paidAfter,
+      paidBefore,
+      "EXACT_PRIOR_PAID_AND_LEGAL_AUTHORITY_RETAINED",
+    );
+    const rolesAfter = await sessionRoleCatalogue(admin);
+    for (const section of Object.keys(
+      rolesBefore,
+    ) as (keyof typeof rolesBefore)[]) {
+      const exactRows = new Set(
+        rolesAfter[section].map((r: any) => JSON.stringify(r)),
+      );
+      for (const row of rolesBefore[section])
+        assert.ok(
+          exactRows.has(JSON.stringify(row)),
+          "Existing effective role authority changed: " + section,
+        );
+    }
+    const newFunctions = rolesAfter.functions.filter(
+      (r: any) =>
+        !rolesBefore.functions.some(
+          (old: any) =>
+            old.schema === r.schema &&
+            old.name === r.name &&
+            old.arguments === r.arguments,
+        ),
+    );
+    assert.deepEqual(
+      newFunctions
+        .filter((r: any) => r.reachable)
+        .map((r: any) => ({ name: r.schema + "." + r.name, role: r.role })),
+      [
+        {
+          name: "kxra_private.custom_app_access_token_hook",
+          role: "supabase_auth_admin",
+        },
+      ],
+    );
+    assert.ok(
+      rolesAfter.tables
+        .filter((r: any) => r.name === "custom_app_session_bindings")
+        .every((r: any) => !r.reachable),
+    );
+    write("role-access-after.json", rolesAfter);
+    receipt.exactPriorPaidPredicateRetained = true;
+    receipt.allExistingEffectiveRolePrivilegesPreserved = true;
+    receipt.newEffectiveHookExecution = [
+      {
+        name: "kxra_private.custom_app_access_token_hook",
+        role: "supabase_auth_admin",
+      },
+    ];
     const key = (r: any) => r.schema + "." + r.name;
     assert.deepEqual(
       afterAttestation.tables
@@ -420,14 +488,31 @@ async function main() {
     await identity("author", author, initial);
     await identity("reviewer", reviewer, reviewSession);
     await identity("outsider", outsider, outsideSession, otherOrg);
+    browserFixture = await customAppsBrowserFixture({
+      root,
+      runtime,
+      room,
+      origin: env.KXRA_ORIGIN,
+      refreshProof: async () => {
+        await refresh();
+      },
+      write,
+    });
     server = http.createServer(async (req, res) => {
       try {
+        if (browserFixture!.serve(req, res)) return;
         let bytes = Buffer.alloc(0);
         for await (const c of req) bytes = Buffer.concat([bytes, c]);
         const url = new URL(req.url!, env.KXRA_ORIGIN),
           parts = url.pathname.split("/").filter(Boolean),
           which =
-            sessions[String(req.headers["x-synthetic-session"] ?? "author")];
+            sessions[
+              String(
+                req.headers["x-synthetic-session"] ??
+                  req.headers["x-synthetic-actor"] ??
+                  "author",
+              )
+            ];
         const response = await customAppHttp(
           new Request(url, {
             method: req.method,
@@ -665,6 +750,10 @@ async function main() {
     receipt.phases.push(
       "Synthetic ES256 issuer in memory, actual Supabase SDK getUser/getClaims boundary, authenticated create/review/publish/save/read/retry; original token+refresh+forged-current-version+foreign-session denial after account revocation; fresh sign-in succeeds; deterministic account bump/session DELETE/not_after UPDATE versus waiting save; deleted ID cannot rebind",
     );
+    await browserFixture.run();
+    receipt.phases.push(
+      "Actual shipped desktop/mobile React components, synthetic ES256 claims through SDK verified principal, original-session SQL and HTTPcore; independent human review/publish/save/reload/revise/withdrawal, no external requests",
+    );
     const checkpoint = await catalog(admin),
       checkpointData = await data(admin, checkpoint);
     write("source-catalog.json", checkpoint);
@@ -716,8 +805,12 @@ async function main() {
     );
     admin = new pg.Client({ ...cfg, user: os.userInfo().username });
     await admin.connect();
-    assert.deepEqual(await catalog(admin), checkpoint);
-    assert.deepEqual(await data(admin, checkpoint), checkpointData);
+    const restartedCatalog = await catalog(admin),
+      restartedData = await data(admin, checkpoint);
+    write("restarted-catalog.json", restartedCatalog);
+    write("restarted-data.json", restartedData);
+    assert.deepEqual(restartedCatalog, checkpoint);
+    assert.deepEqual(restartedData, checkpointData);
     const input = {
       author,
       org,
@@ -810,8 +903,17 @@ async function main() {
       user: os.userInfo().username,
     });
     await restored.connect();
-    assert.deepEqual(await catalog(restored), checkpoint);
-    assert.deepEqual(await data(restored, checkpoint), checkpointData);
+    const restoredCatalog = await catalog(restored),
+      restoredData = await data(restored, checkpoint);
+    write("restored-catalog.json", restoredCatalog);
+    write("restored-data.json", restoredData);
+    assert.deepEqual(restoredCatalog, checkpoint);
+    assert.deepEqual(restoredData, checkpointData);
+    assert.deepEqual(
+      await sessionRoleCatalogue(restored),
+      await sessionRoleCatalogue(admin),
+    );
+    write("restored-role-access.json", await sessionRoleCatalogue(restored));
     await restored.query(
       "update kxra_private.live_paid_access set checked_at=now(),valid_until=now()+interval '55 seconds' where org_id=$1",
       [org],
@@ -840,18 +942,46 @@ async function main() {
     write("receipt.json", receipt);
     console.log("ORIGINAL_SESSION_ATTESTATION_NATIVE_PASS " + runtime);
   } finally {
+    const bounded = async (work: Promise<unknown>) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          work,
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(Error("OWNED_RESOURCE_CLOSE_TIMEOUT")),
+              5000,
+            );
+          }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    };
     const closes = await Promise.allSettled([
       server
-        ? new Promise<void>((r, j) => {
-            server!.close((e) => (e ? j(e) : r()));
-            server!.closeAllConnections();
-          })
+        ? bounded(
+            new Promise<void>((r, j) => {
+              server!.close((e) => (e ? j(e) : r()));
+              server!.closeAllConnections();
+            }),
+          )
         : Promise.resolve(),
-      pool ? pool.getPool().end() : Promise.resolve(),
-      provider ? provider.end() : Promise.resolve(),
-      admin ? admin.end() : Promise.resolve(),
+      pool
+        ? bounded(Promise.resolve().then(() => pool.getPool().end()))
+        : Promise.resolve(),
+      provider
+        ? bounded(Promise.resolve().then(() => provider!.end()))
+        : Promise.resolve(),
+      admin
+        ? bounded(Promise.resolve().then(() => admin!.end()))
+        : Promise.resolve(),
     ]);
     const dataDir = path.join(runtime, "postgres");
+    const pidFile = path.join(dataDir, "postmaster.pid");
+    const postgresPid = fs.existsSync(pidFile)
+      ? Number(fs.readFileSync(pidFile, "utf8").split("\n")[0])
+      : undefined;
     const stop = fs.existsSync(path.join(dataDir, "PG_VERSION"))
       ? spawnSync(
           path.join(bin, "pg_ctl"),
@@ -864,16 +994,49 @@ async function main() {
           timeout: 5000,
         })
       : { status: 3 };
+    let postgresProcessAbsent = !postgresPid;
+    if (postgresPid) {
+      try {
+        process.kill(postgresPid, 0);
+      } catch (e) {
+        postgresProcessAbsent = (e as NodeJS.ErrnoException).code === "ESRCH";
+      }
+    }
+    const portClosed = await new Promise<boolean>((resolve) => {
+      const socket = net.connect({
+        host: "127.0.0.1",
+        port: Number(new URL(env.KXRA_ORIGIN).port),
+      });
+      socket.once("connect", () => {
+        socket.destroy();
+        resolve(false);
+      });
+      socket.once("error", (e) => {
+        socket.destroy();
+        resolve((e as NodeJS.ErrnoException).code === "ECONNREFUSED");
+      });
+      socket.setTimeout(1000, () => {
+        socket.destroy();
+        resolve(false);
+      });
+    });
     const clean =
+      postgresProcessAbsent &&
+      portClosed &&
+      (browserFixture?.cleanupConfirmed() ?? true) &&
       closes.every((r) => r.status === "fulfilled") &&
       stop.status === 0 &&
       status.status === 3 &&
       !fs.existsSync(path.join(dataDir, "postmaster.pid"));
     write("cleanup.json", {
       clean,
+      browserCleanupConfirmed: browserFixture?.cleanupConfirmed() ?? true,
       resourceCloses: closes.map((r) => r.status),
       postgresStop: stop.status,
       postgresStatus: status.status,
+      postgresPid,
+      postgresProcessAbsent,
+      portClosed,
     });
     assert.ok(clean, "OWNED_CLEANUP_UNCERTAIN");
   }
