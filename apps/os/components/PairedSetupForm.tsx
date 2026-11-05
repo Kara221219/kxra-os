@@ -128,19 +128,21 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
         <fieldset disabled={busy || !!pending}>
           <legend>New setup request</legend>
           <div className="form-grid">
-            <label>
-              Private agent name
+            <div>
+              <label htmlFor="paired-setup-name">Private agent name</label>
               <input
+                id="paired-setup-name"
                 name="label"
                 required
                 minLength={1}
                 maxLength={100}
                 defaultValue="My private agent"
               />
-            </label>
-            <label>
-              Room
+            </div>
+            <div>
+              <label htmlFor="paired-setup-room">Room</label>
               <select
+                id="paired-setup-room"
                 name="room"
                 required
                 defaultValue={options.rooms[0]?.id ?? ""}
@@ -155,10 +157,11 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
                   <option value="">No authorised room</option>
                 )}
               </select>
-            </label>
-            <label>
-              AI model request
+            </div>
+            <div>
+              <label htmlFor="paired-setup-ai">AI model request</label>
               <select
+                id="paired-setup-ai"
                 name="ai"
                 required
                 defaultValue={options.ai_intents[0]?.id ?? ""}
@@ -173,10 +176,14 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
                   <option value="">No AI model request</option>
                 )}
               </select>
-            </label>
-            <label>
-              AI account route
-              <select name="route" defaultValue="CUSTOMER_API_KEY">
+            </div>
+            <div>
+              <label htmlFor="paired-setup-route">AI account route</label>
+              <select
+                id="paired-setup-route"
+                name="route"
+                defaultValue="CUSTOMER_API_KEY"
+              >
                 <option value="CUSTOMER_API_KEY">
                   Customer API key · review required
                 </option>
@@ -184,7 +191,7 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
                   ChatGPT subscription · confirmation required
                 </option>
               </select>
-            </label>
+            </div>
           </div>
           <p>No key or sign-in is requested here.</p>
           <button
