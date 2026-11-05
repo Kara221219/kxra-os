@@ -18,6 +18,8 @@ export type Principal = {
   email_verified?: boolean;
   session_version?: number;
   provider_session_version?: number;
+  /** Verified provider session ID; never populate from request bodies or metadata. */
+  provider_session_id?: string;
   source?: "fixture" | "fake-provider" | "supabase";
 };
 let pool: pg.Pool | undefined;
@@ -89,6 +91,10 @@ export async function scoped<T>(
           email_verified: actor?.email_verified,
           session_version: actor?.session_version,
           provider_session_version: actor?.provider_session_version,
+          provider_session_id:
+            actor?.source === "supabase"
+              ? actor.provider_session_id
+              : undefined,
           role: actor ? "authenticated" : "anon",
         }),
         actor?.organisation_id || "",
