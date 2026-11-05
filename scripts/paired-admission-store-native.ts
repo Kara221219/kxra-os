@@ -243,6 +243,12 @@ async function main() {
       "insert into kxra.organisation_memberships(org_id,account_id,security_role,relationship_type,state,display_name,grant_source) values($1,$2,'ORG_ADMIN','CUSTOMER','ACTIVE','Synthetic','LOCAL_PAIRED_TEST')",
       [org, account],
     );
+    // Generated fixture actor for existing audit triggers on this admin-only seed connection.
+    // App requests below still use separate verified-context authenticated RLS transactions.
+    await admin.query(
+      "select set_config('request.jwt.claim.sub',$1,false),set_config('request.kxra.org_id',$2,false)",
+      [account, org],
+    );
     await admin.query(
       "insert into kxra.projects(id,org_id,code,name,stage,status,next_action) values($1,$2,'SYNTHETIC','Synthetic','IDEA','ACTIVE','Test only')",
       [project, org],
