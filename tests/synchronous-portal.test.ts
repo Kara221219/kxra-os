@@ -301,7 +301,7 @@ test("wrong attested claim scope rejects before any provider operation", async (
   assert.equal(h.creates, 0);
 });
 for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
-  test(`${mode}: actual shared PORTAL adapter validates cancellation config and exact five-call transport`, async () => {
+  test(`${mode}: actual shared PORTAL adapter requires payment repair and cancellation without plan changes`, async () => {
     const scoped = modernBillingFixture(mode),
       scope = scoped.execution.execution_scope,
       row = scoped.execution.catalogue[0];
@@ -364,6 +364,7 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
     const calls: string[] = [];
     let posts = 0,
       allowUpdates = false;
+    let paymentMethodUpdate: unknown = { enabled: true };
     const key = `sk_${scope.livemode ? "live" : "test"}_SYNTHETIC_NOT_A_CREDENTIAL_000000`;
     const fetcher = (async (url, init) => {
       const target = String(url);
@@ -391,6 +392,7 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
           features: {
             subscription_update: { enabled: allowUpdates },
             subscription_cancel: { enabled: true },
+            payment_method_update: paymentMethodUpdate,
           },
         };
       else {
@@ -438,6 +440,42 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
     assert.equal(calls.length, 5);
     assert.equal(result.expires_at, now + 1800);
     assert.equal(result.entitlement_authority, false);
+    for (const invalid of [
+      undefined,
+      null,
+      { enabled: false },
+      { enabled: "true" },
+      {},
+      true,
+    ]) {
+      paymentMethodUpdate = invalid;
+      await assert.rejects(
+        create(
+          {
+            ...scoped,
+            runtime: {
+              enabled: true,
+              nodeEnv: "production",
+              secretKey: key,
+              origin: "https://kxra.example",
+            },
+            transport: boundedPortalTransport(fetcher, key, {
+              customer_id: canonical.intent.customer_id,
+              price_id: row.price_id,
+              portal_configuration_id: mapping.portal_configuration_id,
+              origin: "https://kxra.example",
+            }),
+            resolveIntent: async () => canonical,
+            stillCurrent: async () => true,
+            nowSeconds: () => now,
+          },
+          { intent_id: request.request_id },
+          principal,
+        ),
+      );
+      assert.equal(posts, 1, "Unusable payment repair must fail before POST");
+    }
+    paymentMethodUpdate = { enabled: true };
     allowUpdates = true;
     await assert.rejects(
       create(

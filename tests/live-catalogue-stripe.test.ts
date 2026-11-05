@@ -149,6 +149,7 @@ function fixture(
     features: {
       subscription_update: { enabled: false },
       subscription_cancel: { enabled: true },
+      payment_method_update: { enabled: true },
     },
   };
   const session: Record<string, unknown> = {
@@ -421,7 +422,7 @@ for (const [label, mutate] of [
     mutate(f);
     await assert.rejects(run(f));
   });
-test("cancel-only portal uses server configuration and fixed return URL", async () => {
+test("payment-repair portal uses server configuration, fixed return URL and no plan updates", async () => {
   const f = fixture();
   f.intent.kind = "PORTAL";
   f.intent.subscription_id = f.subscription.id;
