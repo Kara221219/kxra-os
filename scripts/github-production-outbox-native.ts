@@ -426,6 +426,8 @@ async function main() {
       "--test",
       "tests/connectors/github-production-outbox.restore.test.ts",
     ]);
+    if (process.env.KXRA_GITHUB_EXTERNAL_FENCE_PROOF === "true")
+      run(["--import", "tsx", "scripts/github-external-fence-native.ts"]);
     write("acceptance.json", {
       status: "PASS_LOCAL_GITHUB_OUTBOX_BOUNDARY",
       sourceCommit: source,
@@ -463,6 +465,14 @@ async function main() {
         ["-D", path.join(runtime, "postgres"), "status"],
         { stdio: "ignore", timeout: 5000 },
       );
+    const external = path.join(runtime, "external-fence");
+    if (fs.existsSync(external)) {
+      const receipt = path.join(external, "cleanup.json");
+      resourcesClean =
+        resourcesClean &&
+        fs.existsSync(receipt) &&
+        JSON.parse(fs.readFileSync(receipt, "utf8")).clean;
+    }
     const clean =
       resourcesClean &&
       !fs.existsSync(recoveryFile) &&

@@ -4,10 +4,42 @@ import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import type https from "node:https";
 import type { GithubProductionBinding } from "../../packages/connectors/github-production-contracts";
+export function syntheticRollbackFence() {
+  const writes = new Map<string, any>(),
+    burned = new Set<string>(),
+    realm = crypto.randomUUID();
+  return {
+    reserve: async (v: any) => {
+      const op = v.operation;
+      if (writes.has(op.write_id)) throw Error("synthetic stable write held");
+      const ack = {
+        realm,
+        epoch: 1,
+        reservation_id: crypto.randomUUID(),
+        write_id: op.write_id,
+        attempt_id: op.attempt_id,
+        binding_sha256: v.binding_sha256,
+        operation_sha256: v.operation_sha256,
+      };
+      writes.set(op.write_id, ack);
+      return ack;
+    },
+    send: async (v: any, r: any) => {
+      if (
+        burned.has(v.operation.write_id) ||
+        JSON.stringify(writes.get(v.operation.write_id)) !== JSON.stringify(r)
+      )
+        throw Error("synthetic permission burned");
+      burned.add(v.operation.write_id);
+      return r;
+    },
+  };
+}
 export function githubFake(
   binding: GithubProductionBinding,
   effects: any[] = [],
 ) {
+  const rollbackFence = syntheticRollbackFence();
   let posts = 0,
     mode = "normal";
   const issue = `https://api.github.com/repos/${binding.owner}/${binding.repo}/issues/${binding.issue_number}`;
@@ -68,6 +100,7 @@ export function githubFake(
     return req;
   }) as typeof https.request;
   return {
+    rollbackFence,
     request,
     effects,
     posts: () => posts,

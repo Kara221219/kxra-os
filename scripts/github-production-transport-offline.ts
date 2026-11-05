@@ -1,3 +1,4 @@
+import { syntheticRollbackFence } from "../tests/support/github-production-fake";
 // Native TLS proof uses generated fake certificates/tokens and only an owned loopback server.
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -257,6 +258,7 @@ async function main() {
       );
     }) as typeof https.request;
     const ports: GithubExecutionPorts = {
+      rollbackFence: syntheticRollbackFence(),
       enabled: () => true,
       request,
       lookup: async (host) => {

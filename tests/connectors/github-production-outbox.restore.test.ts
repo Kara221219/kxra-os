@@ -47,6 +47,7 @@ test("restored consumption quarantines replay and receipt-only authority cannot 
     e = new GithubProductionExecutor(claim.binding, {
       authority: claim.authority(),
       broker: fake.broker,
+      rollbackFence: fake.rollbackFence,
       request: fake.request,
       lookup: async () => [{ address: "8.8.8.8" }],
       enabled: () => true,
@@ -83,6 +84,7 @@ test("restored consumption quarantines replay and receipt-only authority cannot 
     const read = new GithubProductionExecutor(claim.binding, {
       authority: store.authority(state.readToken),
       broker: fake.broker,
+      rollbackFence: fake.rollbackFence,
       request: fake.request,
       lookup: async () => [{ address: "8.8.8.8" }],
       enabled: () => true,

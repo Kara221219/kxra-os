@@ -39,6 +39,8 @@ try {
         USER: process.env.USER,
         TMPDIR: process.env.TMPDIR,
         NEXT_TELEMETRY_DISABLED: "1",
+        KXRA_GITHUB_EXTERNAL_FENCE_PROOF:
+          process.env.KXRA_GITHUB_EXTERNAL_FENCE_PROOF,
       },
       stdio: "inherit",
       timeout: 900000,

@@ -1,3 +1,8 @@
+import {
+  fenceAck,
+  fenceSubject,
+  type GithubRollbackFence,
+} from "./github-production-fence";
 // Unwired production transport boundary. Existing fixture adapters and 503 routes remain unchanged.
 import https from "node:https";
 import dns from "node:dns/promises";
@@ -72,6 +77,8 @@ export type GithubExecutionResult = {
 };
 export type GithubExecutionPorts = {
   authority: GithubExecutionAuthority;
+  /** Mandatory for COMMENT; no local SQL-only fallback. Reads confer no send permission. */
+  rollbackFence?: GithubRollbackFence;
   broker: GithubExecutionBroker;
   /** Trusted server/test seams, never request-body options. Defaults use real Node TLS and DNS. */
   request?: typeof https.request;
@@ -363,6 +370,26 @@ export class GithubProductionExecutor {
         if (operation.kind === "COMMENT") {
           consumptionPending = true;
           try {
+            const fence = this.ports.rollbackFence;
+            if (!fence) throw unavailable();
+            const fenceInput = freeze({
+              binding,
+              operation,
+              binding_sha256: bindingHash,
+              operation_sha256: operationHash,
+              scope,
+            });
+            fenceSubject(fenceInput);
+            const reservation = fenceAck.parse(
+              await fence.reserve(fenceInput, controller.signal),
+            );
+            if (
+              reservation.write_id !== operation.write_id ||
+              reservation.attempt_id !== operation.attempt_id ||
+              reservation.binding_sha256 !== bindingHash ||
+              reservation.operation_sha256 !== operationHash
+            )
+              throw unavailable();
             const consumed = githubAttemptConsumptionAck.parse(
               await this.ports.authority.consume(
                 freeze({
@@ -384,6 +411,11 @@ export class GithubProductionExecutor {
               throw unavailable();
             consumptionPending = false;
             consumptionConfirmed = true;
+            const sent = fenceAck.parse(
+              await fence.send(fenceInput, reservation, controller.signal),
+            );
+            if (JSON.stringify(sent) !== JSON.stringify(reservation))
+              throw unavailable();
           } catch {
             return {
               outcome: "REFUSED",

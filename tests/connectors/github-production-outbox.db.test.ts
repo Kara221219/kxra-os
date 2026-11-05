@@ -159,6 +159,7 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
       e: new GithubProductionExecutor(h.binding, {
         authority: h.authority(),
         broker: fake.broker,
+        rollbackFence: fake.rollbackFence,
         request: fake.request,
         lookup: async () => [{ address: "8.8.8.8" }],
         enabled: () => true,

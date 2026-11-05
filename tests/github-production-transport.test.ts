@@ -1,3 +1,4 @@
+import { syntheticRollbackFence } from "./support/github-production-fake";
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -85,6 +86,7 @@ function setup() {
       : {}),
   });
   const ports: GithubExecutionPorts = {
+    rollbackFence: syntheticRollbackFence(),
     enabled: () => state.enabled,
     now: state.clock,
     deadlineMs: 1000,
