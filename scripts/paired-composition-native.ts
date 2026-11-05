@@ -124,13 +124,13 @@ export async function runPairedCompositionProof(p: {
       )
       .then((r) => r.rows[0].value);
   };
-  const observeFenceWait = async (pid: number) => {
+  const observeFenceWait = async (pid: number, blocker: number) => {
     for (let i = 0; i < 100; i++) {
       if (
         (
           await admin.query(
-            "select exists(select 1 from pg_locks where pid=$1 and locktype='advisory' and not granted) waiting",
-            [pid],
+            "select exists(select 1 from pg_locks where pid=$1 and locktype='advisory' and not granted) and $2=any(pg_blocking_pids($1)) waiting",
+            [pid, blocker],
           )
         ).rows[0].waiting
       )
@@ -152,25 +152,33 @@ export async function runPairedCompositionProof(p: {
         let rc: pg.PoolClient | undefined;
         let c: pg.PoolClient | undefined;
         let pending: Promise<any> | undefined;
+        let barrier = false;
         try {
           rc = await connect(operator, platform);
           const detail = await open(rc);
+          let reviewerPid = (await rc.query("select pg_backend_pid() pid"))
+            .rows[0].pid;
           if (mode === "REQUEST_AI_INTENT") {
-            await rollback(rc);
-            rc = undefined;
-            // Reopen and commit only immutable request metadata, then take the
-            // exact early subject lock DECIDE takes before its authority fence.
-            rc = await connect(operator, platform);
-            const committed = await open(rc);
             await rc.query("commit");
             rc.release();
             rc = undefined;
-            detail.request_id = committed.request_id;
             rc = await connect(operator, platform);
-            await rc.query(
-              "select id from kxra_private.ai_connection_intents where id=$1 for update",
-              [p.intent],
+            reviewerPid = (await rc.query("select pg_backend_pid() pid"))
+              .rows[0].pid;
+            await admin.query("begin");
+            barrier = true;
+            await admin.query(
+              "select pg_advisory_xact_lock(hashtextextended('kxra-ghp-authority-v1',0))",
             );
+            const barrierPid = (
+              await admin.query("select pg_backend_pid() pid")
+            ).rows[0].pid;
+            // The actual definer RPC acquires its own subject/account locks.
+            // Pause its write at the existing GitHub fence; never grant the
+            // unprivileged reviewer direct private-table access for staging.
+            pending = decide(rc, detail.request_id);
+            void pending.catch(() => {});
+            await observeFenceWait(reviewerPid, barrierPid);
           }
           c = await connect(f.actor, f.org);
           const value =
@@ -186,11 +194,17 @@ export async function runPairedCompositionProof(p: {
             mode === "CONSUME_ACCOUNT" ? value.state : value.reason,
             mode === "CONSUME_ACCOUNT" ? "CONSUMED" : "POLICY_READY_SETUP_HELD",
           );
-          const pid = (await rc.query("select pg_backend_pid() pid")).rows[0]
-            .pid;
-          pending = decide(rc, detail.request_id);
-          void pending.catch(() => {});
-          await observeFenceWait(pid);
+          const consumerPid = (await c.query("select pg_backend_pid() pid"))
+            .rows[0].pid;
+          if (barrier) {
+            await admin.query("rollback");
+            barrier = false;
+          }
+          if (!pending) {
+            pending = decide(rc, detail.request_id);
+            void pending.catch(() => {});
+          }
+          await observeFenceWait(reviewerPid, consumerPid);
           await c.query("rollback");
           const receipt = await pending;
           assert.equal(receipt.entitlement_authority, false);
@@ -202,6 +216,7 @@ export async function runPairedCompositionProof(p: {
           });
         } finally {
           if (c) await rollback(c);
+          if (barrier) await admin.query("rollback");
           await pending?.catch(() => {});
           if (rc) await rollback(rc);
         }
