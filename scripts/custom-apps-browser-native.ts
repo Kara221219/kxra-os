@@ -1,6 +1,5 @@
 // Actual shipped React components and API core, synthetic resolved identity only.
 // This adapter is never imported by a product route or production build.
-import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert/strict";
 import type http from "node:http";
@@ -14,7 +13,6 @@ import {
 } from "@playwright/test";
 import { exampleCustomApp } from "../packages/custom-apps/contract";
 
-const executablePath = chromium.executablePath();
 export async function customAppsBrowserFixture(p: {
   root: string;
   runtime: string;
@@ -23,7 +21,6 @@ export async function customAppsBrowserFixture(p: {
   refreshProof: () => Promise<void>;
   write: (name: string, data: unknown) => void;
 }) {
-  assert.ok(fs.existsSync(executablePath), "PREINSTALLED_CHROMIUM_REQUIRED");
   const result = await build({
     stdin: {
       contents: `import React from 'react';import{createRoot}from'react-dom/client';
@@ -82,7 +79,6 @@ createRoot(document.getElementById('root')).render(app?<CustomAppRecords room={r
       passes: string[] = [];
     try {
       server = await chromium.launchServer({
-        executablePath,
         headless: true,
         args: [
           "--disable-background-networking",
