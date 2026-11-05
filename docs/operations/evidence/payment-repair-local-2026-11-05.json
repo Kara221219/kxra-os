@@ -1,0 +1,57 @@
+{
+  "kind": "LOCAL_SYNTHETIC_MODULE_AND_TRANSPORT_ACCEPTANCE",
+  "base_commit": "041d2009ea5258c9e5806c98360168f2b8f4e800",
+  "branch": "codex/billing-payment-repair-20261105",
+  "source_sha256": {
+    "packages/integrations/live-catalogue-stripe.ts": "113f0a152b0f3320ee5d25a1187c22c76bb43ee8d277b0101f9bc612212f9e99",
+    "tests/live-catalogue-stripe.test.ts": "063d7a6ad3715212b7ca3e229526b82c30276455b8705f43fe2f1e871ca0c123",
+    "tests/live-paid-access.test.ts": "be72c2634ff7b4c30a8a85fcb70a16b055f66594e7642f9c0cc5d4de39dec038",
+    "tests/synchronous-portal.test.ts": "9ccca8578dbf8426115c3bea17a0722c065fa0c6cde75506f170a5fd5b218b33"
+  },
+  "dependency_lock_sha256": "ce48430caddc9238be58bc3b72a9d8a3a168e7cd21ff3907b59f06f5505e6314",
+  "final_tests": {
+    "passed": 234,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/kxra-payment-repair-20261105-final-tests.tap",
+    "log_sha256": "fdafc4b6008b3931f55926b4f37cb192bec9d843bbed480a605160437ad880e1",
+    "files": [
+      "tests/synchronous-portal.test.ts",
+      "tests/live-paid-access.test.ts",
+      "tests/live-billing-entry.test.ts",
+      "tests/live-catalogue-stripe.test.ts",
+      "tests/checkout-worker.test.ts",
+      "tests/modern-billing-scope.test.ts",
+      "tests/modern-billing-entry-scope.test.ts",
+      "tests/billing-http.test.ts",
+      "tests/billing-refresh-capacity.test.ts",
+      "tests/billing-refresh-scheduler.test.ts",
+      "tests/billing-read-allowance.test.ts",
+      "tests/billing-scheduler-budget.test.ts"
+    ]
+  },
+  "retained_initial_failure": {
+    "passed": 233,
+    "failed": 1,
+    "reason": "Existing positive portal fixture omitted newly mandatory payment_method_update feature; corrected fixture and reran final suite",
+    "log": "/tmp/kxra-payment-repair-20261105-tests.tap"
+  },
+  "other_checks": {
+    "typecheck": "PASS",
+    "scoped_prettier": "PASS",
+    "secret_scan": "PASS_1267_FILES",
+    "diff_check": "PASS"
+  },
+  "native_postgres_cohort_started": false,
+  "provider_calls": false,
+  "hosted_actions": false,
+  "worker_invocations": false,
+  "credential_reads": false,
+  "deployed_schedules_changed": false,
+  "activation_authority": false,
+  "limitations": [
+    "Module-level synthetic checks do not establish hosted repair or Stripe configuration",
+    "No database or policy SQL changes",
+    "Capacity design and pure projections only; no schedule modification or capacity acceptance"
+  ]
+}

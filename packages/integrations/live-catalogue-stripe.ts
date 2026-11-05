@@ -386,6 +386,7 @@ async function createCatalogueSessionCore(
         features: z.object({
           subscription_update: z.object({ enabled: z.literal(false) }),
           subscription_cancel: z.object({ enabled: z.literal(true) }),
+          payment_method_update: z.object({ enabled: z.literal(true) }),
         }),
       })
       .parse(

@@ -1,3 +1,4 @@
+import { authorizePortalDelivery } from "../packages/authz/portal-delivery";
 import assert from "node:assert/strict";
 import { modernBillingFixture } from "./support/modern-billing-scope";
 import type { ModernExecutionMode } from "../packages/integrations/modern-billing-scope";
@@ -770,3 +771,56 @@ test("sandbox cannot reuse a LIVE checkout reference, scope tag, or contextless 
     buildLivePaidProof(f.context, f.policy, f.payment, f.consent, now),
   );
 });
+
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
+  test(`${mode}: failed renewal permits authorised billing repair without restoring paid authority`, async () => {
+    const f = fixture(mode);
+    const build =
+      mode === "LIVE" ? buildLivePaidProof : buildStagingSandboxPaidProof;
+    const denied = () =>
+      build(
+        f.context,
+        f.policy,
+        { ...f.payment, subscription_status: "past_due" },
+        { ...f.consent, subscription_status: "past_due" },
+        now,
+        f.modern,
+      );
+    assert.equal(denied().eligibility, "DENY");
+    let deliveries = 0;
+    const result = await authorizePortalDelivery(
+      {
+        configuration: () => ({
+          origin: "https://kxra.example",
+          project: f.modern.execution.execution_scope.project_ref,
+          mode,
+        }),
+        sameOrigin: () => {},
+        account: async () => ({
+          id: principal.actor_id,
+          organisation_id: principal.org_id,
+          source: "supabase",
+          email_verified: true,
+          account_state: "ACTIVE",
+          organisation_kind: "CUSTOMER",
+          relationship_type: "CUSTOMER",
+          security_role: "ORG_ADMIN",
+          aal: "aal2",
+          auth_time: now,
+        }),
+        now: () => now * 1000,
+        legalAllowed: async () => true,
+        rate: async () => true,
+        deliver: async () => {
+          deliveries++;
+          return { entitlement_authority: false };
+        },
+      },
+      { request_id: uuid("8"), offer_key: "KXRA_STARTER_V1" },
+    );
+    assert.deepEqual(result, { entitlement_authority: false });
+    assert.equal(deliveries, 1);
+    assert.equal(denied().eligibility, "DENY");
+    assert.equal(f.policy.grace_seconds, 0);
+    assert.equal(f.policy.past_due_access, false);
+  });
