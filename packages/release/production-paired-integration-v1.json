@@ -116,11 +116,11 @@
     },
     {
       "path": "scripts/paired-composition-catalog.mjs",
-      "sha256": "c960a068c90f24432bedbd753427b9d231b1129d7441f313b45b90d041e772df"
+      "sha256": "213a204c7445e3fe68e7645c5a7ccd1efe09e6b9b976d0c81a0f3631efd58e50"
     },
     {
       "path": "scripts/paired-composition-native.ts",
-      "sha256": "921d293974fb8212a138d2f4fe0417268de55d1ee1f26b340f0a1baaa7710d0d"
+      "sha256": "0b0039eef3fd0a556ea095710433989b35c6b2c47166d4f616739ccf911208ad"
     },
     {
       "path": "scripts/paired-setup-policy-native.ts",
@@ -237,5 +237,16 @@
     "Independent ledger durability/admin/realm continuity and verified worker drain/fenced egress/current restored authority before resumption; same-cluster fixture restore is not infrastructure acceptance",
     "Existing billing repair/cancellation/connection-slot/provider-read allocation/capacity/full-feature production migration and hosted signup/pay/AI/use/recovery acceptance remain held"
   ],
-  "futureAdminOrdering": "Administrative issuance/revocation must be fence-first before paired or existing authority row locks; no such provisioning/activation port is supplied."
+  "futureAdminOrdering": "Administrative issuance/revocation must be fence-first before paired or existing authority row locks; no such provisioning/activation port is supplied.",
+  "canonicalWorkerScope": {
+    "schema": "kxra_room_worker",
+    "source": "supabase/migrations/0114_hosted_room_operations.sql",
+    "sha256": "d7cdda016bdf1487245c33fb3fadd3727689e53c60c5a0b3f78f7d1a29c5473a",
+    "functions": [
+      "health",
+      "maintain",
+      "next"
+    ],
+    "authenticatedSchemaUsage": false
+  }
 }
