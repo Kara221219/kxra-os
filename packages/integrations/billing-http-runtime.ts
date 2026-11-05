@@ -1,3 +1,4 @@
+import { createBillingRefreshSession } from "./billing-refresh-session";
 import { runBillingDispatchBatchOnce } from "./billing-dispatch-batch";
 import { checkoutDispatchConfiguration } from "./checkout-dispatch-config";
 import {
@@ -137,29 +138,50 @@ export async function runBillingHttpInvocation(
         durationMs: BILLING_HTTP_PROVIDER_MS,
       },
     );
-  const deadline = start + BILLING_HTTP_PROVIDER_MS;
-  const transport = billingHttpReadTransport(config.runtime.secretKey, ports);
-  const boundedQuery: PaidRefreshQuery = async (text, values) => {
-    const completion =
-      /\.(?:staging_sandbox_)?(?:commit_live_paid_refresh|ack_live_billing_wakeup)\(/.test(
-        text,
-      );
-    if (!completion && clock() >= deadline)
-      throw Error("BILLING_HTTP_READ_BUDGET");
-    return query(text, values);
-  };
-  return runPaidRefreshOnce({
-    enabled: true,
-    nodeEnv: environment.NODE_ENV,
-    mode: config.executionMode,
-    runtimeIdentity: config.runtimeIdentity,
-    secretKey: config.runtime.secretKey,
-    origin: config.origin,
-    limit: 1,
-    transport,
-    query: boundedQuery,
-    onClaimCount: ports.onRefreshClaimCount,
+  const session = createBillingRefreshSession({
+    stopAt: start + BILLING_HTTP_RECEIPT_MS,
+    nowMs: clock,
+    createClient:
+      ports.clientFactory ??
+      (async () => {
+        const { default: pg } = await import("pg");
+        return new pg.Client({
+          ...config.database,
+          connectionTimeoutMillis: Math.max(
+            1,
+            Math.min(2000, start + BILLING_HTTP_RECEIPT_MS - clock()),
+          ),
+          query_timeout: 2000,
+        });
+      }),
   });
+  try {
+    const deadline = start + BILLING_HTTP_PROVIDER_MS;
+    const transport = billingHttpReadTransport(config.runtime.secretKey, ports);
+    const boundedQuery: PaidRefreshQuery = async (text, values) => {
+      const completion =
+        /\.(?:staging_sandbox_)?(?:commit_live_paid_refresh|ack_live_billing_wakeup)\(/.test(
+          text,
+        );
+      if (!completion && clock() >= deadline)
+        throw Error("BILLING_HTTP_READ_BUDGET");
+      return session.query(text, values);
+    };
+    return await runPaidRefreshOnce({
+      enabled: true,
+      nodeEnv: environment.NODE_ENV,
+      mode: config.executionMode,
+      runtimeIdentity: config.runtimeIdentity,
+      secretKey: config.runtime.secretKey,
+      origin: config.origin,
+      limit: 1,
+      transport,
+      query: boundedQuery,
+      onClaimCount: ports.onRefreshClaimCount,
+    });
+  } finally {
+    await session.close();
+  }
 }
 
 /** Shared READ-only45s budget across preflight, settled invoice evidence and consent. */
