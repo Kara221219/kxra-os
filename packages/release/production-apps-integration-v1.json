@@ -80,7 +80,7 @@
     },
     {
       "path": "scripts/custom-apps-production-native.ts",
-      "sha256": "f4659907c834da090d2953e714b7bb41e261c940fb737587283806983e7a1dd5"
+      "sha256": "f3f5480dfeec71da3466679647ad547b7292b91a861fdbac1ce1ef6d9611f252"
     },
     {
       "path": "scripts/custom-apps-production-payload.mjs",

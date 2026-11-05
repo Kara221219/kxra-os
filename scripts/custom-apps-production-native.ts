@@ -705,6 +705,7 @@ async function main() {
     );
     fs.writeFileSync(path.join(runtime, "empty.pgpass"), "", { mode: 0o600 });
     await pooled.getPool().end();
+    pooled = undefined; // Closure acknowledged before restart; do not end the same pool twice.
     await admin.end();
     admin = undefined;
     runDatabase("stop");
