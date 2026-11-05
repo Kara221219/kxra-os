@@ -434,7 +434,18 @@ async function main() {
     console.log("GITHUB_PRODUCTION_TRANSPORT_OFFLINE_PASS " + runtime);
   } finally {
     let clean = true;
-    for (const socket of sockets) socket.destroy();
+    const socketCloseWait = Promise.all(
+      [...sockets].map(
+        (socket) =>
+          new Promise<void>((resolve) => {
+            if (socket.closed) {
+              sockets.delete(socket);
+              resolve();
+            } else socket.once("close", () => resolve());
+            socket.destroy();
+          }),
+      ),
+    );
     if (server) {
       try {
         await new Promise<void>((r, j) => {
@@ -451,6 +462,22 @@ async function main() {
       } catch {
         clean = false;
       }
+    }
+    let socketTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        socketCloseWait,
+        new Promise<never>((_r, j) => {
+          socketTimer = setTimeout(
+            () => j(Error("socket close timeout")),
+            3000,
+          );
+        }),
+      ]);
+    } catch {
+      clean = false;
+    } finally {
+      clearTimeout(socketTimer);
     }
     for (const file of [key, cert]) {
       try {
@@ -477,6 +504,7 @@ async function main() {
     }
     clean =
       clean &&
+      sockets.size === 0 &&
       (!server || closed) &&
       portFree &&
       !fs.existsSync(key) &&
