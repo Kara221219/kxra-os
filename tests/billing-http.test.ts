@@ -286,7 +286,8 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
         },
       });
       assert.equal(fetches, 0);
-      assert.ok(connections >= 2);
+      if (kind === "refresh") assert.equal(connections, 1);
+      else assert.ok(connections >= 2);
       const discoveries = calls.filter((c) =>
         /discover_billing_dispatch|claim_live_billing_wakeups|claim_live_paid_refresh/.test(
           c.text,
