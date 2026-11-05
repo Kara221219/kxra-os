@@ -95,3 +95,13 @@ This source is isolated from release43e3906859b58e69370a1069a44e6dc1cefc6d03, pr
 Paired transport follow-up: executable Codex stdio process/foreground client source and local stub protocol acceptance are described in [paired transport](paired-agent-transport.md). Device/API activation remains fixture-only. Real installed provider, customer credentials, deny-all tool isolation, live pairing, installation and hosted acceptance remain pending; this does not supersede earlier unimplemented parity rows.
 
 Codex policy correction: [offline/stub acceptance](paired-codex-policy-correction.md) replaces retired approval configuration and adds explicit controls/config isolation. Real CLI execution remains refused until version/capability acceptance. Neither stub success nor read-only settings establish live no-tools enforcement or commercial authentication eligibility.
+
+## 5 November — paired setup policy and local UI checkpoint
+
+| Scope | Implemented/tested locally | Blocked or separate acceptance |
+|---|---|---|
+| Request-only authenticated preparation | Current owner/MFA/tenant/room checks; disabled private agent and five-minute request; legal/paid/business/AI/transport policy composition; status/cancel and uncertain-outcome reconciliation | Live identity/session integration, customer device pairing and credential issuance; no activation supplied |
+| Local setup page/API | `/os/paired-setup` and `/api/paired-setup` behind owned synthetic fixture boundary; explicit fixture provenance;31 native/browser scenarios and51 focused regressions on codee7c338c;1440/390px save→DB→reload/status→cancel and one-request lost-ACK recovery | Main room navigation, production route/UI/auth integration; production remains503/paused |
+| Production boundary/build |24pages within204800-byte gzip JS/CSS limit, largest204021; built default-off route/page and fixture-free client assets verified; independent source/evidence review closed | Unnumbered SQL installation/release cohort review, operator review issuance, contained immutable execution, external launch fence/publication/status, actual provider/hosted/commercial acceptance |
+
+Exact evidence and cleanup: [paired setup UI handoff](../operations/paired-setup-ui-2026-11-05.md). These results do not establish full parity, live authentication, provider/tool isolation, subscription permission or launch readiness.

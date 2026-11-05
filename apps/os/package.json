@@ -34,6 +34,14 @@
     "#kxra/paired-delegations-ui": {
       "development": "./components/PairedDelegations.tsx",
       "default": "./components/PairedDelegations.production.tsx"
+    },
+    "#kxra/paired-setup-runtime": {
+      "development": "./lib/paired-setup.local.ts",
+      "default": "./lib/paired-setup.production.ts"
+    },
+    "#kxra/paired-setup-page": {
+      "development": "./components/PairedSetupPage.local.tsx",
+      "default": "./components/PairedSetupPage.production.tsx"
     }
   },
   "scripts": {
