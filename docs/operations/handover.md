@@ -1433,3 +1433,16 @@ An isolated branch adds default-off internal owner review UI/API backed by exact
 ## 5 November — review operations production composition
 
 The entire reviewed five-commit operator branch is merged into an isolated composition, preserving both source checkouts. A new offline hash-bound117→genuineAI118→review119 cohort rejects fixture history and arbitrary extensions; original hosted guards/operators remain unchanged. Combined acceptance explicitly checks catalogue/data/ACL and both public-ledger rollback, fresh/upgrade equivalence, browser review/withdrawal and restored no-duplicate authority. See [composition handoff](production-operations-composition-2026-11-05.md); final exact-head results remain external evidence. Default-off, policy/hosted/full-launch gates and existing commitments remain preserved.
+
+
+## 5 November — offline production GitHub HTTPS boundary
+
+An isolated branch after bde07e3 implements a separate default-off fixed-origin/TLS/DNS-pinned executor with exact server binding/lease/approval checks, mandatory irreversible attempt-consumption port, bounded sanitized responses/rate evidence and no automatic retries. Fixture adapters, production503 routes and migration guards remain unchanged. See [blocker assessment and precise handoff](github-production-transport-2026-11-05.md). Production durable consumption/outbox/worker, broker/installation/custody and actual provider acceptance remain unimplemented or gated; pairing still requires genuine schema/admission and real CLI/tool/auth acceptance. Native tests use only owned loopback TLS and generated synthetic material; final source-specific receipts remain outside source. No provider calls, real credentials, hosted action, activation, deployment or spending.
+
+## Isolated GitHub production outbox, 2026-11-05
+
+Review the entire delta from transport `e1bcc90dd37566bbe7991b5adad3adab31fa4d92` on `codex/github-production-outbox-20261105`; do not cherry-pick only its final evidence/documentation commit. `docs/operations/github-production-outbox-2026-11-05.md` documents the SQL authority, irreversible consumption, receipt custody, writer-fence dependencies and exact remaining production gates. Keep the unnumbered payload out of hosted manifests until a separately reviewed composition exists. Both server execution flags remain default-off. Final exact-head acceptance and cleanup are in the external sibling acceptance-evidence handoff.
+
+## Independent rollback fence, 2026-11-05
+
+The isolated `codex/github-external-rollback-fence-20261105` delta starts at `413ac0b`. Review and integrate its entire delta. `docs/operations/github-external-rollback-fence-2026-11-05.md` explains stable-write witnesses, one-time external SEND, separate operator reconciliation and the actual older-snapshot proof. The independent SQL payload is not part of application backups or hosted manifests. Keep production default-off until independent durability/continuity, realm authorization, current authority reconciliation and verifiable worker quiescence/fenced egress are accepted; a finite settling timer is insufficient.
