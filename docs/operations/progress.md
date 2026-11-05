@@ -1,7 +1,3 @@
-## 5 November — original-session attestation implemented locally
-
-On an isolated branch based exactly on `2b74d66`, implemented immutable provider-session capture and a private token hook that preserves the original account version through refresh. The existing verified server identity and paid/tenant checks now carry and validate the signed provider session ID. No old session backfill or hosted activation was supplied. Dedicated signed-synthetic SDK/HTTP/DB/revocation-race/restart/fresh-target proof passes; canonical 1,404/1,404 tests, migrations/RLS/restart/restore, all builds, unchanged bundle budget, lint/artifact/secrets pass. Independent final review found no remaining concrete high/medium defect and checked receipt hashes against source. [Implementation, exact evidence and live acceptance gates](custom-app-original-session-2026-11-05.md). Real Auth schema/role/transaction ordering, hook configuration, hosted browser acceptance and coordinated older-restore session invalidation remain gates.
-
 ## 3 November — dedicated custom-app restart/restore accepted
 
 Closed the explicitly remaining graceful-restart and fresh-database restore gap for the five installed custom-app tables. Receipt `.runtime/cr-e82522/receipt.json` is PASS: exact data/catalog preservation, schema pins, immutable record history, publication/rollback state, idempotent interrupted-save recovery, tenant isolation and Chromium rendering after restart and restore. Source/target retained stopped; shared lease released. Final guard11/11 and existing custom-app aggregate16/16 pass. No canonical checks, application code or proposal SQL were changed. [Exact scope, evidence and portable integration handoff](custom-app-recovery-local-2026-11-03.md). Same-cluster fresh-database recovery is proved; crash, independent-cluster/role, hosted and combined-lane recovery remain separate gaps.
@@ -1762,6 +1758,12 @@ Closed the fixture-only HTTP/SQL and independent-review gaps on an isolated bran
 
 
 Production apps integration: see `production-apps-combined-2026-11-05.md` and `packages/release/production-apps-integration-v1.json`. Entire reviewed branch integrated locally; exact-head combined acceptance pending. No hosted change or activation.
+
+
+## 5 November — original-session attestation implemented locally
+
+On an isolated branch based exactly on `2b74d66`, implemented immutable provider-session capture and a private token hook that preserves the original account version through refresh. The existing verified server identity and paid/tenant checks now carry and validate the signed provider session ID. No old session backfill or hosted activation was supplied. Dedicated signed-synthetic SDK/HTTP/DB/revocation-race/restart/fresh-target proof passes; canonical 1,404/1,404 tests, migrations/RLS/restart/restore, all builds, unchanged bundle budget, lint/artifact/secrets pass. Independent final review found no remaining concrete high/medium defect and checked receipt hashes against source. [Implementation, exact evidence and live acceptance gates](custom-app-original-session-2026-11-05.md). Real Auth schema/role/transaction ordering, hook configuration, hosted browser acceptance and coordinated older-restore session invalidation remain gates.
+
 
 
 Original-session combined local integration: see `production-session-combined-2026-11-05.md` and exact source manifest `packages/release/production-session-integration-v1.json`. Hook/configuration/activation remain off; current exact-head acceptance is tracked by the retained task evidence handoff.
