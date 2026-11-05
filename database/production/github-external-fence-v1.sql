@@ -18,7 +18,7 @@ create function kxra_github_fence.ack(w kxra_github_fence.writes) returns jsonb 
 create function kxra_github_fence.runtime(r uuid,e bigint,action text,v jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
 declare realm_row kxra_github_fence.realms;w kxra_github_fence.writes;s jsonb;k text;
 begin
- if session_user<>'kxra_gh_fence' or action is null or action not in('RESERVE','SEND') or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>3000 or (select count(*) from jsonb_object_keys(v))<>case when action='SEND' then 2 else 1 end or(v-'subject'-case when action='SEND' then 'reservation_id' else '' end)<>'{}'::jsonb then raise insufficient_privilege;end if;
+ if session_user<>'kxra_gh_fence' or action is null or action not in('RESERVE','SEND') or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>3000 or (select count(*) from jsonb_object_keys(v))<>(case when action='SEND' then 2 else 1 end) or(v-'subject'-case when action='SEND' then 'reservation_id' else '' end)<>'{}'::jsonb then raise insufficient_privilege;end if;
  select * into realm_row from kxra_github_fence.realms where id=r for update;
  if not found or realm_row.phase<>'ACTIVE' or realm_row.epoch is distinct from e then raise insufficient_privilege;end if;
  s=v->'subject';
