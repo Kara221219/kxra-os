@@ -45,6 +45,7 @@ create table kxra_paired_admission.authorities(
  enabled boolean not null default false,revoked_at timestamptz,
  check(coalesce(manifest->>'purpose'='PAIRED_TEXT_EXECUTION_V1',false)),
  check(coalesce((manifest->'task'->>'id')::uuid=task_id,false)),
+ check(coalesce(jsonb_typeof(manifest->'task'->'fence')='string' and(manifest->'task'->>'fence')::uuid is not null,false)),
  check(coalesce((manifest->'context'->>'organization_id')::uuid=org_id,false)),
  check(coalesce((manifest->'context'->>'account_id')::uuid=account_id,false)),
  check(coalesce((manifest->'task'->>'room_id')::uuid=room_id,false)),
@@ -66,7 +67,7 @@ begin
  select * into a from kxra_paired_admission.authorities where task_id=t;
  if not found or not a.enabled or a.revoked_at is not null then return false;end if;
  m=a.manifest;
- if m->>'purpose' is distinct from 'PAIRED_TEXT_EXECUTION_V1' or m->'task'->>'id' is distinct from t::text then return false;end if;
+ if m->>'purpose' is distinct from 'PAIRED_TEXT_EXECUTION_V1' or m->'task'->>'id' is distinct from t::text or (m->'task'->>'fence')::uuid is null then return false;end if;
  return coalesce(auth.uid()=a.account_id and kxra_private.member_org()=a.org_id
  and kxra_private.can_team_room(a.room_id,true)
  and exists(select 1 from kxra.account_identities i join kxra.organisation_memberships om on om.account_id=i.account_id
@@ -111,7 +112,7 @@ create function kxra_paired_admission.consume(t uuid,f uuid,a uuid,s text,p uuid
 language plpgsql security definer set search_path='' as $$
 declare row kxra_paired_admission.authorities;
 begin
- if session_user<>'kxra_app' then raise insufficient_privilege;end if;
+ if session_user<>'kxra_app' or t is null or f is null or a is null or s is null or p is null then raise insufficient_privilege;end if;
  select * into row from kxra_paired_admission.authorities where task_id=t for update;
  if not found then raise insufficient_privilege;end if;
  -- Revocations of these rows serialize with consumption. No lock spans a provider call.

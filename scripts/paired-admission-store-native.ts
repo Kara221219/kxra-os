@@ -418,7 +418,7 @@ async function main() {
       "missing/null purpose and task identity rejected at installation constraint",
       async () => {
         const f = await seed();
-        for (const path of [["purpose"], ["task", "id"]]) {
+        for (const path of [["purpose"], ["task", "id"], ["task", "fence"]]) {
           for (const value of [null, undefined]) {
             const bad = structuredClone(f.a) as unknown as Record<
               string,
@@ -440,6 +440,39 @@ async function main() {
         }
       },
     );
+    await check("direct SQL rejects a null supplied fence", async () => {
+      const f = await seed(),
+        c = await app.connect();
+      try {
+        await c.query("begin");
+        await c.query("set local role authenticated");
+        await c.query(
+          "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
+          [
+            account,
+            JSON.stringify({
+              sub: account,
+              session_version: 1,
+              aal: "aal2",
+              auth_time: actor.auth_time,
+            }),
+            org,
+          ],
+        );
+        await assert.rejects(
+          c.query("select kxra_paired_admission.consume($1,null,$2,$3,$4)", [
+            f.a.task.id,
+            f.request.attempt_id,
+            f.hash,
+            id(),
+          ]),
+          { code: "42501" },
+        );
+      } finally {
+        await c.query("rollback");
+        c.release();
+      }
+    });
     await check(
       "project membership withdrawal serializes with SQL consumption",
       async () => {
