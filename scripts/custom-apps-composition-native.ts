@@ -303,9 +303,15 @@ export async function runCustomAppsCompositionProof(p: {
         [f.org, reviewer],
       )
     ).rows[0].id;
-  await admin.query(
-    "insert into kxra.legal_document_requirements select (jsonb_populate_record(null::kxra.legal_document_requirements,to_jsonb(q)||jsonb_build_object('id',$2::text,'membership_id',$3::text,'relationship_type',null,'created_at',clock_timestamp()))).* from kxra.legal_document_requirements q where q.org_id=$1 and q.mandatory and q.state='ACTIVE' limit 1",
-    [f.org, requirement, membership],
+  assert.equal(
+    (
+      await admin.query(
+        "insert into kxra.legal_document_requirements(id,org_id,membership_id,document_id,document_version,document_sha256,mandatory,state,acceptance_wording,acceptance_wording_version,acceptance_wording_sha256,effective_at) select $2,$1,$3,d.id,d.version,d.content_sha256,true,'ACTIVE','Synthetic reviewer-only acceptance',1,encode(sha256(convert_to('Synthetic reviewer-only acceptance','UTF8')),'hex'),clock_timestamp() from kxra.legal_documents d where d.org_id=$1 and d.status='APPROVED' order by d.id,d.version limit 1",
+        [f.org, requirement, membership],
+      )
+    ).rowCount,
+    1,
+    "ACTUAL_REVIEWER_ONLY_REQUIREMENT_INSTALLED",
   );
   try {
     const c = await connect(reviewer);

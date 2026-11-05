@@ -76,7 +76,7 @@
     },
     {
       "path": "scripts/custom-apps-composition-native.ts",
-      "sha256": "abfd1ccd1f4497d80ad62eecb369a69c0e55a3ea8561275e7bc6368cbeee4a0e"
+      "sha256": "74d16e7533fbd1b2d5a3b9cef408e059d74132c265663ddbe2ae83a7cb96d92a"
     },
     {
       "path": "scripts/custom-apps-production-native.ts",
