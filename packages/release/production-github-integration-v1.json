@@ -1,0 +1,242 @@
+{
+  "version": 1,
+  "classification": "LOCAL_PRODUCTION_COMPOSITION_REVIEW_NOT_RELEASE_AUTHORIZATION",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "hostedExecutorImplemented": false,
+  "objective": "FULL_FEATURE_LAUNCH_NO_PILOT_SUBSTITUTION",
+  "baseComposition": "bde07e39f47a12128c11554624c2e1c995bcb901",
+  "wholeBranchMerge": "01e8e52eef6539e581e56f8da05b4966a79f598f",
+  "reviewedHeads": {
+    "transport": "e1bcc90dd37566bbe7991b5adad3adab31fa4d92",
+    "outbox": "413ac0bf1068441f88e497e749cb0a320b2483c5",
+    "externalFence": "91bff50c9c212688062c6d2d891027ee7f70e279"
+  },
+  "sourceFiles": [
+    {
+      "path": ".env.example",
+      "sha256": "d7ea2acb79a88e313f22d27302a42c8567d6489b22d803e49ab49252ab8d7b27",
+      "bytes": 9009,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "database/production/github-external-fence-v1.sql",
+      "sha256": "420a598e0bbe6777cf91c8afebd43610a5f31e02500be78708b2e9bf7976c5e8",
+      "bytes": 12928,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "database/production/github-outbox-v1.sql",
+      "sha256": "b6793850cf2a96197f3d45f9030ab5a97a2b6545c4af65f4b012573d4a71ec08",
+      "bytes": 40758,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "docs/operations/github-external-rollback-fence-2026-11-05.md",
+      "sha256": "e55ea1ccd29cf488f3f9ec7651af2c28dd34ac2d7482eff26b930a52c34b343c",
+      "bytes": 10499,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "docs/operations/github-production-outbox-2026-11-05.md",
+      "sha256": "8c35217a922b25b9663178f319910678515c96a775014794b74274349f5a5403",
+      "bytes": 9289,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "docs/operations/github-production-transport-2026-11-05.md",
+      "sha256": "07912b4199150412c199480c0c013a9aad96daa9b02e8ac333d86a423bafef33",
+      "bytes": 13074,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "docs/operations/handover.md",
+      "sha256": "0bc5eb3fef743cc21ee20ce6f98edd384af7136917af6200b8fbe82e19ebc01a",
+      "bytes": 263225,
+      "appendOnlyIntegrationNotes": true
+    },
+    {
+      "path": "docs/operations/progress.md",
+      "sha256": "305c7fc40817a1c706fbb6b71048cc17f51a9fc0394abec2fd556dc52732d470",
+      "bytes": 313875,
+      "appendOnlyIntegrationNotes": true
+    },
+    {
+      "path": "packages/connectors/github-production-contracts.ts",
+      "sha256": "7085c5c1534655b586ecfe3bcffd94fe12f8526648e941e2419b6268a41d8471",
+      "bytes": 4669,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "packages/connectors/github-production-fence.ts",
+      "sha256": "45059b3126c38c0086a776f251ef5a39ad1f35fe2fc6fba17209107590ed606e",
+      "bytes": 5204,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "packages/connectors/github-production-outbox.ts",
+      "sha256": "f4188141d0c5475da09497bc56f414c24d7392e94cd766064975519ec1a43ab7",
+      "bytes": 13616,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "packages/connectors/github-production-transport.ts",
+      "sha256": "548f77cf8a2e45d9a2ddbb812fa3f80bf25ff5fd40fbc73b4f238636e1faff9a",
+      "bytes": 25424,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "packages/net/public-address.ts",
+      "sha256": "750fcef69917d404c827bf5a14154e16a29c9c599c98924e6186de7bd08c3ef7",
+      "bytes": 539,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "packages/workspace/provider.ts",
+      "sha256": "2743f1d65537aa6edcb3961be0b05a404d959349f2b0b85969baeb48dd5d630d",
+      "bytes": 11668,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/github-external-fence-native.ts",
+      "sha256": "10b2c3659c8d2297026de750f8acf9411cd1c4a7567f6131ad3be3f8d8f4667f",
+      "bytes": 8825,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/github-production-outbox-native.ts",
+      "sha256": "21130d5519d8c8c34aa5f46fb39cfff4e5d9e1669a8f09ea6572a5ac9695d8a2",
+      "bytes": 15955,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/github-production-transport-offline.ts",
+      "sha256": "8fc462c1f786d4e8d23ed4987410c549ff94dad19edb8968d51e5d63fc985530",
+      "bytes": 17020,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/verify-github-production-outbox.mjs",
+      "sha256": "e7325804511f9604803b8fdf7ebcb2dab9e98d2a7b9d7d8baf18fa35055385d5",
+      "bytes": 2254,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/verify-github-production-transport.mjs",
+      "sha256": "acc1e08a708141e7be6bfb7890d90b52e7fb259dac66c48f6a5b7110f484022e",
+      "bytes": 2312,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/verify-github-rollback-fence.mjs",
+      "sha256": "80868101c46cd992f6a039b063555fc2dc03ee1a10d3386c6126fb95d072d178",
+      "bytes": 203,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "scripts/verify-production-artifact.mjs",
+      "sha256": "3d7bc6bde7a3fc8951c4cce28486f15515e7937278b9f14c3c7650e8c371f14e",
+      "bytes": 3288,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/connectors/github-external-fence-restart.test.ts",
+      "sha256": "510b4bc4c5e61660bec7d83890d23db022ddf2b8552090d3f1afca8d6de6c273",
+      "bytes": 2722,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/connectors/github-external-fence.db.test.ts",
+      "sha256": "871dabb4029daf5ae780d6462fd62446702e5af1a5a4b63bbb234c408751ec9e",
+      "bytes": 23798,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/connectors/github-production-outbox.db.test.ts",
+      "sha256": "145935e103b45dd41205f76e20fb60c2cef76416eac665ec0e0fc508ca6e62d5",
+      "bytes": 36379,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/connectors/github-production-outbox.restore.test.ts",
+      "sha256": "fdef7434cf3ebe3221ccc349ec9aa2fd914c17f46d873bc2ded88c2d6de003fb",
+      "bytes": 5930,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/github-production-outbox.test.ts",
+      "sha256": "1ef2296d01b78428bab8d6fc7f24aabc49273850019bb8a515b4b5aa04f4b674",
+      "bytes": 4456,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/github-production-transport.test.ts",
+      "sha256": "5458d5a48bc41f92be7903b6160e234828fc8c46837bf8e6ba1f8c5b4c95dd0a",
+      "bytes": 29130,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/review-operations/review-operations.db.test.ts",
+      "sha256": "26d44e0088beb7c31ef647beb7d6cbaf54fd0981f1149a4ff083c4c87adc5484",
+      "bytes": 23980,
+      "appendOnlyIntegrationNotes": false
+    },
+    {
+      "path": "tests/support/github-production-fake.ts",
+      "sha256": "f82a6e94ef1bd694c0ff8a8fec56135d20f4295f3e990c3d4848126e81fa832d",
+      "bytes": 4348,
+      "appendOnlyIntegrationNotes": false
+    }
+  ],
+  "unchangedPolicyFiles": [
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    },
+    {
+      "path": "database/production/review-operations-v1.manifest.json",
+      "sha256": "473c88fa02a2bff2eec1eb896c4f4f8789169fb8763a0a6eb558923095757120"
+    },
+    {
+      "path": "scripts/hosted-release-guard.mjs",
+      "sha256": "92995a8df0aaaf78b0450893a5cec4f25a2d3ae7b56c20fc97771ea4ef1a78a4"
+    },
+    {
+      "path": "scripts/production-release-strategy.mjs",
+      "sha256": "76e6110de4f5b2e0592201057c747b2ea391071c005462af4d2e3f7841445ca8"
+    },
+    {
+      "path": "scripts/production-ai-review.mjs",
+      "sha256": "4fb02ec578266dd20500424bf7670cb46792c46d7ff84781a6fb6b0a01522f19"
+    },
+    {
+      "path": "scripts/production-operations-review.mjs",
+      "sha256": "1a28db1ad4ca00c00ab5dfe4276db2432e8cbdf45ee74a79d0df7f909b55b7c0"
+    }
+  ],
+  "schemaDomains": {
+    "canonical": "Existing canonical119 fixture cohort; original hosted117 guard still rejects fixture118/119",
+    "applicationReview": "Exact canonical117 plus genuineAI118/review119, followed only by explicit unnumbered outbox installation in owned disposable fixtures",
+    "externalFenceReview": "Separate newly owned PostgreSQL cluster; unnumbered external payload excluded from application migrations/backups"
+  },
+  "migrationPromotions": [],
+  "productionSeededGrants": false,
+  "termsOrFinancialCommitmentsChanged": false,
+  "requiredActivationGates": [
+    "Independent RPO-zero external ledger durability and continuity attestation outside application backups",
+    "Pinned expected store/realm/epoch and workload-to-realm authorization; no automatic realm/store recreation",
+    "Verified worker-drain or fenced-egress restore admission plus current restored authority reconciliation; settling timer insufficient",
+    "Production installation binding, narrow broker, managed custody, encrypted attempt escrow, global rate control and bounded workers",
+    "Application historical status/receipt projection and customer UI wiring without rearming stable writes",
+    "Full-feature schema/route/hosted/account/provider acceptance and explicit target-bound activation approval"
+  ]
+}

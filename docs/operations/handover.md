@@ -1446,3 +1446,7 @@ Review the entire delta from transport `e1bcc90dd37566bbe7991b5adad3adab31fa4d92
 ## Independent rollback fence, 2026-11-05
 
 The isolated `codex/github-external-rollback-fence-20261105` delta starts at `413ac0b`. Review and integrate its entire delta. `docs/operations/github-external-rollback-fence-2026-11-05.md` explains stable-write witnesses, one-time external SEND, separate operator reconciliation and the actual older-snapshot proof. The independent SQL payload is not part of application backups or hosted manifests. Keep production default-off until independent durability/continuity, realm authorization, current authority reconciliation and verifiable worker quiescence/fenced egress are accepted; a finite settling timer is insufficient.
+
+## Production GitHub composition integration, 2026-11-05
+
+Use the entire `codex/production-github-integration-20261105` branch delta after bde07e3, including whole-branch merge01e8e52 and the pinned integration manifest. See `docs/operations/production-github-integration-2026-11-05.md`. No migration or activation is authorized. Keep canonical fixtures, genuine119/outbox application review, and the independently durable external-store domain separate. Source91bff50 component evidence is historical; final integration acceptance must name its own exact committed head and cleanup.

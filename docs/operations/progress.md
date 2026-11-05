@@ -1709,3 +1709,7 @@ Implemented a default-held, unnumbered production outbox payload and injectable 
 ## 2026-11-05 — external rollback fence
 
 Added mandatory transport reservation and irreversible external SEND consumption keyed by stable write ID, plus separate epoch/HOLD/reconciliation authority in an unnumbered independent-store payload. Disposable two-cluster tests exercise actual pre-claim/pre-consumption app restores and no duplicate fake POST. Monotonic transport deadlines prevent delayed promise continuations from bypassing timeout. Production remains held pending independent-store durability, workload/realm authorization and verified worker-drain/fenced-egress restore admission; see `github-external-rollback-fence-2026-11-05.md` and exact-head evidence.
+
+## 2026-11-05 — full reviewed GitHub composition integration
+
+Merged the complete transport/outbox/external-fence delta into an isolated branch from production composition bde07e3. Merge 01e8e52 preserves both parents and reviewed runtime tree91bff50 without conflicts. The integration manifest pins component source and unchanged release guards; execution remains default-off and all external durability, realm continuity, quiescence and full-feature production gates remain held. Final exact-head canonical browser/CI and dedicated native evidence are recorded separately in the sibling acceptance handoff.
