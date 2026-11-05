@@ -1,7 +1,7 @@
 import { test } from "node:test";
+import { assertSessionAttestationSourceTransition } from "../scripts/session-attestation-payload.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import crypto from "node:crypto";
 import { customAppsProductionPayload } from "../scripts/custom-apps-production-payload.mjs";
 
 test("Combined production-app source and prior composition policies remain byte pinned", () => {
@@ -17,11 +17,7 @@ test("Combined production-app source and prior composition policies remain byte 
   assert.equal(m.numberedMigrationsChanged, false);
   assert.equal(m.customerPolicyChanged, false);
   for (const f of [...m.integratedSourceFiles, ...m.preservedCompositionFiles])
-    assert.equal(
-      crypto.createHash("sha256").update(fs.readFileSync(f.path)).digest("hex"),
-      f.sha256,
-      f.path,
-    );
+    assertSessionAttestationSourceTransition(f.path, f.sha256);
   const { spec } = customAppsProductionPayload();
   assert.equal(spec.functions.length, 15);
   assert.equal(spec.tables.length, 6);
