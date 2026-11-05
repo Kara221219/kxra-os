@@ -266,8 +266,7 @@ export async function runCustomAppsCompositionProof(p: {
         // AI review itself is not a custom-app dependency. Exercise the real
         // authority writer in that same account-holding review transaction.
         await rc!.query(
-          "update kxra.account_identities set session_version=session_version where account_id=$1",
-          [subject],
+          "select kxra.revoke_own_sessions('Synthetic rollback-only authority fence test','LOCAL_APPLIED')",
         );
         return receipt;
       })();
@@ -279,7 +278,7 @@ export async function runCustomAppsCompositionProof(p: {
       outcomes.push({
         mode,
         actualReviewRpc: true,
-        actualAuthorityUpdateInReviewTransaction: true,
+        actualSessionRevocationRpcInReviewTransaction: true,
         appCompletedWhileAccountHeld: true,
         exactFenceWaitObserved: true,
       });
