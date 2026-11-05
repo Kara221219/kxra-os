@@ -249,7 +249,8 @@ async function main() {
         ).rows[0].allowed;
         assert.equal(
           allowed,
-          f.schema === "kxra" && ["kxra_app", "authenticated"].includes(role),
+          f.schema === "kxra" && role === "authenticated",
+          role + " " + signature,
         );
         effective.push({ role, signature, execute: allowed });
       }
