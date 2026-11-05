@@ -87,6 +87,7 @@ export async function runPairedSetupProof(p: {
           "select kxra_paired_admission.storage_current_task(null)",
           "select kxra_paired_admission.storage_consume(null,null,null,null,null)",
           "select * from kxra_paired_admission.transport_policies",
+          "select nextval('kxra_paired_admission.transport_policies_sequence_seq')",
           "update kxra_paired_admission.agents set enabled=true",
           "update kxra_paired_admission.setup_requests set cancelled_at=null",
         ])
