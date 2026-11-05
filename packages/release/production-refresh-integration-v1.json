@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "classification": "LOCAL_REFRESH_SESSION_COMPOSITION_NOT_RELEASE_AUTHORIZATION",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "customerPolicyChanged": false,
+  "proofFreshnessChanged": false,
+  "providerReadAllowanceChanged": false,
+  "sqlOrScheduleChanges": false,
+  "baseComposition": "d60a463941bc10430dccf359f8b189a4d6e1107e",
+  "reviewedRefreshHead": "03c5c917f85c3e91408b1778fee6499d3c24de8f",
+  "wholeBranchMerge": "a04422db8eba507cfb7516eff90bd8652dc25511",
+  "refreshSourceFiles": [
+    {
+      "path": "packages/integrations/billing-refresh-session.ts",
+      "sha256": "4822fec3d2660b335b716373489f4ae2c5f2fa3599bed4f3c10e23c365bb9a82"
+    },
+    {
+      "path": "packages/integrations/billing-http-runtime.ts",
+      "sha256": "9315143323780d29453cc7c3ee748390ae80b44e33722f31c85ef75e7cda2733"
+    },
+    {
+      "path": "tests/billing-refresh-session.test.ts",
+      "sha256": "810c62333e25e42cc6b0e8099988b149f23362d1797084d9b86328fdd1721fc2"
+    },
+    {
+      "path": "tests/billing-http.test.ts",
+      "sha256": "4a76094359a834ae534127dc6138a5ce1d88c39de13710f0deb4fafba93c6152"
+    },
+    {
+      "path": "tests/billing-refresh-session/native.test.ts",
+      "sha256": "c343258d47ed6944d95d92a11f4eca0dfe6de6c4d1440be492e310d84ddd8ac5"
+    },
+    {
+      "path": "scripts/verify-billing-refresh-session.mjs",
+      "sha256": "eeb6dcdf81ad56576ef7908af64d5059f8c5da1af8577eb163f8b9d850897ee4"
+    }
+  ],
+  "unchangedAuthorityPolicyFiles": [
+    {
+      "path": ".env.example",
+      "sha256": "d7ea2acb79a88e313f22d27302a42c8567d6489b22d803e49ab49252ab8d7b27"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "ce48430caddc9238be58bc3b72a9d8a3a168e7cd21ff3907b59f06f5505e6314"
+    },
+    {
+      "path": "packages/authz/portal-delivery.ts",
+      "sha256": "d593fcb441194d9d0bbfad120efa3c25ad8d32892e60ef754265361db006191e"
+    },
+    {
+      "path": "packages/integrations/billing-http-controller.ts",
+      "sha256": "066b70b880ea876e2011ad8c32dd1b7748d2ad62381a23f8f42059dad014c37e"
+    },
+    {
+      "path": "packages/integrations/billing-read-allowance.ts",
+      "sha256": "3d2e6763351e08d899ae60708959ae3ccaf64813db2292ead5b76de09408fb39"
+    },
+    {
+      "path": "packages/integrations/billing-refresh-capacity.ts",
+      "sha256": "39cb854b53246be17965a4387bfebf974160f1dff5df2217d98a05de6f0d22ca"
+    },
+    {
+      "path": "packages/integrations/billing-refresh-scheduler.ts",
+      "sha256": "f9311e355226dfcbbce5c049fae31ed95532d3444f3b3998732002b9b0793fea"
+    },
+    {
+      "path": "packages/integrations/live-checkout-consent.ts",
+      "sha256": "6799f5676003cbdb43051ff2346925b00d264b71af5b3615b2af51753ff67229"
+    },
+    {
+      "path": "packages/integrations/live-paid-access.ts",
+      "sha256": "469e9796cf90bf47be4a9b5bad10b260b4835e3b5f1099a323aa2b458ddfc042"
+    },
+    {
+      "path": "packages/integrations/live-paid-refresh-worker.ts",
+      "sha256": "6523887cc49d814430b2ec84962477243c028fa455b7253f75ea3318ba59cd74"
+    },
+    {
+      "path": "packages/integrations/live-stripe-payment-evidence.ts",
+      "sha256": "617c5693d037fc67f5410231d041f8f445f0ad1b4e447ad1257bff7e359b0661"
+    },
+    {
+      "path": "packages/integrations/modern-billing-scope.ts",
+      "sha256": "edb60b15b15dcf34aac52a82537bbdd48670485953c523a45c9b99e09c9ecb65"
+    },
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-github-integration-v1.json",
+      "sha256": "380e941ae76c8fbc1ad9f86a09dede2f6859198dbaf0a8afed3a26654b60e5aa"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    },
+    {
+      "path": "packages/release/production-payment-integration-v1.json",
+      "sha256": "2320140c02adfd04835866033afca8b91b9beda4e9be2d100e544294b9cc6b70"
+    },
+    {
+      "path": "packages/workspace/approved-catalogue-v1.json",
+      "sha256": "193932dc692f630eb7ca09f7e9a6761e783d1be7358573535dfe7c8411205d29"
+    },
+    {
+      "path": "packages/workspace/approved-catalogue.ts",
+      "sha256": "eeaa3b50be1178db905ecb08e15ed4d573195f8dd484ed37c9ded04ab2d180b4"
+    },
+    {
+      "path": "supabase/migrations/0104_authoritative_live_paid_access.sql",
+      "sha256": "aa05f9abba5d8229d0fc951bd441a6688fb4cb551e504451f749dac8517fda8f"
+    },
+    {
+      "path": "supabase/migrations/0110_bounded_paid_proof_refresh.sql",
+      "sha256": "e1a3748c1c2256fe5cc922e07687aa041dfad341838583e450afd850e1a6bf1c"
+    },
+    {
+      "path": "supabase/migrations/0113_billing_scheduler_read_budget.sql",
+      "sha256": "9a10c0587409c3db0d22e72fc023732857740128c8ee2277feb894605d9a2f61"
+    }
+  ],
+  "migrationPromotions": [],
+  "scope": "One lazy connection per refresh invocation; separate transactions and verified worker identity for each query; dispatch unchanged; cleanup inside existing55000ms receipt envelope",
+  "hostedGates": [
+    "Measure direct/session-pooler connection slot budget: up to16 concurrent retained refresh sockets plus other demand; no hosted/TLS latency or SLA accepted",
+    "Actual provider-read allocation, coordinator/admission/pacing, first-claim and receipt bounds remain unaccepted; strict successful refresh still20GETs with32-permit ceiling and proof age cap300s or earlier selected-policy/paid-period expiry; zero grace unchanged",
+    "Preserve exact portal repair configuration, END_OF_PAID_PERIOD cancellation and plan updates disabled acceptance; no real Stripe call or setting mutation",
+    "Existing GitHub independent RPO-zero ledger/store/realm continuity, workload and verified drain/fenced-egress/current-authority restore gates remain",
+    "Full-feature production schemas, provider/custody/worker/UI/status and hosted signup/payment/recovery acceptance and target-bound activation remain required; no release authorization"
+  ],
+  "socketRevocationLimit": "Password rotation alone does not terminate existing authentication; worker-membership revocation or positively identified session termination is required for emergency shutdown."
+}
