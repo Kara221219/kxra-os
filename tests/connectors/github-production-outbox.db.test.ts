@@ -496,6 +496,10 @@ test("production SQL outbox enforces human approval, exact purpose, irreversible
           });
           await locker.connect();
           await locker.query("begin");
+          if (change === "session")
+            await locker.query(
+              "select pg_advisory_xact_lock(hashtextextended('kxra-review-current-policy-v1',0))",
+            );
           await locker.query(
             "select id from kxra_private.ghp_connections where id=$1 for update",
             [c.id],

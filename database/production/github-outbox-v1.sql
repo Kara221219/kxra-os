@@ -240,7 +240,7 @@ begin
 end $$;
 
 create function kxra.github_prod_receipt(attempt uuid,operation_sha text,outcome text,evidence jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
-declare k kxra_private.ghp_capabilities;c kxra_private.ghp_connections;w kxra_private.ghp_writes;a kxra_private.ghp_attempts;h text;comment_id bigint;known boolean;keys text[];
+declare k kxra_private.ghp_capabilities;c kxra_private.ghp_connections;w kxra_private.ghp_writes;a kxra_private.ghp_attempts;h text;v_comment_id bigint;known boolean;keys text[];
 begin
  k=kxra_private.ghp_cap('receipt');if k.purpose<>'ATTEMPT_RECEIPT' or k.attempt_id is distinct from attempt then raise insufficient_privilege;end if;
  select * into c from kxra_private.ghp_connections where id=k.connection_id for update;
@@ -254,7 +254,7 @@ begin
  if outcome='ACCEPTED' then
   if jsonb_typeof(evidence->'status')<>'number' or jsonb_typeof(evidence->'comment_id')<>'number' or jsonb_typeof(evidence->'author_id')<>'number' or jsonb_typeof(evidence->'issue_id')<>'number' or jsonb_typeof(evidence->'body_sha256')<>'string' then raise exception 'Invalid receipt field types';end if;
   if (evidence->>'reason'='MATCHING_ACKNOWLEDGEMENT' and evidence->>'status'='201') or(evidence->>'reason'='MATCHING_RECONCILIATION' and evidence->>'status'='200') then null;else raise exception 'Invalid acknowledgement status';end if;
-  if coalesce(evidence->>'comment_id','')!~'^[1-9][0-9]{0,15}$' or (evidence->>'comment_id')::numeric>9007199254740991 or evidence->>'body_sha256' is distinct from kxra_private.ghp_sha(w.body) or evidence->>'author_id' is distinct from c.binding->>'author_id' or evidence->>'issue_id' is distinct from c.binding->>'issue_id' then raise exception 'Historical evidence mismatch';end if;comment_id=(evidence->>'comment_id')::bigint;
+  if coalesce(evidence->>'comment_id','')!~'^[1-9][0-9]{0,15}$' or (evidence->>'comment_id')::numeric>9007199254740991 or evidence->>'body_sha256' is distinct from kxra_private.ghp_sha(w.body) or evidence->>'author_id' is distinct from c.binding->>'author_id' or evidence->>'issue_id' is distinct from c.binding->>'issue_id' then raise exception 'Historical evidence mismatch';end if;v_comment_id=(evidence->>'comment_id')::bigint;
  elsif outcome='REJECTED' then
   if jsonb_typeof(evidence->'status')<>'number' or evidence->>'reason'<>'PROVIDER_REJECTED' or evidence->>'status' not in('401','403','404','410','422','429') then raise exception 'Invalid rejection';end if;
  elsif outcome='UNCERTAIN' then if evidence->>'reason'<>'RESPONSE_UNCONFIRMED' then raise exception 'Invalid uncertainty';end if;
@@ -266,11 +266,11 @@ begin
  if w.state='ACCEPTED' then if outcome<>'ACCEPTED' or w.provider_comment_id is distinct from comment_id then raise exception 'Conflicting terminal receipt';end if;
  elsif w.state not in('DISPATCHING','UNCERTAIN') or(w.state='UNCERTAIN' and outcome not in('UNCERTAIN','ACCEPTED')) then raise exception 'Conflicting historical receipt';end if;
  if outcome='ACCEPTED' then
-  insert into kxra_private.ghp_effects(repository_id,issue_id,comment_id,attempt_id) values((c.binding->>'repository_id')::bigint,(c.binding->>'issue_id')::bigint,comment_id,a.id) on conflict do nothing;
-  if not exists(select 1 from kxra_private.ghp_effects e where e.repository_id=(c.binding->>'repository_id')::bigint and e.issue_id=(c.binding->>'issue_id')::bigint and e.comment_id=github_prod_receipt.comment_id and e.attempt_id=a.id) then raise exception 'Provider effect already attributed';end if;
+  insert into kxra_private.ghp_effects(repository_id,issue_id,comment_id,attempt_id) values((c.binding->>'repository_id')::bigint,(c.binding->>'issue_id')::bigint,v_comment_id,a.id) on conflict do nothing;
+  if not exists(select 1 from kxra_private.ghp_effects e where e.repository_id=(c.binding->>'repository_id')::bigint and e.issue_id=(c.binding->>'issue_id')::bigint and e.comment_id=v_comment_id and e.attempt_id=a.id) then raise exception 'Provider effect already attributed';end if;
  end if;
  insert into kxra_private.ghp_receipts(attempt_id,outcome,evidence,evidence_sha256) values(a.id,outcome,evidence,h);
- update kxra_private.ghp_writes set state=case outcome when 'ACCEPTED' then 'ACCEPTED' when 'REJECTED' then 'REJECTED' when 'NOT_EXECUTED' then 'NOT_EXECUTED' else 'UNCERTAIN' end,provider_comment_id=case when outcome='ACCEPTED' then comment_id else provider_comment_id end where id=w.id;
+ update kxra_private.ghp_writes set state=case outcome when 'ACCEPTED' then 'ACCEPTED' when 'REJECTED' then 'REJECTED' when 'NOT_EXECUTED' then 'NOT_EXECUTED' else 'UNCERTAIN' end,provider_comment_id=case when outcome='ACCEPTED' then v_comment_id else provider_comment_id end where id=w.id;
  return jsonb_build_object('recorded',true,'state',outcome,'duplicate',false);
 end $$;
 -- Every helper is private. No direct table/sequence, setup or policy provisioning grants.
