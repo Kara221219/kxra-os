@@ -116,11 +116,11 @@
     },
     {
       "path": "scripts/paired-composition-catalog.mjs",
-      "sha256": "213a204c7445e3fe68e7645c5a7ccd1efe09e6b9b976d0c81a0f3631efd58e50"
+      "sha256": "e0469f0844b58e143849f45d6db6f5ec1045fa9b2c9e3242b8474d4e731a7a60"
     },
     {
       "path": "scripts/paired-composition-native.ts",
-      "sha256": "0b0039eef3fd0a556ea095710433989b35c6b2c47166d4f616739ccf911208ad"
+      "sha256": "be6cf0e13f0b2791fb16288cbcdc2c48fe90869b7f2419a8e160ea3651b7f785"
     },
     {
       "path": "scripts/paired-setup-policy-native.ts",
@@ -248,5 +248,6 @@
       "next"
     ],
     "authenticatedSchemaUsage": false
-  }
+  },
+  "generatedExpressionSerialization": "PostgreSQL pg_get_expr(adbin,adrelid,true) preserves semantic grouping; raw source/restored fields retained separately; no field omitted or text parentheses stripped"
 }

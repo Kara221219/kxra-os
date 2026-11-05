@@ -369,6 +369,42 @@ export async function runPairedCompositionProof(p: {
       });
     },
   );
+  await check(
+    "PostgreSQL generated-expression serializer preserves semantic grouping",
+    async () => {
+      await admin.query(
+        "create temp table paired_expression_serializer(a integer,b integer,c integer,flat integer generated always as(a*b+c)stored,grouped integer generated always as(a*(b+c))stored)",
+      );
+      try {
+        const expressions = (
+          await admin.query(
+            "select a.attname,pg_get_expr(d.adbin,d.adrelid,true) expression from pg_attrdef d join pg_attribute a on a.attrelid=d.adrelid and a.attnum=d.adnum where d.adrelid='pg_temp.paired_expression_serializer'::regclass order by a.attname",
+          )
+        ).rows;
+        assert.notEqual(expressions[0].expression, expressions[1].expression);
+        const row = (
+          await admin.query(
+            "insert into pg_temp.paired_expression_serializer(a,b,c)values(2,3,5)returning flat,grouped",
+          )
+        ).rows[0];
+        assert.deepEqual(row, { flat: 11, grouped: 16 });
+        write("composition-expression-negative-control.json", {
+          expressions,
+          row,
+          semanticDifferencePreserved: true,
+        });
+      } finally {
+        await admin.query("drop table pg_temp.paired_expression_serializer");
+      }
+    },
+  );
+  const rawGenerated = (db: pg.Client) =>
+    db
+      .query(
+        "select table_schema,table_name,column_name,generation_expression from information_schema.columns where is_generated='ALWAYS' and table_schema not like 'pg_%' and table_schema<>'information_schema' order by 1,2,3",
+      )
+      .then((r) => r.rows);
+  write("composition-generated-raw-source.json", await rawGenerated(admin));
   await p.refresh();
   const catalog = await pairedCompositionCatalog(admin),
     data = await pairedCompositionData(admin, catalog);
@@ -464,6 +500,10 @@ export async function runPairedCompositionProof(p: {
               restoredCatalog,
             );
           write("composition-catalog-restored.json", restoredCatalog);
+          write(
+            "composition-generated-raw-restored.json",
+            await rawGenerated(restoredAdmin),
+          );
           write("composition-data-restored.json", restoredData);
           assert.deepEqual(restoredCatalog, catalog);
           assert.deepEqual(restoredData, data);

@@ -14,7 +14,7 @@ export async function pairedCompositionCatalog(db) {
   ).rows;
   const columns = (
     await db.query(
-      `select table_schema,table_name,column_name,ordinal_position,data_type,udt_schema,udt_name,is_nullable,column_default,is_identity,identity_generation,identity_start,identity_increment,identity_maximum,identity_minimum,identity_cycle,is_generated,generation_expression,collation_schema,collation_name from information_schema.columns where table_schema in ('auth','public','kxra','kxra_private','kxra_pairing','kxra_github_receipt','kxra_paired_admission','kxra_room_worker') order by 1,2,4`,
+      `select table_schema,table_name,column_name,ordinal_position,data_type,udt_schema,udt_name,is_nullable,column_default,is_identity,identity_generation,identity_start,identity_increment,identity_maximum,identity_minimum,identity_cycle,is_generated,case when is_generated='ALWAYS' then (select pg_get_expr(gd.adbin,gd.adrelid,true) from pg_attrdef gd join pg_class gc on gc.oid=gd.adrelid join pg_namespace gn on gn.oid=gc.relnamespace join pg_attribute ga on ga.attrelid=gc.oid and ga.attnum=gd.adnum where gn.nspname=col.table_schema and gc.relname=col.table_name and ga.attname=col.column_name) else generation_expression end generation_expression,collation_schema,collation_name from information_schema.columns col where table_schema in ('auth','public','kxra','kxra_private','kxra_pairing','kxra_github_receipt','kxra_paired_admission','kxra_room_worker') order by 1,2,4`,
     )
   ).rows;
   const policies = (
