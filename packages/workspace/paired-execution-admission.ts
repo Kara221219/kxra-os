@@ -31,7 +31,7 @@ const runtimeSchema = z
     model_sha256: sha,
   })
   .strict();
-const authoritySchema = z
+export const pairedExecutionAuthoritySchema = z
   .object({
     purpose: z.literal("PAIRED_TEXT_EXECUTION_V1"),
     revision: id,
@@ -78,7 +78,9 @@ const authoritySchema = z
   .strict();
 export type PairedExecutionContext = z.infer<typeof contextSchema>;
 export type PairedRuntimeMeasurement = z.infer<typeof runtimeSchema>;
-export type PairedExecutionAuthority = z.infer<typeof authoritySchema>;
+export type PairedExecutionAuthority = z.infer<
+  typeof pairedExecutionAuthoritySchema
+>;
 const canonical = (v: unknown): string => {
   if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
   if (v && typeof v === "object")
@@ -177,7 +179,7 @@ function validate(
   context: PairedExecutionContext,
   now: number,
 ) {
-  const a = authoritySchema.parse(raw);
+  const a = pairedExecutionAuthoritySchema.parse(raw);
   if (
     canonical(a.context) !== canonical(context) ||
     a.task.id !== request.task_id ||

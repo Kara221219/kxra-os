@@ -1723,3 +1723,7 @@ Merged the compatible8eb3f9d payment-method repair guard onto accepted041d200 in
 ## 5 November — isolated paired launch-admission contract
 
 From exactd60a463, a separate branch adds a strict source/runtime/session-bound launch gate with mandatory atomic one-shot consumption and publication ports, earliest-expiry aborts and finite uncertainty/no replay. Production ports/schema/measurement/immutable launcher remain unimplemented; no gate or real CLI is activated. See [bounded implementation and integration/live gates](paired-execution-admission-2026-11-05.md). No SQL, credentials, persistent grants, provider, hosted, deployment or spending action.
+
+## 5 November — paired authority store, local review candidate
+
+Continued isolated checkpoint80a81aa with an unnumbered dedicated-schema RLS/consumption proposal, separate-store one-shot task fence and injected default-off storage adapter. No production execution/publication/activation port is supplied. Independent expiry/binding/project-lock/nullability findings corrected;42/42 focused checks and lint/dependency/publication/marketing/secret checks pass. See [scope and acceptance status](paired-authority-store-2026-11-05.md). Native DB/ACL/concurrency/restore acceptance awaits the foreign integration fixture lease; authored tests are not acceptance. No hosted/provider/credential action occurred.

@@ -1460,3 +1460,7 @@ Use the full `codex/production-payment-integration-20261105` branch after041d200
 ## 5 November — paired execution admission follow-up
 
 Review the full isolated `codex/paired-execution-admission` delta afterd60a463 and its [handoff](paired-execution-admission-2026-11-05.md). The helper has no default production ports and leaves503/404/native guards closed. Genuine authenticated RLS authority/reviews, independently durable consume/restore fencing, authenticated measurements, immutable contained launch and atomic publication are required before wiring. Synthetic port tests are not production admission or actual tool-isolation/provider acceptance. No other branch was merged; no migration is proposed by this slice.
+
+## 5 November — paired authority store follow-up
+
+The isolated paired branch now includes unnumbered app-authority and external-fence SQL proposals plus a storage-only injected adapter; see [handoff and remaining gates](paired-authority-store-2026-11-05.md). Preserve default-off production guards. App receipts alone do not prove external execution authority; paid/business policy composition, live device authority, contained launch, external launch verification, atomic publication and operational continuity remain unwired. Native tests must acquire the existing shared fixture lease and name exact source/cleanup; never clear another task's lock. No production migration, real credential/provider access, deployment or spend is authorized.
