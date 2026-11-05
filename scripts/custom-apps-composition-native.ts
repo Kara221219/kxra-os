@@ -250,18 +250,27 @@ export async function runCustomAppsCompositionProof(p: {
         );
       } else await save(c);
       const pid = (await c.query("select pg_backend_pid() pid")).rows[0].pid;
-      pending = review(rc, "DECIDE", {
-        request_id: opened.request_id,
-        operation_id: id(),
-        attested: true,
-        decision: {
-          expires_at: new Date(Date.now() + 300000).toISOString(),
-          state: "ELIGIBLE",
-          account_mode: "CUSTOMER_BILLED",
-          account_reference_sha256: f.review,
-          provider_evidence_sha256: f.review,
-        },
-      });
+      pending = (async () => {
+        const receipt = await review(rc!, "DECIDE", {
+          request_id: opened.request_id,
+          operation_id: id(),
+          attested: true,
+          decision: {
+            expires_at: new Date(Date.now() + 300000).toISOString(),
+            state: "ELIGIBLE",
+            account_mode: "CUSTOMER_BILLED",
+            account_reference_sha256: f.review,
+            provider_evidence_sha256: f.review,
+          },
+        });
+        // AI review itself is not a custom-app dependency. Exercise the real
+        // authority writer in that same account-holding review transaction.
+        await rc!.query(
+          "update kxra.account_identities set session_version=session_version where account_id=$1",
+          [subject],
+        );
+        return receipt;
+      })();
       void pending.catch(() => {});
       await observe(reviewerPid, pid);
       await c.query("rollback");
@@ -270,6 +279,7 @@ export async function runCustomAppsCompositionProof(p: {
       outcomes.push({
         mode,
         actualReviewRpc: true,
+        actualAuthorityUpdateInReviewTransaction: true,
         appCompletedWhileAccountHeld: true,
         exactFenceWaitObserved: true,
       });
