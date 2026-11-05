@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { actor } from "../../../../lib/auth";
 import { reviewOperationsConfiguration } from "../../../../lib/review-operations";
-import EligibilityReviewConsole from "../../../../components/EligibilityReviewConsole";
+import EligibilityReviewLoader from "../../../../components/EligibilityReviewLoader";
 export const dynamic = "force-dynamic";
 export default async function ReviewOperationsPage() {
   try {
@@ -23,7 +23,7 @@ export default async function ReviewOperationsPage() {
           itself.
         </p>
         {reviewOperationsConfiguration() ? (
-          <EligibilityReviewConsole />
+          <EligibilityReviewLoader />
         ) : (
           <p>
             Review operations are not configured. No review grant is implied by
