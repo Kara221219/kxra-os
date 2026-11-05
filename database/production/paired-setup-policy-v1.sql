@@ -23,8 +23,8 @@ create table kxra_paired_admission.setup_requests(
  ai_intent_id uuid not null,
  auth_route text not null check(auth_route in('CUSTOMER_API_KEY','CHATGPT_SUBSCRIPTION')),
  label text not null check(length(label) between 1 and 100),
- policy_binding jsonb,created_at timestamptz not null default clock_timestamp(),
- expires_at timestamptz not null default clock_timestamp()+interval '5 minutes',cancelled_at timestamptz,
+ policy_binding jsonb,created_at timestamptz not null default statement_timestamp(),
+ expires_at timestamptz not null default statement_timestamp()+interval '5 minutes',cancelled_at timestamptz,
  check(expires_at>created_at and expires_at<=created_at+interval '5 minutes')
 );
 create index paired_setup_owner on kxra_paired_admission.setup_requests(org_id,account_id,created_at);
@@ -84,7 +84,7 @@ begin
 end $$;
 create function kxra_paired_admission.request_setup(i uuid,r uuid,ai uuid,route text,n text) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare s kxra_paired_admission.setup_requests;o uuid=kxra_private.member_org();u uuid=auth.uid();sv integer;mv integer;p jsonb;ag uuid;
+declare s kxra_paired_admission.setup_requests;o uuid=kxra_private.member_org();u uuid=auth.uid();sv integer;mv integer;p jsonb;ag uuid;created_at_value timestamptz;
 begin
  perform pg_advisory_xact_lock(hashtextextended('kxra-paired-policy-v1',0));
  select a.session_version,m.version into sv,mv from kxra.account_identities a join kxra.organisation_memberships m on m.account_id=a.account_id where a.account_id=u and m.org_id=o;
@@ -100,10 +100,10 @@ begin
   return kxra_paired_admission.setup_status(i);
  end if;
  if(select count(*) from kxra_paired_admission.setup_requests where org_id=o and account_id=u and expires_at>clock_timestamp() and cancelled_at is null)>=20 then raise exception 'Pending setup capacity reached';end if;
- ag=gen_random_uuid();
+ ag=gen_random_uuid();created_at_value=clock_timestamp();
  insert into kxra_paired_admission.agents(id,org_id,account_id,room_id)values(ag,o,u,r);
- insert into kxra_paired_admission.setup_requests(id,org_id,account_id,session_version,membership_version,room_id,agent_id,ai_intent_id,auth_route,label)
- values(i,o,u,sv,mv,r,ag,ai,route,n) returning * into s;
+ insert into kxra_paired_admission.setup_requests(id,org_id,account_id,session_version,membership_version,room_id,agent_id,ai_intent_id,auth_route,label,created_at,expires_at)
+ values(i,o,u,sv,mv,r,ag,ai,route,n,created_at_value,created_at_value+interval '5 minutes') returning * into s;
  p=kxra_paired_admission.setup_policy(s);
  update kxra_paired_admission.setup_requests set policy_binding=p->'binding' where id=i;
  return kxra_paired_admission.setup_status(i);

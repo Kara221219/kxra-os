@@ -64,7 +64,7 @@
     },
     {
       "path": "database/production/paired-setup-policy-v1.sql",
-      "sha256": "15f6c6ac01df794dee5c0a9a93c6e7bca66d1cd358598f015db7e8ab17e4cd33"
+      "sha256": "254f31fc4426bf8e1062377809112fb81223af8cd674ce365ce9c63e17720ff8"
     },
     {
       "path": "docs/operations/paired-authority-store-2026-11-05.md",
@@ -120,11 +120,11 @@
     },
     {
       "path": "scripts/paired-composition-native.ts",
-      "sha256": "34a0835dfe3a643aeeb8f3beb1fb0a05f84d3a3747cd57323272ed8d5ac2b788"
+      "sha256": "921d293974fb8212a138d2f4fe0417268de55d1ee1f26b340f0a1baaa7710d0d"
     },
     {
       "path": "scripts/paired-setup-policy-native.ts",
-      "sha256": "b7ebc6b235c02d20cea20ff401e4f35d0b094cc0404783599cd4556f435ba341"
+      "sha256": "98083a2090178b494754059cab8d7fb73b839c41ac55ca70ed648cf7823a2a40"
     },
     {
       "path": "scripts/paired-setup-ui-native.ts",
@@ -227,7 +227,8 @@
     "Composed policy fence replaces redundant existing authority row locks; standalone storage locks unchanged",
     "Only new public setup paths remove7redundant existing-authority FKs; private agent relation and fresh identity/ownership gates retained; orphaned IDs deny",
     "Genuine119+GitHub+paired REQUEST/account,REQUEST/AIintent,CONSUME/reviewer races and full empty-target extension restore/no-replay",
-    "Historical environment pins preserved and tested through one exact default-off fixture suffix; no arbitrary normalization"
+    "Historical environment pins preserved and tested through one exact default-off fixture suffix; no arbitrary normalization",
+    "Bind request created/expiry to one captured timestamp after waits; identical statement-timestamp defaults; exactfive-minute bound and idempotency retained"
   ],
   "liveGates": [
     "Request-only local UI is separate from real server identity/session/CSRF and navigation integration; no device session, bearer, activation or executable authority issued",

@@ -204,6 +204,15 @@ export async function runPairedSetupProof(p: {
       assert.equal(
         (
           await admin.query(
+            "select extract(epoch from(expires_at-created_at))::integer seconds from kxra_paired_admission.setup_requests where id=$1",
+            [held.request_id],
+          )
+        ).rows[0].seconds,
+        300,
+      );
+      assert.equal(
+        (
+          await admin.query(
             "select enabled from kxra_paired_admission.agents where id=$1",
             [held.agent_id],
           )

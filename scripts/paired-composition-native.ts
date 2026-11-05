@@ -137,6 +137,22 @@ export async function runPairedCompositionProof(p: {
         return;
       await new Promise((r) => setTimeout(r, 5));
     }
+    write("composition-wait-failure.json", {
+      pid,
+      blocker,
+      activity: (
+        await admin.query(
+          "select pid,state,wait_event_type,wait_event,pg_blocking_pids(pid) blockers from pg_stat_activity where pid=$1",
+          [pid],
+        )
+      ).rows,
+      locks: (
+        await admin.query(
+          "select locktype,mode,granted from pg_locks where pid=$1 order by locktype,mode,granted",
+          [pid],
+        )
+      ).rows,
+    });
     assert.fail("EXPECTED_REVIEW_POLICY_WAIT_NOT_OBSERVED");
   };
   const outcomes: unknown[] = [];
@@ -168,13 +184,13 @@ export async function runPairedCompositionProof(p: {
             await admin.query("begin");
             barrier = true;
             await admin.query(
-              "select pg_advisory_xact_lock(hashtextextended('kxra-ghp-authority-v1',0))",
+              "select pg_advisory_xact_lock(hashtextextended('kxra-review-current-policy-v1',0))",
             );
             const barrierPid = (
               await admin.query("select pg_backend_pid() pid")
             ).rows[0].pid;
             // The actual definer RPC acquires its own subject/account locks.
-            // Pause its write at the existing GitHub fence; never grant the
+            // Pause after its subject lock at the existing review-policy fence; never grant the
             // unprivileged reviewer direct private-table access for staging.
             pending = decide(rc, detail.request_id);
             void pending.catch(() => {});
@@ -242,6 +258,15 @@ export async function runPairedCompositionProof(p: {
       await admin.query(
         "insert into kxra_paired_admission.setup_requests(id,org_id,account_id,session_version,membership_version,room_id,agent_id,ai_intent_id,auth_route,label) values($1,$2,$2,1,1,$2,$3,$2,'CUSTOMER_API_KEY','ORPHANED_SYNTHETIC')",
         [request, unknown, agent],
+      );
+      assert.equal(
+        (
+          await admin.query(
+            "select extract(epoch from(expires_at-created_at))::integer seconds from kxra_paired_admission.setup_requests where id=$1",
+            [request],
+          )
+        ).rows[0].seconds,
+        300,
       );
       const c = await connect(f.actor, f.org);
       try {
