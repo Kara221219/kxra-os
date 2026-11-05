@@ -1,3 +1,4 @@
+import { chromium } from "@playwright/test";
 // Exact-source, disposable fixture only; no URLs/credentials/activation accepted.
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +11,12 @@ const git = (args) =>
   execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 if (git(["status", "--porcelain"]))
   throw Error("CLEAN_COMMITTED_SOURCE_REQUIRED");
+// Resolve the already installed SDK cache before sanitizing HOME. Never install browsers.
+const installedPath = chromium.executablePath(),
+  cacheMatch = installedPath.match(/^(.*)[\/]chromium-(\d+)[\/]/);
+if (!cacheMatch || !fs.existsSync(cacheMatch[1]))
+  throw Error("INSTALLED_BROWSER_CACHE_REQUIRED");
+const browserCache = fs.realpathSync(cacheMatch[1]);
 const source = git(["rev-parse", "HEAD"]),
   { exclusions } = integrationReleaseSource(root);
 // Acquire before copying or starting anything; never remove a foreign lease.
@@ -43,6 +50,7 @@ try {
         USER: process.env.USER,
         TMPDIR: process.env.TMPDIR,
         NEXT_TELEMETRY_DISABLED: "1",
+        PLAYWRIGHT_BROWSERS_PATH: browserCache,
         KXRA_PAIRED_SETUP_PROOF: "1",
         KXRA_PAIRED_SETUP_UI_PROOF: "1",
       },

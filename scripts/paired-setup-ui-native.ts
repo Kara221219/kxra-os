@@ -54,7 +54,10 @@ export async function runPairedSetupUiProof(p: {
     browser: Browser | undefined,
     server: BrowserServer | undefined;
   let browserClean = true,
-    appClean = true;
+    appClean = true,
+    browserLaunchAttempted = false,
+    browserRejectedBeforeStart = false,
+    browserClientCloseAcknowledged = true;
   write("setup-ui-started.json", {
     source: execFileSync("git", ["rev-parse", "HEAD"], {
       encoding: "utf8",
@@ -142,14 +145,22 @@ export async function runPairedSetupUiProof(p: {
       await new Promise((r) => setTimeout(r, 250));
     }
     assert.ok(ready, "OWNED_NEXT_READINESS_TIMEOUT");
-    server = await chromium.launchServer({
-      headless: true,
-      args: [
-        "--disable-background-networking",
-        "--disable-component-update",
-        "--disable-sync",
-      ],
-    });
+    browserLaunchAttempted = true;
+    try {
+      server = await chromium.launchServer({
+        headless: true,
+        args: [
+          "--disable-background-networking",
+          "--disable-component-update",
+          "--disable-sync",
+        ],
+      });
+    } catch (error) {
+      browserRejectedBeforeStart = /Executable doesn't exist/.test(
+        String(error),
+      );
+      throw error;
+    }
     browser = await chromium.connect(server.wsEndpoint());
     await check(
       "actual route rejects unauthenticated, foreign-origin and purpose-confused cookies",
@@ -459,16 +470,43 @@ export async function runPairedSetupUiProof(p: {
       liveAuthentication: false,
     });
   } finally {
-    try {
-      await browser?.close();
-      await server?.close();
-      if (server) {
-        const child = server.process();
-        browserClean = child.exitCode !== null || child.signalCode !== null;
+    const bounded = async (work: Promise<unknown>) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          work,
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(Error("OWNED_BROWSER_CLOSE_TIMEOUT")),
+              5000,
+            );
+          }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
       }
+    };
+    try {
+      if (browser) await bounded(browser.close());
     } catch {
-      browserClean = false;
+      browserClientCloseAcknowledged = false;
     }
+    // Always stop the server independently, even if client disconnect failed.
+    try {
+      if (server) await bounded(server.close());
+    } catch {}
+    if (server) {
+      const child = server.process();
+      if (child.exitCode === null && child.signalCode === null) {
+        try {
+          await bounded(server.kill());
+        } catch {}
+      }
+      browserClean =
+        (child.exitCode !== null || child.signalCode !== null) &&
+        !browser?.isConnected();
+    } else if (browserLaunchAttempted && !browserRejectedBeforeStart)
+      browserClean = false;
     try {
       appClean = await stopApp();
     } catch {
@@ -495,6 +533,7 @@ export async function runPairedSetupUiProof(p: {
     write("setup-ui-cleanup.json", {
       clean,
       browserClosed: browserClean,
+      browserClientCloseAcknowledged,
       nextGroupStopped: appClean,
       portClosed,
     });
