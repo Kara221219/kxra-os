@@ -241,10 +241,10 @@ async function main() {
       }
       for (const f of newFunctions) {
         const signature = f.schema + "." + f.name + "(" + f.arguments + ")";
-        const allowed = (
+        const allowed: boolean = (
           await db.query(
-            "select has_function_privilege($1,$2,'EXECUTE') allowed",
-            [role, signature],
+            "select has_function_privilege($1,p.oid,'EXECUTE') allowed from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname=$2 and p.proname=$3 and pg_get_function_identity_arguments(p.oid)=$4",
+            [role, f.schema, f.name, f.arguments],
           )
         ).rows[0].allowed;
         assert.equal(
