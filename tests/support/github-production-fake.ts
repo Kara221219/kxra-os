@@ -1,4 +1,5 @@
 // In-memory request port only. Never creates a socket, resolves DNS or calls a provider.
+import crypto from "node:crypto";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import type https from "node:https";
@@ -21,7 +22,15 @@ export function githubFake(
       if (options.method === "POST") {
         posts++;
         const value = {
-          id: 9000 + effects.length,
+          id:
+            Number.parseInt(
+              crypto
+                .createHash("sha256")
+                .update(binding.connection_id)
+                .digest("hex")
+                .slice(0, 12),
+              16,
+            ) + effects.length,
           body: JSON.parse(body!).body,
           user: { id: binding.author_id, type: "Bot" },
           issue_url: issue,

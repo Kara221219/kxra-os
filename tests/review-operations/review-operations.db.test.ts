@@ -17,7 +17,7 @@ test("independent business and AI operator decisions use exact current scope wit
   const runtime = fs.realpathSync(process.env.KXRA_RUNTIME!);
   assert.match(
     runtime,
-    /^\/(?:private\/)?tmp\/kxra-ro-[a-zA-Z0-9]+\/\.runtime\/review-operations$/,
+    /^\/(?:private\/)?tmp\/(?:kxra-ro-[a-zA-Z0-9]+\/\.runtime\/review-operations|kxra-gho-[a-zA-Z0-9]+\/\.runtime\/github-outbox)$/,
   );
   assert.equal(process.env.KXRA_AUTH_MODE, "fixture");
   assert.ok(!process.env.DATABASE_URL && !process.env.VERCEL_ENV);

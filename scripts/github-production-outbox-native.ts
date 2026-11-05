@@ -187,6 +187,12 @@ async function main() {
       "--import",
       "tsx",
       "--test",
+      "tests/review-operations/review-operations.db.test.ts",
+    ]);
+    run([
+      "--import",
+      "tsx",
+      "--test",
       "--test-concurrency=1",
       "tests/github-production-outbox.test.ts",
       "tests/connectors/github-production-outbox.db.test.ts",
