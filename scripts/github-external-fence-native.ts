@@ -117,6 +117,91 @@ async function main() {
       },
     );
     assert.equal(test.status, 0, "EXTERNAL_FENCE_ACCEPTANCE_FAILED");
+    const inspect = async () => {
+      const a = new pg.Client({
+        host: socket,
+        port: cfg.port,
+        database: "github_fence",
+        user: os.userInfo().username,
+      });
+      await a.connect();
+      try {
+        const tables = (
+          await a.query(
+            "select c.relname,c.relkind,c.relrowsecurity,c.relacl::text,pg_get_userbyid(c.relowner) owner from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='kxra_github_fence' and c.relkind in('r','S') order by c.relname",
+          )
+        ).rows;
+        const functions = (
+          await a.query(
+            "select p.proname,pg_get_functiondef(p.oid) definition,p.proacl::text,pg_get_userbyid(p.proowner) owner from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='kxra_github_fence' order by p.proname",
+          )
+        ).rows;
+        const data: any = {};
+        for (const table of ["realms", "writes", "observations", "events"])
+          data[table] = (
+            await a.query(
+              "select to_jsonb(t) value from kxra_github_fence." +
+                table +
+                " t order by to_jsonb(t)::text",
+            )
+          ).rows;
+        data.sequence = (
+          await a.query(
+            "select last_value,is_called from kxra_github_fence.events_id_seq",
+          )
+        ).rows;
+        return { tables, functions, data };
+      } finally {
+        await a.end();
+      }
+    };
+    const before = await inspect();
+    fs.writeFileSync(
+      path.join(root, "ledger-before-restart.json"),
+      JSON.stringify(before, null, 2) + "\n",
+      { mode: 0o600 },
+    );
+    run("pg_ctl", ["-D", data, "-m", "fast", "-w", "stop"]);
+    const verify = (unavailable = false) => {
+      const r = spawnSync(
+        process.execPath,
+        [
+          "--import",
+          "tsx",
+          "--test",
+          "tests/connectors/github-external-fence-restart.test.ts",
+        ],
+        {
+          env: {
+            ...process.env,
+            KXRA_FENCE_UNAVAILABLE: unavailable ? "true" : "false",
+          },
+          stdio: "inherit",
+          timeout: 15000,
+        },
+      );
+      assert.equal(r.status, 0);
+    };
+    verify(true);
+    run("pg_ctl", [
+      "-D",
+      data,
+      "-l",
+      path.join(root, "postgres.log"),
+      "-w",
+      "start",
+    ]);
+    assert.deepEqual(await inspect(), before);
+    verify();
+    fs.writeFileSync(
+      path.join(root, "restart-proof.json"),
+      JSON.stringify({
+        exactCatalogueOwnerAclRowsSequencesPreserved: true,
+        unavailableFailClosed: true,
+        restartedWitnessCannotReissue: true,
+      }) + "\n",
+      { mode: 0o600 },
+    );
   } finally {
     try {
       await admin?.end();

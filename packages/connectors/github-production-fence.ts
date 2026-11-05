@@ -82,8 +82,9 @@ export class GithubDurableFence implements GithubRollbackFence {
   }
   private async call(action: string, input: unknown, signal?: AbortSignal) {
     signal?.throwIfAborted();
-    const c = await this.#pool.connect();
+    let c: Awaited<ReturnType<GithubSqlPool["connect"]>> | undefined;
     try {
+      c = await this.#pool.connect();
       await c.query("begin");
       await c.query("set local statement_timeout='2s'");
       await c.query("set local synchronous_commit=on");
@@ -97,11 +98,11 @@ export class GithubDurableFence implements GithubRollbackFence {
       return r.rows[0]?.value;
     } catch {
       try {
-        await c.query("rollback");
+        await c?.query("rollback");
       } catch {}
       throw Error("GITHUB_FENCE_HELD_OR_UNCONFIRMED");
     } finally {
-      c.release();
+      c?.release();
     }
   }
   async reserve(input: GithubAuthorityInput, signal: AbortSignal) {
@@ -138,8 +139,9 @@ export class GithubFenceReconciler {
     action: "HOLD" | "LIST" | "OBSERVE" | "RESUME",
     input: unknown,
   ) {
-    const c = await this.#pool.connect();
+    let c: Awaited<ReturnType<GithubSqlPool["connect"]>> | undefined;
     try {
+      c = await this.#pool.connect();
       await c.query("begin");
       await c.query("set local statement_timeout='2s'");
       await c.query("set local synchronous_commit=on");
@@ -151,11 +153,11 @@ export class GithubFenceReconciler {
       return r.rows[0]?.value;
     } catch {
       try {
-        await c.query("rollback");
+        await c?.query("rollback");
       } catch {}
       throw Error("GITHUB_RECONCILIATION_HELD_OR_UNCONFIRMED");
     } finally {
-      c.release();
+      c?.release();
     }
   }
   toJSON() {

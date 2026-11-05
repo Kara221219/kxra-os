@@ -85,6 +85,7 @@ export type GithubExecutionPorts = {
   lookup?: (host: string) => Promise<{ address: string }[]>;
   enabled?: () => boolean;
   now?: () => number;
+  monotonic?: () => number;
   deadlineMs?: number;
 };
 const positive = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -267,8 +268,14 @@ export class GithubProductionExecutor {
       request?.destroy();
       reject(unavailable());
     };
+    const monotonic = this.ports.monotonic ?? (() => performance.now());
+    const callStarted = monotonic();
     const available = () => {
+      const elapsed = monotonic() - callStarted;
       if (
+        !Number.isFinite(elapsed) ||
+        elapsed < 0 ||
+        elapsed >= this.deadlineMs ||
         !this.enabled() ||
         signal?.aborted ||
         controller.signal.aborted ||
@@ -390,6 +397,7 @@ export class GithubProductionExecutor {
               reservation.operation_sha256 !== operationHash
             )
               throw unavailable();
+            available();
             const consumed = githubAttemptConsumptionAck.parse(
               await this.ports.authority.consume(
                 freeze({
@@ -411,6 +419,7 @@ export class GithubProductionExecutor {
               throw unavailable();
             consumptionPending = false;
             consumptionConfirmed = true;
+            available();
             const sent = fenceAck.parse(
               await fence.send(fenceInput, reservation, controller.signal),
             );
@@ -441,6 +450,7 @@ export class GithubProductionExecutor {
           headers: IncomingMessage["headers"];
           bytes: Buffer;
         }>((resolve, fail) => {
+          available();
           // Conservatively classify every failure after request construction as possible send.
           started = true;
           request = (this.ports.request ?? https.request)(

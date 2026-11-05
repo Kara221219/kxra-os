@@ -18,13 +18,13 @@ create function kxra_github_fence.ack(w kxra_github_fence.writes) returns jsonb 
 create function kxra_github_fence.runtime(r uuid,e bigint,action text,v jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
 declare realm_row kxra_github_fence.realms;w kxra_github_fence.writes;s jsonb;k text;
 begin
- if session_user<>'kxra_gh_fence' or action is null or action not in('RESERVE','SEND') or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>3000 or(v-'subject'-case when action='SEND' then 'reservation_id' else '' end)<>'{}'::jsonb then raise insufficient_privilege;end if;
+ if session_user<>'kxra_gh_fence' or action is null or action not in('RESERVE','SEND') or v is null or jsonb_typeof(v)<>'object' or octet_length(v::text)>3000 or (select count(*) from jsonb_object_keys(v))<>case when action='SEND' then 2 else 1 end or(v-'subject'-case when action='SEND' then 'reservation_id' else '' end)<>'{}'::jsonb then raise insufficient_privilege;end if;
  select * into realm_row from kxra_github_fence.realms where id=r for update;
  if not found or realm_row.phase<>'ACTIVE' or realm_row.epoch is distinct from e then raise insufficient_privilege;end if;
  s=v->'subject';
  if jsonb_typeof(s) is distinct from 'object' or (select count(*) from jsonb_object_keys(s))<>11 or (s-array['org_id','user_id','connection_id','write_id','attempt_id','binding_sha256','operation_sha256','body_sha256','repository_id','issue_id','author_id'])<>'{}'::jsonb then raise exception 'Invalid fence subject';end if;
  foreach k in array array['org_id','user_id','connection_id','write_id','attempt_id'] loop if jsonb_typeof(s->k)<>'string' or s->>k is distinct from (s->>k)::uuid::text then raise exception 'Invalid identity';end if;end loop;
- foreach k in array array['binding_sha256','operation_sha256','body_sha256'] loop if coalesce(s->>k,'')!~'^[a-f0-9]{64}$' then raise exception 'Invalid digest';end if;end loop;
+ foreach k in array array['binding_sha256','operation_sha256','body_sha256'] loop if jsonb_typeof(s->k)<>'string' or coalesce(s->>k,'')!~'^[a-f0-9]{64}$' then raise exception 'Invalid digest';end if;end loop;
  foreach k in array array['repository_id','issue_id','author_id'] loop if jsonb_typeof(s->k)<>'number' or coalesce(s->>k,'')!~'^[1-9][0-9]{0,15}$' or(s->>k)::numeric>9007199254740991 then raise exception 'Invalid target';end if;end loop;
  if action='RESERVE' then
   insert into kxra_github_fence.writes(realm,write_id,epoch,reservation_id,subject,state) values(r,(s->>'write_id')::uuid,e,gen_random_uuid(),s,'RESERVED') on conflict do nothing returning * into w;
@@ -63,7 +63,7 @@ begin
   select * into w from kxra_github_fence.writes where realm=r and write_id=(v->>'write_id')::uuid;if not found then raise insufficient_privilege;end if;
   classification=v->>'classification';e=v->'evidence';
   if classification='ACCEPTED' then
-   if jsonb_typeof(e) is distinct from 'object' or (select count(*) from jsonb_object_keys(e))<>5 or(e-array['status','comment_id','body_sha256','author_id','issue_id'])<>'{}'::jsonb or e->>'status'<>'200' or jsonb_typeof(e->'status')<>'number' or jsonb_typeof(e->'comment_id')<>'number' or coalesce(e->>'comment_id','')!~'^[1-9][0-9]{0,15}$' or(e->>'comment_id')::numeric>9007199254740991 or e->>'body_sha256' is distinct from w.subject->>'body_sha256' or e->>'author_id' is distinct from w.subject->>'author_id' or e->>'issue_id' is distinct from w.subject->>'issue_id' then raise exception 'Matching independent observation required';end if;
+   if jsonb_typeof(e) is distinct from 'object' or (select count(*) from jsonb_object_keys(e))<>5 or(e-array['status','comment_id','body_sha256','author_id','issue_id'])<>'{}'::jsonb or e->>'status'<>'200' or jsonb_typeof(e->'status')<>'number' or jsonb_typeof(e->'author_id')<>'number' or jsonb_typeof(e->'issue_id')<>'number' or jsonb_typeof(e->'body_sha256')<>'string' or jsonb_typeof(e->'comment_id')<>'number' or coalesce(e->>'comment_id','')!~'^[1-9][0-9]{0,15}$' or(e->>'comment_id')::numeric>9007199254740991 or e->>'body_sha256' is distinct from w.subject->>'body_sha256' or e->>'author_id' is distinct from w.subject->>'author_id' or e->>'issue_id' is distinct from w.subject->>'issue_id' then raise exception 'Matching independent observation required';end if;
   elsif classification='NOT_SENT' then if w.state<>'RESERVED' or e is distinct from '{"reason":"EXTERNAL_SEND_NEVER_CONSUMED"}'::jsonb then raise exception 'Nonexecution not established';end if;
   elsif classification='QUARANTINED' then if e is distinct from '{"reason":"OUTCOME_UNCONFIRMED_NO_REPLAY"}'::jsonb then raise exception 'Uncertainty must remain explicit';end if;
   else raise exception 'Invalid classification';end if;

@@ -839,3 +839,49 @@ test("a resolver record is captured once before validation and never reread for 
   assert.deepEqual(pin, [null, "8.8.8.8", 4]);
   assert.equal(reads, 1);
 });
+
+test("missing rollback fence cannot consume application authority or construct a POST", async () => {
+  const x = setup();
+  x.ports.rollbackFence = undefined;
+  let consumed = 0;
+  x.state.consumeHook = async () => {
+    consumed++;
+    throw Error("must not consume");
+  };
+  const e = x.make();
+  await x.preflight(e);
+  assert.equal((await e.execute(x.approval())).outcome, "REFUSED");
+  assert.equal(consumed, 0);
+  assert.equal(x.state.posts, 0);
+});
+test("monotonic expiry after external SEND prevents HTTP even before the timer callback runs", async () => {
+  const x = setup();
+  let mono = 0,
+    burned = false;
+  x.ports.monotonic = () => mono;
+  const original = x.ports.rollbackFence!;
+  x.ports.rollbackFence = {
+    reserve: original.reserve.bind(original),
+    send: async (...args) => {
+      const r = await original.send(...args);
+      burned = true;
+      return r;
+    },
+  };
+  x.state.authorityHook = (i: any) => {
+    if (burned) mono = 2001;
+    return {
+      state: i.operation.kind === "COMMENT" ? "DISPATCHING" : "ACTIVE",
+      binding_sha256: i.binding_sha256,
+      operation_sha256: i.operation_sha256,
+      ...(i.operation.kind === "COMMENT"
+        ? { write_id: i.operation.write_id, attempt_id: i.operation.attempt_id }
+        : {}),
+    };
+  };
+  const e = x.make();
+  await x.preflight(e);
+  assert.equal((await e.execute(x.approval())).outcome, "NOT_EXECUTED");
+  assert.equal(burned, true);
+  assert.equal(x.state.posts, 0);
+});

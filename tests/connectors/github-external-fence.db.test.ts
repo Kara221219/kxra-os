@@ -635,6 +635,11 @@ test("independent durable fence survives older application snapshots and never r
           ),
         );
         assert.equal(fake.posts(), 1);
+        fs.writeFileSync(
+          path.join(dir, "restart-context.json"),
+          JSON.stringify({ realm: c.realm, epoch: 2, input: input(h) }),
+          { mode: 0o600 },
+        );
         observations.push({
           case: "reconciliation",
           matchingEffects: matching.length,
