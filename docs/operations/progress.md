@@ -1696,3 +1696,8 @@ An isolated branch adds default-off internal owner review UI/API backed by exact
 ## 5 November — review operations production composition
 
 The entire reviewed five-commit operator branch is merged into an isolated composition, preserving both source checkouts. A new offline hash-bound117→genuineAI118→review119 cohort rejects fixture history and arbitrary extensions; original hosted guards/operators remain unchanged. Combined acceptance explicitly checks catalogue/data/ACL and both public-ledger rollback, fresh/upgrade equivalence, browser review/withdrawal and restored no-duplicate authority. See [composition handoff](production-operations-composition-2026-11-05.md); final exact-head results remain external evidence. Default-off, policy/hosted/full-launch gates and existing commitments remain preserved.
+
+
+## 5 November — offline production GitHub HTTPS boundary
+
+An isolated branch after bde07e3 implements a separate default-off fixed-origin/TLS/DNS-pinned executor with exact server binding/lease/approval checks, mandatory irreversible attempt-consumption port, bounded sanitized responses/rate evidence and no automatic retries. Fixture adapters, production503 routes and migration guards remain unchanged. See [blocker assessment and precise handoff](github-production-transport-2026-11-05.md). Production durable consumption/outbox/worker, broker/installation/custody and actual provider acceptance remain unimplemented or gated; pairing still requires genuine schema/admission and real CLI/tool/auth acceptance. Native tests use only owned loopback TLS and generated synthetic material; final source-specific receipts remain outside source. No provider calls, real credentials, hosted action, activation, deployment or spending.
