@@ -3,7 +3,7 @@
   "baseCommit": "835b7578b20b295994ba5ca016edd87342d41631",
   "baseline": "canonical117 or an independently reviewed production cohort without local custom-app objects",
   "payload": "database/production/custom-apps-v1.sql",
-  "payloadSha256": "e9160f0899785e89cd73ffef27232ebf8bf3db53c7ae64f08335308d6b337e4e",
+  "payloadSha256": "f12f01f2406a318561aeecd2a02c93e6fb9cd64d7dbaaf06b7e5ee1e076fab3a",
   "defaultEnabled": false,
   "hostedEligible": false,
   "numberedMigrationsChanged": false,
@@ -27,6 +27,7 @@
     "kxra_private.custom_app_authority_fence",
     "kxra_private.custom_app_immutable",
     "kxra_private.custom_app_review_current",
+    "kxra_private.custom_app_room_current",
     "kxra_private.custom_app_schema_valid",
     "kxra_private.custom_app_values_valid",
     "kxra_private.custom_app_write_fence",
@@ -76,5 +77,10 @@
     "Trusted Supabase access-token hook must issue immutable top-level kxra_session_version bound to the ORIGINAL provider session and its account authority version; refresh must preserve it or reject revoked session IDs, never stamp the current database version onto an old session. Absent or stale claim denies. Hook provisioning/real session acceptance not supplied.",
     "Release owner must allocate migration number, review current cohort compatibility/global authority fence contention and verify live paid/legal/session/review policy; no activation or install port supplied.",
     "Production authenticated hosted/browser/signup/pay/use acceptance, independent infrastructure backup/restore, operations/load and arbitrary-source isolation remain separate."
+  ],
+  "integrationCorrections": [
+    "Authority shared fence replaces explicit and implicit existing-row locks; all internal app relationships retained",
+    "Current reviewer room/mandatorylegal predicate mirrors actual0031+0083, admin bypass preserved",
+    "Final postwait clock based principal/paid/member/project/reviewer/MFA revalidation without policy/TTL changes"
   ]
 }

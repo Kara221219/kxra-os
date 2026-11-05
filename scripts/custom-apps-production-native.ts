@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import net from "node:net";
 import http from "node:http";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import pg from "pg";
 import { postgresBin } from "./postgres-bin.mjs";
 import { seedAiResumeFixture } from "../tests/support/ai-resume-fixture";
@@ -13,7 +13,14 @@ import {
   customAppsProductionPayload,
   assertCustomAppsCatalogDelta,
 } from "./custom-apps-production-payload.mjs";
-import { integrationCatalog, integrationData } from "./integration-catalog.mjs";
+import {
+  pairedCompositionCatalog as integrationCatalog,
+  pairedCompositionData as integrationData,
+} from "./paired-composition-catalog.mjs";
+import { productionOperationsPayload } from "./production-operations-review.mjs";
+import { proveCustomAppsTargetRefusal } from "./custom-apps-target-native";
+import { runCustomAppsCompositionProof } from "./custom-apps-composition-native";
+import { customAppsBrowserFixture } from "./custom-apps-browser-native";
 import { exampleCustomApp } from "../packages/custom-apps/contract";
 import type { Actor } from "../apps/os/lib/auth";
 async function main() {
@@ -36,6 +43,8 @@ async function main() {
     USER: os.userInfo().username,
     TMPDIR: process.env.TMPDIR,
     NODE_ENV: "development" as const,
+    LANG: "C",
+    LC_ALL: "C",
     KXRA_RUNTIME: runtime,
     KXRA_AUTH_MODE: "fixture",
     KXRA_ORIGIN: `http://127.0.0.1:${await port()}`,
@@ -47,13 +56,19 @@ async function main() {
       cwd: root,
       env: bootstrapEnv,
       stdio: "inherit",
+      timeout: 45000,
     });
   }
   let admin: pg.Client | undefined, server: http.Server | undefined;
   let pooled: any;
+  let browserFixture:
+    Awaited<ReturnType<typeof customAppsBrowserFixture>> | undefined;
   const evidence: any = {
     classification:
       "LOCAL_SYNTHETIC_SERVER_IDENTITY_BOUNDARY_NOT_HOSTED_ACCEPTANCE",
+    sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8",
+    }).trim(),
     payloadSha256: crypto
       .createHash("sha256")
       .update(fs.readFileSync("database/production/custom-apps-v1.sql"))
@@ -73,7 +88,8 @@ async function main() {
     assert.equal(cfg.host, path.join(runtime, "socket"));
     assert.equal(cfg.database, "postgres");
     assert.equal(cfg.user, "kxra_app");
-    assert.ok(!cfg.password);
+    assert.ok(!cfg.password && !cfg.connectionString && !cfg.ssl);
+
     admin = new pg.Client({ ...cfg, user: os.userInfo().username });
     await admin.connect();
     assert.equal(
@@ -88,11 +104,57 @@ async function main() {
       ).rows[0].n,
       117,
     );
+    const profile = productionOperationsPayload(root);
+    await admin.query(profile.ai.bytes);
+    await admin.query(profile.bytes);
+    for (const file of [
+      "github-outbox-v1.sql",
+      "paired-admission-v1.sql",
+      "paired-setup-policy-v1.sql",
+      "paired-setup-options-v1.sql",
+    ])
+      await admin.query(
+        fs.readFileSync(path.join(root, "database/production", file), "utf8"),
+      );
+    write("composition-profile.json", {
+      canonicalBaseline: 117,
+      genuineProfile: [
+        profile.ai.spec.candidateMigration.name,
+        profile.spec.candidateMigration.name,
+      ],
+      unnumbered: [
+        "github-outbox-v1.sql",
+        "paired-admission-v1.sql",
+        "paired-setup-policy-v1.sql",
+        "paired-setup-options-v1.sql",
+        "custom-apps-v1.sql",
+      ],
+      hostedApplied: false,
+      migrationPromotions: [],
+    });
     await admin.query("begin");
-    const fixture = await seedAiResumeFixture(admin);
+    const fixture = await seedAiResumeFixture(admin, false);
     await admin.query("commit");
     const baselineAppsCatalog = await integrationCatalog(admin);
     const payload = customAppsProductionPayload(root);
+    await proveCustomAppsTargetRefusal({
+      admin,
+      cfg,
+      runtime,
+      bin,
+      fixture,
+      sql: payload.sql,
+      write,
+    });
+    await admin.query("begin");
+    await admin.query(
+      payload.sql
+        .replace(/^([\s\S]*?)\bbegin;\s*/i, "$1")
+        .replace(/commit;\s*$/i, ""),
+    );
+    await assert.rejects(admin.query("select 1/0"));
+    await admin.query("rollback");
+    assert.deepEqual(await integrationCatalog(admin), baselineAppsCatalog);
     await admin.query(payload.sql);
     assertCustomAppsCatalogDelta(
       baselineAppsCatalog,
@@ -160,8 +222,17 @@ async function main() {
       outsider: actor(outsider, otherOrg),
       fake: { ...actor(author), source: "fake-provider" },
     };
+    browserFixture = await customAppsBrowserFixture({
+      root,
+      runtime,
+      room,
+      origin: process.env.KXRA_ORIGIN!,
+      refreshProof,
+      write,
+    });
     server = http.createServer(async (req, res) => {
       try {
+        if (browserFixture!.serve(req, res)) return;
         let bytes = Buffer.alloc(0);
         for await (const c of req) bytes = Buffer.concat([bytes, c]);
         const url = new URL(req.url!, process.env.KXRA_ORIGIN);
@@ -461,6 +532,24 @@ async function main() {
     evidence.phases.push(
       "Deterministic held-fence reviewer-room revocation versus save; stale signed claim rejected even when Actor carries fresh database version; malformed schema and cross-app receipt denied",
     );
+    await runCustomAppsCompositionProof({
+      admin,
+      pool: pooled.getPool(),
+      fixture,
+      reviewer,
+      root,
+      runtime,
+      cfg,
+      refreshProof,
+      write,
+    });
+    evidence.phases.push(
+      "Combined genuine119+GitHub+paired+apps actual review lock races, clock expiry, current reviewer legal and orphan/target/ACL negatives",
+    );
+    await browserFixture.run();
+    evidence.phases.push(
+      "Actual shipped React browser components to HTTP core to combined production SQL; synthetic resolved identity only",
+    );
     // Database boundaries are tested without the HTTP capability guard.
     const unauthorized = new pg.Client(cfg);
     await unauthorized.connect();
@@ -759,22 +848,63 @@ async function main() {
     write("receipt.json", evidence);
     console.log("PRODUCTION_CUSTOM_APPS_NATIVE_PASS " + runtime);
   } finally {
-    if (server) await new Promise<void>((r) => server!.close(() => r()));
-    if (pooled)
+    async function bounded(promise: Promise<unknown>, ms = 4000) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        await pooled.getPool().end();
-      } catch {}
-    if (admin)
-      try {
-        await admin.end();
-      } catch {}
-    let clean = false;
-    try {
-      runDatabase("stop");
-      clean = true;
-    } finally {
-      write("cleanup.json", { clean });
+        return await Promise.race([
+          promise,
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(Error("OWNED_RESOURCE_CLOSE_UNCONFIRMED")),
+              ms,
+            );
+          }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
     }
+    const results = await Promise.allSettled([
+      server
+        ? bounded(
+            new Promise<void>((resolve, reject) => {
+              server!.close((error) => (error ? reject(error) : resolve()));
+              server!.closeAllConnections();
+            }),
+          )
+        : Promise.resolve(),
+      pooled ? bounded(pooled.getPool().end()) : Promise.resolve(),
+      admin ? bounded(admin.end()) : Promise.resolve(),
+    ]);
+    const data = path.join(runtime, "postgres");
+    const stop = fs.existsSync(path.join(data, "PG_VERSION"))
+      ? spawnSync(
+          path.join(bin, "pg_ctl"),
+          ["-D", data, "-m", "fast", "-w", "stop"],
+          { env: bootstrapEnv, timeout: 30000 },
+        )
+      : { status: 0 };
+    const status = fs.existsSync(path.join(data, "PG_VERSION"))
+      ? spawnSync(path.join(bin, "pg_ctl"), ["-D", data, "status"], {
+          env: bootstrapEnv,
+          timeout: 5000,
+        })
+      : { status: 3 };
+    const clean =
+      (browserFixture?.cleanupConfirmed() ?? true) &&
+      results.every((r) => r.status === "fulfilled") &&
+      stop.status === 0 &&
+      status.status === 3 &&
+      !fs.existsSync(path.join(data, "postmaster.pid"));
+    write("cleanup.json", {
+      clean,
+      browserCleanupConfirmed: browserFixture?.cleanupConfirmed() ?? true,
+      independentResourceCloseResults: results.map((r) => r.status),
+      postgresStop: stop.status,
+      postgresStatus: status.status,
+      postmasterPidAbsent: !fs.existsSync(path.join(data, "postmaster.pid")),
+    });
+    assert.ok(clean, "OWNED_CLEANUP_UNCERTAIN_LEASE_RETAINED");
   }
 }
 main().catch((e) => {

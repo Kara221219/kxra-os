@@ -61,7 +61,9 @@ export function customAppsProductionPayload(
 export function assertCustomAppsCatalogDelta(before, after, spec) {
   const key = (r) => r.schema + "." + r.name;
   const oldTables = new Set(before.tables.map(key)),
-    oldFunctions = new Set(before.functions.map(key));
+    oldFunctions = new Set(
+      before.functions.map((r) => key(r) + "(" + r.arguments + ")"),
+    );
   assert.deepEqual(
     after.tables
       .filter((r) => !oldTables.has(key(r)))
@@ -71,7 +73,7 @@ export function assertCustomAppsCatalogDelta(before, after, spec) {
   );
   assert.deepEqual(
     after.functions
-      .filter((r) => !oldFunctions.has(key(r)))
+      .filter((r) => !oldFunctions.has(key(r) + "(" + r.arguments + ")"))
       .map(key)
       .sort(),
     spec.functions,
