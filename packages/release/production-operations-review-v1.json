@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "classification": "PRODUCTION_OPERATIONS_MIGRATION_REVIEW_ONLY_NOT_FULL_RELEASE",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "objective": "FULL_FEATURE_LAUNCH_NO_PILOT_SUBSTITUTION",
+  "baseAiReviewSha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff",
+  "operationsManifestSha256": "473c88fa02a2bff2eec1eb896c4f4f8789169fb8763a0a6eb558923095757120",
+  "candidateMigration": {
+    "name": "0119_review_operations.sql",
+    "payload": "database/production/review-operations-v1.sql",
+    "sha256": "cfc334b9665e7f1dedf6d8fb808d612aac1bbc28dd72bbccf27ca2fbba16c4c5"
+  },
+  "defaultEnabled": false,
+  "policyDataSeeded": false,
+  "grantsSeeded": false,
+  "termsOrFinancialCommitmentsChanged": false,
+  "hostedExecutorImplemented": false
+}

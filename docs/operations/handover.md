@@ -1428,3 +1428,8 @@ Use the separate composition checkout and [review packet](production-composition
 ## 4 November — independent human review application wiring
 
 An isolated branch adds default-off internal owner review UI/API backed by exact customer/provider/policy grants, frozen request authority and immutable decision/withdrawal receipts. No authority is seeded. Native blocked-lock races, actual browser lost-ack read recovery and installed-schema restore are exercised separately from canonical119. See [operator review handoff](review-operations-2026-11-04.md) for exact scope, reproduction, custody/grant decisions and production migration gates. Full launch scope and existing customer commitments remain unchanged; no hosted or provider action. Final commit-specific acceptance is retained outside source.
+
+
+## 5 November — review operations production composition
+
+The entire reviewed five-commit operator branch is merged into an isolated composition, preserving both source checkouts. A new offline hash-bound117→genuineAI118→review119 cohort rejects fixture history and arbitrary extensions; original hosted guards/operators remain unchanged. Combined acceptance explicitly checks catalogue/data/ACL and both public-ledger rollback, fresh/upgrade equivalence, browser review/withdrawal and restored no-duplicate authority. See [composition handoff](production-operations-composition-2026-11-05.md); final exact-head results remain external evidence. Default-off, policy/hosted/full-launch gates and existing commitments remain preserved.

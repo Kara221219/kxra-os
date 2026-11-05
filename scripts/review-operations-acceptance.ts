@@ -16,7 +16,11 @@ import {
   hostedMigrationManifest,
   assertNoHostedFixtureObjects,
 } from "./hosted-release-guard.mjs";
-import { productionAiPayload } from "./production-ai-review.mjs";
+import {
+  productionOperationsPayload,
+  productionOperationsSource,
+  productionOperationsUpgrade,
+} from "./production-operations-review.mjs";
 import { integrationCatalog, integrationData } from "./integration-catalog.mjs";
 import { applicationNext } from "./application-next.mjs";
 import { postgresBin } from "./postgres-bin.mjs";
@@ -102,7 +106,8 @@ async function main() {
     });
   try {
     assert.ok(!fs.existsSync(path.join(runtime, "postgres")));
-    assert.equal(hostedMigrationManifest(root).length, 117);
+    const baseline = hostedMigrationManifest(root);
+    assert.equal(baseline.length, 117);
     run(["scripts/database.mjs", "start"]);
     cfg = JSON.parse(
       fs.readFileSync(path.join(runtime, "database.json"), "utf8"),
@@ -122,15 +127,179 @@ async function main() {
       (await db.query("show listen_addresses")).rows[0].listen_addresses,
       "",
     );
-    const { bytes } = productionAiPayload(root);
-    await db.query(bytes);
+    const sourceCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8",
+    }).trim();
+    const payload = productionOperationsPayload(root);
     await db.query(
-      "insert into public.kxra_local_migrations values('0118_ai_connection_admission.sql')",
+      "create table public.kxra_schema_migrations(name text primary key,sha256 text not null,source_commit text not null)",
     );
-    const before = await integrationCatalog(db);
-    await db.query(
-      fs.readFileSync("database/production/review-operations-v1.sql", "utf8"),
+    for (const m of baseline)
+      await db.query(
+        "insert into public.kxra_schema_migrations values($1,$2,$3)",
+        [m.name, m.sha256, sourceCommit],
+      );
+    for (const [name, bytes] of [
+      [payload.ai.spec.candidateMigration.name, payload.ai.bytes],
+      [payload.spec.candidateMigration.name, payload.bytes],
+    ])
+      fs.writeFileSync(path.join(root, "supabase/migrations", name), bytes, {
+        flag: "wx",
+      });
+    const manifest = productionOperationsSource(root);
+    const ledger = async (c: pg.Client = db!) =>
+      (
+        await c.query(
+          "select * from public.kxra_schema_migrations order by name",
+        )
+      ).rows;
+    assert.equal(
+      productionOperationsUpgrade(root, {
+        managed: true,
+        applied: await ledger(),
+      }).pending.length,
+      2,
     );
+    async function apply(rows: any[], fail = false) {
+      await db!.query("begin");
+      try {
+        for (const m of rows) {
+          await db!.query(m.sql);
+          await db!.query(
+            "insert into public.kxra_local_migrations values($1)",
+            [m.name],
+          );
+          await db!.query(
+            "insert into public.kxra_schema_migrations values($1,$2,$3)",
+            [m.name, m.sha256, sourceCommit],
+          );
+        }
+        if (fail) await db!.query("select 1/0");
+        await db!.query("commit");
+      } catch (e) {
+        await db!.query("rollback");
+        throw e;
+      }
+    }
+    const ledgers = async (c: pg.Client = db!) => ({
+      hashed: await ledger(c),
+      local: (
+        await c.query(
+          "select * from public.kxra_local_migrations order by name",
+        )
+      ).rows,
+    });
+    const originalLedgers = await ledgers();
+    const originalCatalog = await integrationCatalog(db),
+      originalData = await integrationData(db, originalCatalog);
+    await assert.rejects(apply(manifest.slice(117), true), { code: "22012" });
+    assert.deepEqual(await integrationCatalog(db), originalCatalog);
+    assert.deepEqual(await integrationData(db, originalCatalog), originalData);
+    assert.deepEqual(await ledgers(), originalLedgers);
+    await apply([manifest[117]]);
+    assert.equal(
+      productionOperationsUpgrade(root, {
+        managed: true,
+        applied: await ledger(),
+      }).pending.length,
+      1,
+    );
+    const ai118Ledgers = await ledgers();
+    const before = await integrationCatalog(db),
+      beforeData = await integrationData(db, before);
+    await assert.rejects(apply([manifest[118]], true), { code: "22012" });
+    assert.deepEqual(await integrationCatalog(db), before);
+    assert.deepEqual(await integrationData(db, before), beforeData);
+    assert.deepEqual(await ledgers(), ai118Ledgers);
+    await apply([manifest[118]]);
+    assert.equal(
+      productionOperationsUpgrade(root, {
+        managed: true,
+        applied: await ledger(),
+      }).pending.length,
+      0,
+    );
+    assert.throws(() => hostedMigrationManifest(root), /UNKNOWN_MIGRATION/);
+    for (const table of [
+      "review_operator_grants",
+      "review_requests",
+      "review_operation_receipts",
+    ])
+      assert.equal(
+        (await db.query("select count(*)::int n from kxra_private." + table))
+          .rows[0].n,
+        0,
+      );
+    const freshName =
+      "kxra_review_fresh_" + crypto.randomBytes(6).toString("hex");
+    await db.query(`create database "${freshName}" template template0`);
+    const fresh = new pg.Client({
+      ...cfg,
+      user: os.userInfo().username,
+      database: freshName,
+    });
+    await fresh.connect();
+    try {
+      for (const [table, column] of [
+        ["pg_class", "relnamespace"],
+        ["pg_proc", "pronamespace"],
+      ])
+        assert.equal(
+          (
+            await fresh.query(
+              `select count(*)::int n from ${table} x join pg_namespace n on n.oid=x.${column} where n.nspname not like 'pg_%' and n.nspname<>'information_schema'`,
+            )
+          ).rows[0].n,
+          0,
+        );
+      await fresh.query(
+        `create schema auth;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to anon,authenticated;grant execute on all functions in schema auth to anon,authenticated;create table public.kxra_local_migrations(name text primary key);create table public.kxra_schema_migrations(name text primary key,sha256 text not null,source_commit text not null);`,
+      );
+      for (const m of manifest) {
+        await fresh.query("begin");
+        try {
+          await fresh.query(m.sql);
+          await fresh.query(
+            "insert into public.kxra_local_migrations values($1)",
+            [m.name],
+          );
+          await fresh.query(
+            "insert into public.kxra_schema_migrations values($1,$2,$3)",
+            [m.name, m.sha256, sourceCommit],
+          );
+          await fresh.query("commit");
+        } catch (e) {
+          await fresh.query("rollback");
+          throw e;
+        }
+      }
+      const upgraded = await integrationCatalog(db),
+        freshCatalog = await integrationCatalog(fresh);
+      assert.deepEqual(freshCatalog, upgraded);
+      assert.deepEqual(await ledgers(fresh), await ledgers());
+      write("fresh119-catalogue.json", freshCatalog);
+      write("fresh119-ledgers.json", await ledgers(fresh));
+      await assertNoHostedFixtureObjects(fresh);
+    } finally {
+      await fresh.end();
+    }
+    write("migration-path.json", {
+      sourceCommit,
+      production117To118To119: true,
+      atomic117Through119FailureRollback: true,
+      atomic118To119FailureRollback: true,
+      ddlLedgerDataAclRollback: true,
+      fresh119EmptyTarget: true,
+      freshAndUpgradeCataloguesEqual: true,
+      noOperatorAuthoritySeeded: true,
+      hostedGuardStillRefuses: true,
+      authorization: false,
+      defaultEnabled: false,
+      pre117Ledgers: originalLedgers,
+      pre118Ledgers: ai118Ledgers,
+      post119Ledgers: await ledgers(),
+      manifest: manifest.map(({ name, sha256 }: any) => ({ name, sha256 })),
+    });
     const installed = await integrationCatalog(db);
     const newTables = installed.tables.filter(
       (r: any) =>
@@ -173,6 +342,7 @@ async function main() {
       "--test",
       "--test-concurrency=1",
       "tests/review-operations.test.ts",
+      "tests/review-operations-api.test.ts",
       "tests/review-operations/review-operations.db.test.ts",
     ]);
     const fixture = JSON.parse(
@@ -483,6 +653,8 @@ async function main() {
       data = await integrationData(db, catalog);
     write("catalogue-source.json", catalog);
     write("data-source.json", data);
+    const sourceLedgers = await ledgers();
+    write("ledger-source.json", sourceLedgers);
     const pass = path.join(runtime, "empty-libpq");
     fs.writeFileSync(pass, "", { mode: 0o600, flag: "wx" });
     const subEnv: NodeJS.ProcessEnv = {
@@ -545,6 +717,8 @@ async function main() {
       assert.deepEqual(rd, data);
       write("catalogue-restored.json", rc);
       write("data-restored.json", rd);
+      assert.deepEqual(await ledgers(restored), sourceLedgers);
+      write("ledger-restored.json", await ledgers(restored));
       async function recoveredCommand(action: string, input: unknown) {
         const c = new pg.Client({ ...cfg, database: target });
         await c.connect();
@@ -605,6 +779,9 @@ async function main() {
       sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
         encoding: "utf8",
       }).trim(),
+      production117To118To119MigrationPath: true,
+      atomicDdlLedgerDataAclRollback: true,
+      fresh119AndUpgradeCataloguesEqual: true,
       customerBusinessReviewRecorded: true,
       customerAiReviewRecordedAndWithdrawn: true,
       actualBrowserHttpDatabase: true,
