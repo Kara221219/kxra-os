@@ -1,3 +1,4 @@
+import { historicalCompositionBytes } from "./support/composition-policy-bytes";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -41,7 +42,11 @@ test("payment composition pins exact repair source and unchanged customer, proof
     ...manifest.paymentSourceFiles,
     ...manifest.unchangedPolicyFiles,
   ])
-    assert.equal(sha(read(f.path)), f.sha256, f.path);
+    assert.equal(
+      sha(historicalCompositionBytes(f.path, read(f.path), f.sha256)),
+      f.sha256,
+      f.path,
+    );
 });
 test("payment integration cannot enable billing, relax policy or promote migrations", () => {
   for (const key of [

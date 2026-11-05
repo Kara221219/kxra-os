@@ -1,6 +1,14 @@
 -- Unnumbered, unwired proposal AFTER genuine AI118 and paired-admission-v1.
 -- No policy, activation, token, device session, credential or access grant is seeded/issued.
 begin;
+-- Composition uses the policy fence before authority writes. Avoid implicit
+-- key-share locks on existing authority rows: review RPCs can already hold them
+-- before reaching their policy write. Fresh setup_human/setup_policy predicates
+-- enforce these references; old/orphaned IDs never become authority.
+alter table kxra_paired_admission.agents
+ drop constraint agents_org_id_fkey,
+ drop constraint agents_account_id_fkey,
+ drop constraint agents_room_id_fkey;
 create table kxra_paired_admission.transport_policies(
  id uuid primary key,sequence bigint generated always as identity unique,policy_sha256 text not null check(policy_sha256~'^[a-f0-9]{64}$'),
  auth_route text not null check(auth_route='CUSTOMER_API_KEY'),
@@ -8,11 +16,11 @@ create table kxra_paired_admission.transport_policies(
  review_reference text not null check(length(review_reference) between 1 and 160)
 );
 create table kxra_paired_admission.setup_requests(
- id uuid primary key,org_id uuid not null references kxra.organisations,
- account_id uuid not null references kxra.account_identities(account_id),
+ id uuid primary key,org_id uuid not null,
+ account_id uuid not null,
  session_version integer not null,membership_version integer not null,
- room_id uuid not null references kxra.team_rooms,agent_id uuid not null unique references kxra_paired_admission.agents,
- ai_intent_id uuid not null references kxra_private.ai_connection_intents,
+ room_id uuid not null,agent_id uuid not null unique references kxra_paired_admission.agents,
+ ai_intent_id uuid not null,
  auth_route text not null check(auth_route in('CUSTOMER_API_KEY','CHATGPT_SUBSCRIPTION')),
  label text not null check(length(label) between 1 and 100),
  policy_binding jsonb,created_at timestamptz not null default clock_timestamp(),
@@ -114,6 +122,28 @@ end $$;
 -- pointing at the earlier storage predicate and allow composition to be bypassed.
 alter function kxra_paired_admission.current_task(uuid) rename to storage_current_task;
 alter function kxra_paired_admission.consume(uuid,uuid,uuid,text,uuid) rename to storage_consume;
+create or replace function kxra_paired_admission.storage_consume(t uuid,f uuid,a uuid,s text,p uuid) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare row kxra_paired_admission.authorities;
+begin
+ if session_user<>'kxra_app' or t is null or f is null or a is null or s is null or p is null then raise insufficient_privilege;end if;
+ select * into row from kxra_paired_admission.authorities where task_id=t for update;
+ if not found then raise insufficient_privilege;end if;
+ -- Own paired/source rows retain their locks. Composed existing-authority writes
+ -- serialize on the policy fence; do not acquire their row locks under it.
+ perform 1 from kxra_paired_admission.agents where id=(row.manifest->'task'->>'agent_id')::uuid for share;
+ perform 1 from kxra_paired_admission.devices where id=row.device_id for share;
+ perform 1 from kxra_paired_admission.reviews where id in(row.runtime_review_id,row.auth_review_id,row.source_review_id) order by id for share;
+ perform 1 from kxra.team_messages where room_id=row.room_id and id in(select (v->>'id')::uuid from jsonb_array_elements(row.manifest->'task'->'sources')v) order by id for share;
+ if not kxra_paired_admission.current_task(t) or row.snapshot_sha256 is distinct from s or(row.manifest->'task'->>'fence')::uuid is distinct from f or a is null or p is null then raise insufficient_privilege;end if;
+ insert into kxra_paired_admission.consumptions(task_id,attempt_id,permit_id,snapshot_sha256) values(t,a,p,s) on conflict do nothing;
+ if not found then return jsonb_build_object('state','ALREADY_CONSUMED');end if;
+ return jsonb_build_object('state','CONSUMED','permit_id',p,'snapshot_sha256',s,'realm_id',row.manifest->>'realm_id','continuity_epoch',row.manifest->>'continuity_epoch',
+  'expires_at',to_char(least((row.manifest->'task'->>'lease_until')::timestamptz,
+   (row.manifest->'runtime_review'->>'expires_at')::timestamptz,(row.manifest->'auth_review'->>'expires_at')::timestamptz,
+   (select expires_at from kxra_paired_admission.devices where id=row.device_id),
+   (select min(expires_at) from kxra_paired_admission.reviews where id in(row.runtime_review_id,row.auth_review_id,row.source_review_id))) at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+end $$;
 create function kxra_paired_admission.current_task(t uuid) returns boolean
 language plpgsql volatile security definer set search_path='' as $$
 declare a kxra_paired_admission.authorities;s kxra_paired_admission.setup_requests;p jsonb;

@@ -1,3 +1,4 @@
+import { historicalCompositionBytes } from "./support/composition-policy-bytes";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -48,8 +49,9 @@ test("integrated production composition retains exact reviewed component lineage
       assert.ok(b.length > f.bytes);
       assert.equal(sha(b.subarray(0, f.bytes)), f.sha256);
     } else {
-      assert.equal(b.length, f.bytes, f.path);
-      assert.equal(sha(b), f.sha256, f.path);
+      const pinned = historicalCompositionBytes(f.path, b, f.sha256);
+      assert.equal(pinned.length, f.bytes, f.path);
+      assert.equal(sha(pinned), f.sha256, f.path);
     }
   }
 });

@@ -53,6 +53,7 @@ try {
         PLAYWRIGHT_BROWSERS_PATH: browserCache,
         KXRA_PAIRED_SETUP_PROOF: "1",
         KXRA_PAIRED_SETUP_UI_PROOF: "1",
+        KXRA_PAIRED_COMPOSITION_PROOF: "1",
       },
       stdio: "inherit",
       timeout: 300000,

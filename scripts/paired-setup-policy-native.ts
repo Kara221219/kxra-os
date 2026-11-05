@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import type pg from "pg";
+import { productionOperationsPayload } from "./production-operations-review.mjs";
+import { runPairedCompositionProof } from "./paired-composition-native";
 import { productionAiPayload } from "./production-ai-review.mjs";
 import { seedAiResumeFixture } from "../tests/support/ai-resume-fixture";
 import { syntheticPairedAuthority } from "../tests/support/paired-authority-fixture";
@@ -30,6 +32,29 @@ export async function runPairedSetupProof(p: {
     KXRA_MODERN_BILLING_TEST_MODE: "STAGING_SANDBOX",
   });
   await admin.query(productionAiPayload(p.root).bytes);
+  const composed = process.env.KXRA_PAIRED_COMPOSITION_PROOF === "1";
+  if (composed) {
+    const review = productionOperationsPayload(p.root);
+    await admin.query(review.bytes);
+    await admin.query(
+      fs.readFileSync("database/production/github-outbox-v1.sql", "utf8"),
+    );
+    write("composition-installation.json", {
+      canonicalBaseline: 117,
+      genuineReviewProfile: [
+        review.ai.spec.candidateMigration.name,
+        review.spec.candidateMigration.name,
+      ],
+      unnumberedExtensions: [
+        "github-outbox-v1.sql",
+        "paired-admission-v1.sql",
+        "paired-setup-policy-v1.sql",
+        "paired-setup-options-v1.sql",
+      ],
+      hostedApplied: false,
+      promotedMigrations: [],
+    });
+  }
   const acl = () =>
     admin
       .query(
@@ -76,6 +101,13 @@ export async function runPairedSetupProof(p: {
     },
   );
   await admin.query(sql);
+  if (composed)
+    await admin.query(
+      fs.readFileSync(
+        "database/production/paired-setup-options-v1.sql",
+        "utf8",
+      ),
+    );
   await check(
     "setup ACL has no storage-helper bypass or private-function expansion",
     async () => {
@@ -101,7 +133,23 @@ export async function runPairedSetupProof(p: {
         )
       ).rows;
       assert.ok(functions.every((f) => !f.anon_execute));
-      assert.equal(functions.filter((f) => f.authenticated_execute).length, 6);
+      assert.deepEqual(
+        functions
+          .filter((f) => f.authenticated_execute)
+          .map((f) => f.identity.split("(")[0])
+          .sort(),
+        [
+          "cancel_setup",
+          "consume",
+          "current_task",
+          "request_setup",
+          "setup_human",
+          "setup_status",
+          ...(composed ? ["setup_options"] : []),
+        ]
+          .map((n) => "kxra_paired_admission." + n)
+          .sort(),
+      );
       write("setup-acl.json", {
         privateBefore: before,
         privateAfter: await acl(),
@@ -491,6 +539,19 @@ export async function runPairedSetupProof(p: {
   const request = { task_id: a.task.id, fence: a.task.fence, attempt_id: id() },
     hash = pairedAdmissionDigest(a),
     admission = new PairedAdmissionStore(app, fence, actor, { enabled: true });
+  const verifyCompositionRestore = composed
+    ? await runPairedCompositionProof({
+        ...p,
+        fixture: f,
+        actor,
+        intent,
+        command,
+        authority: a,
+        request,
+        hash,
+        refresh,
+      })
+    : undefined;
   await check(
     "composed authority RLS blocks former storage path when paid proof expires",
     async () => {
@@ -651,6 +712,7 @@ export async function runPairedSetupProof(p: {
       );
     },
   );
+  await verifyCompositionRestore?.();
   if (process.env.KXRA_PAIRED_SETUP_UI_PROOF === "1") {
     const { runPairedSetupUiProof } = await import("./paired-setup-ui-native");
     await runPairedSetupUiProof({

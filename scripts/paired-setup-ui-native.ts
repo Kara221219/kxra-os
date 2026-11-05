@@ -46,9 +46,14 @@ export async function runPairedSetupUiProof(p: {
       KXRA_NEXT_DIST_DIR: ".next-setup-ui-" + runId,
     };
   fs.chmodSync(path.join(p.runtime, "database.json"), 0o600);
-  await admin.query(
-    fs.readFileSync("database/production/paired-setup-options-v1.sql", "utf8"),
-  );
+  if (process.env.KXRA_PAIRED_COMPOSITION_PROOF !== "1") {
+    await admin.query(
+      fs.readFileSync(
+        "database/production/paired-setup-options-v1.sql",
+        "utf8",
+      ),
+    );
+  }
   const cookie = signPairedSetupFixture(p.actor, env);
   let app: ChildProcess | undefined,
     browser: Browser | undefined,

@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "classification": "LOCAL_PAIRED_ADMISSION_POLICY_REQUEST_SETUP_COMPOSITION_NOT_RELEASE_AUTHORIZATION",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "customerPolicyChanged": false,
+  "numberedMigrationsChanged": false,
+  "baseComposition": "d650a8dc8af6d27a89c27e6358d4b454f9847907",
+  "reviewedPairedHead": "300179a45898fbc40c6c8404f4de437078a0291e",
+  "wholeBranchMerge": "4766cbea2912a5c681e3a4da96b74cce892d818a",
+  "integratedSourceFiles": [
+    {
+      "path": ".env.example",
+      "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+    },
+    {
+      "path": "apps/os/app/(paired-setup)/os/paired-setup/page.tsx",
+      "sha256": "07f4db72c6646234baf3d677bc54b842b95fdc1f06ded28d752dbc644e4eedd7"
+    },
+    {
+      "path": "apps/os/app/api/paired-setup/route.ts",
+      "sha256": "9788fe26a46568749cc406599c714d2986ca2fc1f7cf2fd215437ee5562a8ee4"
+    },
+    {
+      "path": "apps/os/app/globals.css",
+      "sha256": "4b24c8ab9587876d48cd0b3ce99731ccc7664c4efa807965c756270f5e90ecc3"
+    },
+    {
+      "path": "apps/os/components/PairedSetupForm.tsx",
+      "sha256": "1a56444cf5b9d0bd2f643b3978aab5e470653f6e831a00e61e99df8f6c5cad01"
+    },
+    {
+      "path": "apps/os/components/PairedSetupPage.local.tsx",
+      "sha256": "fb60dab24fc7b7070970dd35496b090e79e182af2af87211afc3a5a305409595"
+    },
+    {
+      "path": "apps/os/components/PairedSetupPage.production.tsx",
+      "sha256": "84e8c0e95dc4a6285b7892c6b4debe1bc27fbb60baf12a9116d95bd1aa2eceee"
+    },
+    {
+      "path": "apps/os/lib/paired-setup.local.ts",
+      "sha256": "fefa9be15e05351fc7b6aeeee8cacaaedf31e7c95e1f803187fbb51421a2070a"
+    },
+    {
+      "path": "apps/os/lib/paired-setup.production.ts",
+      "sha256": "0bd770acd1069a7d9d24166588885c3f69e8cc6f833db0ac2a5a475980997464"
+    },
+    {
+      "path": "apps/os/package.json",
+      "sha256": "243607f503fc2e230002fd8c9883f19863445be0d40c9cad36777a285df652e5"
+    },
+    {
+      "path": "database/production/paired-admission-v1.sql",
+      "sha256": "3b1eb6941d0ad6ac9a12745ecccb62aa0d72bbb07f7915adac76764d5f5eabb9"
+    },
+    {
+      "path": "database/production/paired-external-fence-v1.sql",
+      "sha256": "aa755c88109ef1d0b507937bad808ae9356c252edb5d335f501e7cc816ff4b0b"
+    },
+    {
+      "path": "database/production/paired-setup-options-v1.sql",
+      "sha256": "6da5bce28f88f72fb12dd30fc6be6bf1beb806a80c2623563865acdc256b517e"
+    },
+    {
+      "path": "database/production/paired-setup-policy-v1.sql",
+      "sha256": "15f6c6ac01df794dee5c0a9a93c6e7bca66d1cd358598f015db7e8ab17e4cd33"
+    },
+    {
+      "path": "docs/operations/paired-authority-store-2026-11-05.md",
+      "sha256": "46807d00705d417a77f60ab65a8e866ef2d4ef54b3cabc9f318ae5dca24c1406"
+    },
+    {
+      "path": "docs/operations/paired-execution-admission-2026-11-05.md",
+      "sha256": "1c11dcb8f18efb9e5161247f180e6c771ca587a2a9bdcaef3a35c269d7df9c6c"
+    },
+    {
+      "path": "docs/operations/paired-setup-policy-2026-11-05.md",
+      "sha256": "031a3df92fc1f3d14356e41c841a4bf4b2225a4b44083f1edee3716d5e92126d"
+    },
+    {
+      "path": "docs/operations/paired-setup-ui-2026-11-05.md",
+      "sha256": "daf06b0d5793e56e6328fb4aedd0909262645387ae266a6ce58f9b167316ed88"
+    },
+    {
+      "path": "docs/workspace/completion-matrix.md",
+      "sha256": "7f92c1a3c0be6336320573359dfe17453455086c179e0d699b1901fb16664e9e"
+    },
+    {
+      "path": "packages/workspace/paired-admission-store.ts",
+      "sha256": "c6f82c6d9f766eaa47ee7c3d6ac8965794eb55b585e6397fdc6007314e383b7d"
+    },
+    {
+      "path": "packages/workspace/paired-execution-admission.ts",
+      "sha256": "45245bea7b0ec01c841c7c294f2f826b2dbabdb8da9b62de47292af9adedf132"
+    },
+    {
+      "path": "packages/workspace/paired-setup-contract.ts",
+      "sha256": "c2eda0ce0a6d5497bbbed1dc603a587e878a97691111d3424769f79cddc635fc"
+    },
+    {
+      "path": "packages/workspace/paired-setup-fixture.ts",
+      "sha256": "ae38d356a1027ac03c914629546d4dea2b6afb5d319922eb748f8f2d84d56383"
+    },
+    {
+      "path": "packages/workspace/paired-setup-http.ts",
+      "sha256": "749504f46655a9aa6c7267e5dce0b88c0998711ebddb3680cb51502274a521e1"
+    },
+    {
+      "path": "packages/workspace/paired-setup.ts",
+      "sha256": "3d05d19761d818cdcc439400bd6d29d24ad7751c12196974ace333d1a22a8359"
+    },
+    {
+      "path": "scripts/paired-admission-store-native.ts",
+      "sha256": "4b4902e6f2f334d8316f15e86dc3be7e79de725626aa8a169402fbb241dfdafd"
+    },
+    {
+      "path": "scripts/paired-composition-catalog.mjs",
+      "sha256": "c960a068c90f24432bedbd753427b9d231b1129d7441f313b45b90d041e772df"
+    },
+    {
+      "path": "scripts/paired-composition-native.ts",
+      "sha256": "75a0db9acef5b68b8b72e0d0ff15f5f7fcc4859968513f520b608a8e8362ca50"
+    },
+    {
+      "path": "scripts/paired-setup-policy-native.ts",
+      "sha256": "b7ebc6b235c02d20cea20ff401e4f35d0b094cc0404783599cd4556f435ba341"
+    },
+    {
+      "path": "scripts/paired-setup-ui-native.ts",
+      "sha256": "81deedd08520e5c8f4aa49b1221eff3b76371624043aa2de8717280db584250b"
+    },
+    {
+      "path": "scripts/verify-paired-admission-store.mjs",
+      "sha256": "f13dc4155df780ddd629355467ef15ff7b5911ac9f1abd185d860abffbacee60"
+    },
+    {
+      "path": "scripts/verify-paired-setup-policy.mjs",
+      "sha256": "c348bdfb8c993ef95b3720d5d3f3f4b9003b0c71d7de393745e4744798da1de6"
+    },
+    {
+      "path": "scripts/verify-paired-setup-production.mjs",
+      "sha256": "32c400ead6a3078dcc2e5f473c7d89f3e7e2087f4c30da5de6241839820fb5db"
+    },
+    {
+      "path": "scripts/verify-paired-setup-ui.mjs",
+      "sha256": "fb3a688ad12a72a41047d9a7468bb1f77be1edf7d378b56bfd21a82094b41da1"
+    },
+    {
+      "path": "tests/paired-admission-store.test.ts",
+      "sha256": "0567b9ef623a5080dac97d0b0ce608d11ba78ea181176dc5c651ef3459f2c80b"
+    },
+    {
+      "path": "tests/paired-execution-admission.test.ts",
+      "sha256": "155d82073e9e4b7a643b164a0f5eb43ef80bbfd378f3de5ba16c7c4af1b8d022"
+    },
+    {
+      "path": "tests/paired-setup-ui-boundary.test.ts",
+      "sha256": "99371eb0d1c149a62035e60faafc778ebe11eba7b611326b170dc42215717290"
+    },
+    {
+      "path": "tests/paired-setup.test.ts",
+      "sha256": "3995637e6a06289ada0a44584f978aa874d0fa3dd0e5335c83d20c919e6bad6a"
+    },
+    {
+      "path": "tests/production-github-integration.test.ts",
+      "sha256": "6fca4260c2c46e3d422a222a3aeea9fb0e6b306f5f16814f8e236817f58fc533"
+    },
+    {
+      "path": "tests/production-paired-composition.test.ts",
+      "sha256": "86b31c15b0b42227e5defec12583604e613ae5c5908c8dfcd627346517cb97cb"
+    },
+    {
+      "path": "tests/production-payment-integration.test.ts",
+      "sha256": "41db660046e61c38f622dbceff5b06f1ca7117c8157e500751826eda4f650867"
+    },
+    {
+      "path": "tests/support/composition-policy-bytes.ts",
+      "sha256": "4224467ce6833e5129b22188b0c29659a3c667b38256b7431e9c627486690316"
+    },
+    {
+      "path": "tests/support/paired-authority-fixture.ts",
+      "sha256": "b480c7c231f08972da51592fd8280d0693f04a71d30a2567b4ffaae32887da65"
+    }
+  ],
+  "preservedCompositionFiles": [
+    {
+      "path": "packages/release/production-github-integration-v1.json",
+      "sha256": "380e941ae76c8fbc1ad9f86a09dede2f6859198dbaf0a8afed3a26654b60e5aa"
+    },
+    {
+      "path": "packages/release/production-payment-integration-v1.json",
+      "sha256": "2320140c02adfd04835866033afca8b91b9beda4e9be2d100e544294b9cc6b70"
+    },
+    {
+      "path": "packages/release/production-refresh-integration-v1.json",
+      "sha256": "c43660a8faaaae96342760a321625198a92bf1b5ea3cae551d4675aa970272cd"
+    },
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    }
+  ],
+  "environmentTransition": {
+    "path": ".env.example",
+    "priorSha256": "d7ea2acb79a88e313f22d27302a42c8567d6489b22d803e49ab49252ab8d7b27",
+    "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8",
+    "exactAppendUtf8": "\n# Owned disposable paired setup UI acceptance only; never hosted or ordinary auth.\nKXRA_PAIRED_SETUP_UI_PROOF=0\n",
+    "fixtureDefaultOff": true
+  },
+  "migrationPromotions": [],
+  "sqlReviewOnlyExtensions": [
+    "paired-admission-v1.sql",
+    "paired-external-fence-v1.sql",
+    "paired-setup-policy-v1.sql",
+    "paired-setup-options-v1.sql"
+  ],
+  "integrationCorrections": [
+    "Composed policy fence replaces redundant existing authority row locks; standalone storage locks unchanged",
+    "Only new public setup paths remove7redundant existing-authority FKs; private agent relation and fresh identity/ownership gates retained; orphaned IDs deny",
+    "Genuine119+GitHub+paired REQUEST/account,REQUEST/AIintent,CONSUME/reviewer races and full empty-target extension restore/no-replay",
+    "Historical environment pins preserved and tested through one exact default-off fixture suffix; no arbitrary normalization"
+  ],
+  "liveGates": [
+    "Request-only local UI is separate from real server identity/session/CSRF and navigation integration; no device session, bearer, activation or executable authority issued",
+    "Independent transport/runtime/auth/source review issuance, immutable contained launch, external-burn launch verification and atomic original-thread publication/status/reconciliation remain unwired",
+    "Real installed CLI version/capability/tool/egress and commercial API-key/subscription eligibility acceptance remain separate; subscription compatibility never inferred",
+    "Independent ledger durability/admin/realm continuity and verified worker drain/fenced egress/current restored authority before resumption; same-cluster fixture restore is not infrastructure acceptance",
+    "Existing billing repair/cancellation/connection-slot/provider-read allocation/capacity/full-feature production migration and hosted signup/pay/AI/use/recovery acceptance remain held"
+  ],
+  "futureAdminOrdering": "Administrative issuance/revocation must be fence-first before paired or existing authority row locks; no such provisioning/activation port is supplied."
+}
