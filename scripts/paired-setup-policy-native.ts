@@ -508,7 +508,7 @@ export async function runPairedSetupProof(p: {
     "policy withdrawal serializes with consumption; receipt expires at paid-proof bound",
     async () => {
       const c = await app.connect();
-      const writer = await app.connect();
+      const writer = admin;
       try {
         await c.query("begin");
         await c.query("set local role authenticated");
@@ -537,19 +537,26 @@ export async function runPairedSetupProof(p: {
             [f.org],
           )
         ).rows[0].valid_until;
-        assert.ok(Date.parse(result.expires_at) <= Date.parse(deadline));
+        assert.ok(deadline instanceof Date);
+        assert.ok(Date.parse(result.expires_at) <= deadline.getTime());
+        write("setup-expiry.json", {
+          returned: result.expires_at,
+          paid_valid_until: deadline.toISOString(),
+          bounded: true,
+        });
         await writer.query("set lock_timeout='150ms'");
-        // Take the exclusive advisory side directly from another fixture connection; it must wait.
+        // A real policy-table write must wait for the consumer shared fence via its trigger.
         await assert.rejects(
           writer.query(
-            "select pg_advisory_xact_lock(hashtextextended('kxra-paired-policy-v1',0))",
+            "update kxra_private.live_paid_access set checked_at=clock_timestamp() where org_id=$1",
+            [f.org],
           ),
           { code: "55P03" },
         );
       } finally {
         await c.query("rollback");
         c.release();
-        writer.release();
+        await writer.query("reset lock_timeout");
       }
     },
   );
