@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { customAppsProviderSessionVersion } from "../../../packages/custom-apps/access";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
@@ -114,6 +115,7 @@ export async function principal(): Promise<Principal | null> {
     email: data.user.email,
     email_verified: Boolean(data.user.email_confirmed_at),
     source: "supabase",
+    provider_session_version: customAppsProviderSessionVersion(claims.claims),
   };
 }
 

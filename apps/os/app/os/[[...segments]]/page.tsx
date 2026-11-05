@@ -1,3 +1,4 @@
+import { customAppsIdentityAllowed } from "../../../../../packages/custom-apps/access";
 import { hostedRoomOperations } from "../../../../../packages/workspace/hosted-operations";
 import { WorkspaceStart } from "../../../components/WorkspaceStart";
 import { TeamWorkspace } from "../../../components/TeamWorkspace";
@@ -574,6 +575,7 @@ export default async function Workspace({
           actorId={a.id}
           isOrgOwner={a.role === "owner"}
           local={localMode()}
+          customApps={customAppsIdentityAllowed(a.source, localMode())}
           hostedOperations={hostedRoomOperations()}
           candidates={candidates}
         />

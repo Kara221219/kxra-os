@@ -57,6 +57,7 @@ export function TeamWorkspace({
   actorId,
   local,
   hostedOperations = false,
+  customApps = false,
   candidates = [],
   isOrgOwner = false,
   knowledge,
@@ -69,6 +70,7 @@ export function TeamWorkspace({
   actorId: string;
   local: boolean;
   hostedOperations?: boolean;
+  customApps?: boolean;
   isOrgOwner?: boolean;
   candidates?: { account_id: string; display_name: string }[];
   knowledge?: Awaited<ReturnType<typeof teamKnowledge>>;
@@ -222,8 +224,8 @@ export function TeamWorkspace({
           </p>
         </div>
         <Link href="/os/workspace">All rooms</Link>
-        {local && room ? (
-          <Link href={`/os/custom-apps/${room.id}`}>Local custom apps</Link>
+        {(local || customApps) && room ? (
+          <Link href={`/os/custom-apps/${room.id}`}>Custom apps</Link>
         ) : null}
       </div>
       {local && (

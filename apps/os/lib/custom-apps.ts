@@ -7,24 +7,35 @@ import {
   type CustomAppSchema,
 } from "../../../packages/custom-apps/contract";
 import { HttpError, type Actor } from "./auth";
+import { customAppsIdentityAllowed } from "../../../packages/custom-apps/access";
 import { teamRoom } from "./team-room";
 
-export function requireLocalCustomApps(a: Actor) {
-  if (!localMode() || process.env.VERCEL_ENV || a.source !== "fixture")
-    throw new HttpError(404, "Local custom apps unavailable");
+export function requireCustomApps(a: Actor) {
+  if (
+    !customAppsIdentityAllowed(a.source, localMode()) ||
+    (a.source === "supabase" &&
+      (a.provider_session_version === undefined ||
+        a.provider_session_version !== a.session_version))
+  )
+    throw new HttpError(404, "Custom apps unavailable");
 }
 export async function customApps(a: Actor, room: string) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   const r = await teamRoom(a, room);
   const apps = await query<CustomApp>(
     a,
     `select a.id,a.revision,a.latest_version,a.active_version,v.artifact->'schema'->>'title' title from kxra.custom_apps a join kxra.custom_app_versions v on v.app_id=a.id and v.version=a.latest_version where a.room_id=$1 order by a.id limit 20`,
     [room],
   );
-  return { apps, can_manage: r.created_by === a.id };
+  return {
+    apps,
+    can_manage: r.created_by === a.id,
+    production: a.source === "supabase",
+    can_review: a.source === "supabase" && a.security_role === "ORG_ADMIN",
+  };
 }
 export async function customAppDetail(a: Actor, room: string, app: string) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   await teamRoom(a, room);
   // One SQL snapshot keeps revision, immutable versions and release history consistent.
   const [data] = await query<{
@@ -40,14 +51,28 @@ export async function customAppDetail(a: Actor, room: string, app: string) {
     [z.uuid().parse(app), room],
   );
   if (!data) throw new HttpError(404, "Custom app unavailable");
-  return data;
+  const reviews =
+    a.source === "supabase"
+      ? (
+          await query<{
+            reviews: {
+              version: number;
+              decision: string;
+              artifact_sha256: string;
+              expires_at: string;
+              current: boolean;
+            }[];
+          }>(a, "select kxra.custom_app_review_status($1) reviews", [app])
+        )[0].reviews
+      : [];
+  return { ...data, reviews };
 }
 export async function customAppMutation(
   a: Actor,
   room: string,
   input: unknown,
 ) {
-  requireLocalCustomApps(a);
+  requireCustomApps(a);
   await teamRoom(a, room);
   const common = {
     app_id: z.uuid(),
@@ -67,8 +92,21 @@ export async function customAppMutation(
       z
         .object({
           ...common,
-          operation: z.enum(["PUBLISH_LOCAL", "ROLLBACK_LOCAL"]),
+          operation: z.enum([
+            "PUBLISH_LOCAL",
+            "ROLLBACK_LOCAL",
+            "PUBLISH",
+            "ROLLBACK",
+          ]),
           version: z.number().int().min(1).max(100),
+        })
+        .strict(),
+      z
+        .object({
+          ...common,
+          operation: z.enum(["APPROVED", "REJECTED", "WITHDRAWN"]),
+          version: z.number().int().min(1).max(100),
+          sha256: z.string().regex(/^[a-f0-9]{64}$/),
         })
         .strict(),
     ])
@@ -80,13 +118,25 @@ export async function customAppMutation(
       v.expected_revision,
       JSON.stringify(v.schema),
     ]);
-  else
-    await query(a, "select kxra.custom_app_release($1,$2,$3,$4,$5)", [
+  else if ("sha256" in v)
+    await query(a, "select kxra.custom_app_review($1,$2,$3,$4,$5,$6)", [
       v.app_id,
       room,
       v.expected_revision,
       v.version,
+      v.sha256,
       v.operation,
     ]);
+  else {
+    if ((a.source === "fixture") !== v.operation.endsWith("_LOCAL"))
+      throw new HttpError(400, "Invalid release mode");
+    await query(
+      a,
+      a.source === "fixture"
+        ? "select kxra.custom_app_release($1,$2,$3,$4,$5)"
+        : "select kxra.custom_app_release_reviewed($1,$2,$3,$4,$5)",
+      [v.app_id, room, v.expected_revision, v.version, v.operation],
+    );
+  }
   return customAppDetail(a, room, v.app_id);
 }
