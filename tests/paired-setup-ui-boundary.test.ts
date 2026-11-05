@@ -154,3 +154,25 @@ test("production route stays disabled with fixture-shaped flags and no database 
   );
   assert.match(result, /PRODUCTION_SETUP_DISABLED/);
 });
+
+test("local adapter canonicalizes only after pinned Host and Origin validation", () => {
+  const f = fixture();
+  try {
+    const script = `import assert from 'node:assert/strict';import {pairedSetupRoute} from './apps/os/lib/paired-setup.local.ts';
+ for(const [host,origin,status] of [['127.0.0.1:39881','http://127.0.0.1:39881',401],['foreign.invalid','http://127.0.0.1:39881',403],['127.0.0.1:39881','https://foreign.invalid',403]]){const r=await pairedSetupRoute(new Request('http://localhost:39881/api/paired-setup',{method:'POST',headers:{host,origin,'content-type':'application/json'},body:'{\"action\":\"OPTIONS\"}'}));assert.equal(r.status,status);}
+ console.log('PINNED_HOST_ORIGIN_PASS');`;
+    const output = execFileSync(
+      process.execPath,
+      ["--import", "tsx", "--input-type=module", "-e", script],
+      {
+        cwd: path.resolve(import.meta.dirname, ".."),
+        encoding: "utf8",
+        timeout: 30000,
+        env: { PATH: process.env.PATH, HOME: os.tmpdir(), ...f.env },
+      },
+    );
+    assert.match(output, /PINNED_HOST_ORIGIN_PASS/);
+  } finally {
+    f.close();
+  }
+});

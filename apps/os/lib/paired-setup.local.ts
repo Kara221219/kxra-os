@@ -30,7 +30,16 @@ function setupPool(runtime: string) {
 export async function pairedSetupRoute(request: Request) {
   try {
     const fixtureBoundary = pairedSetupFixtureBoundary();
-    return await pairedSetupHttp(request, {
+    const origin = process.env.KXRA_ORIGIN!;
+    // Next may reconstruct an internal localhost URL. Accept only the actual
+    // configured loopback Host, never forwarded host/origin, before canonicalizing.
+    if (request.headers.get("host") !== new URL(origin).host)
+      return Response.json(
+        { error: "ORIGIN_REJECTED" },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
+    const canonicalRequest = new Request(origin + "/api/paired-setup", request);
+    return await pairedSetupHttp(canonicalRequest, {
       enabled: true,
       fixtureBoundary,
       origin: process.env.KXRA_ORIGIN!,
