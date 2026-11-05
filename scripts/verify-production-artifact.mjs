@@ -29,6 +29,9 @@ const outputs = [
   path.join(root, "apps/email-worker/.next"),
 ];
 const forbidden = [
+  "syntheticRollbackFence",
+  "synthetic stable write held",
+  "synthetic permission burned",
   "synthetic-custody-key-v",
   "/v1/synthetic/leases/",
   "SYNTHETIC_CUSTODY_UNAVAILABLE",

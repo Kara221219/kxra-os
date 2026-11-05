@@ -35,6 +35,11 @@ async function main() {
       "--no-locale",
       "--encoding=UTF8",
     ]);
+    assert.ok(Number.isInteger(cfg.port) && cfg.port > 0 && cfg.port < 65536);
+    fs.appendFileSync(
+      path.join(data, "postgresql.conf"),
+      `\nlisten_addresses = ''\nport = ${cfg.port}\nunix_socket_directories = '${socket}'\nfsync = on\nsynchronous_commit = on\nfull_page_writes = on\n`,
+    );
     run("pg_ctl", [
       "-D",
       data,
@@ -150,7 +155,45 @@ async function main() {
             "select last_value,is_called from kxra_github_fence.events_id_seq",
           )
         ).rows;
-        return { tables, functions, data };
+        const settings = (
+          await a.query(
+            "select name,setting from pg_settings where name in('data_directory','listen_addresses','unix_socket_directories','port','fsync','synchronous_commit','full_page_writes') order by name",
+          )
+        ).rows;
+        assert.equal(
+          settings.find((s: any) => s.name === "listen_addresses")?.setting,
+          "",
+        );
+        const constraints = (
+          await a.query(
+            "select c.relname,x.conname,pg_get_constraintdef(x.oid,true) definition from pg_constraint x join pg_class c on c.oid=x.conrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='kxra_github_fence' order by 1,2",
+          )
+        ).rows;
+        const indexes = (
+          await a.query(
+            "select * from pg_indexes where schemaname='kxra_github_fence' order by indexname",
+          )
+        ).rows;
+        const triggers = (
+          await a.query(
+            "select c.relname,t.tgname,pg_get_triggerdef(t.oid) definition from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='kxra_github_fence' and not t.tgisinternal order by 1,2",
+          )
+        ).rows;
+        const columns = (
+          await a.query(
+            "select table_name,column_name,ordinal_position,data_type,is_nullable,column_default from information_schema.columns where table_schema='kxra_github_fence' order by table_name,ordinal_position",
+          )
+        ).rows;
+        return {
+          tables,
+          functions,
+          constraints,
+          indexes,
+          triggers,
+          columns,
+          settings,
+          data,
+        };
       } finally {
         await a.end();
       }

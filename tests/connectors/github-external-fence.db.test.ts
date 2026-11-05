@@ -283,6 +283,17 @@ test("independent durable fence survives older application snapshots and never r
     f = await seedAiResumeFixture(admin, false);
     await admin.query("commit");
     env.KXRA_GITHUB_OUTBOX_POLICY_SHA256 = f.review;
+    const appClusterId = (
+      await admin.query(
+        "select system_identifier::text id from pg_control_system()",
+      )
+    ).rows[0].id;
+    const fenceClusterId = (
+      await fa.query(
+        "select system_identifier::text id from pg_control_system()",
+      )
+    ).rows[0].id;
+    assert.notEqual(appClusterId, fenceClusterId);
     await t.test(
       "separate cluster, default empty authority, RLS, disjoint runtime/reconciliation privileges and immutable witness",
       async () => {
@@ -656,6 +667,8 @@ test("independent durable fence survives older application snapshots and never r
           status: "PASS_EXTERNAL_ROLLBACK_FENCE",
           applicationCluster: cfg.host,
           independentFenceCluster: fcfg.host,
+          appClusterId,
+          fenceClusterId,
           sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
             encoding: "utf8",
           }).trim(),

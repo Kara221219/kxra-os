@@ -1705,3 +1705,7 @@ An isolated branch after bde07e3 implements a separate default-off fixed-origin/
 ## 2026-11-05 — isolated GitHub production outbox SQL boundary
 
 Implemented a default-held, unnumbered production outbox payload and injectable server adapter on the reviewed transport branch. Dedicated disposable SQL acceptance covers exact approval/purpose separation, one committed consumption, lost acknowledgment, withdrawal/deadline races, existing review operations, graceful restart and extension-installed empty-target restore without replay. Independent review corrections include authority phantom fences, post-wait expiry, receipt qualification, generated-column trigger handling and implicit FK lock ordering. Final evidence is commit-specific; see `github-production-outbox-2026-11-05.md`. No production route activation, hosted migration or real provider access.
+
+## 2026-11-05 — external rollback fence
+
+Added mandatory transport reservation and irreversible external SEND consumption keyed by stable write ID, plus separate epoch/HOLD/reconciliation authority in an unnumbered independent-store payload. Disposable two-cluster tests exercise actual pre-claim/pre-consumption app restores and no duplicate fake POST. Monotonic transport deadlines prevent delayed promise continuations from bypassing timeout. Production remains held pending independent-store durability, workload/realm authorization and verified worker-drain/fenced-egress restore admission; see `github-external-rollback-fence-2026-11-05.md` and exact-head evidence.
