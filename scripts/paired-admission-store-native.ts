@@ -800,6 +800,21 @@ async function main() {
         }
       },
     );
+    if (process.env.KXRA_PAIRED_SETUP_PROOF === "1") {
+      const { runPairedSetupProof } =
+        await import("./paired-setup-policy-native");
+      await runPairedSetupProof({
+        admin,
+        app,
+        fenceAdmin,
+        fence,
+        root,
+        runtime,
+        env,
+        check,
+        write,
+      });
+    }
     write("acceptance.json", {
       source: execFileSync("git", ["rev-parse", "HEAD"], {
         encoding: "utf8",
