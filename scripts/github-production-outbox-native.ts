@@ -231,7 +231,7 @@ async function main() {
     write("ledger-source.json", ledgers);
     const pass = path.join(runtime, "empty-libpq");
     fs.writeFileSync(pass, "", { mode: 0o600, flag: "wx" });
-    const subEnv = {
+    const subEnv: NodeJS.ProcessEnv = {
         NODE_ENV: "test",
         PATH: env.PATH,
         HOME: runtime,

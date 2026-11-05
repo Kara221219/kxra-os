@@ -186,6 +186,8 @@ begin
  select * into k from kxra_private.ghp_capabilities where token_sha256=k.token_sha256;
  if not coalesce(kxra_private.ghp_cap_current(k,c),false) then raise insufficient_privilege;end if;
  perform kxra_private.ghp_fence(c,policy_sha);
+ -- Recheck deadlines after every authority lock wait.
+ if not coalesce(kxra_private.ghp_cap_current(k,c),false) then raise insufficient_privilege;end if;
  if action in('READ_CONTEXT','RECORD_READ') then
   if k.purpose<>'READ_WORKER' then raise insufficient_privilege;end if;
   if action='READ_CONTEXT' then return jsonb_build_object('binding',c.binding,'binding_sha256',c.binding_sha256);end if;
