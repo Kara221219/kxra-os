@@ -44,12 +44,12 @@ test("runtime helper uses exclusive paired fence before checking original sessio
     /language plpgsql volatile security definer set search_path=''/,
   );
   assert.match(helper, /if session_user<>'kxra_app' then return false;end if;/);
-  assert.ok(
-    helper.indexOf("perform pg_advisory_xact_lock(") <
-      helper.indexOf(
-        "return coalesce(kxra_private.custom_app_original_session_current()",
-      ),
+  const lockPosition = helper.indexOf("perform pg_advisory_xact_lock(");
+  const checkPosition = helper.indexOf(
+    "return coalesce(kxra_private.custom_app_original_session_current()",
   );
+  assert.ok(lockPosition >= 0 && checkPosition >= 0);
+  assert.ok(lockPosition < checkPosition);
   assert.doesNotMatch(
     helper,
     /pg_advisory_xact_lock_shared|kxra-custom-app-authority/,
