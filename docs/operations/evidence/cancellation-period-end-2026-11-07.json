@@ -1,0 +1,50 @@
+{
+  "base_commit": "b763774d86c28b64b5549662feb5a20d3a509fc7",
+  "scope": "Local synthetic cancellation-mode guard only; no provider requests, deployment or financial transactions.",
+  "source_sha256": {
+    "packages/integrations/live-catalogue-stripe.ts": "d465000cfa069ea925b741f01d5c2005e40146c41dd494fd60d1e747f57c98c0",
+    "tests/live-catalogue-stripe.test.ts": "8bd2a6649dcfca48f8efa4d9d7c0a676f1bd72cf0336f64f48ac0e26c22c9a56",
+    "tests/synchronous-portal.test.ts": "74f3c7e68e71e2f90bb25bb3b6f8c888c42ff02b00f4a27c703bdef714104ef4"
+  },
+  "baseline_negative_cases": {
+    "tests": 12,
+    "passed": 2,
+    "failed": 10,
+    "skipped": 0,
+    "log": "/tmp/kxra-cancellation-before.tap",
+    "log_sha256": "8c1ccdc89114735a4f3a05e2963cddffce5d7e7ffbcc8c655dc2c95b101c6475"
+  },
+  "candidate_focused_cases": {
+    "tests": 277,
+    "passed": 277,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/kxra-cancellation-after.tap",
+    "log_sha256": "3add5f288acf94bef20ceed7bf196533b4c00e74d68d4fb3545c2eb94723d5dd"
+  },
+  "independent_review": "Separate integration reviewer inspected runtime/test diff and reported no relaxation or policy change. They did not independently rerun tests.",
+  "hosted_verified": false,
+  "full_canonical_ci": "Not run for this narrow candidate. Final composition must run exact-source aggregate acceptance.",
+  "local_checks": {
+    "typecheck": "PASS",
+    "changed_formatting": "PASS",
+    "dependencies": "PASS",
+    "publication": "PASS",
+    "marketing_boundary": "PASS",
+    "production_builds": [
+      "OS PASS",
+      "marketing PASS",
+      "email-worker PASS"
+    ],
+    "marketing_csp_sri": "PASS",
+    "build_budgets": "PASS",
+    "production_artifact": "PASS",
+    "secret_scan": "PASS",
+    "diff_check": "PASS"
+  },
+  "build_log": {
+    "path": "/tmp/kxra-cancellation-build.log",
+    "sha256": "985ada2c71dd1517a2fdad5a507e1cea856209de200d5320e2b73f809dc442d7"
+  },
+  "focused_command": "node --import tsx --test tests/live-catalogue-stripe.test.ts tests/synchronous-portal.test.ts tests/billing-refresh-session.test.ts tests/billing-http.test.ts tests/billing-refresh-capacity.test.ts tests/billing-refresh-scheduler.test.ts tests/billing-read-allowance.test.ts tests/billing-scheduler-budget.test.ts tests/live-paid-refresh.test.ts tests/live-paid-access.test.ts tests/billing-navigation.test.ts tests/live-billing-entry.test.ts tests/modern-billing-scope.test.ts tests/modern-billing-entry-scope.test.ts tests/checkout-result.test.ts"
+}

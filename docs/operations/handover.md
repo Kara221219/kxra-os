@@ -1504,3 +1504,11 @@ On an isolated branch based exactly on `2b74d66`, implemented immutable provider
 
 
 Original-session combined local integration: see `production-session-combined-2026-11-05.md` and exact source manifest `packages/release/production-session-integration-v1.json`. Hook/configuration/activation remain off; current exact-head acceptance is tracked by the retained task evidence handoff.
+
+
+## 7 November — local period-end cancellation guard
+
+Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed cancellation modes before POST, preserving the settled paid-period-end promise. The source correction passed 277 focused synthetic regressions, with a retained failing-before proof and independent diff review. No provider or hosted action occurred. See [handoff and remaining customer gates](cancellation-period-end-2026-11-07.md) and [source-bound receipt](evidence/cancellation-period-end-2026-11-07.json). Exact-composition aggregate and hosted acceptance remain required.
+
+
+Cancellation composition follow-up: preserve historical payment/paired manifests byte for byte and accept only four exact reviewed source transitions through a test-only helper. Negative substitution tests and the 118-case payment/refresh/GitHub/portal subset pass. The paired test fallback is coordinated with the service worker; final combined aggregate acceptance remains pending.

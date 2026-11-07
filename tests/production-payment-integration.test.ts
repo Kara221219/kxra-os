@@ -1,3 +1,7 @@
+import {
+  isPaymentCancellationTransitionFile,
+  verifyPaymentCancellationTransition,
+} from "./support/payment-cancellation-transition";
 import { historicalCompositionBytes } from "./support/composition-policy-bytes";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -41,12 +45,17 @@ test("payment composition pins exact repair source and unchanged customer, proof
   for (const f of [
     ...manifest.paymentSourceFiles,
     ...manifest.unchangedPolicyFiles,
-  ])
-    assert.equal(
-      sha(historicalCompositionBytes(f.path, read(f.path), f.sha256)),
-      f.sha256,
-      f.path,
-    );
+  ]) {
+    const bytes = read(f.path);
+    if (isPaymentCancellationTransitionFile(f.path))
+      verifyPaymentCancellationTransition(f.path, bytes, f.sha256);
+    else
+      assert.equal(
+        sha(historicalCompositionBytes(f.path, bytes, f.sha256)),
+        f.sha256,
+        f.path,
+      );
+  }
 });
 test("payment integration cannot enable billing, relax policy or promote migrations", () => {
   for (const key of [
