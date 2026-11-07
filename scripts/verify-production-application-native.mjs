@@ -107,7 +107,7 @@ async function connect(database = "postgres") {
 }
 async function bootstrap(db) {
   await db.query(`create schema auth;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;grant usage on schema auth to anon,authenticated,supabase_auth_admin;grant execute on all functions in schema auth to anon,authenticated;
-    create table auth.sessions(id uuid primary key,user_id uuid not null,created_at timestamptz,updated_at timestamptz,not_after timestamptz);alter table auth.sessions owner to supabase_auth_admin;revoke all on auth.sessions from public,anon,authenticated,kxra_app;
+    create table auth.sessions(id uuid primary key,user_id uuid not null,created_at timestamptz,updated_at timestamptz,not_after timestamptz);alter table auth.sessions owner to supabase_auth_admin;revoke all on auth.sessions from public,anon,authenticated,kxra_app;insert into auth.sessions(id,user_id,created_at) values('22222222-2222-4333-8444-555555555555','11111111-2222-4333-8444-555555555555',clock_timestamp());
     create table public.kxra_schema_migrations(name text primary key,sha256 text not null check(sha256~'^[a-f0-9]{64}$'),source_commit text not null check(source_commit~'^[a-f0-9]{40}$'),applied_at timestamptz not null default now());revoke all on public.kxra_schema_migrations from public,anon,authenticated,kxra_app;
     create table public.operator_sentinel(id integer primary key,value text not null);insert into public.operator_sentinel values(1,'retained-synthetic-data');`);
 }
@@ -222,6 +222,14 @@ try {
       operateApplication(admin, { ...options, command: "plan" });
     const apply = (planSha256, db = admin) =>
       operateApplication(db, { ...options, command: "apply", planSha256 });
+    await admin.query(
+      "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values('11111111-2222-4333-8444-555555555555','SUPABASE','11111111-2222-4333-8444-555555555555','ACTIVE',now())",
+    );
+    const rolesBefore = (
+      await admin.query(
+        "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls from pg_roles order by rolname",
+      )
+    ).rows;
     const original = await snapshot(admin);
     const firstPlan = await plan();
     assert.equal(firstPlan.pending.length, 9);
@@ -398,6 +406,25 @@ try {
     });
     assert.equal(final.applied, 126);
     assert.equal(final.pending.length, 0);
+    assert.equal(
+      (
+        await admin.query(
+          "select count(*)::int n from kxra_private.custom_app_session_bindings where session_id='22222222-2222-4333-8444-555555555555'",
+        )
+      ).rows[0].n,
+      0,
+      "Existing Auth sessions must not be backfilled",
+    );
+    assert.deepEqual(
+      (
+        await admin.query(
+          "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls from pg_roles order by rolname",
+        )
+      ).rows,
+      rolesBefore,
+      "Operator must not create or change roles",
+    );
+    result.stages.push("NO_SESSION_BACKFILL_OR_ROLE_PROVISIONING");
     const end = await snapshot(admin);
     await apply(final.planSha256);
     assert.deepEqual(await snapshot(admin), end, "Already126 apply is a no-op");
