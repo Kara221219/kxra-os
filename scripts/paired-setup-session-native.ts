@@ -342,6 +342,18 @@ async function main() {
       "Synthetic held setup",
       ...changes,
     ];
+    const alternativeIntent = uuid();
+    await f.register(alternativeIntent);
+    await f.reviewAi(alternativeIntent);
+    const project = (
+      await admin.query("select project_id from kxra.team_rooms where id=$1", [
+        f.room,
+      ])
+    ).rows[0].project_id;
+    const alternativeRoom = await f.appCall(
+      "select kxra.team_room_create($1,'Synthetic alternative room','Review','PRIVATE') value",
+      [project],
+    );
     const heldArgs = requestArgs();
     let held: any;
     await check(
@@ -355,8 +367,8 @@ async function main() {
         assert.equal(held.credential_issued, false);
         assert.deepEqual(await call(request, heldArgs), held);
         for (const [i, v] of [
-          [1, uuid()],
-          [2, uuid()],
+          [1, alternativeRoom],
+          [2, alternativeIntent],
           [3, "CHATGPT_SUBSCRIPTION"],
           [4, "Changed label"],
         ] as [number, string][]) {
@@ -404,6 +416,19 @@ async function main() {
         false,
       );
       assert.equal(await call(guardedRequest, requestArgs(), who), null);
+      for (const rpc of [
+        "setup_options()",
+        "setup_status($1)",
+        "cancel_setup($1)",
+      ])
+        assert.equal(
+          await call(
+            `select case when kxra_paired_admission.hosted_setup_session_current() then kxra_paired_admission.${rpc} end value`,
+            rpc.includes("$1") ? [heldArgs[0]] : [],
+            who,
+          ),
+          null,
+        );
       for (const [q, args] of [
         [request, requestArgs()],
         [cancel, [heldArgs[0]]],
@@ -511,7 +536,8 @@ async function main() {
     const pid = async (c: pg.Client) =>
       (await c.query("select pg_backend_pid() pid")).rows[0].pid as number;
     const providerPid = await pid(provider),
-      racerPid = await pid(racer);
+      racerPid = await pid(racer),
+      appPid = await pid(app);
     async function blocked(waiter: number, holder: number) {
       for (let i = 0; i < 100; i++) {
         const r = (
@@ -530,115 +556,149 @@ async function main() {
         (value) => ({ value, error: undefined }),
         (error) => ({ value: undefined, error }),
       );
-    for (const guarded of [false, true]) {
-      for (const action of ["REQUEST", "CANCEL"] as const) {
-        await check(
-          `Auth deletion wins against ${guarded ? "guarded" : "direct"} ${action}: waiting RPC rechecks, rolls back and issues nothing`,
-          async () => {
-            const session = await newSession(),
-              args = requestArgs();
-            if (action === "CANCEL") await call(request, args, claims(session));
-            const beforeRequests = (
-              await admin.query(
-                "select id,cancelled_at from kxra_paired_admission.setup_requests order by id",
-              )
-            ).rows;
-            await provider.query("begin");
-            await provider.query("delete from auth.sessions where id=$1", [
-              session,
-            ]);
-            await begin(racer, claims(session));
-            // Guarded preflight and direct mutation both wait before their live-session check.
-            const pending = outcome(
-              racer.query(
-                action === "REQUEST"
-                  ? guarded
-                    ? guardedRequest
-                    : request
-                  : guarded
-                    ? guardedCancel
-                    : cancel,
-                action === "REQUEST" ? args : [args[0]],
-              ),
-            );
-            try {
-              await blocked(racerPid, providerPid);
-              await provider.query("commit");
-              const result = await pending;
-              if (guarded) {
-                assert.equal(result.error, undefined);
-                assert.equal(result.value!.rows[0].value, null);
-              } else assert.equal(result.error?.code, "42501");
-            } finally {
-              await provider.query("rollback");
-              await racer.query("rollback");
-              await pending;
-            }
-            assert.deepEqual(
-              (
+    await check(
+      "concurrent guarded requests serialize without shared-lock upgrade and retain exact idempotency",
+      async () => {
+        const args = requestArgs();
+        await begin(app);
+        assert.equal((await app.query(helper)).rows[0].value, true);
+        await begin(racer);
+        const pending = outcome(racer.query(guardedRequest, args));
+        try {
+          await blocked(racerPid, appPid);
+          const first = (await app.query(guardedRequest, args)).rows[0].value;
+          await app.query("commit");
+          const second = await pending;
+          assert.equal(second.error, undefined);
+          assert.deepEqual(second.value!.rows[0].value, first);
+          await racer.query("commit");
+        } finally {
+          await app.query("rollback");
+          await racer.query("rollback");
+          await pending;
+        }
+        assert.equal(
+          (
+            await admin.query(
+              "select count(*)::int n from kxra_paired_admission.setup_requests where id=$1",
+              [args[0]],
+            )
+          ).rows[0].n,
+          1,
+        );
+      },
+    );
+    for (const mutation of ["deletion", "expiry update"] as const) {
+      const revoke =
+        mutation === "deletion"
+          ? "delete from auth.sessions where id=$1"
+          : "update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id=$1";
+      for (const guarded of [false, true]) {
+        for (const action of ["REQUEST", "CANCEL"] as const) {
+          await check(
+            `Auth ${mutation} wins against ${guarded ? "guarded" : "direct"} ${action}: waiting RPC rechecks, rolls back and issues nothing`,
+            async () => {
+              const session = await newSession(),
+                args = requestArgs();
+              if (action === "CANCEL")
+                await call(request, args, claims(session));
+              const beforeRequests = (
                 await admin.query(
                   "select id,cancelled_at from kxra_paired_admission.setup_requests order by id",
                 )
-              ).rows,
-              beforeRequests,
-            );
-          },
-        );
-        await check(
-          `${guarded ? "guarded" : "direct"} ${action} wins against Auth deletion: ordered writer waits and all subsequent access is denied`,
-          async () => {
-            const session = await newSession(),
-              args = requestArgs();
-            if (action === "CANCEL") await call(request, args, claims(session));
-            await begin(racer, claims(session));
-            const value = (
-              await racer.query(
-                action === "REQUEST"
-                  ? guarded
-                    ? guardedRequest
-                    : request
-                  : guarded
-                    ? guardedCancel
-                    : cancel,
-                action === "REQUEST" ? args : [args[0]],
-              )
-            ).rows[0].value;
-            assert.equal(value.activation_allowed, false);
-            assert.equal(value.credential_issued, false);
-            await provider.query("begin");
-            const pending = outcome(
-              provider.query("delete from auth.sessions where id=$1", [
-                session,
-              ]),
-            );
-            try {
-              await blocked(providerPid, racerPid);
-              await racer.query("commit");
-              const result = await pending;
-              assert.equal(result.error, undefined);
-              await provider.query("commit");
-            } finally {
-              await racer.query("rollback");
-              await provider.query("rollback");
-              await pending;
-            }
-            await assert.rejects(
-              call(
-                "select kxra_paired_admission.setup_status($1) value",
-                [args[0]],
-                claims(session),
-              ),
-              { code: "42501" },
-            );
-            const stored = (
-              await admin.query(
-                "select cancelled_at from kxra_paired_admission.setup_requests where id=$1",
-                [args[0]],
-              )
-            ).rows[0];
-            assert.equal(stored.cancelled_at !== null, action === "CANCEL");
-          },
-        );
+              ).rows;
+              await provider.query("begin");
+              await provider.query(revoke, [session]);
+              await begin(racer, claims(session));
+              // Guarded preflight and direct mutation both wait before their live-session check.
+              const pending = outcome(
+                racer.query(
+                  action === "REQUEST"
+                    ? guarded
+                      ? guardedRequest
+                      : request
+                    : guarded
+                      ? guardedCancel
+                      : cancel,
+                  action === "REQUEST" ? args : [args[0]],
+                ),
+              );
+              try {
+                await blocked(racerPid, providerPid);
+                await provider.query("commit");
+                const result = await pending;
+                if (guarded) {
+                  assert.equal(result.error, undefined);
+                  assert.equal(result.value!.rows[0].value, null);
+                } else assert.equal(result.error?.code, "42501");
+              } finally {
+                await provider.query("rollback");
+                await racer.query("rollback");
+                await pending;
+              }
+              assert.deepEqual(
+                (
+                  await admin.query(
+                    "select id,cancelled_at from kxra_paired_admission.setup_requests order by id",
+                  )
+                ).rows,
+                beforeRequests,
+              );
+            },
+          );
+          await check(
+            `${guarded ? "guarded" : "direct"} ${action} wins against Auth ${mutation}: ordered writer waits and all subsequent access is denied`,
+            async () => {
+              const session = await newSession(),
+                args = requestArgs();
+              if (action === "CANCEL")
+                await call(request, args, claims(session));
+              await begin(racer, claims(session));
+              const value = (
+                await racer.query(
+                  action === "REQUEST"
+                    ? guarded
+                      ? guardedRequest
+                      : request
+                    : guarded
+                      ? guardedCancel
+                      : cancel,
+                  action === "REQUEST" ? args : [args[0]],
+                )
+              ).rows[0].value;
+              assert.equal(value.activation_allowed, false);
+              assert.equal(value.credential_issued, false);
+              await provider.query("begin");
+              const pending = outcome(provider.query(revoke, [session]));
+              try {
+                await blocked(providerPid, racerPid);
+                await racer.query("commit");
+                const result = await pending;
+                assert.equal(result.error, undefined);
+                await provider.query("commit");
+              } finally {
+                await racer.query("rollback");
+                await provider.query("rollback");
+                await pending;
+              }
+              await assert.rejects(
+                call(
+                  "select kxra_paired_admission.setup_status($1) value",
+                  [args[0]],
+                  claims(session),
+                ),
+                { code: "42501" },
+              );
+              const stored = (
+                await admin.query(
+                  "select cancelled_at from kxra_paired_admission.setup_requests where id=$1",
+                  [args[0]],
+                )
+              ).rows[0];
+              assert.equal(stored.cancelled_at !== null, action === "CANCEL");
+            },
+          );
+        }
       }
     }
     await check(
