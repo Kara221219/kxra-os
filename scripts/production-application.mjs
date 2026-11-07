@@ -101,10 +101,12 @@ if (
 ) {
   main().catch((error) => {
     // Raw PostgreSQL/driver errors can contain query text, URLs or data. Never echo them.
-    const code =
-      typeof error.message === "string" &&
-      /^APPLICATION_[A-Z_]+$/.test(error.message)
-        ? error.message
+    const firstLine =
+      typeof error.message === "string" ? error.message.split("\n")[0] : "";
+    const code = /^(APPLICATION|COHORT)_[A-Z_]+$/.test(firstLine)
+      ? firstLine
+      : /^[0-9A-Z]{5}$/.test(error.code || "")
+        ? `APPLICATION_DATABASE_REJECTED:${error.code}`
         : "APPLICATION_REJECTED_SEE_REVIEWED_PRECONDITIONS";
     console.error(code);
     process.exitCode = 1;

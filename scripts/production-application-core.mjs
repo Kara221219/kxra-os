@@ -296,9 +296,8 @@ export async function applicationCatalog(db, prefix) {
           "z90_custom_app_provider_session_identity",
           "z90_custom_app_session_capture",
         ];
-  assert.deepEqual(
-    triggerNames,
-    expected,
+  check(
+    JSON.stringify(triggerNames) === JSON.stringify(expected),
     "APPLICATION_AUTH_TRIGGER_SET_UNSUPPORTED",
   );
   const catalog = await pairedCompositionCatalog(db);
