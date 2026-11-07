@@ -522,6 +522,11 @@ try {
     for (const [name, mutation] of [
       ["role_configuration", "alter role kxra_app set statement_timeout='3s'"],
       ["role_login", "alter role kxra_app nologin"],
+      ["provider_role_limit", "alter role service_role connection limit 7"],
+      [
+        "migrator_database_setting",
+        "alter role postgres in database postgres set statement_timeout='4s'",
+      ],
       ["role_inherit", "alter role kxra_app inherit"],
       [
         "database_role_configuration",
@@ -567,7 +572,7 @@ try {
       assert.ok(changed);
       assert.deepEqual(await snapshot(admin), before);
       result.stages.push(
-        `MID_TRANSACTION_LEDGER_${name.toUpperCase()}_TAMPERING_ROLLED_BACK`,
+        `MID_TRANSACTION_${name.toUpperCase()}_TAMPERING_ROLLED_BACK`,
       );
     }
     const uncertainPlan = await plan(),

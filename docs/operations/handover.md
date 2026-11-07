@@ -1528,6 +1528,6 @@ Prepared an additive production SQL payload and owned native verification for st
 Use the new `scripts/production-application.mjs` only after its target/schema/Auth prerequisites and deployment authorization are independently established. The old hosted117 initializer is unchanged. Source-derived catalogues do not prove hosted Auth hook/session ordering or customer acceptance. See [operator interface and recovery](production-application-operator-2026-11-07.md).
 
 
-## 7 November — prefix82 upgrade handoff
+## 7 November — prefix 82 upgrade handoff
 
-The separate application82 upgrade path is designed for the actual historical prefix. The old117 initializer and reviewed117–126 operator remain unchanged. Ledger RLS stays enabled, and the current service_role ledger grants deliberately block apply. See [interface, evidence requirements and recovery](production-application82-upgrade-2026-11-07.md). Hosted privilege remediation, backup/recovery, actual Auth/customer acceptance and zero-overage approval remain separate gates.
+The separate application 82 upgrade path is designed for the actual historical prefix. The old 117 initializer and reviewed 117–126 operator remain unchanged. Ledger RLS stays enabled, and the current service_role ledger grants deliberately block apply. See [interface, evidence requirements and recovery](production-application82-upgrade-2026-11-07.md). Hosted privilege remediation, backup/recovery, actual Auth/customer acceptance and zero-overage approval remain separate gates.

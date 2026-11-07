@@ -1,4 +1,4 @@
-// Additive82→126 upgrade. No ledger repair, role provisioning or hosted activation.
+// Additive 82→126 upgrade. No ledger repair, role provisioning or hosted activation.
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
@@ -251,7 +251,7 @@ export async function readUpgradeLedger(db, cohort, serverMajor) {
 export async function readUpgradeRuntimeMetadata(db) {
   const roles = (
     await db.query(
-      "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,coalesce(rolconfig,'{}') configuration,extract(epoch from rolvaliduntil)::text valid_until_epoch from pg_roles where starts_with(rolname,'kxra_') or rolname in ('anon','authenticated','supabase_auth_admin') order by rolname collate \"C\"",
+      "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,coalesce(rolconfig,'{}') configuration,extract(epoch from rolvaliduntil)::text valid_until_epoch from pg_roles where starts_with(rolname,'kxra_') or rolname in ('anon','authenticated','supabase_auth_admin','postgres','service_role') order by rolname collate \"C\"",
     )
   ).rows;
   const memberships = (
@@ -261,7 +261,7 @@ export async function readUpgradeRuntimeMetadata(db) {
   ).rows;
   const databaseSettings = (
     await db.query(
-      "select case when s.setrole=0 then 'ALL_ROLES' else pg_get_userbyid(s.setrole) end role,case when s.setdatabase=0 then 'ALL_DATABASES' else d.datname end database,s.setconfig configuration from pg_db_role_setting s left join pg_database d on d.oid=s.setdatabase where (s.setdatabase=0 or d.datname=current_database()) and (s.setrole=0 or s.setrole in(select oid from pg_roles where starts_with(rolname,'kxra_') or rolname in('anon','authenticated','supabase_auth_admin'))) order by s.setrole,s.setdatabase",
+      "select case when s.setrole=0 then 'ALL_ROLES' else pg_get_userbyid(s.setrole) end role,case when s.setdatabase=0 then 'ALL_DATABASES' else d.datname end database,s.setconfig configuration from pg_db_role_setting s left join pg_database d on d.oid=s.setdatabase where (s.setdatabase=0 or d.datname=current_database()) and (s.setrole=0 or s.setrole in(select oid from pg_roles where starts_with(rolname,'kxra_') or rolname in('anon','authenticated','supabase_auth_admin','postgres','service_role'))) order by s.setrole,s.setdatabase",
     )
   ).rows;
   return { roles, memberships, databaseSettings };

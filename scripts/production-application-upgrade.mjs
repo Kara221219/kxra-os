@@ -1,4 +1,4 @@
-// Additive82→126 direct-TLS entry point. Existing operators remain unchanged.
+// Additive 82→126 direct-TLS entry point. Existing operators remain unchanged.
 import fs from "node:fs";
 import path from "node:path";
 import { checkServerIdentity } from "node:tls";
