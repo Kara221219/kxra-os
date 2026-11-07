@@ -2,5 +2,40 @@
   "version": 1,
   "classification": "SOURCE_DERIVED_APPLICATION_CATALOGS_NOT_HOSTED_ACCEPTANCE",
   "projectRef": "lhbgeucifxxcdoyrnesf",
-  "profiles": []
+  "profiles": [
+    {
+      "id": "application-v1-postgres14-source",
+      "serverMajor": "14",
+      "sourceCohortSha256": "cd32063fbc3cc76c6aba491a410bf6e170340fc7ac8985fca9016b19c02fd026",
+      "catalogs": {
+        "117": "e31b207df66b192107054a95aaf264f7c236363d60acb8ad19f43390a08527be",
+        "118": "f69094830cd41555ce68160bd2811a22c9ad0678f76630ee739175b87861d32e",
+        "119": "44e9f24291ec18a7842836627d47674c2176fa06e6879916edee2a1807d49be3",
+        "120": "14b622ec331b223ea761dd8bf8c7b5a8b13d61c47356d376b1c62fad33194645",
+        "121": "87c41235cff696823fd4adb583529d68fa780285373e12597529a75771c899d7",
+        "122": "38f51e21166fe60ebdec610c65648a572483b9ced4171ab9d7be951ffed897ae",
+        "123": "161d8ec87156c0f40269df985e9bdf7a32ac8400acc484ad84678beafe888885",
+        "124": "f1f44fe7981931816f0dab6328da65374c44589c56276b137c79ede422d3933c",
+        "125": "c7a9c915a86cac3594191ddfcc085ca335739b1b2346b1c68f93025e34933df5",
+        "126": "97a06b2ecc9ff10f55e42c827660c318d1aff396b18ce2ceb7c94554cee10fe4"
+      }
+    },
+    {
+      "id": "application-v1-postgres17-source",
+      "serverMajor": "17",
+      "sourceCohortSha256": "cd32063fbc3cc76c6aba491a410bf6e170340fc7ac8985fca9016b19c02fd026",
+      "catalogs": {
+        "117": "cbc7a85ed234341ccf1288940f9153f4b23e733921b9d775c2b1fd718b9ddad2",
+        "118": "1b8b2922c2d1803b20eb981259955e2c8f79dfc1cffdf48d3361c93d82ed03a5",
+        "119": "a3d59040658b15a207c6b46b4a0367b59b8076f75a777db7ce49ee55b9c2932a",
+        "120": "8b27c49db448faa7fc91608a80f70fb2feba93f47b36489e5781d6ae9ab020be",
+        "121": "866cb6657be423191812d5e6eb56f8ec97eb49c9f29c9a71319e2cff925c7491",
+        "122": "c89ff496a4c8c9c12879556a46bff47db8ed9cd3ab0330a4efc1d0e110516d4d",
+        "123": "1ffdf83152eaaecbb5b8b2e7bcb9268ba6b797ecf49a81edd05958da9b64879c",
+        "124": "d583cb76edc2f0a0d1607671f2bd92ea4ef10ea998de6e5f43cd93d1b99e73c7",
+        "125": "19a49df3380ed066f704a23ddd5d3452088235845701c6dee1ef21914f37767d",
+        "126": "4d7f66810337a59dc39f7f72cdb723a3fe5a93a6a19d4b2c988c7a2a9a9b05ec"
+      }
+    }
+  ]
 }

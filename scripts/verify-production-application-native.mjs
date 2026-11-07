@@ -425,6 +425,29 @@ try {
       "Operator must not create or change roles",
     );
     result.stages.push("NO_SESSION_BACKFILL_OR_ROLE_PROVISIONING");
+    for (const [name, sql] of [
+      [
+        "EXEMPTED_NAME_EXTRA_OVERLOAD",
+        "create function kxra.custom_app_register() returns boolean language sql as 'select true'",
+      ],
+      [
+        "EXEMPTED_NAME_FIXTURE_BODY",
+        "create or replace function kxra_private.custom_apps_local() returns boolean language sql stable security definer set search_path='' as 'select true'",
+      ],
+    ]) {
+      await admin.query("begin");
+      try {
+        await admin.query(sql);
+        assert.equal(
+          (await inspectApplication(admin, cohort, sourceCommit, profiles))
+            .profile,
+          null,
+        );
+      } finally {
+        await admin.query("rollback");
+      }
+      result.stages.push(`NEGATIVE:${name}`);
+    }
     const end = await snapshot(admin);
     await apply(final.planSha256);
     assert.deepEqual(await snapshot(admin), end, "Already126 apply is a no-op");
