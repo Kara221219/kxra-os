@@ -37,9 +37,6 @@ assert.equal(
 );
 const source = git(["rev-parse", "HEAD"]);
 const cohort = applicationReleaseCohort(root);
-const release = acquireNativeFixtureLease(
-  "application-release-cohort-20261107",
-);
 const runtime = fs.realpathSync(fs.mkdtempSync("/tmp/kxra-cohort-"));
 const bin = postgresBin(),
   dir = path.join(runtime, "postgres"),
@@ -112,8 +109,28 @@ async function ledger(c) {
     )
   ).rows;
 }
+async function completeCatalog(c) {
+  return {
+    ...(await catalog(c)),
+    enums: (
+      await c.query(
+        "select n.nspname schema,t.typname name,e.enumlabel label,e.enumsortorder ordering from pg_enum e join pg_type t on t.oid=e.enumtypid join pg_namespace n on n.oid=t.typnamespace where n.nspname in ('auth','public','kxra','kxra_private','kxra_paired_admission','kxra_github_receipt','kxra_room_worker') order by 1,2,4",
+      )
+    ).rows,
+    globalRoles: (
+      await c.query(
+        "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit from pg_roles order by rolname",
+      )
+    ).rows,
+    roleMemberships: (
+      await c.query(
+        "select pg_get_userbyid(roleid) role,pg_get_userbyid(member) member,pg_get_userbyid(grantor) grantor,admin_option from pg_auth_members order by 1,2,3",
+      )
+    ).rows,
+  };
+}
 async function snapshot(c) {
-  const schema = await catalog(c);
+  const schema = await completeCatalog(c);
   return {
     catalog: schema,
     data: await data(c, schema),
@@ -135,6 +152,9 @@ async function apply(c, m, fail = false) {
     throw e;
   }
 }
+const release = acquireNativeFixtureLease(
+  "application-release-cohort-20261107",
+);
 try {
   run("initdb", [
     "-D",
@@ -231,7 +251,7 @@ try {
   await bootstrap(fresh);
   for (const m of cohort.migrations) await apply(fresh, m);
   assert.deepEqual(
-    await catalog(fresh),
+    await completeCatalog(fresh),
     final.catalog,
     "Fresh125 catalogue equals upgrade117→125",
   );
