@@ -356,13 +356,16 @@ try {
       );
       // Commit succeeds in PostgreSQL, but the caller loses its acknowledgement.
       let lost = false;
+      const ackClient = prefix === 125 ? await connect() : admin;
       const lostAck = {
         query: async (text, values) => {
-          if (lost && prefix === 125)
-            throw Error("synthetic connection closed after COMMIT");
-          const response = await admin.query(text, values);
+          const response = await ackClient.query(text, values);
           if (!lost && text === "commit") {
             lost = true;
+            if (prefix === 125) {
+              await ackClient.end();
+              clients.splice(clients.indexOf(ackClient), 1);
+            }
             throw Error("synthetic lost commit acknowledgement");
           }
           return response;
