@@ -476,6 +476,8 @@ try {
     }
     for (const [name, mutation] of [
       ["role_configuration", "alter role kxra_app set statement_timeout='3s'"],
+      ["role_login", "alter role kxra_app nologin"],
+      ["role_inherit", "alter role kxra_app inherit"],
       [
         "timestamp",
         "update public.kxra_schema_migrations set applied_at=applied_at+interval '1 microsecond' where name='0001_core.sql'",

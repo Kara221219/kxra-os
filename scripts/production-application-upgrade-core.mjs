@@ -251,7 +251,7 @@ export async function readUpgradeLedger(db, cohort, serverMajor) {
 export async function readUpgradeRuntimeMetadata(db) {
   const roles = (
     await db.query(
-      "select rolname,rolconnlimit,coalesce(rolconfig,'{}') configuration,extract(epoch from rolvaliduntil)::text valid_until_epoch from pg_roles where starts_with(rolname,'kxra_') or rolname in ('anon','authenticated','supabase_auth_admin') order by rolname collate \"C\"",
+      "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,coalesce(rolconfig,'{}') configuration,extract(epoch from rolvaliduntil)::text valid_until_epoch from pg_roles where starts_with(rolname,'kxra_') or rolname in ('anon','authenticated','supabase_auth_admin') order by rolname collate \"C\"",
     )
   ).rows;
   const memberships = (
