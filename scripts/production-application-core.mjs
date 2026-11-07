@@ -393,6 +393,12 @@ export async function applicationCatalog(db, prefix) {
       [appSchemas],
     )
   ).rows;
+  selected.indexState = (
+    await db.query(
+      "select n.nspname schema,c.relname name,i.indisunique,i.indisprimary,i.indisexclusion,i.indimmediate,i.indisclustered,i.indisvalid,i.indcheckxmin,i.indisready,i.indislive,i.indisreplident,to_jsonb(i)->'indnullsnotdistinct' nulls_not_distinct from pg_index i join pg_class c on c.oid=i.indexrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname=any($1::text[]) order by 1,2",
+      [appSchemas],
+    )
+  ).rows;
   // Definition strings are retained verbatim; only object/ACL array ordering is canonicalized.
   const canonical = (value) =>
     Array.isArray(value)
