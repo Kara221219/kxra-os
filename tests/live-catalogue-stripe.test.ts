@@ -148,7 +148,7 @@ function fixture(
     livemode: scope.livemode,
     features: {
       subscription_update: { enabled: false },
-      subscription_cancel: { enabled: true },
+      subscription_cancel: { enabled: true, mode: "at_period_end" },
       payment_method_update: { enabled: true },
     },
   };
@@ -445,6 +445,34 @@ test("payment-repair portal uses server configuration, fixed return URL and no p
   await assert.rejects(run(f));
   assert.ok(f.calls.every((c) => c.init.method === "GET"));
 });
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const) {
+  for (const [label, cancellation] of [
+    ["immediate", { enabled: true, mode: "immediately" }],
+    ["missing mode", { enabled: true }],
+    ["null mode", { enabled: true, mode: null }],
+    ["unknown mode", { enabled: true, mode: "later" }],
+    ["wrong mode type", { enabled: true, mode: true }],
+    ["disabled", { enabled: false, mode: "at_period_end" }],
+  ] as const) {
+    test(`${mode}: ${label} cancellation is rejected before provider POST`, async () => {
+      const f = fixture(plans[0], mode);
+      f.intent.kind = "PORTAL";
+      f.intent.subscription_id = f.subscription.id;
+      Object.assign(f.session, {
+        id: "bps_synthetic123",
+        object: "billing_portal.session",
+        configuration: f.mapping.portal_configuration_id,
+        url: "https://billing.stripe.com/p/session/synthetic",
+      });
+      Object.assign(f.portalConfig.features, {
+        subscription_cancel: cancellation,
+      });
+      await assert.rejects(run(f));
+      assert.equal(f.calls.length, 4);
+      assert.ok(f.calls.every((call) => call.init.method === "GET"));
+    });
+  }
+}
 test("provider errors and bounded invalid responses fail closed, without retry", async () => {
   for (const response of ["not-json", "x".repeat(100001)]) {
     const f = fixture();

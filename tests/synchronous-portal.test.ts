@@ -391,7 +391,7 @@ for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
           livemode: scope.livemode,
           features: {
             subscription_update: { enabled: allowUpdates },
-            subscription_cancel: { enabled: true },
+            subscription_cancel: { enabled: true, mode: "at_period_end" },
             payment_method_update: paymentMethodUpdate,
           },
         };

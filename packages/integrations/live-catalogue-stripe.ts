@@ -385,7 +385,12 @@ async function createCatalogueSessionCore(
         livemode: z.boolean(),
         features: z.object({
           subscription_update: z.object({ enabled: z.literal(false) }),
-          subscription_cancel: z.object({ enabled: z.literal(true) }),
+          // The approved cancellation promise retains the paid period. Enabled alone
+          // also admits Stripe's immediate-cancellation portal configuration.
+          subscription_cancel: z.object({
+            enabled: z.literal(true),
+            mode: z.literal("at_period_end"),
+          }),
           payment_method_update: z.object({ enabled: z.literal(true) }),
         }),
       })
