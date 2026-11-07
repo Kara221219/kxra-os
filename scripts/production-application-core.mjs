@@ -396,11 +396,11 @@ export async function applicationCatalog(db, prefix) {
   // Definition strings are retained verbatim; only object/ACL array ordering is canonicalized.
   const canonical = (value) =>
     Array.isArray(value)
-      ? value
-          .map(canonical)
-          .sort((a, b) =>
-            JSON.stringify(a).localeCompare(JSON.stringify(b), "en"),
-          )
+      ? value.map(canonical).sort((a, b) => {
+          const left = JSON.stringify(a),
+            right = JSON.stringify(b);
+          return left < right ? -1 : left > right ? 1 : 0;
+        })
       : value && typeof value === "object"
         ? Object.fromEntries(
             Object.keys(value)
