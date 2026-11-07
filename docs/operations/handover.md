@@ -1,7 +1,3 @@
-## 7 November — paired setup original-session fence
-
-Prepared an additive production SQL payload and owned native verification for stale provider-session denial. Existing request idempotency and authority stay intact; the narrow runtime helper and Auth writer use the paired transaction fence without reversing custom-app lock order. No canonical migration, historical profile, hosted target, payment or activation is changed. See [scope and verification](paired-setup-session-local-2026-11-07.md).
-
 ## 3 November — dedicated custom-app restart/restore accepted
 
 Closed the explicitly remaining graceful-restart and fresh-database restore gap for the five installed custom-app tables. Receipt `.runtime/cr-e82522/receipt.json` is PASS: exact data/catalog preservation, schema pins, immutable record history, publication/rollback state, idempotent interrupted-save recovery, tenant isolation and Chromium rendering after restart and restore. Source/target retained stopped; shared lease released. Final guard11/11 and existing custom-app aggregate16/16 pass. No canonical checks, application code or proposal SQL were changed. [Exact scope, evidence and portable integration handoff](custom-app-recovery-local-2026-11-03.md). Same-cluster fresh-database recovery is proved; crash, independent-cluster/role, hosted and combined-lane recovery remain separate gaps.
@@ -1520,3 +1516,8 @@ Use the isolated production-release-cohort branch, not the historical dirty Desk
 
 
 Cancellation composition follow-up: preserve historical payment/paired manifests byte for byte and accept only four exact reviewed source transitions through a test-only helper. Negative substitution tests and the 118-case payment/refresh/GitHub/portal subset pass. The paired test fallback is coordinated with the service worker; final combined aggregate acceptance remains pending.
+
+
+## 7 November — paired setup original-session fence
+
+Prepared an additive production SQL payload and owned native verification for stale provider-session denial. Existing request idempotency and authority stay intact; the narrow runtime helper and Auth writer use the paired transaction fence without reversing custom-app lock order. No canonical migration, historical profile, hosted target, payment or activation is changed. See [scope and verification](paired-setup-session-local-2026-11-07.md).
