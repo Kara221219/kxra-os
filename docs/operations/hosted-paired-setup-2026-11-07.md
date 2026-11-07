@@ -35,3 +35,7 @@ Final exact-commit build/HTTP receipts are recorded separately after committing.
 4. GitHub installation/broker/custody/worker/rate/receipt wiring and live provider acceptance remain separate. The existing product connector 503s are deliberate unavailable routes, not proven infrastructure outages.
 
 Read-only platform checks on 7 November succeeded: Vercel listed all six KXRA projects; Supabase reported KXRA Staging ACTIVE_HEALTHY on PostgreSQL 17.6.1.166. These facts do not imply application readiness, migrated schema or Auth transaction ordering.
+
+## Combined cancellation overlay
+
+Merged complete reviewed payment tip e646d8a71798fe900f269d8752822c1d2bb60d3f, including runtime guard eb818e889ef0b71735c22a05f3bb655f95c3b914. The paired composition verifier now delegates exactly recognized payment source transitions to its strict old/new hash helper, otherwise uses the hosted setup overlay. Only the new hosted overlay hash for this composed test changed. All historical manifest bytes remain unchanged. Setup-only committed fbddf2f2d9b43dff8d86890c232f08084385d50a passed the exact OS build, budgets, artifact scan and actual default-off production HTTP proof; final combined source requires its own verification.

@@ -28,7 +28,7 @@
     {
       "path": "tests/production-paired-composition.test.ts",
       "priorSha256": "86b31c15b0b42227e5defec12583604e613ae5c5908c8dfcd627346517cb97cb",
-      "sha256": "75bfb698434de9975b2e63d8b78ed605dfc0f8b38924fb141cdb9a5e646e3d23"
+      "sha256": "0e2f02bd82b853e0937e93a6125cf7eec6afb47fe7ae5abbd37776af3aadaea4"
     }
   ],
   "sourceFiles": [
@@ -78,7 +78,7 @@
     },
     {
       "path": "tests/production-paired-composition.test.ts",
-      "sha256": "75bfb698434de9975b2e63d8b78ed605dfc0f8b38924fb141cdb9a5e646e3d23"
+      "sha256": "0e2f02bd82b853e0937e93a6125cf7eec6afb47fe7ae5abbd37776af3aadaea4"
     }
   ],
   "preservedSources": [
