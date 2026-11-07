@@ -2,7 +2,10 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { applicationReleasePlan } from "./application-release-cohort.mjs";
-import { assertNoHostedFixtureObjects } from "./hosted-release-guard.mjs";
+import {
+  assertNoHostedFixtureObjects,
+  hostedFixtureObjects,
+} from "./hosted-release-guard.mjs";
 import { pairedCompositionCatalog } from "./paired-composition-catalog.mjs";
 import {
   productionProjectRef,
@@ -207,9 +210,51 @@ export async function applicationTracking(db, cohort) {
   return { rows, ...plan };
 }
 
+// Genuine124 intentionally reuses these local prototype names. Names alone stop being
+// sufficient at that prefix: exact source catalogue equality is mandatory for apply/verify.
+const genuine124Collisions = {
+  relations: [
+    "kxra.custom_app_record_versions",
+    "kxra.custom_app_records",
+    "kxra.custom_app_releases",
+    "kxra.custom_app_versions",
+    "kxra.custom_apps",
+  ],
+  functions: [
+    "kxra.custom_app_record_save",
+    "kxra.custom_app_register",
+    "kxra.custom_app_release",
+    "kxra_private.custom_app_immutable",
+    "kxra_private.custom_app_schema_valid",
+    "kxra_private.custom_app_values_valid",
+    "kxra_private.custom_apps_local",
+  ],
+};
+export async function assertNoApplicationFixtureObjects(db, prefix) {
+  if (prefix < 124) return assertNoHostedFixtureObjects(db);
+  const result = await db.query(
+    `select 'schema' kind,n.nspname qualified_name from pg_namespace n where n.nspname=any($1::text[])
+    union all select 'relation',n.nspname||'.'||c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname||'.'||c.relname=any($2::text[])
+    union all select 'function',n.nspname||'.'||p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname||'.'||p.proname=any($3::text[]) order by 1,2`,
+    [
+      hostedFixtureObjects.schemas,
+      hostedFixtureObjects.relations.filter(
+        (n) => !genuine124Collisions.relations.includes(n),
+      ),
+      hostedFixtureObjects.functions.filter(
+        (n) => !genuine124Collisions.functions.includes(n),
+      ),
+    ],
+  );
+  check(
+    Array.isArray(result.rows) && result.rows.length === 0,
+    "APPLICATION_FIXTURE_OBJECT_FORBIDDEN",
+  );
+}
+
 // Catalog only: never reads Auth users/sessions or application row payloads.
 export async function applicationCatalog(db, prefix) {
-  await assertNoHostedFixtureObjects(db);
+  await assertNoApplicationFixtureObjects(db, prefix);
   const forbidden = (
     await db.query(
       "select nspname from pg_namespace where nspname like 'kxra%' and not(nspname=any($1::text[])) order by nspname",
