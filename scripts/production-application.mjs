@@ -61,6 +61,9 @@ async function main() {
   config.ssl.servername = `db.${productionProjectRef}.supabase.co`;
   config.connectionTimeoutMillis = 10000;
   const db = new pg.Client(config);
+  // Suppress unsolicited driver error events; subsequent operations fail through the
+  // sanitized error path instead of exposing raw connection diagnostics on stderr.
+  db.on("error", () => {});
   let primaryError;
   try {
     await db.connect();
