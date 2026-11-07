@@ -323,6 +323,8 @@ try {
     await blocker.query("select pg_advisory_unlock(hashtext($1))", [
       applicationLock,
     ]);
+    await blocker.end();
+    clients.splice(clients.indexOf(blocker), 1);
     result.stages.push("NEGATIVE:SHARED_HISTORICAL_LOCK");
     // Real DDL/ledger failure inside each of the nine operator transactions.
     for (let prefix = 117; prefix < 126; prefix++) {
