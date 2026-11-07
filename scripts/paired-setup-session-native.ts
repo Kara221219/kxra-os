@@ -141,7 +141,7 @@ async function main() {
     await f.reviewAi(intent);
     const outsider = uuid();
     await admin.query(
-      "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1,'SUPABASE',$1::text,'ACTIVE',now())",
+      "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1::uuid,'SUPABASE',$1::text,'ACTIVE',now())",
       [outsider],
     );
     // Exact synthetic shape required by existing original-session payload. No real Auth table is touched.
