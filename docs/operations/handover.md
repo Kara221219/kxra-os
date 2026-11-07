@@ -1526,3 +1526,8 @@ Prepared an additive production SQL payload and owned native verification for st
 ## 7 November — application126 incremental command
 
 Use the new `scripts/production-application.mjs` only after its target/schema/Auth prerequisites and deployment authorization are independently established. The old hosted117 initializer is unchanged. Source-derived catalogues do not prove hosted Auth hook/session ordering or customer acceptance. See [operator interface and recovery](production-application-operator-2026-11-07.md).
+
+
+## 7 November — source-only publication guard candidate
+
+Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).

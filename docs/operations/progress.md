@@ -1789,3 +1789,8 @@ Prepared an additive production SQL payload and owned native verification for st
 ## 7 November — additive application126 operator
 
 Prepared a separate target-bound incremental117–126 migration command, preserving hosted117 and all existing SQL/manifest bytes. It uses read-only plans, exact source/prefix/catalogue checks, real ledger entries and per-migration atomic recovery. Local proof and independent review are tracked in [operator handoff](production-application-operator-2026-11-07.md). No hosted call, credentials, Auth-provider configuration, activation, remote push or payment is authorized by this work.
+
+
+## 7 November — source-only publication guard candidate
+
+Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).
