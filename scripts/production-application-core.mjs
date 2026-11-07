@@ -217,11 +217,14 @@ export async function applicationCatalog(db, prefix) {
   check(forbidden.length === 0, "APPLICATION_UNREVIEWED_SCHEMA");
   const roleRows = (
     await db.query(
-      "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls from pg_roles where rolname=any($1::text[]) order by rolname",
+      "select rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls from pg_roles where rolname=any($1::text[]) or starts_with(rolname,'kxra_') order by rolname",
       [roles],
     )
   ).rows;
-  check(roleRows.length === roles.length, "APPLICATION_REQUIRED_ROLE_MISSING");
+  check(
+    roles.every((name) => roleRows.some((r) => r.rolname === name)),
+    "APPLICATION_REQUIRED_ROLE_MISSING",
+  );
   for (const r of roleRows.filter((r) => r.rolname !== "supabase_auth_admin"))
     check(
       !r.rolsuper &&
@@ -269,7 +272,11 @@ export async function applicationCatalog(db, prefix) {
   const grants = (
     await db.query(
       "select r.role,p.privilege from unnest($1::text[]) r(role) cross join (values ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('TRUNCATE'),('REFERENCES'),('TRIGGER')) p(privilege) where (has_table_privilege(r.role,'auth.sessions',p.privilege) or (p.privilege in ('SELECT','INSERT','UPDATE','REFERENCES') and has_any_column_privilege(r.role,'auth.sessions',p.privilege)))",
-      [roles.filter((r) => r !== "supabase_auth_admin")],
+      [
+        roleRows
+          .filter((r) => r.rolname !== "supabase_auth_admin")
+          .map((r) => r.rolname),
+      ],
     )
   ).rows;
   check(grants.length === 0, "APPLICATION_AUTH_APP_PRIVILEGES_FORBIDDEN");
@@ -329,8 +336,12 @@ export async function applicationCatalog(db, prefix) {
   );
   const dangerousMembership = (
     await db.query(
-      "select r.role from unnest($1::text[]) r(role) where pg_has_role(r.role,'supabase_auth_admin','MEMBER') or pg_has_role(r.role,'postgres','MEMBER')",
-      [roles.filter((r) => r !== "supabase_auth_admin")],
+      "select r.role from unnest($1::text[]) r(role) where pg_has_role(r.role,'supabase_auth_admin','MEMBER') or exists(select 1 from pg_roles p where (p.rolsuper or p.rolcreaterole or p.rolcreatedb or p.rolbypassrls or p.rolreplication) and pg_has_role(r.role,p.oid,'MEMBER')) or exists(select 1 from pg_auth_members m where m.member=(select oid from pg_roles where rolname=r.role) and m.admin_option)",
+      [
+        roleRows
+          .filter((r) => r.rolname !== "supabase_auth_admin")
+          .map((r) => r.rolname),
+      ],
     )
   ).rows;
   check(
@@ -460,6 +471,11 @@ export async function inspectApplication(db, cohort, sourceCommit, profiles) {
       : "TARGET_CATALOG_REVIEW_REQUIRED",
     authorization: false,
     fullReleaseEligible: false,
+    hostedAcceptanceRequired: [
+      "Real Auth insertion/refresh and original-session hook ordering",
+      "Approved backup/restore and maintenance window",
+      "External fence isolation and complete hosted customer acceptance",
+    ],
     auth: {
       columns: catalog.authColumns,
       roles: catalog.roles,
