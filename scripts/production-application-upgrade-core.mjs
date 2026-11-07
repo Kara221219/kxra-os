@@ -267,6 +267,32 @@ export async function readUpgradeRuntimeMetadata(db) {
   return { roles, memberships, databaseSettings };
 }
 
+// Provider DDL hooks execute implicitly during migration SQL. Their observations
+// must be reviewed separately; neither source profiles nor hashes approve behavior.
+export async function readUpgradeDdlHooks(db) {
+  const rows = (
+    await db.query(`select e.evtname name,e.evtevent event,e.evtenabled enabled,e.evttags tags,
+      pg_get_userbyid(e.evtowner) owner,n.nspname function_schema,p.proname function_name,
+      pg_get_function_identity_arguments(p.oid) function_arguments,
+      pg_get_userbyid(p.proowner) function_owner,l.lanname language,
+      p.prosecdef security_definer,p.proleakproof leakproof,p.provolatile volatility,
+      p.proparallel parallel,p.proconfig configuration,p.proacl::text acl,
+      pg_get_functiondef(p.oid) definition
+      from pg_event_trigger e join pg_proc p on p.oid=e.evtfoid
+      join pg_namespace n on n.oid=p.pronamespace join pg_language l on l.oid=p.prolang
+      order by e.evtname collate "C"`)
+  ).rows;
+  return rows.map(({ definition, configuration, acl, ...identity }) => ({
+    ...identity,
+    functionDefinitionSecuritySha256: applicationDigest({
+      ...identity,
+      definition,
+      configuration,
+      acl,
+    }),
+  }));
+}
+
 async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
   const identity = await assertApplicationIdentity(db);
   const serverMajor = String(
@@ -276,6 +302,8 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
   const catalog = await applicationCatalog(db, ledger.applied);
   const runtimeMetadata = await readUpgradeRuntimeMetadata(db);
   const runtimeRoleMetadataSha256 = applicationDigest(runtimeMetadata);
+  const ddlHooks = await readUpgradeDdlHooks(db);
+  const ddlHookMetadataSha256 = applicationDigest(ddlHooks);
   const sourceCohortSha256 = applicationDigest(
     cohort.migrations.map(({ name, sha256 }) => ({ name, sha256 })),
   );
@@ -309,6 +337,11 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
     catalogSha256: catalog.sha256,
     targetMetadataSha256: catalog.targetSha256,
     runtimeRoleMetadataSha256,
+    ddlHookMetadataSha256,
+    ddlHooks: {
+      classification: "OBSERVED_HOOK_HASHES_NOT_SEMANTIC_APPROVAL",
+      hooks: ddlHooks,
+    },
     profile: supported[0]?.id || null,
     pending: ledger.pending,
     blockers,
@@ -339,11 +372,12 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
     },
     hostedAcceptanceRequired: [
       "Reviewed ledger privilege remediation, if blocked; operator never repairs grants",
+      "Separate semantic review of all observed provider DDL hooks",
       "Backup/restore, zero-overage and maintenance approval",
       "Actual Auth hook, session and complete customer acceptance",
     ],
   };
-  return { report, ledger, runtimeRoleMetadataSha256 };
+  return { report, ledger, runtimeRoleMetadataSha256, ddlHookMetadataSha256 };
 }
 export async function inspectApplicationUpgrade(
   db,
@@ -469,6 +503,10 @@ export async function operateApplicationUpgrade(
         check(
           after.runtimeRoleMetadataSha256 === before.runtimeRoleMetadataSha256,
           "APPLICATION_UPGRADE_RUNTIME_ROLE_METADATA_CHANGED",
+        );
+        check(
+          after.ddlHookMetadataSha256 === before.ddlHookMetadataSha256,
+          "APPLICATION_UPGRADE_DDL_HOOK_METADATA_CHANGED",
         );
         committing = true;
         await db.query("commit");

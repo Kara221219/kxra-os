@@ -17,6 +17,7 @@ import {
   inspectApplicationUpgrade as inspectApplication,
   readUpgradeLedger,
   readUpgradeRuntimeMetadata,
+  readUpgradeDdlHooks,
 } from "./production-application-upgrade-core.mjs";
 import {
   pairedCompositionCatalog,
@@ -156,6 +157,7 @@ async function snapshot(db) {
     data: await pairedCompositionData(db, cat),
     ledger: await ledger(db),
     runtimeRoles: await readUpgradeRuntimeMetadata(db),
+    ddlHooks: await readUpgradeDdlHooks(db),
   };
 }
 const release = acquireNativeFixtureLease("production-application82-upgrade");
@@ -463,6 +465,49 @@ try {
     );
     await admin.query("alter role kxra_app reset statement_timeout");
     result.stages.push("ROLE_CONFIGURATION_DRIFT_INVALIDATES_PLAN");
+    const databaseRolePlan = await plan();
+    await admin.query(
+      "alter role kxra_app in database postgres set statement_timeout='4s'",
+    );
+    assert.notEqual((await plan()).planSha256, databaseRolePlan.planSha256);
+    await assert.rejects(
+      apply(databaseRolePlan.planSha256),
+      /APPLICATION_UPGRADE_REVIEWED_PLAN_CHANGED/,
+    );
+    await admin.query(
+      "alter role kxra_app in database postgres reset statement_timeout",
+    );
+    result.stages.push("DATABASE_ROLE_OVERRIDE_DRIFT_INVALIDATES_PLAN");
+    const noHooksPlan = await plan();
+    await admin.query(
+      "create function public.upgrade_fixture_ddl_hook() returns event_trigger language plpgsql as $$begin null;end$$;create event trigger upgrade_fixture_hook on ddl_command_end execute function public.upgrade_fixture_ddl_hook()",
+    );
+    const hooksPlan = await plan();
+    assert.notEqual(hooksPlan.planSha256, noHooksPlan.planSha256);
+    assert.equal(hooksPlan.ddlHooks.hooks.length, 1);
+    assert.ok(!JSON.stringify(hooksPlan).includes("begin null"));
+    await assert.rejects(
+      apply(noHooksPlan.planSha256),
+      /APPLICATION_UPGRADE_REVIEWED_PLAN_CHANGED/,
+    );
+    await admin.query(
+      "alter function public.upgrade_fixture_ddl_hook() set upgrade_fixture.secret_value='SYNTHETIC_NOT_A_SECRET'",
+    );
+    const configuredHookPlan = await plan();
+    assert.notEqual(configuredHookPlan.planSha256, hooksPlan.planSha256);
+    assert.ok(
+      !JSON.stringify(configuredHookPlan).includes("SYNTHETIC_NOT_A_SECRET"),
+    );
+    await assert.rejects(
+      apply(hooksPlan.planSha256),
+      /APPLICATION_UPGRADE_REVIEWED_PLAN_CHANGED/,
+    );
+    await admin.query(
+      "drop event trigger upgrade_fixture_hook;drop function public.upgrade_fixture_ddl_hook()",
+    );
+    result.stages.push(
+      "DDL_HOOK_DEFINITION_SECURITY_DRIFT_INVALIDATES_PLAN_WITHOUT_VALUE_EXPOSURE",
+    );
     if (serverMajor === "17") {
       const membershipPlan = await plan();
       await admin.query("grant authenticated to kxra_app with set false");
@@ -478,6 +523,14 @@ try {
       ["role_configuration", "alter role kxra_app set statement_timeout='3s'"],
       ["role_login", "alter role kxra_app nologin"],
       ["role_inherit", "alter role kxra_app inherit"],
+      [
+        "database_role_configuration",
+        "alter role kxra_app in database postgres set statement_timeout='4s'",
+      ],
+      [
+        "ddl_hook",
+        "create function public.upgrade_fixture_ddl_hook() returns event_trigger language plpgsql as $$begin null;end$$;create event trigger upgrade_fixture_hook on ddl_command_end execute function public.upgrade_fixture_ddl_hook()",
+      ],
       [
         "timestamp",
         "update public.kxra_schema_migrations set applied_at=applied_at+interval '1 microsecond' where name='0001_core.sql'",
@@ -509,7 +562,7 @@ try {
       };
       await assert.rejects(
         apply(p.planSha256, tampering),
-        /APPLICATION_UPGRADE_(HISTORICAL_LEDGER_CHANGED|POST_MIGRATION_REJECTED|RUNTIME_ROLE_METADATA_CHANGED)/,
+        /APPLICATION_UPGRADE_(HISTORICAL_LEDGER_CHANGED|POST_MIGRATION_REJECTED|RUNTIME_ROLE_METADATA_CHANGED|DDL_HOOK_METADATA_CHANGED)/,
       );
       assert.ok(changed);
       assert.deepEqual(await snapshot(admin), before);
