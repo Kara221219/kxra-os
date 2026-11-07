@@ -87,11 +87,13 @@ export function validateApplicationProfiles(document) {
     assert.deepEqual(Object.keys(p).sort(), [
       "catalogs",
       "id",
+      "serverMajor",
       "sourceCohortSha256",
     ]);
     assert.match(p.id, /^[a-z0-9][a-z0-9-]{0,63}$/);
     assert.ok(!ids.has(p.id));
     ids.add(p.id);
+    assert.match(p.serverMajor, /^[1-9][0-9]$/);
     assert.match(p.sourceCohortSha256, hash);
     assert.deepEqual(
       Object.keys(p.catalogs).sort(),
@@ -442,6 +444,8 @@ export async function inspectApplication(db, cohort, sourceCommit, profiles) {
   );
   const supported = profiles.filter(
     (p) =>
+      p.serverMajor ===
+        String(Math.trunc(Number(identity.server_version) / 10000)) &&
       p.sourceCohortSha256 === sourceCohortSha256 &&
       p.catalogs[String(state.applied)] === catalog.sha256,
   );

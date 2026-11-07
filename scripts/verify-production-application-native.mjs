@@ -176,8 +176,13 @@ try {
   await admin.query("create database operator_reference template template0");
   const reference = await connect("operator_reference");
   await bootstrap(reference);
+  const serverVersion = (await reference.query("show server_version_num"))
+    .rows[0].server_version_num;
+  const serverMajor = String(Math.trunc(Number(serverVersion) / 10000));
+  result.serverVersion = serverVersion;
   const generated = {
-    id: "application-v1-postgres-source",
+    id: `application-v1-postgres${serverMajor}-source`,
+    serverMajor,
     sourceCohortSha256: applicationDigest(
       cohort.migrations.map(({ name, sha256 }) => ({ name, sha256 })),
     ),
@@ -205,7 +210,7 @@ try {
       ),
     );
     assert.deepEqual(
-      profiles,
+      profiles.filter((p) => p.serverMajor === serverMajor),
       [generated],
       "Committed profiles must reproduce from exact source without hosted metadata",
     );
