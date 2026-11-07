@@ -5,7 +5,7 @@ import {
   applicationReleasePlan,
 } from "../scripts/application-release-cohort.mjs";
 const cohort = applicationReleaseCohort();
-const rows = cohort.migrations.map((m) => ({
+const rows = cohort.migrations.map((m: { name: string; sha256: string }) => ({
   name: m.name,
   sha256: m.sha256,
   source_commit: cohort.manifest.sourceCommit,

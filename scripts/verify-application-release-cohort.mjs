@@ -171,7 +171,7 @@ try {
   const account = "11111111-2222-4333-8444-555555555555",
     oldSession = "22222222-2222-4333-8444-555555555555";
   await admin.query(
-    "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1,'SUPABASE',$1::text,'ACTIVE',now())",
+    "insert into kxra.account_identities(account_id,auth_provider,auth_subject,state,email_verified_at) values($1::uuid,'SUPABASE',$1::text,'ACTIVE',now())",
     [account],
   );
   await admin.query(
