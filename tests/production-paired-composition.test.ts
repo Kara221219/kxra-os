@@ -1,3 +1,4 @@
+import { assertHostedPairedSetupTransition } from "../scripts/hosted-paired-setup-payload.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -52,11 +53,7 @@ test("paired composition preserves historical manifests and exact authority pins
   ])
     assert.equal(m[key], false, key);
   for (const f of [...m.integratedSourceFiles, ...m.preservedCompositionFiles])
-    assert.equal(
-      sha(fs.readFileSync(path.join(root, f.path))),
-      f.sha256,
-      f.path,
-    );
+    assertHostedPairedSetupTransition(f.path, f.sha256, root);
   for (const name of [
     "production-payment-integration-v1.json",
     "production-refresh-integration-v1.json",

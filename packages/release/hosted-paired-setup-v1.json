@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "classification": "REQUEST_ONLY_HOSTED_SETUP_SOURCE_NOT_ACTIVATION",
+  "baseCommit": "b763774d86c28b64b5549662feb5a20d3a509fc7",
+  "authorization": false,
+  "defaultEnabled": false,
+  "fullReleaseEligible": false,
+  "numberedMigrationsChanged": false,
+  "deviceCredentialsIssued": false,
+  "providerExecutionImplemented": false,
+  "requiredSqlSessionGuard": "kxra_paired_admission.hosted_setup_session_current()",
+  "transitions": [
+    {
+      "path": "apps/os/components/PairedSetupForm.tsx",
+      "priorSha256": "1a56444cf5b9d0bd2f643b3978aab5e470653f6e831a00e61e99df8f6c5cad01",
+      "sha256": "44efe9fa8c1b3750b6be69f8976ed945ce2be49d05cc0d19bf313c31d5bdb315"
+    },
+    {
+      "path": "apps/os/components/PairedSetupPage.production.tsx",
+      "priorSha256": "84e8c0e95dc4a6285b7892c6b4debe1bc27fbb60baf12a9116d95bd1aa2eceee",
+      "sha256": "6c9d12fbed740be387aff8f8a0517fd5becdf5cc07eb2c54b6beaa2b89f49755"
+    },
+    {
+      "path": "apps/os/lib/paired-setup.production.ts",
+      "priorSha256": "0bd770acd1069a7d9d24166588885c3f69e8cc6f833db0ac2a5a475980997464",
+      "sha256": "a8549d70293dc701076292709da09bb7e99606b81d10fde4f4f0dcb153fe9795"
+    },
+    {
+      "path": "tests/production-paired-composition.test.ts",
+      "priorSha256": "86b31c15b0b42227e5defec12583604e613ae5c5908c8dfcd627346517cb97cb",
+      "sha256": "75bfb698434de9975b2e63d8b78ed605dfc0f8b38924fb141cdb9a5e646e3d23"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "apps/os/components/PairedSetupForm.tsx",
+      "sha256": "44efe9fa8c1b3750b6be69f8976ed945ce2be49d05cc0d19bf313c31d5bdb315"
+    },
+    {
+      "path": "apps/os/components/PairedSetupPage.production.tsx",
+      "sha256": "6c9d12fbed740be387aff8f8a0517fd5becdf5cc07eb2c54b6beaa2b89f49755"
+    },
+    {
+      "path": "apps/os/lib/paired-setup.production.ts",
+      "sha256": "a8549d70293dc701076292709da09bb7e99606b81d10fde4f4f0dcb153fe9795"
+    },
+    {
+      "path": "packages/workspace/paired-setup-hosted.ts",
+      "sha256": "bf21b057b597cbbbb229948fced63b22b8dc5c414d012db887bfbab890ae0815"
+    },
+    {
+      "path": "packages/workspace/paired-setup-response.ts",
+      "sha256": "434b96578909a226c196222d701a607309b3dda09f5ff472d0abf7ce82e550aa"
+    },
+    {
+      "path": "packages/workspace/paired-setup-client-contract.ts",
+      "sha256": "e8864ca90a749acc67c693a6154328f4799e7b4900bfa757009a2931b29eefbb"
+    },
+    {
+      "path": "scripts/hosted-paired-setup-payload.mjs",
+      "sha256": "66577b16812a33ea0f2757dd7f217b0300a3e09794fffc933e17b99e25790833"
+    },
+    {
+      "path": "tests/paired-setup-hosted.test.ts",
+      "sha256": "56fd88c1deb62358b5c79b77c5a28c3d0c62f4fac6c4fa7f0476c7e1db35884f"
+    },
+    {
+      "path": "tests/paired-setup-response.test.ts",
+      "sha256": "fadfad04b6cf0dca69220481548e318469c004e75779108dd31232256b25f8eb"
+    },
+    {
+      "path": "tests/paired-setup-client-contract.test.ts",
+      "sha256": "6ce49830ba636d5e78d54f8a03d989a912d3683b73065d886b497ace748f6378"
+    },
+    {
+      "path": "tests/hosted-paired-setup-payload.test.ts",
+      "sha256": "40a5aecfaabf28cf643673a9809a4aa64eb5ffcefa0e69909676eb70a7f07cc9"
+    },
+    {
+      "path": "tests/production-paired-composition.test.ts",
+      "sha256": "75bfb698434de9975b2e63d8b78ed605dfc0f8b38924fb141cdb9a5e646e3d23"
+    }
+  ],
+  "preservedSources": [
+    {
+      "path": "packages/release/production-paired-integration-v1.json",
+      "sha256": "38b9b43a226211647d61529b250e2040213c9f9e7ceedcc19a3e2055cf24af33"
+    },
+    {
+      "path": "packages/release/production-apps-integration-v1.json",
+      "sha256": "b1a12b9c83899054db6b47e27a4929439133c2bb3b01969e3d503191beecad30"
+    },
+    {
+      "path": "packages/release/production-session-integration-v1.json",
+      "sha256": "919c6444fd5c25629884ab9036ff2b8caaeb55d9dfaacdc0c187b5706469dbab"
+    },
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "database/production/paired-setup-policy-v1.sql",
+      "sha256": "254f31fc4426bf8e1062377809112fb81223af8cd674ce365ce9c63e17720ff8"
+    },
+    {
+      "path": "database/production/paired-setup-options-v1.sql",
+      "sha256": "6da5bce28f88f72fb12dd30fc6be6bf1beb806a80c2623563865acdc256b517e"
+    },
+    {
+      "path": "database/production/custom-app-session-attestation-v1.sql",
+      "sha256": "14c84faeadddecd2e54cc77b43c533abe7cf5e11793f0078cec93058884644d6"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+    }
+  ]
+}
