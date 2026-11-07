@@ -3,7 +3,7 @@
   "classification": "APPLICATION_MIGRATION_COHORT_NOT_RUNTIME_OR_HOSTED_ACCEPTANCE",
   "sourceCommit": "b763774d86c28b64b5549662feb5a20d3a509fc7",
   "baselineCount": 117,
-  "migrationCount": 125,
+  "migrationCount": 126,
   "authorization": false,
   "fullReleaseEligible": false,
   "hostedExecutorImplemented": false,
@@ -632,6 +632,11 @@
       "name": "0125_custom_app_session_attestation.sql",
       "source": "database/production/custom-app-session-attestation-v1.sql",
       "sha256": "14c84faeadddecd2e54cc77b43c533abe7cf5e11793f0078cec93058884644d6"
+    },
+    {
+      "name": "0126_paired_setup_session.sql",
+      "source": "database/production/paired-setup-session-v1.sql",
+      "sha256": "3cf6be2adc15ddf2423a74a282381ba40d1a6289fd273194eb00fbbb6f9e9fcb"
     }
   ],
   "externalDomains": [
@@ -651,5 +656,8 @@
     "Real Supabase Auth sessions schema, role privileges and original-session hook ordering before migration125",
     "Independently provisioned GitHub and paired fencing databases; application restore must not restore their ledgers",
     "Reviewed service wiring, secure custody, provider acceptance, complete customer payment and useful-execution acceptance"
-  ]
+  ],
+  "additionalSourceCommits": {
+    "0126_paired_setup_session.sql": "608d9d19564876e20eaf50d560c38c6463c7db05"
+  }
 }

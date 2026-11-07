@@ -13,8 +13,8 @@ const rows = cohort.migrations.map((m: { name: string; sha256: string }) => ({
   sha256: m.sha256,
   source_commit: cohort.manifest.sourceCommit,
 }));
-test("application cohort contains exact baseline and eight genuine payloads, not external fences or fixture pairing", () => {
-  assert.equal(cohort.migrations.length, 125);
+test("application cohort contains exact baseline and nine genuine payloads, not external fences or fixture pairing", () => {
+  assert.equal(cohort.migrations.length, 126);
   assert.equal(cohort.migrations[117].name, "0118_ai_connection_admission.sql");
   assert.equal(
     cohort.migrations[124].name,
@@ -28,12 +28,13 @@ test("application cohort contains exact baseline and eight genuine payloads, not
           !m.name.includes("fixture") && !m.name.includes("external_fence"),
       ),
   );
+  assert.equal(cohort.migrations[125].name, "0126_paired_setup_session.sql");
   assert.equal(cohort.manifest.externalDomains.length, 2);
 });
-for (const prefix of [0, 113, 117, 118, 119, 120, 124, 125])
+for (const prefix of [0, 113, 117, 118, 119, 120, 124, 125, 126])
   test(`ordered matching prefix ${prefix} has exact remaining plan`, () => {
     const plan = applicationReleasePlan(cohort, rows.slice(0, prefix));
-    assert.equal(plan.pending.length, 125 - prefix);
+    assert.equal(plan.pending.length, 126 - prefix);
     assert.equal(plan.authorization, false);
     assert.equal(plan.fullReleaseEligible, false);
   });

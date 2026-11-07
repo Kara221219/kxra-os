@@ -71,7 +71,7 @@ const result = {
   classification:
     "LOCAL_APPLICATION_COHORT_INSTALL_ROLLBACK_RESTORE_NOT_HOSTED_ACCEPTANCE",
   sourceCommit: source,
-  migrations: 125,
+  migrations: 126,
   externalFencesInstalled: false,
   phases: [],
   runtime,
@@ -200,7 +200,7 @@ try {
   );
   assert.equal(
     applicationReleasePlan(cohort, await ledger(admin)).pending.length,
-    8,
+    9,
   );
   result.phases.push("CANONICAL_117_EXACT_HASH_LEDGER_INSTALLED");
   for (const m of cohort.migrations.slice(117)) {
@@ -253,14 +253,14 @@ try {
   assert.deepEqual(
     await completeCatalog(fresh),
     final.catalog,
-    "Fresh125 catalogue equals upgrade117→125",
+    "Fresh126 catalogue equals upgrade117→126",
   );
   assert.deepEqual(
     await ledger(fresh),
     final.ledger,
     "Fresh and upgraded exact ledgers",
   );
-  result.phases.push("FRESH_125_EQUALS_UPGRADE_CATALOGUE_AND_LEDGER");
+  result.phases.push("FRESH_126_EQUALS_UPGRADE_CATALOGUE_AND_LEDGER");
   const dump = path.join(runtime, "complete.dump");
   run("pg_dump", [
     "-h",

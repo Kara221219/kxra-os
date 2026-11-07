@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const repo = path.resolve(import.meta.dirname, "..");
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const additions = [
+  // Ordered application payloads only; external ledgers remain separate.
   ["0118_ai_connection_admission.sql", "ai-connection-admission-v1.sql"],
   ["0119_review_operations.sql", "review-operations-v1.sql"],
   ["0120_github_outbox.sql", "github-outbox-v1.sql"],
@@ -18,6 +19,7 @@ const additions = [
     "0125_custom_app_session_attestation.sql",
     "custom-app-session-attestation-v1.sql",
   ],
+  ["0126_paired_setup_session.sql", "paired-setup-session-v1.sql"],
 ];
 function regular(root, relative) {
   const file = path.join(root, relative);
@@ -42,7 +44,10 @@ export function applicationReleaseCohort(root = repo) {
     "b763774d86c28b64b5549662feb5a20d3a509fc7",
   );
   assert.equal(manifest.baselineCount, 117);
-  assert.equal(manifest.migrationCount, 125);
+  assert.deepEqual(manifest.additionalSourceCommits, {
+    "0126_paired_setup_session.sql": "608d9d19564876e20eaf50d560c38c6463c7db05",
+  });
+  assert.equal(manifest.migrationCount, 126);
   for (const flag of [
     "authorization",
     "fullReleaseEligible",
@@ -50,7 +55,7 @@ export function applicationReleaseCohort(root = repo) {
   ])
     assert.equal(manifest[flag], false);
   assert.equal(baseline.migrations.length, 117);
-  assert.equal(manifest.migrations.length, 125);
+  assert.equal(manifest.migrations.length, 126);
   assert.deepEqual(
     fs.readdirSync(path.join(root, directory, "migrations")).sort(),
     manifest.migrations.map((m) => m.name),

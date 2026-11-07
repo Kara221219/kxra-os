@@ -22,3 +22,11 @@ The source verifier and 22 source/planner regressions pass, including altered/mi
 ## Next composition
 
 Hosted paired setup separately requires a live original-session fence and safe runtime composition. Do not enable it from this cohort alone. Integrate the reviewed additive session-aware setup payload and exact source transitions, then repeat final cohort and aggregate acceptance. Other missing service custody, independent fencing, provider and full signup/payment/use acceptance remain required for the full product.
+
+## Combined application126 candidate
+
+The full service/payment branches are now composed, preserving both documentation histories and every historical release-manifest byte. The reviewed original-session paired-setup payload from608d9d19564876e20eaf50d560c38c6463c7db05 is appended as0126_paired_setup_session.sql, SHA2563cf6be2adc15ddf2423a74a282381ba40d1a6289fd273194eb00fbbb6f9e9fcb. Existing125 migration bytes remain unchanged. The manifest records the additional source lineage explicitly.
+
+The additive payload retains setup_human OID/ACL and binds direct/guarded setup requests to live original sessions. Its native25-case proof covers invalid/revoked sessions, exact idempotency, concurrent preflights and DELETE/expiry UPDATE races against direct/guarded REQUEST/CANCEL in both orders. Runtime remains default-off and requires its new fenced helper, so absent126 still denies. This enables reviewed request preparation only, not device credentials, execution or provider acceptance.
+
+Final combined126 native and canonical verification is pending at this source checkpoint. The earlier125 and standalone feature receipts remain separate; no aggregate pass, hosted install, push, live activation, customer charge or full launch is inferred.
