@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "classification": "REVIEWED_LEDGER_STRUCTURE_NOT_GRANT_OR_DEPLOYMENT_APPROVAL",
+  "shape": {
+    "table": {
+      "rls": true,
+      "kind": "r",
+      "owner": "postgres",
+      "options": null,
+      "force_rls": false,
+      "persistence": "p",
+      "replica_identity": "d"
+    },
+    "columns": [
+      {
+        "name": "name",
+        "type": "text",
+        "default": null,
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "collation": "pg_catalog.\"default\"",
+        "generated": ""
+      },
+      {
+        "name": "sha256",
+        "type": "text",
+        "default": null,
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "collation": "pg_catalog.\"default\"",
+        "generated": ""
+      },
+      {
+        "name": "source_commit",
+        "type": "text",
+        "default": null,
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "collation": "pg_catalog.\"default\"",
+        "generated": ""
+      },
+      {
+        "name": "applied_at",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "collation": null,
+        "generated": ""
+      }
+    ],
+    "indexes": [
+      {
+        "live": true,
+        "name": "kxra_schema_migrations_pkey",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "definition": "CREATE UNIQUE INDEX kxra_schema_migrations_pkey ON public.kxra_schema_migrations USING btree (name)"
+      }
+    ],
+    "constraints": [
+      {
+        "kind": "p",
+        "name": "kxra_schema_migrations_pkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (name)"
+      },
+      {
+        "kind": "c",
+        "name": "kxra_schema_migrations_sha256_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((sha256 ~ '^[a-f0-9]{64}$'::text))"
+      },
+      {
+        "kind": "c",
+        "name": "kxra_schema_migrations_source_commit_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((source_commit ~ '^[a-f0-9]{40}$'::text))"
+      }
+    ]
+  }
+}

@@ -1789,3 +1789,8 @@ Prepared an additive production SQL payload and owned native verification for st
 ## 7 November — additive application126 operator
 
 Prepared a separate target-bound incremental117–126 migration command, preserving hosted117 and all existing SQL/manifest bytes. It uses read-only plans, exact source/prefix/catalogue checks, real ledger entries and per-migration atomic recovery. Local proof and independent review are tracked in [operator handoff](production-application-operator-2026-11-07.md). No hosted call, credentials, Auth-provider configuration, activation, remote push or payment is authorized by this work.
+
+
+## 7 November — actual82→126 migration preparation
+
+Added a separate82–126 upgrade path after read-only production reconciliation identified82 genuine migrations. The path preserves enabled ledger RLS, complete historical provenance/microsecond timestamps and metadata, and reports residual service_role grants as explicit apply blockers rather than repairing them. All44 migration transactions and reconciliation paths are covered by the new owned local verifier. See [upgrade scope and remaining gates](production-application82-upgrade-2026-11-07.md). No hosted mutation, permission, activation or spending occurs in this work.
