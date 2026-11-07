@@ -1509,3 +1509,7 @@ Original-session combined local integration: see `production-session-combined-20
 ## 7 November — local period-end cancellation guard
 
 Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed cancellation modes before POST, preserving the settled paid-period-end promise. The source correction passed 277 focused synthetic regressions, with a retained failing-before proof and independent diff review. No provider or hosted action occurred. See [handoff and remaining customer gates](cancellation-period-end-2026-11-07.md) and [source-bound receipt](evidence/cancellation-period-end-2026-11-07.json). Exact-composition aggregate and hosted acceptance remain required.
+
+## 7 November application cohort handoff
+
+Use the isolated production-release-cohort branch, not the historical dirty Desktop checkout. The new application125 artifact is verified locally and preserves existing canonical/history bytes; external fences remain separate databases. Do not use the unchanged hosted117 operator to apply it. Merge reviewed paired session fence/runtime and historical source transitions, then rerun exact combined acceptance. Full hosted signup/payment/AI/use remains unproven. Details: application-release-cohort-2026-11-07.md.

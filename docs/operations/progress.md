@@ -1772,3 +1772,7 @@ Original-session combined local integration: see `production-session-combined-20
 ## 7 November — local period-end cancellation guard
 
 Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed cancellation modes before POST, preserving the settled paid-period-end promise. The source correction passed 277 focused synthetic regressions, with a retained failing-before proof and independent diff review. No provider or hosted action occurred. See [handoff and remaining customer gates](cancellation-period-end-2026-11-07.md) and [source-bound receipt](evidence/cancellation-period-end-2026-11-07.json). Exact-composition aggregate and hosted acceptance remain required.
+
+## 7 November application cohort integration
+
+Created separate exact application125 migration artifact from reviewed canonical/production payloads without changing existing migration history or hosted operators. Combined source0b5d453 passes native per-migration atomic rollback, fresh/upgraded catalogue/ledger equivalence and empty-target restore with verified owned cleanup. Source22 regressions and types pass; independent review resolved preflight lease cleanup. Payment cancellation guard eb818e is merged. Hosted paired setup session fence and final combined acceptance remain pending. See application-release-cohort-2026-11-07.md for exact scope and limitations. No hosted change, remote publication, activation or spending.
