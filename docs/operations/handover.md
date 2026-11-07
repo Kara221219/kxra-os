@@ -1521,3 +1521,8 @@ Cancellation composition follow-up: preserve historical payment/paired manifests
 ## 7 November — paired setup original-session fence
 
 Prepared an additive production SQL payload and owned native verification for stale provider-session denial. Existing request idempotency and authority stay intact; the narrow runtime helper and Auth writer use the paired transaction fence without reversing custom-app lock order. No canonical migration, historical profile, hosted target, payment or activation is changed. See [scope and verification](paired-setup-session-local-2026-11-07.md).
+
+
+## 7 November — application126 incremental command
+
+Use the new `scripts/production-application.mjs` only after its target/schema/Auth prerequisites and deployment authorization are independently established. The old hosted117 initializer is unchanged. Source-derived catalogues do not prove hosted Auth hook/session ordering or customer acceptance. See [operator interface and recovery](production-application-operator-2026-11-07.md).
