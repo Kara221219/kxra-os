@@ -16,6 +16,7 @@ import {
   validateUpgradeProfiles as validateApplicationProfiles,
   inspectApplicationUpgrade as inspectApplication,
   readUpgradeLedger,
+  readUpgradeRuntimeMetadata,
 } from "./production-application-upgrade-core.mjs";
 import {
   pairedCompositionCatalog,
@@ -154,6 +155,7 @@ async function snapshot(db) {
     catalog: cat,
     data: await pairedCompositionData(db, cat),
     ledger: await ledger(db),
+    runtimeRoles: await readUpgradeRuntimeMetadata(db),
   };
 }
 const release = acquireNativeFixtureLease("production-application82-upgrade");
@@ -452,7 +454,28 @@ try {
     );
     assert.deepEqual(await ledger(admin), historicalRows);
     result.stages.push("SUB_MILLISECOND_TIMESTAMP_TAMPERING_REJECTED");
+    const rolePlan = await plan();
+    await admin.query("alter role kxra_app set statement_timeout='3s'");
+    assert.notEqual((await plan()).planSha256, rolePlan.planSha256);
+    await assert.rejects(
+      apply(rolePlan.planSha256),
+      /APPLICATION_UPGRADE_REVIEWED_PLAN_CHANGED/,
+    );
+    await admin.query("alter role kxra_app reset statement_timeout");
+    result.stages.push("ROLE_CONFIGURATION_DRIFT_INVALIDATES_PLAN");
+    if (serverMajor === "17") {
+      const membershipPlan = await plan();
+      await admin.query("grant authenticated to kxra_app with set false");
+      assert.notEqual((await plan()).planSha256, membershipPlan.planSha256);
+      await assert.rejects(
+        apply(membershipPlan.planSha256),
+        /APPLICATION_UPGRADE_REVIEWED_PLAN_CHANGED/,
+      );
+      await admin.query("grant authenticated to kxra_app with set true");
+      result.stages.push("ROLE_SET_OPTION_DRIFT_INVALIDATES_PLAN");
+    }
     for (const [name, mutation] of [
+      ["role_configuration", "alter role kxra_app set statement_timeout='3s'"],
       [
         "timestamp",
         "update public.kxra_schema_migrations set applied_at=applied_at+interval '1 microsecond' where name='0001_core.sql'",
@@ -484,7 +507,7 @@ try {
       };
       await assert.rejects(
         apply(p.planSha256, tampering),
-        /APPLICATION_UPGRADE_(HISTORICAL_LEDGER_CHANGED|POST_MIGRATION_REJECTED)/,
+        /APPLICATION_UPGRADE_(HISTORICAL_LEDGER_CHANGED|POST_MIGRATION_REJECTED|RUNTIME_ROLE_METADATA_CHANGED)/,
       );
       assert.ok(changed);
       assert.deepEqual(await snapshot(admin), before);

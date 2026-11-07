@@ -246,6 +246,27 @@ export async function readUpgradeLedger(db, cohort, serverMajor) {
   };
 }
 
+// Supplement fa49 without changing its reviewed catalog contract. These settings and
+// membership options are observed and hashed, never emitted, provisioned or approved.
+export async function readUpgradeRuntimeMetadata(db) {
+  const roles = (
+    await db.query(
+      "select rolname,rolconnlimit,coalesce(rolconfig,'{}') configuration,extract(epoch from rolvaliduntil)::text valid_until_epoch from pg_roles where starts_with(rolname,'kxra_') or rolname in ('anon','authenticated','supabase_auth_admin') order by rolname collate \"C\"",
+    )
+  ).rows;
+  const memberships = (
+    await db.query(
+      'select pg_get_userbyid(m.roleid) role,member.rolname member,pg_get_userbyid(m.grantor) grantor,m.admin_option,coalesce((to_jsonb(m)->>\'inherit_option\')::boolean,member.rolinherit) inherit_option,coalesce((to_jsonb(m)->>\'set_option\')::boolean,true) set_option from pg_auth_members m join pg_roles member on member.oid=m.member order by pg_get_userbyid(m.roleid) collate "C",member.rolname collate "C",pg_get_userbyid(m.grantor) collate "C"',
+    )
+  ).rows;
+  const databaseSettings = (
+    await db.query(
+      "select case when s.setrole=0 then 'ALL_ROLES' else pg_get_userbyid(s.setrole) end role,case when s.setdatabase=0 then 'ALL_DATABASES' else d.datname end database,s.setconfig configuration from pg_db_role_setting s left join pg_database d on d.oid=s.setdatabase where (s.setdatabase=0 or d.datname=current_database()) and (s.setrole=0 or s.setrole in(select oid from pg_roles where starts_with(rolname,'kxra_') or rolname in('anon','authenticated','supabase_auth_admin'))) order by s.setrole,s.setdatabase",
+    )
+  ).rows;
+  return { roles, memberships, databaseSettings };
+}
+
 async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
   const identity = await assertApplicationIdentity(db);
   const serverMajor = String(
@@ -253,6 +274,8 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
   );
   const ledger = await readUpgradeLedger(db, cohort, serverMajor);
   const catalog = await applicationCatalog(db, ledger.applied);
+  const runtimeMetadata = await readUpgradeRuntimeMetadata(db);
+  const runtimeRoleMetadataSha256 = applicationDigest(runtimeMetadata);
   const sourceCohortSha256 = applicationDigest(
     cohort.migrations.map(({ name, sha256 }) => ({ name, sha256 })),
   );
@@ -285,6 +308,7 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
     ledgerMetadataSha256: ledger.metadataSha256,
     catalogSha256: catalog.sha256,
     targetMetadataSha256: catalog.targetSha256,
+    runtimeRoleMetadataSha256,
     profile: supported[0]?.id || null,
     pending: ledger.pending,
     blockers,
@@ -319,7 +343,7 @@ async function inspectUpgradeState(db, cohort, sourceCommit, profiles) {
       "Actual Auth hook, session and complete customer acceptance",
     ],
   };
-  return { report, ledger };
+  return { report, ledger, runtimeRoleMetadataSha256 };
 }
 export async function inspectApplicationUpgrade(
   db,
@@ -441,6 +465,10 @@ export async function operateApplicationUpgrade(
         check(
           after.ledger.metadataSha256 === before.ledger.metadataSha256,
           "APPLICATION_UPGRADE_LEDGER_METADATA_CHANGED",
+        );
+        check(
+          after.runtimeRoleMetadataSha256 === before.runtimeRoleMetadataSha256,
+          "APPLICATION_UPGRADE_RUNTIME_ROLE_METADATA_CHANGED",
         );
         committing = true;
         await db.query("commit");
