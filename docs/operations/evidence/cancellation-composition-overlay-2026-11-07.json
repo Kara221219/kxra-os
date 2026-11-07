@@ -1,0 +1,19 @@
+{
+  "scope": "Test-only exact-hash overlay; no runtime or hosted changes.",
+  "runtime_commit": "eb818e889ef0b71735c22a05f3bb655f95c3b914",
+  "tests": {
+    "passed": 118,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/kxra-cancellation-composition-final.tap",
+    "log_sha256": "5b5ecdf1ccfca4e0578d818d72662c9e3ea085ba3af8cb32008870864afb5e72"
+  },
+  "source_sha256": {
+    "tests/support/payment-cancellation-transition.ts": "85edb6941fb089574aa5dee16a4f3b8814f3bd827347a608eede9c50ff1a87f3",
+    "tests/payment-cancellation-transition.test.ts": "24a750a097856cc381cae59844ee49e20c21afebd896aedb121b20afb0b901b8",
+    "tests/production-payment-integration.test.ts": "b47345f43ef20f6669d5de86c18fa9630ab04dc74f6b17b6646c9debe1524a5b"
+  },
+  "historical_manifests_unchanged": true,
+  "paired_composition": "Pending coordinated fallback in service worker branch; isolated original paired test still fails its payment-test hash until composed.",
+  "full_canonical_ci": "Not run for this follow-up; exact combined aggregate remains required."
+}
