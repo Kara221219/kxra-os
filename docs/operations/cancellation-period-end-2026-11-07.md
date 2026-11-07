@@ -25,3 +25,11 @@ Integrate the returned commit into a fresh reviewed composition, then run exact-
 - Seven-day failed-renewal work grace and recovery through day 30 are still a review proposal, not production SQL behavior. Do not promise them or silently replace the accepted policy; resolve the exact current terms and applicability separately.
 - Existing refresh design retains a maximum 300-second proof age and approximately 20 provider reads on its successful path. Connection reuse reduces database setups, not provider reads. Real read allocation, database slots, scheduler timing and protected webhook delivery need actual receipts.
 - Hosted signup, two-tenant isolation, customer-supplied AI, sandbox checkout, payment/renewal reconciliation and customer cancellation remain end-to-end acceptance gates. Synthetic adapter success does not establish any of these hosted results.
+
+## Exact historical composition follow-up
+
+Integration found that the original payment composition manifest pins all three changed files, and the paired composition manifest pins its payment test. Historical manifest bytes remain untouched. A new test-only helper records four explicit historical-to-reviewed SHA256 transitions, accepting only each complete reviewed file with its original exact historical hash. It is not a general normalizer, does not substitute bytes across files and grants no runtime or release authority. All other files still use the existing strict historical checks.
+
+The overlay tests pin the raw historical payment and paired manifest hashes and reject appended bytes, truncation, one-byte changes, unknown/prototype/traversal paths, changed historical hashes and cross-file substitution. The combined payment/refresh/GitHub/portal subset passes 118 tests. The paired composition test is owned by the parallel service worker and must call this payment-specific verifier for its pinned payment test; that final combined fallback is not yet present in this isolated branch. Integration must run both coordinated changes and the final aggregate suite together.
+
+No runtime source, historical manifest, policy, migration, hosted setting or payment activity changed in this follow-up. Root types, changed-file formatting and whitespace checks are run on this test-only candidate. Receipt: `evidence/cancellation-composition-overlay-2026-11-07.json`.

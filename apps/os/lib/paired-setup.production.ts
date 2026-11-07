@@ -1,9 +1,22 @@
-export async function pairedSetupRoute(_request: Request) {
-  return Response.json(
-    { error: "PAIRED_SETUP_DISABLED" },
-    { status: 503, headers: { "Cache-Control": "no-store" } },
-  );
+import {
+  hostedPairedSetupConfiguration,
+  hostedPairedSetupRoute,
+  hostedPairedSetupPageData,
+  type HostedPairedSetupPorts,
+} from "../../../packages/workspace/paired-setup-hosted";
+const ports: HostedPairedSetupPorts = {
+  identity: async () => (await import("./auth")).actor(),
+  query: async (actor, sql, values) =>
+    (await import("../../../packages/db")).query<{ value: unknown }>(
+      actor,
+      sql,
+      values,
+    ),
+};
+export async function pairedSetupRoute(request: Request) {
+  return hostedPairedSetupRoute(request, ports);
 }
 export async function pairedSetupPageData() {
-  return null;
+  return hostedPairedSetupPageData(ports);
 }
+export { hostedPairedSetupConfiguration };

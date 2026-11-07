@@ -1513,3 +1513,6 @@ Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed 
 ## 7 November application cohort handoff
 
 Use the isolated production-release-cohort branch, not the historical dirty Desktop checkout. The new application125 artifact is verified locally and preserves existing canonical/history bytes; external fences remain separate databases. Do not use the unchanged hosted117 operator to apply it. Merge reviewed paired session fence/runtime and historical source transitions, then rerun exact combined acceptance. Full hosted signup/payment/AI/use remains unproven. Details: application-release-cohort-2026-11-07.md.
+
+
+Cancellation composition follow-up: preserve historical payment/paired manifests byte for byte and accept only four exact reviewed source transitions through a test-only helper. Negative substitution tests and the 118-case payment/refresh/GitHub/portal subset pass. The paired test fallback is coordinated with the service worker; final combined aggregate acceptance remains pending.

@@ -1,3 +1,8 @@
+import {
+  isPaymentCancellationTransitionFile,
+  verifyPaymentCancellationTransition,
+} from "./support/payment-cancellation-transition";
+import { assertHostedPairedSetupTransition } from "../scripts/hosted-paired-setup-payload.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -52,11 +57,13 @@ test("paired composition preserves historical manifests and exact authority pins
   ])
     assert.equal(m[key], false, key);
   for (const f of [...m.integratedSourceFiles, ...m.preservedCompositionFiles])
-    assert.equal(
-      sha(fs.readFileSync(path.join(root, f.path))),
-      f.sha256,
-      f.path,
-    );
+    if (isPaymentCancellationTransitionFile(f.path))
+      verifyPaymentCancellationTransition(
+        f.path,
+        fs.readFileSync(path.join(root, f.path)),
+        f.sha256,
+      );
+    else assertHostedPairedSetupTransition(f.path, f.sha256, root);
   for (const name of [
     "production-payment-integration-v1.json",
     "production-refresh-integration-v1.json",

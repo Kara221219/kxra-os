@@ -1776,3 +1776,6 @@ Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed 
 ## 7 November application cohort integration
 
 Created separate exact application125 migration artifact from reviewed canonical/production payloads without changing existing migration history or hosted operators. Combined source0b5d453 passes native per-migration atomic rollback, fresh/upgraded catalogue/ledger equivalence and empty-target restore with verified owned cleanup. Source22 regressions and types pass; independent review resolved preflight lease cleanup. Payment cancellation guard eb818e is merged. Hosted paired setup session fence and final combined acceptance remain pending. See application-release-cohort-2026-11-07.md for exact scope and limitations. No hosted change, remote publication, activation or spending.
+
+
+Cancellation composition follow-up: preserve historical payment/paired manifests byte for byte and accept only four exact reviewed source transitions through a test-only helper. Negative substitution tests and the 118-case payment/refresh/GitHub/portal subset pass. The paired test fallback is coordinated with the service worker; final combined aggregate acceptance remains pending.

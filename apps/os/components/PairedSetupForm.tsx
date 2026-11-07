@@ -1,13 +1,19 @@
 "use client";
 import { useRef, useState, type FormEvent } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 import {
-  pairedSetupOptions,
-  pairedSetupReceipt,
-  type pairedSetupCommand,
-} from "../../../packages/workspace/paired-setup-contract";
-type Options = z.infer<typeof pairedSetupOptions>;
-type Receipt = z.infer<typeof pairedSetupReceipt>;
+  pairedSetupPrewriteRejection,
+  PairedSetupPrewriteError,
+} from "../../../packages/workspace/paired-setup-response";
+import type { pairedSetupCommand } from "../../../packages/workspace/paired-setup-contract";
+import {
+  parsePairedSetupOptions,
+  parsePairedSetupReceipt,
+  type PairedSetupOptions,
+  type PairedSetupReceipt,
+} from "../../../packages/workspace/paired-setup-client-contract";
+type Options = PairedSetupOptions;
+type Receipt = PairedSetupReceipt;
 type Command = z.infer<typeof pairedSetupCommand>;
 const explanations: Record<Receipt["reason"], string> = {
   POLICY_READY_SETUP_HELD: "Reviews are current. Setup remains paused.",
@@ -43,13 +49,17 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
         cache: "no-store",
         signal: controller.signal,
       });
-      if (!response.ok) throw Error("UNCONFIRMED");
       value = await response.json();
+      if (!response.ok) {
+        const code = pairedSetupPrewriteRejection(response.status, value);
+        if (code) throw new PairedSetupPrewriteError(code);
+        throw Error("UNCONFIRMED");
+      }
     } finally {
       clearTimeout(timer);
     }
-    if (command.action === "OPTIONS") return pairedSetupOptions.parse(value);
-    const receipt = pairedSetupReceipt.parse(value);
+    if (command.action === "OPTIONS") return parsePairedSetupOptions(value);
+    const receipt = parsePairedSetupReceipt(value);
     if (
       receipt.request_id !== command.request_id ||
       (command.action === "REQUEST" && receipt.room_id !== command.room_id) ||
@@ -95,7 +105,19 @@ export function PairedSetupForm({ initial }: { initial: Options }) {
             ...previous.requests.filter((r) => r.id !== result.request_id),
           ].slice(0, 20),
         }));
-    } catch {
+    } catch (error) {
+      if (error instanceof PairedSetupPrewriteError) {
+        // A rejected STATUS says nothing about an earlier unknown write.
+        if (command.action !== "STATUS") setPending(null);
+        setNotice(
+          error.code === "IDENTITY_REQUIRED"
+            ? "A current session and recent MFA check are required. Sign in again, then reopen this page."
+            : command.action === "STATUS"
+              ? "Status could not be checked. The earlier request remains on hold."
+              : "This request was not submitted. Refresh the page before trying again.",
+        );
+        return;
+      }
       setNotice(
         command.action === "STATUS"
           ? "Status could not be confirmed. Keep this request on hold."
