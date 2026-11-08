@@ -910,3 +910,27 @@ test("missing underlying broker and throwing trusted clock fail with redacted co
     /^Error: GITHUB_SHARED_RATE_UNAVAILABLE$/,
   );
 });
+
+test("completion port cannot mutate the preserved execution rate or reservation", async () => {
+  const f = setup(),
+    e = f.make();
+  await e.execute({ kind: "REPOSITORY" });
+  await e.execute({ kind: "ISSUE" });
+  f.state.completeHook = async (reservation, receipt) => {
+    assert.ok(Object.isFrozen(reservation));
+    assert.ok(Object.isFrozen(receipt.rate));
+    assert.throws(() => {
+      reservation.epoch = 99;
+    });
+    receipt.rate.reason = "RATE_CONTROL_INVALID";
+    return f.completion(reservation);
+  };
+  const result = await e.execute(f.comment());
+  assert.equal(result.execution?.outcome, "ACCEPTED");
+  assert.deepEqual(result.execution?.rate, {
+    stop: false,
+    not_before: null,
+    reason: "NONE",
+  });
+  assert.equal(result.coordination.reason, "COMPLETION_UNCONFIRMED");
+});

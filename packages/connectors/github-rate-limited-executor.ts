@@ -233,8 +233,10 @@ export class GithubRateLimitedExecutor {
     let execution: GithubExecutionResult | null = null;
     try {
       try {
-        reservation = githubRateReservation.parse(
-          await this.bounded((s) => this.#rate.reserve(subject, s), signal),
+        reservation = Object.freeze(
+          githubRateReservation.parse(
+            await this.bounded((s) => this.#rate.reserve(subject, s), signal),
+          ),
         );
         if (
           Object.entries(subject).some(
@@ -286,7 +288,7 @@ export class GithubRateLimitedExecutor {
             this.#rate.complete(
               reservation,
               {
-                rate: execution!.rate,
+                rate: Object.freeze({ ...execution!.rate }),
                 settlement: ["UNCERTAIN", "UNAVAILABLE"].includes(
                   execution!.outcome,
                 )
