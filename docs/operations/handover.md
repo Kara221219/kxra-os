@@ -1536,3 +1536,7 @@ The separate application 82 upgrade path is designed for the actual historical p
 ## 7 November — source-only publication guard candidate
 
 Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).
+
+## 8 November — GitHub identity observation handoff
+
+The independent observer adds read-only provider identity verification code without changing routes, SQL, manifests or activation. Keep its `IDENTITY_OBSERVATION_ONLY` evidence separate from execution authority and token-scope/custody proof. Run the new exact-head loopback TLS verifier before integration acceptance. See [interfaces, limitations and remaining production work](github-installation-observer-2026-11-08.md). No real account, credential, provider call or deployment was used.
