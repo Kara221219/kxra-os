@@ -1807,3 +1807,7 @@ Implemented a default-off, unwired real HTTPS identity observation boundary cove
 ## 8 November — shared GitHub installation rate gate
 
 Added an isolated durable rate store, concrete adapter and default-off executor wrapper. Shared admission is serial, quotas persist across workers, unknown provider outcomes hold the realm, and rate-receipt failures preserve actual external outcome evidence. Private reads are rechecked after coordination. No historical release or activation bytes changed. See [scope, proof and remaining gates](github-rate-coordinator-2026-11-08.md); native acceptance and final integration remain separately tracked.
+
+## 8 November — existing GitHub token provenance broker
+
+Implemented the existing-token resolution seam used by the executor and observer, with retained issuance metadata checks, exact token/custody-context binding and current-record rechecks after custody waits. Local tests use real in-memory AES-GCM and compose existing consumers; no issuance/refresh/provisioning path was added. See [scope, proof limits and missing real adapters](github-existing-lease-broker-2026-11-08.md). No provider, credential or hosted action occurred.

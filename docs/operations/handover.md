@@ -1544,3 +1544,7 @@ The independent observer adds read-only provider identity verification code with
 ## 8 November — GitHub shared rate coordination
 
 The new review-only rate SQL belongs in a separate durable failure/restore domain and seeds no activation. Use the explicit adapter and default-off wrapper only after canonical realm/workload/custody and recovery decisions are accepted. Observer quota classes remain separate unfinished wiring. See [interfaces, verification and restore limitations](github-rate-coordinator-2026-11-08.md). No real credential, provider, hosted, payment or deployment action occurred.
+
+## 8 November — existing-token broker handoff
+
+The new default-off broker can supply the existing executor/observer lease contract, but it relies on separately accepted issuer, current-authority-store and custody adapters. Hash consistency is not provider-origin proof. Keep the raw returned lease backend-only and retain all existing execution/rate/recovery gates. See [interfaces, tests and required real ownership decisions](github-existing-lease-broker-2026-11-08.md). Historical SQL/release/runtime bytes are unchanged.
