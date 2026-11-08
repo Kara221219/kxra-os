@@ -1,36 +1,7 @@
 import Link from "next/link";
 import type { Actor } from "../lib/auth";
-const ownerNav = [
-  ["Dashboard", ""],
-  ["Getting started", "start"],
-  ["Workspace", "workspace"],
-  ["Operating Model", "operating-model"],
-  ["Improvement Loop", "improvements"],
-  ["Portfolio", "portfolio"],
-  ["Idea Inbox", "ideas"],
-  ["Projects", "projects"],
-  ["Tasks", "tasks"],
-  ["Business Tools", "tools"],
-  ["Custom Projects", "custom-projects"],
-  ["Support & Privacy", "support"],
-  ["Research", "sources"],
-  ["Experiments", "experiments"],
-  ["Decisions", "decisions"],
-  ["Risks", "risks"],
-  ["Finance", "finance"],
-  ["Partners", "partners"],
-  ["WhatsApp", "whatsapp"],
-  ["AI Team", "agents"],
-  ["Skills", "skills"],
-  ["Routines", "routines"],
-  ["Run History", "runs"],
-  ["Work Log", "work-log"],
-  ["Approvals", "approvals"],
-  ["Knowledge", "knowledge"],
-  ["Assets", "files"],
-  ["Admin", "admin"],
-  ["Eligibility reviews", "review-operations"],
-];
+import OwnerNavigation from "./OwnerNavigation";
+import styles from "./OwnerOperations.module.css";
 const partnerNav = [
   ["Home", ""],
   ["Getting started", "start"],
@@ -58,44 +29,52 @@ export default function Shell({
   children: React.ReactNode;
   local: boolean;
 }) {
-  const links = actor.role === "owner" ? ownerNav : partnerNav;
+  const isOwner =
+    actor.security_role === "KXRA_OWNER" && actor.organisation_kind === "KXRA";
+  const links = partnerNav;
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isOwner ? ` ${styles.shell}` : ""}`}>
       <a href="#content" className="skip">
         Skip navigation
       </a>
       <aside>
         <Link className="wordmark" href="/os">
-          KXRA<span>OS</span>
+          KXRA<span>{isOwner ? "GROUP" : "OS"}</span>
         </Link>
         <p className="nav-label">
-          {actor.role === "owner" ? "Group workspace" : "Partner workspace"}
+          {isOwner ? "Owner operations" : "Partner workspace"}
         </p>
-        <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map(([name, path]) => (
-            <Link
-              key={name}
-              aria-current={active === path ? "page" : undefined}
-              href={"/os" + (path ? "/" + path : "")}
-            >
-              {name}
-            </Link>
-          ))}
-        </nav>
-        <details className="mobile-menu">
-          <summary>Menu</summary>
-          <nav aria-label="Mobile navigation">
-            {links.map(([name, path]) => (
-              <Link
-                key={name}
-                aria-current={active === path ? "page" : undefined}
-                href={"/os" + (path ? "/" + path : "")}
-              >
-                {name}
-              </Link>
-            ))}
-          </nav>
-        </details>
+        {isOwner ? (
+          <OwnerNavigation active={active} />
+        ) : (
+          <>
+            <nav className="desktop-nav" aria-label="Main navigation">
+              {links.map(([name, path]) => (
+                <Link
+                  key={name}
+                  aria-current={active === path ? "page" : undefined}
+                  href={"/os" + (path ? "/" + path : "")}
+                >
+                  {name}
+                </Link>
+              ))}
+            </nav>
+            <details className="mobile-menu">
+              <summary>Menu</summary>
+              <nav aria-label="Mobile navigation">
+                {links.map(([name, path]) => (
+                  <Link
+                    key={name}
+                    aria-current={active === path ? "page" : undefined}
+                    href={"/os" + (path ? "/" + path : "")}
+                  >
+                    {name}
+                  </Link>
+                ))}
+              </nav>
+            </details>
+          </>
+        )}
         <div className="identity">
           <Link href="/select-organisation" title="Change organisation">
             {actor.organisation_name}
@@ -124,7 +103,7 @@ export default function Shell({
           </div>
         )}
         <main id="content">
-          {active === "" && (
+          {active === "" && !isOwner && (
             <p className="notice">
               <Link href="/os/start">
                 Getting started: check recorded access and open your workspace ↗

@@ -9,6 +9,24 @@ async function fixtureLogin(page: Page, fixture: string) {
 }
 
 async function navigate(page: Page, name: string) {
+  const owner = page.getByRole("navigation", { name: "Owner navigation" });
+  if (await owner.count()) {
+    const toggle = owner.getByRole("button", {
+      name: "Open navigation",
+      exact: true,
+    });
+    if (await toggle.isVisible()) await toggle.click();
+    const link = owner.getByRole("link", {
+      name,
+      exact: true,
+      includeHidden: true,
+    });
+    const group = link.locator("xpath=ancestor::details");
+    if ((await group.count()) && (await group.getAttribute("open")) === null)
+      await group.locator("summary").click();
+    await link.click();
+    return;
+  }
   const mobileMenu = page.locator(".mobile-menu > summary");
   const desktopLink = page
     .getByRole("navigation", { name: "Main navigation" })

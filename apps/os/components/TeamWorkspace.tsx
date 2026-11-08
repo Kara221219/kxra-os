@@ -30,10 +30,16 @@ import type {
 type Detail = Awaited<ReturnType<typeof teamDetail>>;
 type Project = { id: string; name: string };
 import { ActionForm } from "./TeamActionForm";
-import { RoomKnowledge } from "./RoomKnowledge";
-import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
 import dynamic from "next/dynamic";
+const RoomKnowledge = dynamic(
+  () => import("./RoomKnowledge").then((module) => module.RoomKnowledge),
+  { loading: () => <p role="status">Loading room knowledge…</p> },
+);
+const RoomMemory = dynamic(
+  () => import("./RoomMemory").then((module) => module.RoomMemory),
+  { loading: () => <p role="status">Loading room memory…</p> },
+);
 const ConnectionManager = dynamic(
   () => import("./ModelConnections").then((m) => m.ModelConnections),
   { loading: () => <p>Loading model connections…</p> },

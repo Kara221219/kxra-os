@@ -627,7 +627,9 @@ test("Milestone 1 account surfaces reflow and retain keyboard navigation", async
     ).toBe(true);
     if (width <= 390) {
       await expect(page.locator(".desktop-nav")).toBeHidden();
-      await expect(page.locator(".mobile-menu")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Open navigation", exact: true }),
+      ).toBeVisible();
     }
     await page.screenshot({
       path: testInfo.outputPath(`owner-partners-${width}.png`),
@@ -655,9 +657,12 @@ test("Milestone 1 account surfaces reflow and retain keyboard navigation", async
   ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#content$/);
-  await page.getByText("Menu", { exact: true }).focus();
+  const ownerMenu = page.getByRole("button", {
+    name: "Open navigation",
+    exact: true,
+  });
+  await expect(ownerMenu).toBeEnabled();
+  await ownerMenu.focus();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("navigation", { name: "Mobile navigation" }),
-  ).toBeVisible();
+  await expect(page.locator("#owner-navigation-links")).toBeVisible();
 });

@@ -831,7 +831,7 @@ export function WorkflowTaskCards({
   return (
     <>
       {tasks.map((task) => (
-        <article className="workflow-task" key={task.id}>
+        <article className="workflow-task" key={task.id} id={`task-${task.id}`}>
           <strong>{task.title}</strong>
           <p>{task.acceptance_criteria}</p>
           <p className="subtle">

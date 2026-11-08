@@ -1,4 +1,5 @@
 // Offline source/migration cohort verifier. Does not connect or install anything.
+import { assertOwnerOverviewSourceTransition } from "./owner-overview-source-transition.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -60,6 +61,7 @@ export function assertSessionAttestationSourceTransition(
   baseSha,
   root = repo,
 ) {
+  if (assertOwnerOverviewSourceTransition(file, baseSha, root)) return;
   const actual = sha(fs.readFileSync(path.join(root, file)));
   if (actual === baseSha) return;
   const { spec } = sessionAttestationPayload(root);

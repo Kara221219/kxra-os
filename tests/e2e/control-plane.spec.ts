@@ -20,6 +20,24 @@ async function fixtureLogin(page: Page, fixture: string) {
 }
 
 async function navigate(page: Page, name: string) {
+  const owner = page.getByRole("navigation", { name: "Owner navigation" });
+  if (await owner.count()) {
+    const toggle = owner.getByRole("button", {
+      name: "Open navigation",
+      exact: true,
+    });
+    if (await toggle.isVisible()) await toggle.click();
+    const link = owner.getByRole("link", {
+      name,
+      exact: true,
+      includeHidden: true,
+    });
+    const group = link.locator("xpath=ancestor::details");
+    if ((await group.count()) && (await group.getAttribute("open")) === null)
+      await group.locator("summary").click();
+    await link.click();
+    return;
+  }
   const mobileMenu = page.locator(".mobile-menu > summary");
   const desktopLink = page
     .getByRole("navigation", { name: "Main navigation" })
@@ -114,6 +132,11 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
   await fixtureLogin(page, "owner");
   await expect(
     page.getByRole("heading", { name: "Your operating overview" }),
+  ).toBeVisible();
+  await expect(page.locator(".owner-metric")).toHaveCount(4);
+  await navigate(page, "Venture overview");
+  await expect(
+    page.getByRole("heading", { name: "Venture operating overview" }),
   ).toBeVisible();
   await expect(page.locator(".control-section")).toHaveCount(4);
   for (const section of [

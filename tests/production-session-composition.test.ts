@@ -1,3 +1,4 @@
+import { assertOwnerOverviewSourceTransition } from "../scripts/owner-overview-source-transition.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -20,11 +21,15 @@ test("Original-session production composition pins complete runtime and unchange
   ])
     assert.equal(m[k], false, k);
   for (const f of [...m.integratedSourceFiles, ...m.preservedCompositionFiles])
-    assert.equal(
-      crypto.createHash("sha256").update(fs.readFileSync(f.path)).digest("hex"),
-      f.sha256,
-      f.path,
-    );
+    if (!assertOwnerOverviewSourceTransition(f.path, f.sha256))
+      assert.equal(
+        crypto
+          .createHash("sha256")
+          .update(fs.readFileSync(f.path))
+          .digest("hex"),
+        f.sha256,
+        f.path,
+      );
   const { spec } = sessionAttestationPayload();
   assert.equal(spec.tables.length, 1);
   assert.equal(spec.functions.length, 8);
