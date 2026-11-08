@@ -1794,3 +1794,8 @@ Prepared a separate target-bound incremental117–126 migration command, preserv
 ## 7 November — actual 82→126 migration preparation
 
 Added a separate 82–126 upgrade path after read-only production reconciliation identified 82 genuine migrations. The path preserves enabled ledger RLS, complete historical provenance/microsecond timestamps and metadata, and reports residual service_role grants as explicit apply blockers rather than repairing them. All 44 migration transactions and reconciliation paths are covered by the new owned local verifier. See [upgrade scope and remaining gates](production-application82-upgrade-2026-11-07.md). No hosted mutation, permission, activation or spending occurs in this work.
+
+
+## 7 November — source-only publication guard candidate
+
+Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).

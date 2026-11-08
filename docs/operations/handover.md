@@ -1531,3 +1531,8 @@ Use the new `scripts/production-application.mjs` only after its target/schema/Au
 ## 7 November — prefix 82 upgrade handoff
 
 The separate application 82 upgrade path is designed for the actual historical prefix. The old 117 initializer and reviewed 117–126 operator remain unchanged. Ledger RLS stays enabled, and the current service_role ledger grants deliberately block apply. See [interface, evidence requirements and recovery](production-application82-upgrade-2026-11-07.md). Hosted privilege remediation, backup/recovery, actual Auth/customer acceptance and zero-overage approval remain separate gates.
+
+
+## 7 November — source-only publication guard candidate
+
+Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).
