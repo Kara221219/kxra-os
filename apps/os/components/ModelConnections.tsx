@@ -4,6 +4,8 @@ import type { ModelConnection } from "../lib/team-workspace";
 import type { CustomerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
 import { ActionForm } from "./TeamActionForm";
 import { AiConnectionSetup } from "./AiConnectionSetup";
+import { ProviderIdentity, ProviderIdentityNotice } from "./ProviderIdentity";
+import { providerIdentity } from "../lib/provider-identity";
 export function ModelConnections({
   connections,
   local,
@@ -33,6 +35,9 @@ export function ModelConnections({
           <strong>
             {c.name} · {c.model}
           </strong>
+          <p>
+            <ProviderIdentity provider={c.provider} />
+          </p>
           <ActionForm
             path={"/connections/" + c.id}
             title={c.enabled ? "Disconnect model" : "Enable model"}
@@ -42,6 +47,7 @@ export function ModelConnections({
           </ActionForm>
         </div>
       ))}
+      <ProviderIdentityNotice />
       {!local ? (
         <AiConnectionSetup
           aiPolicy={aiPolicy}
@@ -72,7 +78,9 @@ export function ModelConnections({
                 ? ["FIXTURE"]
                 : ["OPENAI", "ANTHROPIC", "GOOGLE", "OPENROUTER", "COMPATIBLE"]
               ).map((p) => (
-                <option key={p}>{p}</option>
+                <option key={p} value={p}>
+                  {providerIdentity(p).label}
+                </option>
               ))}
             </select>
           </label>

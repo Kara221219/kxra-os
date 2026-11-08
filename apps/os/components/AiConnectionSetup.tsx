@@ -1,5 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ProviderIdentity } from "./ProviderIdentity";
+import { providerIdentity } from "../lib/provider-identity";
 import type { CustomerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
 import {
   aiSetupProviders,
@@ -158,7 +160,7 @@ export function AiConnectionSetup({
             Review reference: <code>{status.admission_id}</code>
           </p>
           <p>
-            {status.provider} · {status.model}
+            <ProviderIdentity provider={status.provider} /> · {status.model}
             {status.endpoint_id ? " · " + status.endpoint_id : ""}
           </p>
           <p>{reasonText[status.reason]}</p>
@@ -275,7 +277,9 @@ export function AiConnectionSetup({
               disabled={Boolean(status)}
             >
               {aiSetupProviders.map((p) => (
-                <option key={p}>{p}</option>
+                <option key={p} value={p}>
+                  {providerIdentity(p).label}
+                </option>
               ))}
             </select>
           </label>
