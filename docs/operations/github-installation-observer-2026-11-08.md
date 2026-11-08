@@ -21,20 +21,26 @@ The result is deliberately `IDENTITY_OBSERVATION_ONLY`, not an execution-authori
 - The separate installation broker must attest the exact binding/reference/version/App/installation, one repository and Metadata:read / Issues:read lease. A successful repository read does **not** prove the token is an installation token or establish its true scope, origin or custody. Those remain independently required broker/issuance evidence.
 - Selected mode plus repository membership does **not** prove this is the installation's only selected repository. No such claim is emitted.
 - Canonical case is matched exactly, consistently with the existing execution binding. Rename/transfer/case drift fails closed and needs rebinding rather than silently rewriting an approved subject.
-- Only publicly observable App bots are supported by the unauthenticated bot read. Inaccessible enterprise-managed bots fail closed; a404 is unavailable evidence, not proof the identity does not exist. No fallback credential is minted or forwarded.
-- Each call pins a public IPv4 address after rejecting empty, private or mixed DNS answers. TLS/SNI/certificate checking, HTTPS443, no pooling, no redirects/proxies,16KiB headers,256KiB body,512 chunks, complete response/length, JSON identity encoding and fatal UTF-8 are enforced. A whole observation has a10-second monotonic deadline. Rate signals stop the window. There are no sleeps or automatic retries.
+- Only publicly observable App bots are supported by the unauthenticated bot read. Inaccessible enterprise-managed bots fail closed; a 404 is unavailable evidence, not proof the identity does not exist. No fallback credential is minted or forwarded.
+- Each call pins a public IPv4 address after rejecting empty, private or mixed DNS answers. TLS/SNI/certificate checking, HTTPS 443, no pooling, no redirects/proxies, 16 KiB headers, 256 KiB body, 512 chunks, complete response/length, JSON identity encoding and fatal UTF-8 are enforced. A whole observation has a 10-second monotonic deadline. Rate signals stop the window. There are no sleeps or automatic retries.
 - Object-local bounds do not implement shared provider rate coordination. Across reconstructed workers, global App/account rate state remains an activation prerequisite.
 - Multiple sequential provider reads are historical observations, not an atomic snapshot or a durable guarantee that GitHub permissions cannot change afterward. The existing dispatch-time authority and provider checks remain necessary.
 
 ## Local verification
 
-Run the109 synthetic observer tests and existing transport regressions with:
+Run the 109 synthetic observer tests and existing transport regressions with:
 
 `node --import tsx --test tests/github-installation-observer.test.ts tests/github-production-transport.test.ts`
 
-The synthetic suite covers exact URL/auth separation, numeric identity and permission drift,18 authority checkpoints, JWT/lease mismatch, expiry/disable, DNS/HTTP/encoding/body bounds, late promise completion, cancellation at all five endpoints, private bot404, no partial evidence, no secret leakage and no repeat observation. These are fake provider responses and credentials.
+The synthetic suite covers exact URL/auth separation, numeric identity and permission drift, 18 authority checkpoints, JWT/lease mismatch, expiry/disable, DNS/HTTP/encoding/body bounds, late promise completion, cancellation at all five endpoints, private bot 404, no partial evidence, no secret leakage and no repeat observation. These are fake provider responses and credentials.
 
 `node scripts/verify-github-installation-observer.mjs` requires clean committed source, clones its exact head, acquires the shared native-fixture lease and runs the synthetic suite plus an owned loopback-only TLS fixture. It tests the five successful GETs, no repeated window, withdrawal, redirect/rate/byte/UTF-8/header limits, response loss, hanging response deadline and untrusted certificate refusal. Synthetic key/certificate files are removed, server sockets closed and the owned port checked closed before lease release. Its receipt explicitly does not claim real DNS, GitHub identity, token provenance or hosted acceptance. No acceptance receipt should be treated as final until the wrapper passes for the exact integrated head.
+
+### Verified local results
+
+The initial implementation commit `622fd5ba975adc717acc620436858eea7a8d3ff4` passed independent source review, 109 observer tests, 26 existing transport tests, 15 related historical composition/outbox tests, full lint/type/format checks and the secret scan. The independent native run passed all 11 phases and verified clean socket/port/key/certificate cleanup. Exact source receipts are retained outside this handoff and must identify the tested commit.
+
+An attempted raw `npm test` run without the generated application/database fixture was **not a full acceptance pass**: 1,350 tests passed and 107 fixture-dependent tests failed. Its log is preserved. The full repository harness and final integrated release acceptance remain separate; the observer-specific proof does not replace them.
 
 ## Remaining full-product gates
 
