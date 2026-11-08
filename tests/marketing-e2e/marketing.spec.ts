@@ -54,6 +54,36 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
   ).toBe(true);
 });
 
+for (const { route, label } of [
+  { route: "/pricing", label: "Discuss your workspace" },
+  { route: "/brand-studio", label: "Talk to KXRA" },
+  { route: "/video-studio", label: "Talk to KXRA" },
+]) {
+  test(`${route} enquiry reaches the existing access form and preserves history`, async ({
+    page,
+  }) => {
+    await page.goto(route);
+    if (route !== "/pricing")
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        "This tool has been retired.",
+      );
+    const enquiry = page.getByRole("link", { name: label, exact: true });
+    await expect(enquiry).toHaveAttribute("href", "/#request-access");
+    await enquiry.click();
+    await expect(page).toHaveURL(/\/#request-access$/);
+    const destination = page.locator("#request-access");
+    await expect(destination).toBeInViewport();
+    await expect(destination.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(destination.getByLabel("Work email")).toBeVisible();
+    await expect(destination.locator('input[name="kind"]')).toHaveValue(
+      "ENQUIRY",
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${route}$`));
+    await expect(enquiry).toBeVisible();
+  });
+}
+
 test("customer-document pack is complete and records exact owner approval", async ({
   page,
 }) => {

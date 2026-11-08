@@ -8,7 +8,7 @@ export default function RetiredTool() {
         Explore our current services or contact us about previous work.
       </PageHero>
       <section className="section">
-        <Link className="button" href="/#contact">
+        <Link className="button" href="/#request-access">
           Talk to KXRA
         </Link>
       </section>

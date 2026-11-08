@@ -37,7 +37,7 @@ export default function Pricing() {
             Any proposal must define scope, exclusions, assumptions, milestones,
             payment gates and an exact price before work begins.
           </p>
-          <Link className="button" href="/#contact">
+          <Link className="button" href="/#request-access">
             Discuss your workspace
           </Link>
         </article>

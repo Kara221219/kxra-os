@@ -1811,3 +1811,8 @@ Added an isolated durable rate store, concrete adapter and default-off executor 
 ## 8 November — existing GitHub token provenance broker
 
 Implemented the existing-token resolution seam used by the executor and observer, with retained issuance metadata checks, exact token/custody-context binding and current-record rechecks after custody waits. Local tests use real in-memory AES-GCM and compose existing consumers; no issuance/refresh/provisioning path was added. See [scope, proof limits and missing real adapters](github-existing-lease-broker-2026-11-08.md). No provider, credential or hosted action occurred.
+
+
+## 2026-11-08 — local marketing conversion navigation
+
+Fixed the three stale homepage contact anchors on pricing and the two retired-tool pages in an isolated candidate based on `8eb644e`; no design, retirement text, commercial policy, public snapshot or activation setting changed. A browser regression reproduced the original defect. Final optimized marketing build, 8/8 desktop/mobile route-and-CTA checks, 11/11 focused HTML/timing checks, root typecheck, formatting, publication/boundary guards, CSP/SRI and the unchanged 140 KiB marketing client budget passed. Owned loopback server stopped; no forms, providers, publishing, payments or deployments were used. Full-platform/hosted commercial acceptance remains separate. See the 8 November handover entry for exact scope and evidence.
