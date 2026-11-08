@@ -1540,3 +1540,7 @@ Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc3
 ## 8 November — GitHub identity observation handoff
 
 The independent observer adds read-only provider identity verification code without changing routes, SQL, manifests or activation. Keep its `IDENTITY_OBSERVATION_ONLY` evidence separate from execution authority and token-scope/custody proof. Run the new exact-head loopback TLS verifier before integration acceptance. See [interfaces, limitations and remaining production work](github-installation-observer-2026-11-08.md). No real account, credential, provider call or deployment was used.
+
+## 8 November — GitHub shared rate coordination
+
+The new review-only rate SQL belongs in a separate durable failure/restore domain and seeds no activation. Use the explicit adapter and default-off wrapper only after canonical realm/workload/custody and recovery decisions are accepted. Observer quota classes remain separate unfinished wiring. See [interfaces, verification and restore limitations](github-rate-coordinator-2026-11-08.md). No real credential, provider, hosted, payment or deployment action occurred.

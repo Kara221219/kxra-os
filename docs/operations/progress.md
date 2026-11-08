@@ -1803,3 +1803,7 @@ Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc3
 ## 8 November — GitHub installation identity observer
 
 Implemented a default-off, unwired real HTTPS identity observation boundary covering App, installation/account, repository membership, numeric repository and bot identity. It uses existing trusted leases only, requires purpose-specific current authority, and returns redacted historical evidence. Local synthetic tests, exact-source native TLS verification and independent review pass; scope and evidence are described in [scope and verification](github-installation-observer-2026-11-08.md). No hosted/provider action or credential creation occurred. Custody, token provenance, global rate coordination and full live activation remain open.
+
+## 8 November — shared GitHub installation rate gate
+
+Added an isolated durable rate store, concrete adapter and default-off executor wrapper. Shared admission is serial, quotas persist across workers, unknown provider outcomes hold the realm, and rate-receipt failures preserve actual external outcome evidence. Private reads are rechecked after coordination. No historical release or activation bytes changed. See [scope, proof and remaining gates](github-rate-coordinator-2026-11-08.md); native acceptance and final integration remain separately tracked.
