@@ -3,9 +3,10 @@ import { z } from "zod";
 import type { Principal } from "../db";
 
 /**
- * PREPARED, NOT WIRED: customer workspaces are organisations, never rooms.
+ * DEFAULT-OFF METADATA ONLY: customer workspaces are organisations, never rooms.
  * This new cross-tenant read surface needs separate SQL/ACL/authority review.
- * No migration, grant, route, environment default, or lifecycle mutation ships here.
+ * No migration, grant, environment default, or lifecycle mutation ships here.
+ * The server-only UI adapter reuses actor/query; live SQL activation remains separate.
  */
 export const customerDirectoryVersion = 1 as const;
 export const customerDirectoryMaximumPageSize = 50;
@@ -273,7 +274,7 @@ function readBookmark(token: string | undefined, scope: string, now: number) {
 }
 
 /**
- * Backend-only read, deliberately unused by routes/UI. Default off, no fallback
+ * Backend-only read used by the owner metadata page. Default off, no fallback
  * if the separately reviewed SQL surface is absent, denied, or malformed.
  * Bookmarks are UNSIGNED: scope/age checks catch accidental inconsistent reuse,
  * not tampering. Callers can construct a different valid bookmark. A bookmark

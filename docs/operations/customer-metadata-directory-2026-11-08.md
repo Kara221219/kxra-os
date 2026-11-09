@@ -2,6 +2,10 @@
 
 Base: `7f1d1112f81a35d304a7e8810d4f68a5e4b2572c`. The isolated TypeScript contract is `78b5cc1b48dd480a4ba854613bbcee9610e06d11`. This is local preparation for the owner's administration dashboard, not a connected customer-management feature or launch acceptance.
 
+## 9 November local UI follow-up
+
+A default-off server-rendered route is now prepared at `/os/customer-directory`; the earlier “no route/UI” statements below describe the original proposal, not the current route tree. See [the UI handoff](customer-directory-ui-2026-11-09.md) for exact current scope and unrun verification. No SQL installation, grants or hosted activation were added.
+
 ## Scope and evidence
 
 The owner asked to operate the website and manage customers from the owner login, without specifying customer fields or lifecycle mutation actions. This slice therefore prepares a minimal read-only customer workspace directory. It does not infer permission to inspect private room contents, impersonate customers, change accounts, suspend memberships, change billing, delete data or broaden existing tenant RLS.

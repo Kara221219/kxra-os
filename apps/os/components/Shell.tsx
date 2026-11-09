@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Actor } from "../lib/auth";
 import OwnerNavigation from "./OwnerNavigation";
 import styles from "./OwnerOperations.module.css";
-const partnerNav = [
+import { workspacePresentation } from "../../../packages/workspace/workspace-presentation";
+const memberNav = [
   ["Home", ""],
   ["Getting started", "start"],
   ["Workspace", "workspace"],
@@ -31,7 +32,8 @@ export default function Shell({
 }) {
   const isOwner =
     actor.security_role === "KXRA_OWNER" && actor.organisation_kind === "KXRA";
-  const links = partnerNav;
+  const links = memberNav;
+  const presentation = workspacePresentation(actor);
   return (
     <div className={`app-shell${isOwner ? ` ${styles.shell}` : ""}`}>
       <a href="#content" className="skip">
@@ -41,9 +43,7 @@ export default function Shell({
         <Link className="wordmark" href="/os">
           KXRA<span>{isOwner ? "GROUP" : "OS"}</span>
         </Link>
-        <p className="nav-label">
-          {isOwner ? "Owner operations" : "Partner workspace"}
-        </p>
+        <p className="nav-label">{presentation.label}</p>
         {isOwner ? (
           <OwnerNavigation active={active} />
         ) : (
@@ -90,10 +90,7 @@ export default function Shell({
       <div className="main-area">
         <header className="topbar">
           <span>
-            KXRA GROUP <span className="slash">/</span>{" "}
-            {actor.role === "owner"
-              ? "Operating overview"
-              : "Assigned projects"}
+            KXRA GROUP <span className="slash">/</span> {presentation.heading}
           </span>
           <Link href="/os/ask">Ask KXRA ↗</Link>
         </header>

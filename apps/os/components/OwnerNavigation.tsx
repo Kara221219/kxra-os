@@ -7,6 +7,7 @@ export default function OwnerNavigation({ active }: { active: string }) {
     return items.map(([name, path]) => (
       <Link
         key={path}
+        prefetch={path === "customer-directory" ? false : undefined}
         href={"/os" + (path ? "/" + path : "")}
         aria-current={active === path ? "page" : undefined}
       >

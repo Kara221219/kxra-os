@@ -1,3 +1,7 @@
+## 9 November — default-off customer metadata UI prepared
+
+Prepared factual selected-membership workspace labels and a server-rendered owner-only metadata directory in an isolated branch from `ec6d97e`. Reuses existing verified actor/authenticated-query composition; no auth/db/SQL/grant/marketing/payment change. Default-off and denied/unavailable states never show invented counts. Focused 46 tests, 3 verified-session tests, root types and formatting pass; independent source review found no blocking defect. Real framework HTTP/browser verification, build budgets and aggregate acceptance remain pending. [Scope and authority limitations](customer-directory-ui-2026-11-09.md).
+
 ## 3 November — dedicated custom-app restart/restore accepted
 
 Closed the explicitly remaining graceful-restart and fresh-database restore gap for the five installed custom-app tables. Receipt `.runtime/cr-e82522/receipt.json` is PASS: exact data/catalog preservation, schema pins, immutable record history, publication/rollback state, idempotent interrupted-save recovery, tenant isolation and Chromium rendering after restart and restore. Source/target retained stopped; shared lease released. Final guard11/11 and existing custom-app aggregate16/16 pass. No canonical checks, application code or proposal SQL were changed. [Exact scope, evidence and portable integration handoff](custom-app-recovery-local-2026-11-03.md). Same-cluster fresh-database recovery is proved; crash, independent-cluster/role, hosted and combined-lane recovery remain separate gaps.

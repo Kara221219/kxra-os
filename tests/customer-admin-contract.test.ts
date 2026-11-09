@@ -727,7 +727,7 @@ test("preparation explicitly disclaims authority and has no DB or network implem
     ),
     "utf8",
   );
-  assert.match(source, /PREPARED, NOT WIRED/);
+  assert.match(source, /DEFAULT-OFF METADATA ONLY/);
   assert.match(
     source,
     /Test doubles exercise adapter behavior, NOT PostgreSQL authorization/,

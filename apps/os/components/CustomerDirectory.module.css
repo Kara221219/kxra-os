@@ -1,0 +1,31 @@
+.directory {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.directory form,
+.directory nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 24px;
+}
+.directory caption {
+  text-align: left;
+  margin-block: 16px;
+  color: var(--muted);
+}
+.directory th[scope="row"] {
+  font-size: 14px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 650px) {
+  .directory th[scope="row"] {
+    padding: 0;
+    border: 0;
+  }
+}

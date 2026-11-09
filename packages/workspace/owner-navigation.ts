@@ -12,6 +12,7 @@ export const ownerNavigation: readonly OwnerNavigationGroup[] = [
     links: [
       ["Overview", ""],
       ["Website enquiries", "enquiries"],
+      ["Customer directory", "customer-directory"],
       ["Workspace", "workspace"],
       ["Tasks", "tasks"],
       ["Approvals", "approvals"],
