@@ -1612,3 +1612,8 @@ Preserve the failed `e0878ed` canonical receipt: two expectations still describe
 ## 9 November — owner enquiry inbox candidate prepared
 
 An isolated successor from frozen `3c6907e` adds complete read-only enquiry pagination, recorded status/type filters and detail return context using existing owner SELECT authority. Dedicated exact and invalid-segment routes preserve the historical catchall and all release manifests. Native enquiry entry/navigation and a route-local concealed history boundary reuse existing lifecycle protections; the legacy Ideas preview is unchanged and outside this claim. No marketing, payment, SQL, grant or publication change. Focused pure tests and TypeScript pass; independent review and source-bound native/browser, build/budgets and canonical CI remain pending. [Scope and verification limits](owner-enquiries-2026-11-09.md).
+
+
+## 9 November — customer billing interruption recovery
+
+Isolated from accepted 3c6907e, exact matching CUSTOMER/CHECKOUT status can now release the stale pending UI latch after a lost reservation response. Refresh shares a serialized 35-second total operation budget; unmount aborts and fences late checkout/portal navigation. No backend, authority, policy, provider or flag change. Local 146 focused tests, 22 desktop/mobile component scenarios, 16 composition checks, types and all builds/budgets pass; independent review is clean. Full composed/hosted acceptance remains separate. See [scope, verification and remaining gates](billing-entry-recovery-2026-11-09.md).
