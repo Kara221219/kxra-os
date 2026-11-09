@@ -1,3 +1,4 @@
+import { customerWorkspace } from "../../../../../packages/workspace/workspace-presentation";
 import ownerOverviewStyles from "../../../components/OwnerOverview.module.css";
 import { customAppsIdentityAllowed } from "../../../../../packages/custom-apps/access";
 import { hostedRoomOperations } from "../../../../../packages/workspace/hosted-operations";
@@ -260,6 +261,10 @@ export default async function Workspace({
   const { segments = [] } = await params;
   const section = segments[0] || "";
   const queryParameters = await searchParams;
+  if (!section && customerWorkspace(a))
+    redirect(
+      queryParameters.tour === "1" ? "/os/workspace?tour=1" : "/os/workspace",
+    );
   const filter = queryParameters.project;
   let content: React.ReactNode;
   const projects = await listProjects(a);
@@ -631,6 +636,24 @@ export default async function Workspace({
           customApps={customAppsIdentityAllowed(a.source, localMode())}
           hostedOperations={hostedRoomOperations()}
           candidates={candidates}
+          accessNavigation={
+            <p className="notice">
+              <Link href="/os/start">Check workspace access</Link>
+              {" · "}
+              <Link href="/os/support">Support &amp; privacy</Link>
+            </p>
+          }
+          roomCreationUnavailable={
+            <section className="panel">
+              <h2>Room creation needs project access</h2>
+              <p>
+                You have no writable projects in this organisation. You can
+                still open rooms shared with you. Ask your workspace
+                administrator for contributor access, or{" "}
+                <Link href="/os/support">request help from support</Link>.
+              </p>
+            </section>
+          }
         />
       );
     } else if (section === "workrooms") {
@@ -707,9 +730,13 @@ export default async function Workspace({
             sub="Start with your project and the work you need to move forward."
           />
           <div className="workroom-grid">
+            <Link className="panel workroom-card" href="/os/workspace">
+              <h2>Team workspace</h2>
+              <p>Open shared rooms, tasks and your model connections.</p>
+            </Link>
             <Link className="panel workroom-card" href="/os/workrooms">
-              <h2>Project workrooms</h2>
-              <p>Discuss work and prepare a scoped handoff.</p>
+              <h2>Earlier project discussions</h2>
+              <p>Return to existing project conversations and handoffs.</p>
             </Link>
             <Link className="panel workroom-card" href="/os/ask">
               <h2>Ask KXRA</h2>

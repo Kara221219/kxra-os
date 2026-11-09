@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { onboardingPresentation } from "../../../../packages/workspace/onboarding-presentation";
 import { redirect } from "next/navigation";
 import OnboardingStepForm from "../../components/OnboardingStepForm";
 import { account, HttpError } from "../../lib/auth";
@@ -16,6 +17,11 @@ export default async function Onboarding({
     a = await account();
   } catch (error) {
     if (error instanceof HttpError && error.status === 401) redirect("/login");
+    if (
+      error instanceof HttpError &&
+      error.code === "TENANT_SELECTION_REQUIRED"
+    )
+      redirect("/select-organisation");
     return <Unavailable />;
   }
   if (a.account_state === "ACTIVE") redirect("/os");
@@ -88,25 +94,16 @@ export default async function Onboarding({
       ? requested
       : progress[0].current_step;
 
+  const presentation = onboardingPresentation(a);
   return (
     <main className="onboarding-page">
       <aside className="onboarding-side">
         <Link href="/" className="wordmark">
           KXRA<span>OS</span>
         </Link>
-        <p>Partner onboarding</p>
+        <p>{presentation.label}</p>
         <ol aria-label="Onboarding progress">
-          {[
-            "Welcome",
-            "Profile",
-            "Security",
-            "Project Access",
-            "Working With KXRA",
-            "WhatsApp",
-            "Preferences",
-            "Access Review",
-            "Complete",
-          ].map((title, index) => {
+          {presentation.titles.map((title, index) => {
             const number = index + 1;
             const available = number <= progress[0].current_step;
             return (
@@ -145,6 +142,8 @@ export default async function Onboarding({
           />
         </div>
         <OnboardingStepForm
+          key={step}
+          presentation={presentation}
           step={step}
           currentStep={progress[0].current_step}
           completedSteps={progress[0].completed_steps}

@@ -72,7 +72,7 @@ export default async function Login({
         {registration ? (
           <Link href="/signup">Create a customer workspace</Link>
         ) : (
-          "KXRA has no public registration. New partners join through the secure link in an owner-issued invitation."
+          "Self-service registration is currently unavailable. If you have an invitation, use its secure link to join."
         )}
       </p>
     </main>

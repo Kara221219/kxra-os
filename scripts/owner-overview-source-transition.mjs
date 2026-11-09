@@ -1,5 +1,6 @@
 // Exact reviewed UI source transition only. No release or runtime authority.
 import fs from "node:fs";
+import { assertCustomerFirstUseSourceTransition } from "./customer-first-use-source-transition.mjs";
 import path from "node:path";
 import crypto from "node:crypto";
 import assert from "node:assert/strict";
@@ -24,15 +25,18 @@ export function assertOwnerOverviewSourceTransition(
   bytes,
 ) {
   if (!ownerOverviewTransitionPaths.includes(file)) return false;
-  const record = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        root,
-        "packages/release/owner-overview-source-transition-v1.json",
-      ),
-      "utf8",
+  const predecessorBytes = fs.readFileSync(
+    path.join(
+      root,
+      "packages/release/owner-overview-source-transition-v1.json",
     ),
   );
+  assert.equal(
+    crypto.createHash("sha256").update(predecessorBytes).digest("hex"),
+    "cf1d8351a6d3bb3d65b847255e3f94677020dc7ca18499b92025a59adb40bd24",
+    "OWNER_UI_PREDECESSOR_MANIFEST_CHANGED",
+  );
+  const record = JSON.parse(predecessorBytes.toString("utf8"));
   assert.equal(
     record.classification,
     "LOCAL_OWNER_UI_SOURCE_TRANSITION_NOT_RELEASE_AUTHORIZATION",
@@ -66,6 +70,11 @@ export function assertOwnerOverviewSourceTransition(
     .createHash("sha256")
     .update(bytes || fs.readFileSync(path.join(root, file)))
     .digest("hex");
+  if (
+    actual !== transition.sha256 &&
+    assertCustomerFirstUseSourceTransition(file, transition.sha256, root, bytes)
+  )
+    return true;
   assert.equal(actual, transition.sha256, "UNREVIEWED_OWNER_UI_SOURCE");
   return true;
 }

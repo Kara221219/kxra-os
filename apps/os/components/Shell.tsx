@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { Actor } from "../lib/auth";
 import OwnerNavigation from "./OwnerNavigation";
 import styles from "./OwnerOperations.module.css";
-import { workspacePresentation } from "../../../packages/workspace/workspace-presentation";
+import {
+  customerWorkspace,
+  workspacePresentation,
+} from "../../../packages/workspace/workspace-presentation";
 const memberNav = [
   ["Home", ""],
   ["Getting started", "start"],
@@ -35,7 +38,9 @@ export default function Shell({
   const isOwner =
     actor.security_role === "KXRA_OWNER" && actor.organisation_kind === "KXRA";
   const NavigationLink = documentNavigation ? "a" : Link;
-  const links = memberNav;
+  const links = customerWorkspace(actor)
+    ? memberNav.filter(([, path]) => path !== "whatsapp")
+    : memberNav;
   const presentation = workspacePresentation(actor);
   return (
     <div className={`app-shell${isOwner ? ` ${styles.shell}` : ""}`}>

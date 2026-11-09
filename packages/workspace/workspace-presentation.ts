@@ -24,3 +24,14 @@ export function workspacePresentation(context: {
     heading: "Your workspace",
   };
 }
+
+/** Navigation and copy only, never a write or billing permission. */
+export function customerWorkspace(context: {
+  organisation_kind: string;
+  relationship_type: string;
+}) {
+  return (
+    context.organisation_kind === "CUSTOMER" &&
+    ["CUSTOMER", "CLIENT"].includes(context.relationship_type)
+  );
+}

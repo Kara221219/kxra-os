@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import type { OnboardingPresentation } from "../../../packages/workspace/onboarding-presentation";
+import React, { useEffect, useState } from "react";
 
 type ProjectAccess = {
   project_id: string;
@@ -35,19 +36,8 @@ type Preferences = {
   display_density: "comfortable" | "compact";
 };
 
-const titles = [
-  "Welcome to KXRA",
-  "Personal Profile",
-  "Security",
-  "Project Access",
-  "Working With KXRA",
-  "WhatsApp",
-  "Preferences",
-  "Access Review",
-  "Complete",
-];
-
 export default function OnboardingStepForm({
+  presentation,
   step,
   currentStep,
   completedSteps,
@@ -57,6 +47,7 @@ export default function OnboardingStepForm({
   preferences,
   recipientHint,
 }: {
+  presentation: OnboardingPresentation;
   step: number;
   currentStep: number;
   completedSteps: number[];
@@ -149,16 +140,12 @@ export default function OnboardingStepForm({
     <form className="onboarding-form" onSubmit={submit}>
       <header>
         <p className="eyebrow">Step {step} of 9</p>
-        <h1>{titles[step - 1]}</h1>
+        <h1>{presentation.titles[step - 1]}</h1>
       </header>
 
       {step === 1 && (
         <>
-          <p>
-            KXRA is an AI-native venture group that turns evidence into
-            controlled experiments and decisions. Your access is limited to the
-            projects below.
-          </p>
+          <p>{presentation.welcome}</p>
           <ProjectCards projects={projects} compact />
           <Check
             name="acknowledged"
@@ -234,9 +221,9 @@ export default function OnboardingStepForm({
             </div>
           </dl>
           <p>
-            Keep your password private. KXRA never stores it. Partner MFA can be
-            managed from Security after onboarding; owner MFA is mandatory for
-            controlled actions.
+            Keep your password private. KXRA never stores it. Manage MFA from
+            Security after onboarding. Additional verification is required for
+            protected actions.
           </p>
           <Check
             name="security_acknowledged"
@@ -250,23 +237,16 @@ export default function OnboardingStepForm({
           <ProjectCards projects={projects} />
           <Check
             name="access_acknowledged"
-            label="I have reviewed my read-only project roles and permissions."
+            label="I have reviewed my project roles and permissions."
           />
         </>
       )}
 
       {step === 5 && (
         <>
-          <p>Your partner workspace includes these scoped destinations:</p>
+          <p>{presentation.destinations}</p>
           <ul className="feature-list">
-            {[
-              "My Projects — assigned ventures only",
-              "Ask KXRA — evidence retrieval within one selected project",
-              "Ideas — your submissions and explicit shares",
-              "Tasks and Files — authorized project work",
-              "Activity — your permitted operating history",
-              "WhatsApp — optional paired access when enabled",
-            ].map((item) => (
+            {presentation.features.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
@@ -303,7 +283,8 @@ export default function OnboardingStepForm({
             <span>
               <strong>Connect later</strong>
               <small>
-                The pairing gateway remains disabled in this milestone.
+                WhatsApp is currently unavailable. This records your preference
+                only; it does not connect an account.
               </small>
             </span>
           </label>
@@ -384,10 +365,7 @@ export default function OnboardingStepForm({
         <>
           <p>Your profile, project access and preferences are ready.</p>
           <ProjectCards projects={projects} compact />
-          <Check
-            name="complete"
-            label="Complete onboarding and open my KXRA dashboard."
-          />
+          <Check name="complete" label={presentation.completion} />
         </>
       )}
 

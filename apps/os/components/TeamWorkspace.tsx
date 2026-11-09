@@ -68,7 +68,11 @@ export function TeamWorkspace({
   isOrgOwner = false,
   knowledge,
   aiPolicy,
+  accessNavigation,
+  roomCreationUnavailable,
 }: {
+  accessNavigation: React.ReactNode;
+  roomCreationUnavailable: React.ReactNode;
   rooms: TeamRoom[];
   projects: Project[];
   connections: ModelConnection[];
@@ -234,6 +238,7 @@ export function TeamWorkspace({
           <Link href={`/os/custom-apps/${room.id}`}>Custom apps</Link>
         ) : null}
       </div>
+      {accessNavigation}
       {local && (
         <p className="notice">
           Local demonstration: synthetic models only. No provider is billed and
@@ -267,7 +272,9 @@ export function TeamWorkspace({
                 {r.access === "PRIVATE" ? "◈" : "#"} {r.name}
               </Link>
             ))}
-          {!rooms.length && <p>Create your first room to start.</p>}
+          {!rooms.length && projects.length > 0 && (
+            <p>Create your first room to start.</p>
+          )}
           {!!rooms.length &&
             !rooms.some((r) =>
               r.name.toLowerCase().includes(roomQuery.toLowerCase()),
@@ -279,7 +286,9 @@ export function TeamWorkspace({
                 </button>
               </p>
             )}
-          <Link href="/os/workspace">＋ Create a room</Link>
+          {projects.length > 0 && (
+            <Link href="/os/workspace">＋ Create a room</Link>
+          )}
           <hr />
           <Link href="/os/projects">Projects</Link>
           <Link href="/os/files">Files & knowledge</Link>
@@ -293,9 +302,9 @@ export function TeamWorkspace({
                 <article className="panel">
                   <h2>One place for shared work</h2>
                   <p>
-                    Create a room for a project or a private team conversation.
-                    Add an agent with a defined role, choose its model, then ask
-                    it to work on a message or thread.
+                    Open a shared room, or create one when you have contributor
+                    access to a project. Model availability depends on your
+                    connection and current workspace access.
                   </p>
                 </article>
                 <article className="panel">
@@ -307,54 +316,58 @@ export function TeamWorkspace({
                   </p>
                 </article>
               </div>
-              <ActionForm
-                path=""
-                title="Create room"
-                navigate
-                build={(d) => ({
-                  name: d.get("name"),
-                  project_id: d.get("project_id"),
-                  guidelines: d.get("guidelines"),
-                  access: d.get("access"),
-                })}
-              >
-                <label>
-                  Room name
-                  <input
-                    name="name"
-                    maxLength={120}
-                    required
-                    placeholder="Customer success"
-                  />
-                </label>
-                <label>
-                  Project
-                  <select name="project_id" aria-label="Project" required>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
+              {projects.length > 0 ? (
+                <ActionForm
+                  path=""
+                  title="Create room"
+                  navigate
+                  build={(d) => ({
+                    name: d.get("name"),
+                    project_id: d.get("project_id"),
+                    guidelines: d.get("guidelines"),
+                    access: d.get("access"),
+                  })}
+                >
+                  <label>
+                    Room name
+                    <input
+                      name="name"
+                      maxLength={120}
+                      required
+                      placeholder="Customer success"
+                    />
+                  </label>
+                  <label>
+                    Project
+                    <select name="project_id" aria-label="Project" required>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Who can see this?
+                    <select name="access">
+                      <option value="PRIVATE">Only invited room members</option>
+                      <option value="PROJECT">
+                        Everyone with access to this project
                       </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Who can see this?
-                  <select name="access">
-                    <option value="PRIVATE">Only invited room members</option>
-                    <option value="PROJECT">
-                      Everyone with access to this project
-                    </option>
-                  </select>
-                </label>
-                <label>
-                  Room guidelines
-                  <textarea
-                    name="guidelines"
-                    maxLength={4096}
-                    placeholder="Purpose, constraints and the decisions this room owns"
-                  />
-                </label>
-              </ActionForm>
+                    </select>
+                  </label>
+                  <label>
+                    Room guidelines
+                    <textarea
+                      name="guidelines"
+                      maxLength={4096}
+                      placeholder="Purpose, constraints and the decisions this room owns"
+                    />
+                  </label>
+                </ActionForm>
+              ) : (
+                roomCreationUnavailable
+              )}
               <ConnectionManager
                 connections={connections}
                 local={local}
