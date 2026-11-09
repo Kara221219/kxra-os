@@ -19,20 +19,25 @@ function date(value: string) {
 function Items({ rows, empty }: { rows: OwnerOverviewItem[]; empty: string }) {
   return rows.length ? (
     <ul className="owner-item-list">
-      {rows.map((item) => (
-        <li key={item.href}>
-          <Link href={item.href}>
-            <span>
-              <strong>{item.title}</strong>
-              <small>{item.detail}</small>
-            </span>
-            <span className="owner-item-date">
-              <time dateTime={item.occurred_at}>{date(item.occurred_at)}</time>
-              <span aria-hidden="true">↗</span>
-            </span>
-          </Link>
-        </li>
-      ))}
+      {rows.map((item) => {
+        const ItemLink = item.href.startsWith("/os/enquiries?") ? "a" : Link;
+        return (
+          <li key={item.href}>
+            <ItemLink href={item.href}>
+              <span>
+                <strong>{item.title}</strong>
+                <small>{item.detail}</small>
+              </span>
+              <span className="owner-item-date">
+                <time dateTime={item.occurred_at}>
+                  {date(item.occurred_at)}
+                </time>
+                <span aria-hidden="true">↗</span>
+              </span>
+            </ItemLink>
+          </li>
+        );
+      })}
     </ul>
   ) : (
     <p className="owner-empty">{empty}</p>
@@ -101,16 +106,23 @@ export default function OwnerOverview({
         className="owner-metrics"
         aria-label="Selected organisation activity"
       >
-        {metrics.map((metric) => (
-          <Link key={metric.label} className="owner-metric" href={metric.href}>
-            <span>
-              {metric.label}
-              <span aria-hidden="true">↗</span>
-            </span>
-            <strong>{metric.value.toLocaleString("en-GB")}</strong>
-            <small>{metric.note}</small>
-          </Link>
-        ))}
+        {metrics.map((metric) => {
+          const MetricLink = metric.href === "/os/enquiries" ? "a" : Link;
+          return (
+            <MetricLink
+              key={metric.label}
+              className="owner-metric"
+              href={metric.href}
+            >
+              <span>
+                {metric.label}
+                <span aria-hidden="true">↗</span>
+              </span>
+              <strong>{metric.value.toLocaleString("en-GB")}</strong>
+              <small>{metric.note}</small>
+            </MetricLink>
+          );
+        })}
       </section>
       <div className="owner-overview-grid">
         <section
@@ -122,7 +134,7 @@ export default function OwnerOverview({
               <p className="eyebrow">WEBSITE INBOX</p>
               <h2 id="owner-enquiries-title">Start the next conversation.</h2>
             </div>
-            <Link href="/os/enquiries">Open inbox ↗</Link>
+            <a href="/os/enquiries">Open inbox ↗</a>
           </header>
           <p>
             Latest five enquiries awaiting review. Check the sender and scope in
@@ -240,7 +252,7 @@ export function OwnerOverviewUnavailable({
         aria-label="Available operating pages"
       >
         <div>
-          <Link href="/os/enquiries">Website enquiries ↗</Link>
+          <a href="/os/enquiries">Website enquiries ↗</a>
           <Link href="/os/tasks">Tasks ↗</Link>
           <Link href="/os/approvals">Approvals ↗</Link>
           <Link href="/os/workspace">Workspace ↗</Link>

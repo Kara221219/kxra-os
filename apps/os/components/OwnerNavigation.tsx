@@ -13,8 +13,8 @@ export default function OwnerNavigation({
     return items.map(([name, path]) => {
       // Enter/leave this authority-sensitive surface with a new document, not
       // a reusable Next RSC history entry. All other owner routes stay unchanged.
-      const NavigationLink =
-        documentNavigation || path === "customer-directory" ? "a" : Link;
+      const nativeEntry = documentNavigation || path === "customer-directory";
+      const NavigationLink = nativeEntry || path === "enquiries" ? "a" : Link;
       return (
         <NavigationLink
           key={path}

@@ -1866,3 +1866,8 @@ The focused `6ee60db` run stopped on a browser-test teardown FK violation after 
 ## 9 November — first-use legacy test expectations aligned
 
 Canonical `e0878ed` stopped with two obsolete browser assertions: the tools card name and selected CUSTOMER home URL. Counts were 41 passed, two failed, one scoped interruption, one skipped and 79 not run; later isolation/legal substeps were not reached. A test-only successor asserts the actual workspace entry and navigates to Projects before retaining the original project-boundary checks. Retired-tool, forged-selection, PARTNER return and exact legal assertions remain unchanged. Other legacy expectations were audited by actual actor/context. Full lint and 87 offline tests pass; no heavy retry has run. [Exact scope and retained evidence](customer-first-use-2026-11-09.md#test-expectation-alignment-after-the-e0878ed-canonical-stop).
+
+
+## 9 November — owner enquiry inbox candidate prepared
+
+An isolated successor from frozen `3c6907e` adds complete read-only enquiry pagination, recorded status/type filters and detail return context using existing owner SELECT authority. Dedicated exact and invalid-segment routes preserve the historical catchall and all release manifests. Native enquiry entry/navigation and a route-local concealed history boundary reuse existing lifecycle protections; the legacy Ideas preview is unchanged and outside this claim. No marketing, payment, SQL, grant or publication change. Focused pure tests and TypeScript pass; independent review and source-bound native/browser, build/budgets and canonical CI remain pending. [Scope and verification limits](owner-enquiries-2026-11-09.md).
