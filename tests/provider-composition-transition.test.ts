@@ -28,7 +28,7 @@ test("offline composition mapping is frozen and contains only the two exact requ
       historical:
         "4224467ce6833e5129b22188b0c29659a3c667b38256b7431e9c627486690316",
       successor:
-        "0bec576342da26b62bb992404e03f21db5103803394b8f95db3f060b73f65afd",
+        "47cc0ec9e28f9c722de10511838f8e280e55de65f5e67e5245c90c2e0aa6831e",
     },
     "scripts/hosted-paired-setup-payload.mjs": {
       historical:

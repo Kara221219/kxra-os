@@ -4,6 +4,7 @@ import {
   providerBoundaryTransition,
 } from "./provider-boundary-transition";
 import crypto from "node:crypto";
+import path from "node:path";
 
 /** Historical manifests stay immutable. Exactly one reviewed default-off
  * fixture flag may follow their complete, byte-identical environment file.
@@ -18,6 +19,13 @@ export function historicalCompositionBytes(
   bytes: Buffer,
   expected: string,
 ) {
+  assert.ok(
+    typeof file === "string" &&
+      !path.isAbsolute(file) &&
+      !file.includes("\\") &&
+      file.split("/").every((part) => part && part !== "." && part !== ".."),
+    "NONCANONICAL_POLICY_SOURCE_PATH",
+  );
   // Check the immutable provider predecessor before the general unchanged case.
   // A rewritten manifest cannot authorize another provider source through it.
   if (file === providerBoundaryTransition.path)

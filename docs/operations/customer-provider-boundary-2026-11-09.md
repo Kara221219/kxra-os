@@ -34,3 +34,7 @@ Independent source review and exact frozen-source verification remain separate f
 - [Anthropic thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) and [server tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/server-tools), separating final text, thinking/redacted blocks and actual server actions.
 - [OpenAI Chat Completions response reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), including stop/refusal/action fields and nullable tool-call metadata.
 - [OpenRouter reasoning](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens) and [OpenAPI schema](https://openrouter.ai/openapi.json), including final content, supported reasoning variants, nullable placeholders and the unsupported `reasoning.server_tool_call` action variant.
+
+## Offline path-proof successor
+
+Frozen `844300c` passed the 35-test cohort, but independent review then found that a direct alias passed to the shared historical-byte helper could evade the named provider transition using a self-consistent replacement hash. Its isolated successor rejects noncanonical relative paths before any generic unchanged-hash branch. Regressions cover dot, duplicate slash, parent, absolute and backslash paths with both historical and rewritten expected hashes. The provider runtime and immutable manifests remain byte-identical to `844300c`; exact final-head evidence and reviewer results are recorded outside source.

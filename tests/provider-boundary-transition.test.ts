@@ -107,6 +107,10 @@ test("provider source transition rejects altered old/new bytes, activation, appe
     "packages/workspace/other.ts",
     "./" + transition.path,
     "../" + transition.path,
+    transition.path.replace("/", "//"),
+    transition.path.replace("/", "/../"),
+    "/" + transition.path,
+    transition.path.replace("/", "\\"),
   ]) {
     assert.throws(() =>
       historicalProviderBoundaryBytes(
@@ -118,5 +122,15 @@ test("provider source transition rejects altered old/new bytes, activation, appe
     assert.throws(() =>
       historicalCompositionBytes(path, successor, transition.historicalSha256),
     );
+    // A self-consistent replacement pin must not route an alias through the
+    // generic unchanged-hash case before the exact provider transition.
+    if (path !== ".env.example" && path !== "packages/workspace/other.ts") {
+      assert.throws(() =>
+        historicalCompositionBytes(path, successor, sha(successor)),
+      );
+      assert.throws(() =>
+        historicalProviderBoundaryBytes(path, successor, sha(successor)),
+      );
+    }
   }
 });
