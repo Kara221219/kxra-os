@@ -12,6 +12,7 @@ import {
   assertGeneratedNextEnv,
   safeFailure,
   directoryNavigationKind,
+  joinedProofAcceptance,
 } from "../scripts/customer-directory-joined-ownership.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -296,4 +297,49 @@ test("failure and navigation diagnostics retain useful location without raw secr
     fragment: false,
   });
   assert.ok(!JSON.stringify(kind).includes("private"));
+});
+
+test("shutdown-only denial or browser failure fails final acceptance while safe cleanup can release", () => {
+  const beforeShutdown = {
+    candidatePassed: true,
+    cleanupClean: true,
+    asynchronousFailure: null,
+    networkDenialObserved: false,
+    browserDenied: 0,
+    pageErrors: [],
+  };
+  assert.equal(joinedProofAcceptance(beforeShutdown), true);
+  for (const late of [
+    { networkDenialObserved: true },
+    { browserDenied: 1 },
+    { pageErrors: ["Error"] },
+    { asynchronousFailure: "ASYNC_DATABASE_CLIENT_FAILURE" },
+  ]) {
+    const final = { ...beforeShutdown, ...late };
+    const receipt = {
+      passed: joinedProofAcceptance(final),
+      networkDenialObserved: final.networkDenialObserved,
+      browserDenied: final.browserDenied,
+      pageErrors: final.pageErrors,
+      cleanup: { clean: final.cleanupClean, leaseReleased: final.cleanupClean },
+    };
+    const saved = JSON.parse(JSON.stringify(receipt));
+    assert.equal(saved.passed, false);
+    assert.equal(saved.cleanup.clean, true);
+    assert.equal(saved.cleanup.leaseReleased, true);
+  }
+  assert.equal(
+    joinedProofAcceptance({ ...beforeShutdown, cleanupClean: false }),
+    false,
+  );
+  const source = fs.readFileSync(
+    path.join(root, "scripts/verify-customer-directory-joined.mjs"),
+    "utf8",
+  );
+  assert.ok(
+    source.indexOf("report.passed = joinedProofAcceptance(") >
+      source.indexOf("report.networkDenialObserved = fs.existsSync("),
+  );
+  assert.ok(source.includes("if (cleanup.clean && release)"));
+  assert.ok(!source.includes("if (report.passed && release)"));
 });

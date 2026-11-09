@@ -26,6 +26,7 @@ import {
   assertGeneratedNextEnv,
   safeFailure,
   directoryNavigationKind,
+  joinedProofAcceptance,
 } from "./customer-directory-joined-ownership.mjs";
 
 assert.deepEqual(
@@ -136,6 +137,8 @@ const write = (name, value) =>
 write("receipt.json", report);
 let cancelled = null;
 let asynchronousFailure;
+let browserDenied = 0;
+const pageErrors = [];
 const onInt = () => {
   cancelled = "SIGINT";
 };
@@ -761,7 +764,6 @@ try {
     args: ["--disable-background-networking"],
   });
   const context = await browser.newContext({ serviceWorkers: "block" });
-  let browserDenied = 0;
   await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
     if (
@@ -799,7 +801,6 @@ try {
   const page = await context.newPage();
   page.setDefaultTimeout(30000);
   page.setDefaultNavigationTimeout(90000);
-  const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.name));
   const rows = () => page.locator("tbody tr");
   report.browserRequests = [];
@@ -1311,7 +1312,16 @@ try {
   report.cleanup = cleanup;
   report.cancelled = cancelled;
   report.asynchronousFailure = asynchronousFailure?.message || null;
-  report.passed = report.passed && cleanup.clean && !asynchronousFailure;
+  report.browserDenied = browserDenied;
+  report.pageErrors = [...pageErrors];
+  report.passed = joinedProofAcceptance({
+    candidatePassed: report.passed,
+    cleanupClean: cleanup.clean,
+    asynchronousFailure,
+    networkDenialObserved: report.networkDenialObserved,
+    browserDenied,
+    pageErrors,
+  });
   write("receipt.json", report);
   write("cleanup.json", cleanup);
   if (cleanup.clean && release) {

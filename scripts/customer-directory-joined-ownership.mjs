@@ -102,3 +102,22 @@ export function directoryNavigationKind(value) {
     fragment: Boolean(url.hash),
   };
 }
+
+export function joinedProofAcceptance({
+  candidatePassed,
+  cleanupClean,
+  asynchronousFailure,
+  networkDenialObserved,
+  browserDenied,
+  pageErrors,
+}) {
+  return (
+    candidatePassed === true &&
+    cleanupClean === true &&
+    !asynchronousFailure &&
+    networkDenialObserved === false &&
+    browserDenied === 0 &&
+    Array.isArray(pageErrors) &&
+    pageErrors.length === 0
+  );
+}
