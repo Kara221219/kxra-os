@@ -1617,3 +1617,10 @@ An isolated successor from frozen `3c6907e` adds complete read-only enquiry pagi
 ## 9 November — customer billing interruption recovery
 
 Isolated from accepted 3c6907e, exact matching CUSTOMER/CHECKOUT status can now release the stale pending UI latch after a lost reservation response. Refresh shares a serialized 35-second total operation budget; unmount aborts and fences late checkout/portal navigation. No backend, authority, policy, provider or flag change. Local 146 focused tests, 22 desktop/mobile component scenarios, 16 composition checks, types and all builds/budgets pass; independent review is clean. Full composed/hosted acceptance remains separate. See [scope, verification and remaining gates](billing-entry-recovery-2026-11-09.md).
+
+
+## 9 November — enquiry proof startup classification successor
+
+The first combined `941c629` focused run stopped before readiness, native tests or browser tests with `POSTGRES_PROCESS_MISSING`. Its retained receipt shows initdb/single-user ancestry followed by a valid server; the PostgreSQL log reports normal readiness and shutdown. The initial PID-file bytes were not retained, so a negative standalone PID versus a partial/disappearing initialization file cannot be distinguished conclusively. Cleanup, source verification and lease release were confirmed. Preserve that failed candidate and receipt.
+
+This harness-only successor classifies absent, standalone and incomplete startup records as bounded not-ready before any process lookup. Complete positive records must match the expected directory, epoch, port, Unix socket and ready state, then survive a coherent second read and unchanged strict process identity. A missing or replaced positive server still fails closed; no absolute-value PID conversion or blind retry is used. Safe PID/state/reason observations are retained. Application, billing, SQL, release manifests and runtime authority are unchanged. Pure startup/ownership/inbox tests pass; independent source review and a newly coordinated full-tree-bound run remain required.

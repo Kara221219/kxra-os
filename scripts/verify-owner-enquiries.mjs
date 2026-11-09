@@ -6,6 +6,11 @@ import path from "node:path";
 import os from "node:os";
 import net from "node:net";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
+import {
+  classifyPostgresStartup,
+  postgresStartupObservation,
+  captureCoherentPostgresStartup,
+} from "./postgres-startup-candidate.mjs";
 import { acquireNativeFixtureLease } from "./native-fixture-lease.mjs";
 import {
   processBirth,
@@ -13,7 +18,6 @@ import {
 } from "./owner-enquiry-proof-ownership.mjs";
 import { postgresBin } from "./postgres-bin.mjs";
 import {
-  capturePostgresOwnership,
   assertPostgresOwnership,
   assertGeneratedNextEnv,
 } from "./customer-directory-joined-ownership.mjs";
@@ -302,21 +306,53 @@ async function stop(record) {
     clean: true,
   };
 }
+function readPostgresPidFile(file) {
+  try {
+    return fs.readFileSync(file, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
 function capturePg() {
+  if (postgresOwnership) return;
   const file = path.join(runtime, "postgres/postmaster.pid");
-  if (!postgresOwnership && fs.existsSync(file)) {
-    const lines = fs.readFileSync(file, "utf8").split("\n");
-    postgresOwnership = capturePostgresOwnership(
-      lines,
-      pgIdentity(Number(lines[0])),
-      {
-        dir: path.join(runtime, "postgres"),
-        socket: path.join(runtime, "socket"),
-        port: pgPort,
-      },
+  const expected = {
+    dir: path.join(runtime, "postgres"),
+    socket: path.join(runtime, "socket"),
+    port: pgPort,
+  };
+  const first = readPostgresPidFile(file);
+  const observation = {
+    at: new Date().toISOString(),
+    ...postgresStartupObservation(first),
+  };
+  (report.postgresStartupObservations ||= []).push(observation);
+  try {
+    const candidate = classifyPostgresStartup(first, expected);
+    observation.reason = candidate.reason;
+    observation.kind = candidate.kind;
+    save();
+    if (candidate.kind === "NOT_READY") return;
+    // Only a complete ready server record can trigger a process lookup.
+    // Any missing/replaced process or changed second read fails this attempt.
+    const firstProcess = pgIdentity(candidate.pid);
+    const second = readPostgresPidFile(file);
+    const secondProcess = pgIdentity(candidate.pid);
+    postgresOwnership = captureCoherentPostgresStartup(
+      first,
+      second,
+      firstProcess,
+      secondProcess,
+      expected,
     );
     report.postgresOwnership = postgresOwnership;
     save();
+  } catch (error) {
+    observation.reason = String(error.message).split("\n")[0];
+    observation.kind = "REJECTED";
+    save();
+    throw error;
   }
 }
 async function run(name, args, timeout = 12 * 60_000) {
