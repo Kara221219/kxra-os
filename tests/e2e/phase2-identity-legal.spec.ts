@@ -95,7 +95,7 @@ test("AT-31/32 browser tenant selection and exact legal gate fail closed", async
       .click();
     await expect(page).toHaveURL(/\/os\/projects$/);
     await expect(
-      page.getByRole("heading", { name: "Your project workspace" }),
+      page.getByRole("heading", { name: "Projects", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(`BROWSER-${suffix}`, { exact: true }).first(),
