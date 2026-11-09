@@ -57,10 +57,12 @@ test("owner finds older enquiries, keeps filters through detail/history and reco
       page.getByRole("link", { name: "Next page", exact: true }).click(),
     );
     await visibleInbox(page);
-    await expect(page.getByLabel("Status", { exact: true })).toHaveValue(
-      "SPAM",
-    );
-    await expect(page.getByLabel("Submission type")).toHaveValue("CONTACT");
+    await expect(
+      page.getByRole("combobox", { name: "Status", exact: true }),
+    ).toHaveValue("SPAM");
+    await expect(
+      page.getByRole("combobox", { name: "Submission type", exact: true }),
+    ).toHaveValue("CONTACT");
     const old = f.ids[60];
     await documentAction(page, "/os/enquiries", () =>
       page
@@ -88,7 +90,7 @@ test("owner finds older enquiries, keeps filters through detail/history and reco
     await page.reload();
     await visibleInbox(page);
     await page
-      .getByLabel("Status", { exact: true })
+      .getByRole("combobox", { name: "Status", exact: true })
       .selectOption("AWAITING_REVIEW");
     await page.getByRole("button", { name: "Apply filters" }).click();
     await visibleInbox(page);
@@ -126,7 +128,15 @@ test("owner finds older enquiries, keeps filters through detail/history and reco
       path: info.outputPath("enquiry-detail.png"),
       fullPage: true,
     });
-    await page.locator(".skip").click({ force: true });
+    const skip = page.getByRole("link", {
+      name: "Skip navigation",
+      exact: true,
+    });
+    await skip.focus();
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await skip.press("Enter");
+    await expect(page).toHaveURL(/#content$/);
     await visibleInbox(page);
     for (const route of [
       "/os/enquiries/extra",
