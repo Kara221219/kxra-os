@@ -55,14 +55,20 @@ function noConnectionHooks(options) {
       originClass(options.hostname || options.host, options.port),
     );
 }
-function endpoint(host, port, socket) {
+function endpoint(host, port, socket, database = false) {
   if (socket) {
     if (socket !== marker.socket + "/.s.PGSQL." + marker.databasePort)
       deny("SOCKET_TARGET", originClass(host, port, socket));
     return;
   }
   // Servers bind this literal IPv4 address. No DNS alias or caller lookup.
-  if (host !== "127.0.0.1" || !ports.has(String(port)))
+  if (
+    host !== "127.0.0.1" ||
+    !(
+      ports.has(String(port)) ||
+      (database && String(port) === String(marker.databasePort))
+    )
+  )
     deny("TCP_TARGET", originClass(host, port));
 }
 function urlTarget(value) {
@@ -93,10 +99,16 @@ net.Socket.prototype.connect = function (...args) {
   const first = values[0];
   if (first && typeof first === "object") {
     noConnectionHooks(first);
-    endpoint(first.host, first.port, first.path);
+    endpoint(first.host, first.port, first.path, true);
   } else if (typeof first === "string" && !/^\d+$/.test(first))
     endpoint(null, null, first);
-  else endpoint(typeof values[1] === "string" ? values[1] : undefined, first);
+  else
+    endpoint(
+      typeof values[1] === "string" ? values[1] : undefined,
+      first,
+      undefined,
+      true,
+    );
   return connect.apply(this, args);
 };
 function wrapRequest(original) {

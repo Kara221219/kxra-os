@@ -183,7 +183,8 @@ let app,
 const clients = [],
   authSockets = new Set();
 const children = [];
-let dbPort, appPort, authPort, origin, authOrigin;
+let dbPort, appPort, authPort, origin, authOrigin, databaseCa;
+const tlsDirectory = path.join(runtime, "database-tls");
 const pgRun = (name, args, timeout = 60000) =>
   execFileSync(path.join(bin, name), args, {
     env,
@@ -324,7 +325,8 @@ async function startApp(enabled, build = false) {
     KXRA_CI_RUN_ID: nonce,
     KXRA_ORIGIN: origin,
     KXRA_NEXT_DIST_DIR: ".next",
-    DATABASE_URL: `postgresql://kxra_app@localhost:${dbPort}/postgres?host=${encodeURIComponent(socket)}`,
+    DATABASE_URL: `postgresql://kxra_app@127.0.0.1:${dbPort}/postgres`,
+    KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(databaseCa).toString("base64"),
     NEXT_PUBLIC_SUPABASE_URL: authOrigin,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "SYNTHETIC_LOOPBACK_NOT_A_REAL_KEY",
     ...(enabled ? { KXRA_OWNER_CUSTOMER_DIRECTORY_ENABLED: "true" } : {}),
@@ -337,7 +339,8 @@ async function startApp(enabled, build = false) {
     "KXRA_HOSTED_SELF_SERVICE_ENABLED",
   ])
     assert.equal(appEnv[forbidden], undefined);
-  assert.equal(new URL(appEnv.DATABASE_URL).searchParams.get("host"), socket);
+  assert.equal(new URL(appEnv.DATABASE_URL).hostname, "127.0.0.1");
+  assert.equal(new URL(appEnv.DATABASE_URL).search, "");
   appError = undefined;
   try {
     app = spawn(
@@ -558,6 +561,85 @@ try {
         "--encoding=UTF8",
         "--no-locale",
       ]);
+      fs.mkdirSync(tlsDirectory, { mode: 0o700 });
+      const tlsFile = (name) => path.join(tlsDirectory, name);
+      fs.writeFileSync(
+        tlsFile("server.ext"),
+        "basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:localhost,IP:127.0.0.1\n",
+        { mode: 0o600 },
+      );
+      fs.writeFileSync(
+        tlsFile("ca.cnf"),
+        "[req]\ndistinguished_name=dn\nx509_extensions=ca_ext\n[dn]\n[ca_ext]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n",
+        { mode: 0o600 },
+      );
+      const openssl = (args) => {
+        checkCancellation();
+        execFileSync("/usr/bin/openssl", args, {
+          env,
+          stdio: "ignore",
+          timeout: 20000,
+        });
+      };
+      openssl([
+        "req",
+        "-x509",
+        "-config",
+        tlsFile("ca.cnf"),
+        "-newkey",
+        "rsa:2048",
+        "-nodes",
+        "-subj",
+        "/CN=KXRA owned disposable directory CA",
+        "-days",
+        "1",
+        "-keyout",
+        tlsFile("ca.key"),
+        "-out",
+        tlsFile("ca.crt"),
+      ]);
+      fs.chmodSync(tlsFile("ca.key"), 0o600);
+      openssl([
+        "req",
+        "-newkey",
+        "rsa:2048",
+        "-nodes",
+        "-subj",
+        "/CN=localhost",
+        "-keyout",
+        tlsFile("server.key"),
+        "-out",
+        tlsFile("server.csr"),
+      ]);
+      fs.chmodSync(tlsFile("server.key"), 0o600);
+      openssl([
+        "x509",
+        "-req",
+        "-in",
+        tlsFile("server.csr"),
+        "-CA",
+        tlsFile("ca.crt"),
+        "-CAkey",
+        tlsFile("ca.key"),
+        "-CAcreateserial",
+        "-days",
+        "1",
+        "-extfile",
+        tlsFile("server.ext"),
+        "-out",
+        tlsFile("server.crt"),
+      ]);
+      databaseCa = fs.readFileSync(tlsFile("ca.crt"), "utf8");
+      fs.appendFileSync(
+        path.join(dir, "postgresql.conf"),
+        `\nssl=on\nssl_cert_file='${tlsFile("server.crt")}'\nssl_key_file='${tlsFile("server.key")}'\n`,
+      );
+      // Only the disposable application role may use the exact loopback TLS listener.
+      fs.writeFileSync(
+        path.join(dir, "pg_hba.conf"),
+        "local all all trust\nhostssl postgres kxra_app 127.0.0.1/32 trust\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n",
+        { mode: 0o600 },
+      );
       postgresAttempted = true;
       pgRun("pg_ctl", [
         "-D",
@@ -565,7 +647,7 @@ try {
         "-l",
         path.join(runtime, "postgres.log"),
         "-o",
-        `-k '${socket}' -p ${dbPort} -h ''`,
+        `-k '${socket}' -p ${dbPort} -h '127.0.0.1'`,
         "-w",
         "start",
       ]);
@@ -586,7 +668,7 @@ try {
       );
       assert.equal(
         (await admin.query("show listen_addresses")).rows[0].listen_addresses,
-        "",
+        "127.0.0.1",
       );
       for (const role of [
         "anon",
@@ -678,6 +760,75 @@ try {
       provider = await connect("supabase_auth_admin");
     },
   );
+  await phase(
+    "verified production PostgreSQL TLS and negative trust",
+    async () => {
+      const config = {
+        host: "127.0.0.1",
+        port: dbPort,
+        database: "postgres",
+        user: "kxra_app",
+        connectionTimeoutMillis: 5000,
+        query_timeout: 10000,
+      };
+      const tlsClient = new pg.Client({
+        ...config,
+        ssl: { ca: databaseCa, rejectUnauthorized: true },
+      });
+      captureDatabaseClientFailure(tlsClient, (code) => {
+        asynchronousFailure ||= Error(code);
+      });
+      clients.push(tlsClient);
+      await tlsClient.connect();
+      const state = (
+        await tlsClient.query(
+          "select ssl,version,cipher from pg_stat_ssl where pid=pg_backend_pid()",
+        )
+      ).rows[0];
+      assert.equal(state.ssl, true);
+      assert.match(state.version, /^TLSv1\.[23]$/);
+      await bounded(tlsClient.end(), 3000, "TLS_PROBE_CLOSE_TIMEOUT");
+      report.databaseTls = {
+        verified: true,
+        version: state.version,
+        cipher: state.cipher,
+      };
+      for (const [name, ssl] of [
+        ["untrusted-ca", { ca: [], rejectUnauthorized: true }],
+        [
+          "wrong-hostname",
+          {
+            ca: databaseCa,
+            rejectUnauthorized: true,
+            servername: "wrong.invalid",
+          },
+        ],
+      ]) {
+        const rejected = new pg.Client({ ...config, ssl });
+        rejected.on("error", () => {}); // Expected TLS failures are checked below, never swallowed as acceptance.
+        clients.push(rejected);
+        let failure;
+        try {
+          await rejected.connect();
+        } catch (error) {
+          failure = error;
+        }
+        assert.ok(failure, "INVALID_TLS_CONNECTION_ACCEPTED");
+        assert.ok(
+          name === "wrong-hostname"
+            ? failure.code === "ERR_TLS_CERT_ALTNAME_INVALID"
+            : [
+                "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+                "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+                "SELF_SIGNED_CERT_IN_CHAIN",
+              ].includes(failure.code),
+          "UNEXPECTED_TLS_NEGATIVE_FAILURE",
+        );
+        await bounded(rejected.end(), 3000, "TLS_NEGATIVE_CLOSE_TIMEOUT");
+        report.databaseTls[name] = { rejected: true, code: failure.code };
+      }
+    },
+  );
   await phase("owned loopback synthetic provider", async () => {
     auth = http.createServer((req, res) => {
       res.setHeader("content-type", "application/json");
@@ -756,6 +907,17 @@ try {
     assert.ok(!result.html.includes("Synthetic customer 26"));
     assert.ok(authCounts.user > 0 && authCounts.jwks > 0);
     assert.equal(authCounts.rejected, 0);
+    const connections = (
+      await admin.query(
+        "select s.ssl from pg_stat_activity a join pg_stat_ssl s using(pid) where a.usename='kxra_app' and a.client_addr='127.0.0.1'::inet",
+      )
+    ).rows;
+    assert.ok(connections.length > 0, "NEXT_DATABASE_TLS_CONNECTION_MISSING");
+    assert.ok(
+      connections.every((row) => row.ssl === true),
+      "NEXT_DATABASE_NOT_TLS",
+    );
+    report.databaseTls.nextConnectionsVerified = connections.length;
   });
   await phase(
     "role and original-session negatives through unchanged Next actor/query",
@@ -1276,6 +1438,11 @@ try {
       !fs.existsSync(pidFile) &&
       (!postgresPid || absent(postgresPid)) &&
       !fs.existsSync(path.join(socket, ".s.PGSQL." + dbPort));
+    if (cleanup.postgresStopped && fs.existsSync(tlsDirectory)) {
+      for (const name of ["ca.key", "server.key"])
+        fs.rmSync(path.join(tlsDirectory, name), { force: true });
+      cleanup.tlsPrivateKeysRemoved = true;
+    }
   } catch (error) {
     cleanup.errors.push(error.message);
   }

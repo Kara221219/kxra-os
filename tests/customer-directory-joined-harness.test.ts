@@ -73,8 +73,12 @@ test("loopback preload rejects foreign targets before any IO and preserves appro
       const s = new net.Socket();
       assert.equal(s.connect({ path: ${JSON.stringify(runtime + "/socket/.s.PGSQL.55510")} }), s);
       assert.equal(s.connect([{ host: '127.0.0.1', port: 32210 }]), s);
+      assert.equal(s.connect({ host: '127.0.0.1', port: 55510 }), s);
       assert.equal(http.request('http://127.0.0.1:32210/owned', { headers: { accept: 'text/plain' } }), 'synthetic-http');
       const forbidden = [
+        () => fetch('http://127.0.0.1:55510'),
+        () => http.request({ hostname: '127.0.0.1', port: 55510 }),
+        () => s.connect({ host: '127.0.0.1', port: 55511 }),
         () => fetch('https://example.invalid'),
         () => fetch('http://example.invalid:32210'),
         () => fetch('http://127.0.0.1:32212'),
@@ -117,7 +121,7 @@ test("loopback preload rejects foreign targets before any IO and preserves appro
       path.join(runtime, "network-denials.log"),
       "utf8",
     );
-    assert.equal(denied.trim().split("\n").length, 22);
+    assert.equal(denied.trim().split("\n").length, 25);
     assert.ok(!denied.includes("secret"));
     assert.ok(!denied.includes("example"));
     for (const line of denied.trim().split("\n")) {
@@ -361,4 +365,24 @@ test("joined execution uses guarded production build/start and visible JavaScrip
   assert.ok(source.includes("OFFLINE_PRODUCTION_BUILD_FAILED_OR_TIMED_OUT"));
   assert.ok(source.includes("PRODUCTION_TRACKED_SOURCE_MUTATION"));
   assert.ok(source.includes("JavaScript may be disabled or failed to load"));
+});
+
+test("production database proof preserves verified TLS and confines ephemeral credentials", () => {
+  const source = fs.readFileSync(
+    path.join(root, "scripts/verify-customer-directory-joined.mjs"),
+    "utf8",
+  );
+  assert.ok(
+    source.includes("KXRA_DATABASE_CA_CERT_BASE64: Buffer.from(databaseCa)"),
+  );
+  assert.ok(source.includes("postgresql://kxra_app@127.0.0.1:"));
+  assert.ok(source.includes("subjectAltName=DNS:localhost,IP:127.0.0.1"));
+  assert.ok(source.includes("rejectUnauthorized: true"));
+  assert.ok(!source.includes("rejectUnauthorized: false"));
+  assert.ok(source.includes("ERR_TLS_CERT_ALTNAME_INVALID"));
+  assert.ok(source.includes("NEXT_DATABASE_TLS_CONNECTION_MISSING"));
+  assert.ok(
+    source.includes("cleanup.postgresStopped && fs.existsSync(tlsDirectory)"),
+  );
+  assert.ok(source.includes("hostssl postgres kxra_app 127.0.0.1/32 trust"));
 });
