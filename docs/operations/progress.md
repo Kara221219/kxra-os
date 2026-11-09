@@ -1866,3 +1866,8 @@ The focused `6ee60db` run stopped on a browser-test teardown FK violation after 
 ## 9 November — first-use legacy test expectations aligned
 
 Canonical `e0878ed` stopped with two obsolete browser assertions: the tools card name and selected CUSTOMER home URL. Counts were 41 passed, two failed, one scoped interruption, one skipped and 79 not run; later isolation/legal substeps were not reached. A test-only successor asserts the actual workspace entry and navigates to Projects before retaining the original project-boundary checks. Retired-tool, forged-selection, PARTNER return and exact legal assertions remain unchanged. Other legacy expectations were audited by actual actor/context. Full lint and 87 offline tests pass; no heavy retry has run. [Exact scope and retained evidence](customer-first-use-2026-11-09.md#test-expectation-alignment-after-the-e0878ed-canonical-stop).
+
+
+## 9 November — customer billing interruption recovery
+
+Isolated from accepted 3c6907e, exact matching CUSTOMER/CHECKOUT status can now release the stale pending UI latch after a lost reservation response. Refresh shares a serialized 35-second total operation budget; unmount aborts and fences late checkout/portal navigation. No backend, authority, policy, provider or flag change. Local 146 focused tests, 22 desktop/mobile component scenarios, 16 composition checks, types and all builds/budgets pass; independent review is clean. Full composed/hosted acceptance remains separate. See [scope, verification and remaining gates](billing-entry-recovery-2026-11-09.md).

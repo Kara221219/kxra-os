@@ -1607,3 +1607,8 @@ Do not reuse the `6ee60db` focused receipt as completed acceptance: native7/buil
 ## 9 November — first-use legacy test expectations aligned
 
 Preserve the failed `e0878ed` canonical receipt: two expectations still described the previous UI, and later legal/isolation assertions were not reached. The isolated successor updates only brand-studio and phase2 identity/legal browser tests plus appended notes. It proves current workspace and earlier-discussion destinations, then explicitly opens Projects before the unchanged customer visibility, forged-context, PARTNER return and exact legal checks. No global replacements, application edits or gate changes. Full lint and 87 offline tests pass. Reviewer clearance and a new full-tree-bound runtime run remain required; do not treat old receipts as successor acceptance. [Details](customer-first-use-2026-11-09.md#test-expectation-alignment-after-the-e0878ed-canonical-stop).
+
+
+## 9 November — customer billing interruption recovery
+
+Isolated from accepted 3c6907e, exact matching CUSTOMER/CHECKOUT status can now release the stale pending UI latch after a lost reservation response. Refresh shares a serialized 35-second total operation budget; unmount aborts and fences late checkout/portal navigation. No backend, authority, policy, provider or flag change. Local 146 focused tests, 22 desktop/mobile component scenarios, 16 composition checks, types and all builds/budgets pass; independent review is clean. Full composed/hosted acceptance remains separate. See [scope, verification and remaining gates](billing-entry-recovery-2026-11-09.md).

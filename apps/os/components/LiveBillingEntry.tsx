@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { approvedCatalogue } from "../../../packages/workspace/approved-catalogue";
 import { customerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
@@ -10,11 +10,13 @@ import {
   type LiveEntryStatus,
 } from "../../../packages/authz/live-billing-entry-contract";
 
-type Pending = {
-  action: "CUSTOMER" | "CHECKOUT" | "PORTAL" | "RECONCILE";
-  request_id: string;
-  offer_key: string;
-};
+import {
+  billingEntryRequestTimeoutMs,
+  billingStatusConfirmsRequest,
+  type BillingPendingRequest as Pending,
+} from "../../../packages/workspace/billing-entry-recovery";
+
+type ClientOperation = { controller: AbortController; timer: number };
 export default function LiveBillingEntry({
   initial,
   checkoutResultAvailable = false,
@@ -32,22 +34,71 @@ export default function LiveBillingEntry({
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [message, setMessage] = useState("");
+  const active = useRef<ClientOperation | null>(null);
 
-  async function refresh() {
-    const response = await fetch("/api/live-billing", { cache: "no-store" });
+  useEffect(
+    () => () => {
+      const operation = active.current;
+      if (operation) {
+        active.current = null;
+        window.clearTimeout(operation.timer);
+        operation.controller.abort();
+      }
+    },
+    [],
+  );
+
+  function begin() {
+    if (submitting.current) return null;
+    submitting.current = true;
+    setBusy(true);
+    const controller = new AbortController();
+    const operation = {
+      controller,
+      timer: window.setTimeout(
+        () => controller.abort(),
+        billingEntryRequestTimeoutMs,
+      ),
+    };
+    active.current = operation;
+    return operation;
+  }
+  function current(operation: ClientOperation) {
+    return active.current === operation && !operation.controller.signal.aborted;
+  }
+  function finish(operation: ClientOperation) {
+    window.clearTimeout(operation.timer);
+    if (active.current !== operation) return;
+    active.current = null;
+    submitting.current = false;
+    setBusy(false);
+  }
+
+  async function refresh(operation: ClientOperation) {
+    const response = await fetch("/api/live-billing", {
+      cache: "no-store",
+      signal: operation.controller.signal,
+      redirect: "error",
+    });
     if (!response.ok)
       throw Error(
         "Status unavailable. Your original request must be reconciled before a replacement.",
       );
     const next = liveEntryStatus.parse(await response.json());
+    if (!current(operation)) throw Error("BILLING_REQUEST_NO_LONGER_CURRENT");
     setStatus(next);
+    setPending((original) =>
+      original && billingStatusConfirmsRequest(original, next)
+        ? null
+        : original,
+    );
     if (next.offer_key) setOffer(next.offer_key);
   }
   async function record(action: Pending["action"]) {
     if (action === "RECONCILE") return;
     if (action === "PORTAL" && !portalAvailable) return;
-    if (submitting.current) return;
-    submitting.current = true;
+    const operation = begin();
+    if (!operation) return;
     // On uncertain transport, retry this exact operation ID; never manufacture success.
     const request = pending || {
       action,
@@ -61,7 +112,6 @@ export default function LiveBillingEntry({
       offer_key: status.offer_key || offer,
     };
     setPending(request);
-    setBusy(true);
     setMessage("");
     try {
       const portal = request.action === "PORTAL";
@@ -75,7 +125,7 @@ export default function LiveBillingEntry({
               ? { request_id: request.request_id, offer_key: request.offer_key }
               : request,
           ),
-          signal: AbortSignal.timeout(35_000),
+          signal: operation.controller.signal,
         },
       );
       if (!response.ok)
@@ -83,6 +133,7 @@ export default function LiveBillingEntry({
           "Request was not confirmed. Check your MFA, agreements and current billing state; refresh status before any replacement.",
         );
       const value = await response.json();
+      if (!current(operation)) throw Error("BILLING_REQUEST_NO_LONGER_CURRENT");
       if (portal) {
         openBillingResult(value, request.request_id, "PORTAL", (url) =>
           window.location.assign(url),
@@ -104,15 +155,15 @@ export default function LiveBillingEntry({
       setMessage(
         "Your request was recorded. Refresh status to continue; payment has not been confirmed.",
       );
-      await refresh();
+      await refresh(operation);
       setPending(null);
     } catch {
-      setMessage(
-        "We couldn’t confirm this request. Refresh status before trying again, and check your account security and agreements.",
-      );
+      if (active.current === operation)
+        setMessage(
+          "We couldn’t confirm this request. Refresh status before trying again, and check your account security and agreements.",
+        );
     } finally {
-      submitting.current = false;
-      setBusy(false);
+      finish(operation);
     }
   }
   async function continueCheckout() {
@@ -124,8 +175,8 @@ export default function LiveBillingEntry({
       status.request_state !== "CONSUMED"
     )
       return;
-    submitting.current = true;
-    setBusy(true);
+    const operation = begin();
+    if (!operation) return;
     setMessage("");
     const requestId = status.request_id;
     try {
@@ -134,22 +185,39 @@ export default function LiveBillingEntry({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ request_id: requestId }),
         cache: "no-store",
-        signal: AbortSignal.timeout(35_000),
+        signal: operation.controller.signal,
       });
       if (!response.ok)
         throw Error(
           "Payment is not ready to open. Refresh status and check your account security and agreements.",
         );
-      openBillingResult(await response.json(), requestId, "CHECKOUT", (url) =>
+      const value = await response.json();
+      if (!current(operation)) throw Error("BILLING_REQUEST_NO_LONGER_CURRENT");
+      openBillingResult(value, requestId, "CHECKOUT", (url) =>
         window.location.assign(url),
       );
     } catch {
-      setMessage(
-        "Payment is not ready to open. Refresh status and check your account security and agreements.",
-      );
+      if (active.current === operation)
+        setMessage(
+          "Payment is not ready to open. Refresh status and check your account security and agreements.",
+        );
     } finally {
-      submitting.current = false;
-      setBusy(false);
+      finish(operation);
+    }
+  }
+  async function refreshStatus() {
+    const operation = begin();
+    if (!operation) return;
+    setMessage("");
+    try {
+      await refresh(operation);
+    } catch {
+      if (active.current === operation)
+        setMessage(
+          "Status unavailable; keep the original request for reconciliation.",
+        );
+    } finally {
+      finish(operation);
     }
   }
   return (
@@ -242,19 +310,7 @@ export default function LiveBillingEntry({
             Retry original request
           </button>
         )}
-        <button
-          disabled={busy}
-          onClick={() => {
-            setBusy(true);
-            void refresh()
-              .catch(() =>
-                setMessage(
-                  "Status unavailable; keep the original request for reconciliation.",
-                ),
-              )
-              .finally(() => setBusy(false));
-          }}
-        >
+        <button disabled={busy} onClick={() => void refreshStatus()}>
           Refresh status
         </button>
       </div>

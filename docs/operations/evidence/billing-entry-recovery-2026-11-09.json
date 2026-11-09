@@ -1,0 +1,33 @@
+{
+  "base_commit": "3c6907e25f8a03228e6c119f11988cc0c12fb082",
+  "classification": "LOCAL_SYNTHETIC_CUSTOMER_UI_ONLY",
+  "hosted_acceptance": false,
+  "financial_or_provider_actions": false,
+  "source_sha256": {
+    "apps/os/components/LiveBillingEntry.tsx": "dc638bff8f2361313681ec28478d6f38a8228f9a56f738e09bf5243c661d4eec",
+    "packages/workspace/billing-entry-recovery.ts": "50adc429164bdd0abd96b5df388338854a49b81c3e5e87c29d79b8ba87f6a9a2",
+    "tests/billing-entry-recovery.test.ts": "73451094532682bcc7fda7b5aa8d07108e8fbc37850ef5d79f4b3bc9b43f2d25",
+    "scripts/verify-billing-entry-browser.mjs": "1543488e906f78eb9c88b36f60ec629bdccb4596de2a672fba29e99a239da3a7"
+  },
+  "logs_sha256": {
+    "/tmp/kxra-billing-ui-baseline.log": "b1b82faff0c6075c0dc0cfb6fe4ee701a2b58c6e00bb1b13ccb4580638816b7f",
+    "/tmp/kxra-billing-recovery-focused.log": "88bdadb9cbb4f5959c99ebd9821f3af47db16aaf9e0d1f8916f1fb78bbcdf3c8",
+    "/tmp/kxra-billing-recovery-composition.log": "2ff2696b709aa0f6b5691bfbbb1d42b01df5a29eb3f740a01e34d210bdaa201d",
+    "/tmp/kxra-billing-ui-reviewed.log": "640724adcf588456af7748eee757edc315dee99667c36b85417b7e7294174680",
+    "/tmp/kxra-billing-recovery-build.log": "1991308987594f699d34f2f576952d8b16865ba1b21fd7c849dadf5600531765"
+  },
+  "focused_tests": {
+    "passed": 146,
+    "failed": 0,
+    "skipped": 0
+  },
+  "composition_tests": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser_component_scenarios": 22,
+  "precommit_browser_receipt": "/var/folders/1b/rx87jbks7ysd9v3n0dgym53w0000gn/T/kxra-billing-ui-ToMcrp/receipt.json",
+  "independent_review": "Runtime and final harness/source-bound receipt inspected; no substantive issue. Reviewer did not rerun tests.",
+  "aggregate": "Final composed canonical CI remains required."
+}
