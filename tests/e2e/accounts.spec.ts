@@ -346,7 +346,7 @@ async function completeStepsOneToFour(
       await expect(page.getByText(project, { exact: true })).toHaveCount(0);
   await expect(page.getByText("PROJECT-001", { exact: true })).toHaveCount(0);
   await page
-    .getByLabel("I have reviewed my read-only project roles and permissions.")
+    .getByLabel("I have reviewed my project roles and permissions.")
     .check();
   await continueStep(page);
   await expect(page.getByText("Step 5 of 9", { exact: true })).toBeVisible();
