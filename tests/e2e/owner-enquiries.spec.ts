@@ -191,6 +191,18 @@ test("history restoration rechecks real revoked membership and changed selected 
       )
     ).rows[0].id;
     const other = await context.newPage();
+    // A second active membership requires an explicit, server-validated choice.
+    await page.goto("/select-organisation");
+    await page
+      .getByRole("button", { name: "KXRA Group · KXRA_OWNER", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/os$/);
+    await expect(
+      page.getByRole("heading", {
+        name: "Your operating overview",
+        exact: true,
+      }),
+    ).toBeVisible();
     for (const direction of ["back", "forward"] as const) {
       await page.goto("/os");
       await page.goto(target);
@@ -213,6 +225,13 @@ test("history restoration rechecks real revoked membership and changed selected 
       await other
         .getByRole("button", { name: /KXRA Group · KXRA_OWNER/ })
         .click();
+      await expect(other).toHaveURL(/\/os$/);
+      await expect(
+        other.getByRole("heading", {
+          name: "Your operating overview",
+          exact: true,
+        }),
+      ).toBeVisible();
     }
     await other.close();
   } finally {
