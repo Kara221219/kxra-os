@@ -160,7 +160,18 @@ test("CRM retries uncertain delivery once, persists approved conversion and deni
   ).toHaveCount(0);
   await crm.getByLabel("Search CRM records").fill("no-match");
   await expect(crm.getByText("No matching loaded records.")).toBeVisible();
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === "/login"),
+    page.getByRole("button", { name: "Sign out", exact: true }).click(),
+  ]);
+  await expect(
+    page.getByRole("heading", { name: "Welcome back.", exact: true }),
+  ).toBeVisible();
+  expect(
+    (await page.context().cookies()).some(
+      (cookie) => cookie.name === "kxra_local_session",
+    ),
+  ).toBe(false);
   await login(page);
   await page.goto(`/os/workspace/${f.room}?view=workflow`);
   await expect(
