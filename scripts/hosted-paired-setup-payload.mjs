@@ -1,8 +1,12 @@
 // Offline source composition only. No database, credentials, provider or activation.
-import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import assert from "node:assert/strict";
+import {
+  assertCustomerProviderCompositionTransition,
+  assertCustomerProviderCompositionRoot,
+  readCustomerProviderCompositionFile,
+} from "./customer-provider-composition-transition.mjs";
 const repo = path.resolve(import.meta.dirname, ".."),
   sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const changes = [
@@ -12,11 +16,12 @@ const changes = [
   "tests/production-paired-composition.test.ts",
 ];
 export function hostedPairedSetupPayload(root = repo) {
+  assertCustomerProviderCompositionRoot(root);
   const spec = JSON.parse(
-    fs.readFileSync(
-      path.join(root, "packages/release/hosted-paired-setup-v1.json"),
-      "utf8",
-    ),
+    readCustomerProviderCompositionFile(
+      root,
+      "packages/release/hosted-paired-setup-v1.json",
+    ).toString("utf8"),
   );
   assert.equal(
     spec.classification,
@@ -45,17 +50,21 @@ export function hostedPairedSetupPayload(root = repo) {
     assert.ok(
       !path.isAbsolute(file.path) && !file.path.split("/").includes(".."),
     );
+    if (
+      assertCustomerProviderCompositionTransition(file.path, file.sha256, root)
+    )
+      continue;
     assert.equal(
-      sha(fs.readFileSync(path.join(root, file.path))),
+      sha(readCustomerProviderCompositionFile(root, file.path)),
       file.sha256,
       file.path,
     );
   }
   const prior = JSON.parse(
-    fs.readFileSync(
-      path.join(root, "packages/release/production-paired-integration-v1.json"),
-      "utf8",
-    ),
+    readCustomerProviderCompositionFile(
+      root,
+      "packages/release/production-paired-integration-v1.json",
+    ).toString("utf8"),
   );
   for (const change of spec.transitions) {
     assert.equal(
@@ -72,7 +81,8 @@ export function hostedPairedSetupPayload(root = repo) {
   return spec;
 }
 export function assertHostedPairedSetupTransition(file, baseSha, root = repo) {
-  const actual = sha(fs.readFileSync(path.join(root, file)));
+  if (assertCustomerProviderCompositionTransition(file, baseSha, root)) return;
+  const actual = sha(readCustomerProviderCompositionFile(root, file));
   if (actual === baseSha) return;
   const spec = hostedPairedSetupPayload(root),
     change = spec.transitions.find((t) => t.path === file);

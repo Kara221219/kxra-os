@@ -150,10 +150,13 @@ export const secureTransport: Transport = async (
   requireModelProviderEnabled();
   if (!authorize) throw Error("AI_ADMISSION_REQUIRED");
   await authorize(url);
+  requireModelProviderEnabled();
   // Pin the validated DNS answer to this socket. No redirects, proxies or localhost endpoints.
   const address = await resolveProviderAddress(url.hostname);
+  requireModelProviderEnabled();
   await authorize(url);
-  return new Promise((resolve, reject) => {
+  requireModelProviderEnabled();
+  const raw = await new Promise((resolve, reject) => {
     const request = https.request(
       url,
       {
@@ -204,6 +207,8 @@ export const secureTransport: Transport = async (
     request.on("error", () => reject(Error("PROVIDER_UNAVAILABLE")));
     request.end(JSON.stringify(body));
   });
+  requireModelProviderEnabled();
+  return raw;
 };
 async function generateWithCustomerKey(
   c: Connection,
@@ -217,6 +222,7 @@ async function generateWithCustomerKey(
     throw Error("AI_ADMISSION_REQUIRED");
   const url = endpoint(c);
   if (authorize) await authorize(url);
+  requireModelProviderEnabled();
   const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`);
   const headers: Record<string, string> = {},
     textRequest = {
@@ -253,7 +259,9 @@ async function generateWithCustomerKey(
         max_tokens: 1200,
       };
   }
+  requireModelProviderEnabled();
   const raw = await transport(url, headers, body, authorize);
+  requireModelProviderEnabled();
   // Provider content is untrusted text, never executable HTML, permissions or tool calls.
   const count = z.number().int().min(0).max(10000000).optional().default(0);
   let output: string,
@@ -263,9 +271,34 @@ async function generateWithCustomerKey(
     const v = z
       .object({
         stop_reason: z.string(),
-        content: z.array(
-          z.object({ type: z.string(), text: z.string().optional() }),
-        ),
+        // Content payloads are closed; envelope and usage metadata remain open.
+        // Reasoning is separate from a customer-visible final text draft.
+        content: z
+          .array(
+            z.discriminatedUnion("type", [
+              z
+                .object({
+                  type: z.literal("text"),
+                  text: z.string(),
+                  citations: z.array(z.unknown()).nullable().optional(),
+                })
+                .strict(),
+              z
+                .object({
+                  type: z.literal("thinking"),
+                  thinking: z.string(),
+                  signature: z.string(),
+                })
+                .strict(),
+              z
+                .object({
+                  type: z.literal("redacted_thinking"),
+                  data: z.string(),
+                })
+                .strict(),
+            ]),
+          )
+          .min(1),
         usage: z
           .object({ input_tokens: count, output_tokens: count })
           .optional(),
@@ -274,21 +307,46 @@ async function generateWithCustomerKey(
     if (v.stop_reason !== "end_turn") throw Error("PROVIDER_INCOMPLETE");
     output = v.content
       .filter((x) => x.type === "text")
-      .map((x) => x.text || "")
+      .map((x) => x.text)
       .join("\n");
     input_tokens = v.usage?.input_tokens || 0;
     output_tokens = v.usage?.output_tokens || 0;
   } else if (c.provider === "GOOGLE") {
     const v = z
       .object({
-        candidates: z.array(
-          z.object({
-            finishReason: z.string(),
-            content: z.object({
-              parts: z.array(z.object({ text: z.string().optional() })),
+        candidates: z
+          .array(
+            z.object({
+              finishReason: z.string(),
+              content: z
+                .object({
+                  role: z.literal("model").optional(),
+                  parts: z
+                    .array(
+                      z
+                        .object({
+                          text: z.string(),
+                          thought: z.boolean().optional(),
+                          // A signature can also accompany final text; it is not a thought flag.
+                          thoughtSignature: z.string().optional(),
+                          partMetadata: z
+                            .record(z.string(), z.unknown())
+                            .optional(),
+                          speechMetadata: z
+                            .object({
+                              speaker: z.string().optional(),
+                              style: z.string().optional(),
+                            })
+                            .optional(),
+                        })
+                        .strict(),
+                    )
+                    .min(1),
+                })
+                .strict(),
             }),
-          }),
-        ),
+          )
+          .max(1),
         usageMetadata: z
           .object({ promptTokenCount: count, candidatesTokenCount: count })
           .optional(),
@@ -296,21 +354,76 @@ async function generateWithCustomerKey(
       .parse(raw);
     if (v.candidates[0]?.finishReason !== "STOP")
       throw Error("PROVIDER_INCOMPLETE");
-    output = v.candidates[0].content.parts.map((x) => x.text || "").join("\n");
+    output = v.candidates[0].content.parts
+      .filter((x) => x.thought !== true)
+      .map((x) => x.text)
+      .join("\n");
     input_tokens = v.usageMetadata?.promptTokenCount || 0;
     output_tokens = v.usageMetadata?.candidatesTokenCount || 0;
   } else {
+    const reasoningMetadata = {
+      id: z.string().nullable().optional(),
+      format: z.string().nullable().optional(),
+      index: z.number().int().optional(),
+    };
     const v = z
       .object({
-        choices: z.array(
-          z.object({
-            finish_reason: z.string(),
-            message: z.object({
-              content: z.string().nullable(),
-              refusal: z.string().nullable().optional(),
+        choices: z
+          .array(
+            z.object({
+              finish_reason: z.string(),
+              message: z
+                .object({
+                  role: z.literal("assistant").optional(),
+                  model: z.string().optional(),
+                  name: z.string().optional(),
+                  content: z.string().nullable(),
+                  refusal: z.string().nullable().optional(),
+                  // Empty/absent action fields are compatible; an action or audio
+                  // payload cannot be silently discarded as a completed text draft.
+                  tool_calls: z.array(z.never()).nullable().optional(),
+                  function_call: z.null().optional(),
+                  audio: z.null().optional(),
+                  images: z.array(z.never()).nullable().optional(),
+                  annotations: z.array(z.unknown()).optional(),
+                  reasoning: z.string().nullable().optional(),
+                  reasoning_content: z.string().nullable().optional(),
+                  reasoning_details: z
+                    .array(
+                      z
+                        .discriminatedUnion("type", [
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.text"),
+                              text: z.string().nullable().optional(),
+                              signature: z.string().nullable().optional(),
+                            })
+                            .strict(),
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.summary"),
+                              summary: z.string(),
+                            })
+                            .strict(),
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.encrypted"),
+                              data: z.string(),
+                            })
+                            .strict(),
+                        ])
+                        .nullable(),
+                    )
+                    .nullable()
+                    .optional(),
+                })
+                .strict(),
             }),
-          }),
-        ),
+          )
+          .max(1),
         usage: z
           .object({ prompt_tokens: count, completion_tokens: count })
           .optional(),
@@ -338,13 +451,15 @@ export async function generate(
   authorize?: (target: URL) => Promise<void>,
 ) {
   try {
-    return await generateWithCustomerKey(
+    const result = await generateWithCustomerKey(
       c,
       system,
       context,
       transport,
       authorize,
     );
+    requireModelProviderEnabled();
+    return result;
   } catch (error) {
     const allowed = new Set([
       "PROVIDER_DISABLED",

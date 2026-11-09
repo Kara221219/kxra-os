@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import {
+  historicalProviderBoundaryBytes,
+  providerBoundaryTransition,
+} from "./provider-boundary-transition";
 import crypto from "node:crypto";
 
 /** Historical manifests stay immutable. Exactly one reviewed default-off
@@ -14,6 +18,10 @@ export function historicalCompositionBytes(
   bytes: Buffer,
   expected: string,
 ) {
+  // Check the immutable provider predecessor before the general unchanged case.
+  // A rewritten manifest cannot authorize another provider source through it.
+  if (file === providerBoundaryTransition.path)
+    return historicalProviderBoundaryBytes(file, bytes, expected);
   if (sha(bytes) === expected) return bytes;
   assert.equal(file, ".env.example", "UNREVIEWED_POLICY_SOURCE_TRANSITION");
   const append = Buffer.from(pairedSetupEnvironmentAppend);
