@@ -24,14 +24,17 @@ export default function Shell({
   active,
   children,
   local,
+  documentNavigation = false,
 }: {
   actor: Actor;
   active: string;
   children: React.ReactNode;
   local: boolean;
+  documentNavigation?: boolean;
 }) {
   const isOwner =
     actor.security_role === "KXRA_OWNER" && actor.organisation_kind === "KXRA";
+  const NavigationLink = documentNavigation ? "a" : Link;
   const links = memberNav;
   const presentation = workspacePresentation(actor);
   return (
@@ -40,46 +43,54 @@ export default function Shell({
         Skip navigation
       </a>
       <aside>
-        <Link className="wordmark" href="/os">
+        <NavigationLink className="wordmark" href="/os">
           KXRA<span>{isOwner ? "GROUP" : "OS"}</span>
-        </Link>
+        </NavigationLink>
         <p className="nav-label">{presentation.label}</p>
         {isOwner ? (
-          <OwnerNavigation active={active} />
+          <OwnerNavigation
+            active={active}
+            documentNavigation={documentNavigation}
+          />
         ) : (
           <>
             <nav className="desktop-nav" aria-label="Main navigation">
               {links.map(([name, path]) => (
-                <Link
+                <NavigationLink
                   key={name}
                   aria-current={active === path ? "page" : undefined}
                   href={"/os" + (path ? "/" + path : "")}
                 >
                   {name}
-                </Link>
+                </NavigationLink>
               ))}
             </nav>
             <details className="mobile-menu">
               <summary>Menu</summary>
               <nav aria-label="Mobile navigation">
                 {links.map(([name, path]) => (
-                  <Link
+                  <NavigationLink
                     key={name}
                     aria-current={active === path ? "page" : undefined}
                     href={"/os" + (path ? "/" + path : "")}
                   >
                     {name}
-                  </Link>
+                  </NavigationLink>
                 ))}
               </nav>
             </details>
           </>
         )}
         <div className="identity">
-          <Link href="/select-organisation" title="Change organisation">
+          <NavigationLink
+            href="/select-organisation"
+            title="Change organisation"
+          >
             {actor.organisation_name}
-          </Link>
-          <Link href="/os/profile">{actor.display_name}</Link>
+          </NavigationLink>
+          <NavigationLink href="/os/profile">
+            {actor.display_name}
+          </NavigationLink>
           <form action="/api/auth" method="post">
             <button className="text-button" name="logout" value="1">
               Sign out
@@ -92,7 +103,7 @@ export default function Shell({
           <span>
             KXRA GROUP <span className="slash">/</span> {presentation.heading}
           </span>
-          <Link href="/os/ask">Ask KXRA ↗</Link>
+          <NavigationLink href="/os/ask">Ask KXRA ↗</NavigationLink>
         </header>
         {local && (
           <div className="local-banner">
@@ -102,9 +113,9 @@ export default function Shell({
         <main id="content">
           {active === "" && !isOwner && (
             <p className="notice">
-              <Link href="/os/start">
+              <NavigationLink href="/os/start">
                 Getting started: check recorded access and open your workspace ↗
-              </Link>
+              </NavigationLink>
             </p>
           )}
           {children}

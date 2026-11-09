@@ -24,6 +24,11 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 650px) {
+  .directory caption {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
   .directory th[scope="row"] {
     padding: 0;
     border: 0;

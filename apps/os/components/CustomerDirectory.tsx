@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import type { CustomerDirectoryPage } from "../../../packages/workspace/customer-admin-contract";
 
 export function CustomerDirectoryUnavailable({
@@ -21,9 +20,7 @@ export function CustomerDirectoryUnavailable({
         This does not enable customer management or access to private
         workspaces.
       </p>
-      <Link href="/os/customer-directory" prefetch={false}>
-        Try the first page again
-      </Link>
+      <a href="/os/customer-directory">Try the first page again</a>
     </section>
   );
 }
@@ -117,16 +114,9 @@ export default function CustomerDirectory({
         </p>
       )}
       <nav aria-label="Customer directory pages">
-        <Link href="/os/customer-directory" prefetch={false}>
-          Refresh from first page
-        </Link>{" "}
+        <a href="/os/customer-directory">Refresh from first page</a>{" "}
         {page.has_more && (
-          <Link
-            href={"/os/customer-directory?" + next.toString()}
-            prefetch={false}
-          >
-            Next page
-          </Link>
+          <a href={"/os/customer-directory?" + next.toString()}>Next page</a>
         )}
       </nav>
     </section>

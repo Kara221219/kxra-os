@@ -2,6 +2,7 @@ import Link from "next/link";
 import styles from "../../../components/CustomerDirectory.module.css";
 import { notFound, redirect } from "next/navigation";
 import Shell from "../../../components/Shell";
+import DirectoryDocumentBoundary from "../../../components/DirectoryDocumentBoundary";
 import CustomerDirectory, {
   CustomerDirectoryUnavailable,
 } from "../../../components/CustomerDirectory";
@@ -71,7 +72,12 @@ export default async function CustomerDirectoryPage({
     );
   }
   return (
-    <Shell actor={a} active="customer-directory" local={localMode()}>
+    <Shell
+      actor={a}
+      active="customer-directory"
+      local={localMode()}
+      documentNavigation
+    >
       <div className="page-heading">
         <div>
           <p className="eyebrow">KXRA owner · Read only</p>
@@ -82,7 +88,9 @@ export default async function CustomerDirectoryPage({
           </p>
         </div>
       </div>
-      <div className={styles.directory}>{content}</div>
+      <DirectoryDocumentBoundary>
+        <div className={styles.directory}>{content}</div>
+      </DirectoryDocumentBoundary>
     </Shell>
   );
 }

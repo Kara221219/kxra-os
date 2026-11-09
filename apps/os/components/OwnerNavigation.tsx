@@ -2,18 +2,29 @@ import Link from "next/link";
 import { ownerNavigation } from "../../../packages/workspace/owner-navigation";
 import OwnerMenuDisclosure from "./OwnerMenuDisclosure";
 
-export default function OwnerNavigation({ active }: { active: string }) {
+export default function OwnerNavigation({
+  active,
+  documentNavigation = false,
+}: {
+  active: string;
+  documentNavigation?: boolean;
+}) {
   function links(items: (typeof ownerNavigation)[number]["links"]) {
-    return items.map(([name, path]) => (
-      <Link
-        key={path}
-        prefetch={path === "customer-directory" ? false : undefined}
-        href={"/os" + (path ? "/" + path : "")}
-        aria-current={active === path ? "page" : undefined}
-      >
-        {name}
-      </Link>
-    ));
+    return items.map(([name, path]) => {
+      // Enter/leave this authority-sensitive surface with a new document, not
+      // a reusable Next RSC history entry. All other owner routes stay unchanged.
+      const NavigationLink =
+        documentNavigation || path === "customer-directory" ? "a" : Link;
+      return (
+        <NavigationLink
+          key={path}
+          href={"/os" + (path ? "/" + path : "")}
+          aria-current={active === path ? "page" : undefined}
+        >
+          {name}
+        </NavigationLink>
+      );
+    });
   }
   return (
     <OwnerMenuDisclosure>
