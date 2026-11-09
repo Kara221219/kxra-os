@@ -4,25 +4,28 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
-import { createElement, type ComponentType } from "react";
+import { createElement, type ComponentType, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 import { aiSetupProviders } from "../packages/admission/ai-setup-status";
 import { providerIdentity } from "../apps/os/lib/provider-identity";
+import type { ModelConnection } from "../apps/os/lib/team-workspace";
+import { customerAiPolicy } from "../packages/workspace/customer-ai-policy";
 
 const require = createRequire(import.meta.url);
 const componentSource = fs.readFileSync(
   "apps/os/components/ProviderIdentity.tsx",
   "utf8",
 );
-const compiled = ts.transpileModule(componentSource, {
-  compilerOptions: {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.CommonJS,
-    jsx: ts.JsxEmit.ReactJSX,
-    esModuleInterop: true,
-  },
-}).outputText;
+const compile = (source: string) =>
+  ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+    },
+  }).outputText;
 const scope = {
   exports: {} as {
     ProviderIdentity: ComponentType<{ provider: string }>;
@@ -34,7 +37,7 @@ const scope = {
     throw Error("Unexpected identity component dependency: " + name);
   },
 };
-vm.runInNewContext(compiled, scope);
+vm.runInNewContext(compile(componentSource), scope);
 const renderIdentity = (provider: string) =>
   renderToStaticMarkup(
     createElement(scope.exports.ProviderIdentity, { provider }),
@@ -177,8 +180,83 @@ test("native provider options retain exact protocol values and remain text-only"
     "utf8",
   );
   assert.match(connections, /<ProviderIdentity provider=\{c\.provider\}/);
-  assert.match(
-    connections,
-    /c\.enabled \? "Available to attached agents" : "Disabled"/,
+});
+
+test("saved connection settings never assert verified availability and retain toggle intent", () => {
+  type ActionProps = {
+    path: string;
+    title: string;
+    build: () => { enabled: boolean };
+    children: ReactNode;
+  };
+  let actions: ActionProps[] = [];
+  const connectionsScope = {
+    exports: {} as {
+      ModelConnections: ComponentType<{
+        connections: ModelConnection[];
+        local: boolean;
+        aiPolicy: typeof customerAiPolicy;
+      }>;
+    },
+    require(name: string) {
+      if (name === "react/jsx-runtime") return require(name);
+      if (name === "next/navigation")
+        return { useRouter: () => ({ refresh() {} }) };
+      if (name === "../lib/provider-identity") return { providerIdentity };
+      if (name === "./ProviderIdentity") return scope.exports;
+      if (name === "./AiConnectionSetup")
+        return { AiConnectionSetup: () => null };
+      if (name === "./TeamActionForm")
+        return {
+          ActionForm(props: ActionProps) {
+            actions.push(props);
+            return createElement("div", null, props.children);
+          },
+        };
+      throw Error("Unexpected connection component dependency: " + name);
+    },
+  };
+  vm.runInNewContext(
+    compile(fs.readFileSync("apps/os/components/ModelConnections.tsx", "utf8")),
+    connectionsScope,
   );
+  for (const provider of ["OPENAI", "FIXTURE", "UNKNOWN_PROVIDER", ""]) {
+    for (const enabled of [true, false]) {
+      actions = [];
+      const connection = {
+        id: "saved-connection",
+        name: "Saved connection",
+        model: "saved-model",
+        provider,
+        enabled,
+      };
+      const html = renderToStaticMarkup(
+        createElement(connectionsScope.exports.ModelConnections, {
+          connections: [connection],
+          local: provider === "FIXTURE",
+          aiPolicy: customerAiPolicy,
+        }),
+      );
+      assert.ok(html.includes(providerIdentity(provider).label));
+      assert.match(html, /Model connections \(1\)/);
+      assert.ok(
+        html.includes(enabled ? "Saved and enabled" : "Saved and disabled"),
+      );
+      assert.match(html, /Saved settings do not verify current availability/);
+      assert.match(
+        html,
+        /Authorization and provider configuration are checked for each run/,
+      );
+      assert.doesNotMatch(html, /Available to attached agents/);
+      const toggle = actions.find(
+        (action) => action.path === "/connections/" + connection.id,
+      );
+      assert.ok(toggle);
+      assert.equal(toggle.title, enabled ? "Disconnect model" : "Enable model");
+      assert.equal(
+        JSON.stringify(toggle.build()),
+        JSON.stringify({ enabled: !enabled }),
+      );
+    }
+  }
 });

@@ -1907,3 +1907,10 @@ Gemini requests do not currently ask for thought summaries; this is a synthetic 
 ## 9 November — customer provider offline path-proof successor
 
 Preserve frozen `844300c` and its 35 passing synthetic checks. Independent review identified a remaining direct shared-helper alias that could reach its generic unchanged-hash branch with a rewritten expected pin. A separate offline-only successor validates canonical relative paths before that branch and adds alias/self-consistent-pin regressions for both provider transition helpers. Only the reviewed helper successor hashes and append-only notes are updated; runtime provider, UI, SQL, authority and all historical manifests remain exact. Fresh frozen-source verification and final review apply to this successor.
+
+
+## 9 November — saved model-connection state clarified
+
+Isolated from accepted `04c78f14`, the existing model-connection list now says "Saved and enabled" or "Saved and disabled" instead of claiming availability from the persisted boolean. One explanatory paragraph distinguishes saved settings from current availability and identifies the per-run authorization/configuration checks. Provider identity, toggle path/title/payload, setup refresh, permissions and errors are unchanged; no query, API, SQL, provider runtime, usage counter, credential or payment change. No historical source pins or manifests changed.
+
+Eight focused provider-identity/static-render tests pass, including enabled/disabled states for known, fixture, unknown and empty provider identifiers plus unchanged toggle intent. Root TypeScript, changed-file Prettier and diff checks pass. The existing workspace creation browser journey now asserts the fixture label/disclaimer and disable/enable round trip before its original agent/run flow. That browser regression, native acceptance, builds/budgets and canonical aggregate gates have not run for this candidate. Static rendering uses mocked action/setup/router dependencies and is not runtime or live-provider acceptance.

@@ -23,6 +23,10 @@ export function ModelConnections({
         Connections belong to you; only agents you explicitly attach may use
         them.
       </p>
+      <p>
+        Saved settings do not verify current availability. Authorization and
+        provider configuration are checked for each run.
+      </p>
       {!local && (
         <>
           <p>{aiPolicy.billing}</p>
@@ -43,7 +47,7 @@ export function ModelConnections({
             title={c.enabled ? "Disconnect model" : "Enable model"}
             build={() => ({ enabled: !c.enabled })}
           >
-            <p>{c.enabled ? "Available to attached agents" : "Disabled"}</p>
+            <p>{c.enabled ? "Saved and enabled" : "Saved and disabled"}</p>
           </ActionForm>
         </div>
       ))}

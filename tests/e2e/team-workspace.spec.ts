@@ -155,6 +155,33 @@ test("workspace creation, agent conversation and run history persist", async ({
           exact: true,
         }),
       ).toBeVisible();
+      const savedConnection = page.locator(".team-message").filter({
+        hasText: "Browser model " + suffix + " · fixture-draft",
+      });
+      await expect(
+        savedConnection.getByText("Local fixture", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        savedConnection.getByText("Saved and enabled", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/Saved settings do not verify current availability/),
+      ).toBeVisible();
+      await expect(savedConnection).not.toContainText(
+        "Available to attached agents",
+      );
+      await savedConnection
+        .getByRole("button", { name: "Disconnect model", exact: true })
+        .click();
+      await expect(
+        savedConnection.getByText("Saved and disabled", { exact: true }),
+      ).toBeVisible();
+      await savedConnection
+        .getByRole("button", { name: "Enable model", exact: true })
+        .click();
+      await expect(
+        savedConnection.getByText("Saved and enabled", { exact: true }),
+      ).toBeVisible();
       await page.getByLabel("Room name").fill("Browser workspace " + suffix);
       await page
         .getByLabel("Project", { exact: true })

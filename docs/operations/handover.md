@@ -1648,3 +1648,10 @@ Gemini requests do not currently ask for thought summaries; this is a synthetic 
 ## 9 November — customer provider offline path-proof successor
 
 Preserve frozen `844300c` and its 35 passing synthetic checks. Independent review identified a remaining direct shared-helper alias that could reach its generic unchanged-hash branch with a rewritten expected pin. A separate offline-only successor validates canonical relative paths before that branch and adds alias/self-consistent-pin regressions for both provider transition helpers. Only the reviewed helper successor hashes and append-only notes are updated; runtime provider, UI, SQL, authority and all historical manifests remain exact. Fresh frozen-source verification and final review apply to this successor.
+
+
+## 9 November — saved model-connection state candidate
+
+Successor to `04c78f14` changes only `ModelConnections` presentation: persisted enabled/disabled settings no longer assert availability, and the page explains per-run authorization/configuration checks. It does not validate a key, test provider health, activate a provider or resolve unknown usage accounting. Existing data authority, controls, async form behavior and all historical manifests remain unchanged.
+
+Passed: `tsx --test --test-concurrency=1 tests/provider-identity.test.ts` (8 tests, including 8 rendered state/provider combinations), `npm run typecheck`, changed-file Prettier and `git diff --check`. Prepared but unrun: `tests/e2e/team-workspace.spec.ts` / "workspace creation, agent conversation and run history persist", with saved-state/fixture/disclaimer assertions and a disconnect/enable round trip. Independent review and coordinated source-bound browser/native, build/budget and canonical gates remain required; no live provider, hosted mutation, charge or deployment was attempted.
