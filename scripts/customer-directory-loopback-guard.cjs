@@ -21,9 +21,18 @@ function originClass(host, port, socket) {
   return net.isIP(host) ? "NON_LOOPBACK_IP" : "NON_LOOPBACK_NAME";
 }
 function deny(reason = "UNCLASSIFIED", targetClass = "UNKNOWN") {
+  // Only fixed dependency classifications, never arbitrary stack text or URLs.
+  const stack = new Error().stack || "";
+  const caller = stack.includes(
+    "next/dist/server/dev/hot-reloader-shared-utils.js:",
+  )
+    ? "NEXT_DEV_VERSION_INFO"
+    : stack.includes("next/dist/lib/patch-incorrect-lockfile.js:")
+      ? "NEXT_LOCKFILE_CHECK"
+      : "OTHER";
   fs.appendFileSync(
     runtime + "/network-denials.log",
-    JSON.stringify({ reason, targetClass }) + "\n",
+    JSON.stringify({ reason, targetClass, caller }) + "\n",
     { mode: 0o600 },
   );
   throw Error("JOINED_PROOF_NON_OWNED_NETWORK_TARGET");

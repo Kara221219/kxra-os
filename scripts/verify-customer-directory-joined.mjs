@@ -23,7 +23,6 @@ import {
   assertPostgresOwnership,
   captureDatabaseClientFailure,
   ownedWebSocketUrl,
-  assertGeneratedNextEnv,
   safeFailure,
   directoryNavigationKind,
   joinedProofAcceptance,
@@ -60,7 +59,7 @@ assert.equal(
   git(
     "diff",
     "--name-only",
-    "1ec4458d428b68e0b3d10fa703b8424c85f3b5af",
+    "02ace37fac5f36a5ea1f30ac91276b631c660247",
     "--",
     "apps",
     "packages",
@@ -299,25 +298,32 @@ async function stopApp() {
   app = undefined;
   return { clean: true, pid, groupAbsent };
 }
-async function startApp(enabled) {
+async function startApp(enabled, build = false) {
   assert.ok(!app);
   checkCancellation();
   const application = applicationNext("os", source);
   const log = fs.openSync(
-    path.join(runtime, enabled ? "next-enabled.log" : "next-disabled.log"),
+    path.join(
+      runtime,
+      build
+        ? "next-build.log"
+        : enabled
+          ? "next-enabled.log"
+          : "next-disabled.log",
+    ),
     "a",
     0o600,
   );
   const appEnv = {
     ...env,
-    NODE_ENV: "development",
+    NODE_ENV: "production",
     NODE_OPTIONS:
       "--require=" +
       path.join(source, "scripts/customer-directory-loopback-guard.cjs"),
     KXRA_JOINED_RUNTIME: runtime,
     KXRA_CI_RUN_ID: nonce,
     KXRA_ORIGIN: origin,
-    KXRA_NEXT_DIST_DIR: ".next-dev",
+    KXRA_NEXT_DIST_DIR: ".next",
     DATABASE_URL: `postgresql://kxra_app@localhost:${dbPort}/postgres?host=${encodeURIComponent(socket)}`,
     NEXT_PUBLIC_SUPABASE_URL: authOrigin,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "SYNTHETIC_LOOPBACK_NOT_A_REAL_KEY",
@@ -338,12 +344,9 @@ async function startApp(enabled) {
       process.execPath,
       [
         application.binary,
-        "dev",
-        ...application.webpackArguments,
-        "--hostname",
-        "127.0.0.1",
-        "--port",
-        String(appPort),
+        ...(build
+          ? ["build", ...application.webpackArguments]
+          : ["start", "--hostname", "127.0.0.1", "--port", String(appPort)]),
       ],
       {
         cwd: path.join(source, "apps/os"),
@@ -370,6 +373,28 @@ async function startApp(enabled) {
     children.push(app);
   } finally {
     fs.closeSync(log);
+  }
+  if (build) {
+    const deadline = Date.now() + 600000;
+    while (
+      app.exitCode === null &&
+      app.signalCode === null &&
+      Date.now() < deadline
+    ) {
+      checkCancellation();
+      if (appError) throw appError;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    checkCancellation();
+    if (appError) throw appError;
+    assert.equal(
+      app.exitCode,
+      0,
+      "OFFLINE_PRODUCTION_BUILD_FAILED_OR_TIMED_OUT",
+    );
+    report.productionBuild = { status: "PASS", featureEnabledAtBuild: false };
+    await stopApp();
+    return;
   }
   const until = Date.now() + 120000;
   while (Date.now() < until) {
@@ -688,6 +713,9 @@ try {
       auth.listen(authPort, "127.0.0.1", resolve);
     });
     ownerSession = await session(owner);
+  });
+  await phase("guarded offline production build", async () => {
+    await startApp(false, true);
   });
   await phase(
     "real Next actor renders disabled without metadata RPC",
@@ -1045,16 +1073,16 @@ try {
               await closedPage.getByRole("status").isVisible(),
               true,
             );
-            if (mode === "no-javascript")
-              assert.equal(
-                await closedPage
-                  .getByText(
-                    "JavaScript is required to display this private directory safely.",
-                  )
-                  .isVisible(),
-                true,
-              );
-            else assert.ok(blockedScripts > 0, "HYDRATION_BLOCK_NOT_EXERCISED");
+            assert.match(
+              await closedPage.getByRole("status").innerText(),
+              /JavaScript is required to display this private directory safely/,
+            );
+            assert.match(
+              await closedPage.getByRole("status").innerText(),
+              /JavaScript may be disabled or failed to load/,
+            );
+            if (mode !== "no-javascript")
+              assert.ok(blockedScripts > 0, "HYDRATION_BLOCK_NOT_EXERCISED");
             await closedPage.screenshot({
               path: path.join(runtime, mode + ".png"),
               fullPage: true,
@@ -1263,20 +1291,11 @@ try {
       const actual = fs.readFileSync(path.join(source, file));
       const actualHash = digest(actual);
       report.executedSourceSha256[file] = actualHash;
-      if (actualHash !== hash) {
-        assertGeneratedNextEnv(
-          file,
-          fs.readFileSync(path.join(root, file), "utf8"),
-          actual.toString("utf8"),
-          applicationNext("os", source).version,
-        );
-        report.generatedSourceReconciliation.push({
-          file,
-          sourceSha256: hash,
-          executedSha256: actualHash,
-          classification: "EXACT_NEXT_16_4_3_DEVELOPMENT_TYPE_IMPORTS_ONLY",
-        });
-      }
+      assert.equal(
+        actualHash,
+        hash,
+        "PRODUCTION_TRACKED_SOURCE_MUTATION: " + file,
+      );
     }
     cleanup.runtimeSourceUnchanged =
       report.generatedSourceReconciliation.length === 0;

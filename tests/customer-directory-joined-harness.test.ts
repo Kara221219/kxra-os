@@ -122,7 +122,11 @@ test("loopback preload rejects foreign targets before any IO and preserves appro
     assert.ok(!denied.includes("example"));
     for (const line of denied.trim().split("\n")) {
       const record = JSON.parse(line);
-      assert.deepEqual(Object.keys(record).sort(), ["reason", "targetClass"]);
+      assert.deepEqual(Object.keys(record).sort(), [
+        "caller",
+        "reason",
+        "targetClass",
+      ]);
       assert.match(record.reason, /^[A-Z_]+$/);
       assert.match(record.targetClass, /^[A-Z_]+$/);
     }
@@ -342,4 +346,19 @@ test("shutdown-only denial or browser failure fails final acceptance while safe 
   );
   assert.ok(source.includes("if (cleanup.clean && release)"));
   assert.ok(!source.includes("if (report.passed && release)"));
+});
+
+test("joined execution uses guarded production build/start and visible JavaScript explanation", () => {
+  const source = fs.readFileSync(
+    path.join(root, "scripts/verify-customer-directory-joined.mjs"),
+    "utf8",
+  );
+  assert.ok(source.includes('NODE_ENV: "production"'));
+  assert.ok(source.includes('["build", ...application.webpackArguments]'));
+  assert.ok(source.includes('["start", "--hostname", "127.0.0.1"'));
+  assert.ok(!source.includes('NODE_ENV: "development"'));
+  assert.ok(source.includes("await startApp(false, true)"));
+  assert.ok(source.includes("OFFLINE_PRODUCTION_BUILD_FAILED_OR_TIMED_OUT"));
+  assert.ok(source.includes("PRODUCTION_TRACKED_SOURCE_MUTATION"));
+  assert.ok(source.includes("JavaScript may be disabled or failed to load"));
 });
