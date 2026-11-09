@@ -69,8 +69,9 @@ test("metadata is hidden in SSR until lifecycle protection is installed; failed 
     }),
   );
   assert.ok(html.includes("visibility:hidden"));
-  assert.ok(html.includes("If this message remains, reload the page"));
+  assert.ok(html.includes("JavaScript may be disabled or failed to load"));
   assert.ok(html.includes("JavaScript is required"));
+  assert.ok(!html.includes("<noscript"));
 });
 test("leaving scrubs metadata before a snapshot; persisted restoration requests one fresh document", () => {
   const f = fixture();

@@ -73,12 +73,10 @@ export default function DirectoryDocumentBoundary({
   return (
     <>
       <p ref={status} role="status">
-        Checking current directory access. If this message remains, reload the
-        page.
+        Checking current directory access. JavaScript is required to display
+        this private directory safely. If this message remains, JavaScript may
+        be disabled or failed to load. Enable it and reload the page.
       </p>
-      <noscript>
-        <p>JavaScript is required to display this private directory safely.</p>
-      </noscript>
       <div
         ref={content}
         data-directory-document
