@@ -225,10 +225,18 @@ test("WebSocket routing allows only exact owned literal origins without credenti
 });
 
 test("only exact observed Next16 development import generation is reconciled", () => {
-  const original = fs.readFileSync(
-    path.join(root, "apps/os/next-env.d.ts"),
-    "utf8",
-  );
+  // Immutable Next 16.4.3 fixture: canonical CI rewrites the working file.
+  // Keep this unit test independent of the active build's generated imports.
+  const original = [
+    '/// <reference types="next" />',
+    '/// <reference types="next/image-types/global" />',
+    'import "./.next/types/routes.d.ts";',
+    'import "./.next/types/root-params.d.ts";',
+    "",
+    "// NOTE: This file should not be edited",
+    "// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.",
+    "",
+  ].join("\n");
   const generated = original.replaceAll(
     '"./.next/types/',
     '"./.next-dev/dev/types/',
@@ -243,6 +251,10 @@ test("only exact observed Next16 development import generation is reconciled", (
   );
   for (const actual of [
     generated + "\n",
+    generated.replaceAll(
+      ".next-dev",
+      ".next-ci-00000000-0000-4000-8000-000000000000",
+    ),
     generated.replace("root-params", "different"),
     generated.replace("next/image", "foreign/image"),
   ])

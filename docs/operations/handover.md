@@ -1,11 +1,3 @@
-## 9 November — directory history remediation prepared, not accepted
-
-Joined77b9073 passed actual Next/SDK positive metadata SSR and pagination, then failed a strict session-revocation navigation check; Back/RSC cache restoration is strongly supported. App checkpoint1ec4458 adds document navigation and a route-local concealed/scrubbed history boundary, preserving server authority; it also fixes collapsed mobile caption layout. The diagnostic follow-up names exact substeps, requires fresh document responses, classifies network denials and reconciles only the exact generated Next typing import change. No-JS/failed hydration remains concealed. Revised browser proof, unchanged production budgets and aggregate acceptance remain pending. [Full scope and limitations](customer-directory-joined-proof-2026-11-09.md).
-
-## 9 November — default-off customer metadata UI prepared
-
-Prepared factual selected-membership workspace labels and a server-rendered owner-only metadata directory in an isolated branch from `ec6d97e`. Reuses existing verified actor/authenticated-query composition; no auth/db/SQL/grant/marketing/payment change. Default-off and denied/unavailable states never show invented counts. Focused 46 tests, 3 verified-session tests, root types and formatting pass; independent source review found no blocking defect. Real framework HTTP/browser verification, build budgets and aggregate acceptance remain pending. [Scope and authority limitations](customer-directory-ui-2026-11-09.md).
-
 ## 3 November — dedicated custom-app restart/restore accepted
 
 Closed the explicitly remaining graceful-restart and fresh-database restore gap for the five installed custom-app tables. Receipt `.runtime/cr-e82522/receipt.json` is PASS: exact data/catalog preservation, schema pins, immutable record history, publication/rollback state, idempotent interrupted-save recovery, tenant isolation and Chromium rendering after restart and restore. Source/target retained stopped; shared lease released. Final guard11/11 and existing custom-app aggregate16/16 pass. No canonical checks, application code or proposal SQL were changed. [Exact scope, evidence and portable integration handoff](custom-app-recovery-local-2026-11-03.md). Same-cluster fresh-database recovery is proved; crash, independent-cluster/role, hosted and combined-lane recovery remain separate gaps.
@@ -1593,3 +1585,13 @@ An isolated local slice prepares a strict platform-owner customer-workspace dire
 The clean owner/provider checkpoint `c2f558488b0fd99bce70bfb7245dbcbe2c69b144` remains frozen separately. This new isolated candidate additionally composes the complete eight-file metadata branch delta from `7f1d1112f81a35d304a7e8810d4f68a5e4b2572c` to `af2af32e5b2b154649c667631ba53f52b560ad57`, preserving both prior append-only notes. This supersedes the preceding composition entry's metadata exclusion only for this new candidate. The six non-shared metadata files exactly match that accepted tip. SQL SHA-256 is `80033853a6600e1493160583d53acd986a7c81fe90e93153cfd0f7adcf3f1d23`.
 
 The metadata reader remains default-off and unwired, with no live grants, migrations, UI activation or hosted changes. Genuine application126 metadata native proof is distinct from canonical synthetic fixture119 CI; neither establishes real framework/live Auth integration. Final source-bound metadata proof, corrected owner acceptance and canonical CI will run serially on this committed head. Final receipts remain outside tracked source. All previously stated product, browser, publication and source-disclosure limitations remain.
+
+
+## 9 November — default-off customer metadata UI prepared
+
+Prepared factual selected-membership workspace labels and a server-rendered owner-only metadata directory in an isolated branch from `ec6d97e`. Reuses existing verified actor/authenticated-query composition; no auth/db/SQL/grant/marketing/payment change. Default-off and denied/unavailable states never show invented counts. Focused 46 tests, 3 verified-session tests, root types and formatting pass; independent source review found no blocking defect. Real framework HTTP/browser verification, build budgets and aggregate acceptance remain pending. [Scope and authority limitations](customer-directory-ui-2026-11-09.md).
+
+
+## 9 November — directory history remediation prepared, not accepted
+
+Joined77b9073 passed actual Next/SDK positive metadata SSR and pagination, then failed a strict session-revocation navigation check; Back/RSC cache restoration is strongly supported. App checkpoint1ec4458 adds document navigation and a route-local concealed/scrubbed history boundary, preserving server authority; it also fixes collapsed mobile caption layout. The diagnostic follow-up names exact substeps, requires fresh document responses, classifies network denials and reconciles only the exact generated Next typing import change. No-JS/failed hydration remains concealed. Revised browser proof, unchanged production budgets and aggregate acceptance remain pending. [Full scope and limitations](customer-directory-joined-proof-2026-11-09.md).
