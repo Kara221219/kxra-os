@@ -5,6 +5,7 @@ import os from "node:os";
 import pg from "pg";
 import { localModeConfiguration } from "../../packages/authz/local-guard";
 import { runtimeFile, testOrigin } from "../support/runtime";
+import { retireFirstUseMembership } from "../support/first-use-fixture";
 import {
   knowledgeLogin,
   knowledgeOk,
@@ -58,8 +59,17 @@ test("selected customer and client memberships enter real workspace without inve
     viewer = "20000000-0000-4000-8000-000000000003";
   const name = `First-use synthetic ${org}`;
   let membership: string | undefined;
+  let returnedToPartner = false;
   await db.connect();
+  const originalOrg = "10000000-0000-4000-8000-000000000001";
+  let originalMembership: unknown;
   try {
+    originalMembership = (
+      await db.query(
+        "select * from kxra.organisation_memberships where org_id=$1 and account_id=$2",
+        [originalOrg, viewer],
+      )
+    ).rows;
     await db.query(
       "insert into kxra.organisations(id,name,slug,organisation_kind,relationship_type) values($1,$2,$3,'CUSTOMER','CUSTOMER')",
       [org, name, `first-use-${org}`],
@@ -205,11 +215,78 @@ test("selected customer and client memberships enter real workspace without inve
         exact: true,
       }),
     ).toBeVisible();
+    returnedToPartner = true;
   } finally {
-    if (membership)
-      await db.query("delete from kxra.organisation_memberships where id=$1", [
-        membership,
-      ]);
-    await db.end();
+    try {
+      if (membership) {
+        const scope = { membership, organisation: org, account: viewer };
+        const events = async () =>
+          (
+            await db.query(
+              "select * from kxra.active_context_events where membership_id=$1 order by id",
+              [membership],
+            )
+          ).rows;
+        const priorEvents = await events();
+        await retireFirstUseMembership(
+          (sql, values) => db.query(sql, values),
+          scope,
+        );
+        const retired = (
+          await db.query(
+            "select * from kxra.organisation_memberships where id=$1",
+            [membership],
+          )
+        ).rows[0];
+        expect(retired.state).toBe("REVOKED");
+        expect(retired.revoked_at).not.toBeNull();
+        // A repeated cleanup keeps version, timestamps and selection history intact.
+        await retireFirstUseMembership(
+          (sql, values) => db.query(sql, values),
+          scope,
+        );
+        expect(
+          (
+            await db.query(
+              "select * from kxra.organisation_memberships where id=$1",
+              [membership],
+            )
+          ).rows[0],
+        ).toEqual(retired);
+        expect(await events()).toEqual(priorEvents);
+        expect(
+          (
+            await db.query(
+              "select * from kxra.organisation_memberships where org_id=$1 and account_id=$2",
+              [originalOrg, viewer],
+            )
+          ).rows,
+        ).toEqual(originalMembership);
+        if (returnedToPartner) {
+          expect(priorEvents.length).toBeGreaterThan(0);
+          const contexts = await page.request.get("/api/context");
+          expect(contexts.status()).toBe(200);
+          const available = (await contexts.json()).organisations;
+          expect(
+            available.some((item: { org_id: string }) => item.org_id === org),
+          ).toBe(false);
+          expect(
+            available.some(
+              (item: { org_id: string }) => item.org_id === originalOrg,
+            ),
+          ).toBe(true);
+          await page.reload();
+          await expect(page).toHaveURL(/\/os$/);
+          await expect(
+            page.getByRole("heading", {
+              name: "Your project workspace",
+              exact: true,
+            }),
+          ).toBeVisible();
+        }
+      }
+    } finally {
+      await db.end();
+    }
   }
 });
