@@ -23,6 +23,9 @@ import {
   assertPostgresOwnership,
   captureDatabaseClientFailure,
   ownedWebSocketUrl,
+  assertGeneratedNextEnv,
+  safeFailure,
+  directoryNavigationKind,
 } from "./customer-directory-joined-ownership.mjs";
 
 assert.deepEqual(
@@ -56,7 +59,7 @@ assert.equal(
   git(
     "diff",
     "--name-only",
-    "14d1f269e44730b567116aa08cdbe7bdfeeb4609",
+    "1ec4458d428b68e0b3d10fa703b8424c85f3b5af",
     "--",
     "apps",
     "packages",
@@ -146,12 +149,24 @@ function checkCancellation() {
   if (asynchronousFailure) throw asynchronousFailure;
 }
 async function phase(name, work) {
+  report.active = { phase: name, substep: "begin" };
+  write("receipt.json", report);
   checkCancellation();
   await work();
   checkCancellation();
   report.phases.push({ name, status: "PASS" });
   write("receipt.json", report);
   console.log("PASS " + name);
+}
+async function substep(name, work) {
+  report.active.substep = name;
+  write("receipt.json", report);
+  checkCancellation();
+  const result = await work();
+  (report.steps ||= []).push({ ...report.active, status: "PASS" });
+  checkCancellation();
+  write("receipt.json", report);
+  return result;
 }
 let release;
 let app,
@@ -787,21 +802,57 @@ try {
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.name));
   const rows = () => page.locator("tbody tr");
+  report.browserRequests = [];
+  page.on("response", (response) => {
+    const kind = directoryNavigationKind(response.url());
+    if (kind.directory && report.browserRequests.length < 200)
+      report.browserRequests.push({
+        ...kind,
+        ...report.active,
+        status: response.status(),
+        document: response.request().isNavigationRequest(),
+        noStore: /(?:^|,)\s*no-store(?:,|$)/.test(
+          response.headers()["cache-control"] || "",
+        ),
+      });
+  });
+  async function documentAction(name, action) {
+    return substep(name, async () => {
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.request().isNavigationRequest() &&
+            directoryNavigationKind(response.url()).directory,
+          { timeout: 30000 },
+        ),
+        action(),
+      ]);
+      noStore(response.headers());
+      await page.waitForLoadState("domcontentloaded");
+      return response;
+    });
+  }
+
   await phase(
     "bounded browser pagination filter and navigation history",
     async () => {
-      const response = await page.goto(origin + "/os/customer-directory");
-      noStore(response.headers());
+      await documentAction("positive-first-document", () =>
+        page.goto(origin + "/os/customer-directory"),
+      );
       await rows().first().waitFor();
       assert.equal(await rows().count(), 25);
       const first = await page.locator("tbody th").allTextContents();
-      await page.getByRole("link", { name: "Next page", exact: true }).click();
+      await documentAction("positive-next-document", () =>
+        page.getByRole("link", { name: "Next page", exact: true }).click(),
+      );
       await page.waitForURL(/cursor=/);
       await page.getByText("Synthetic customer 26", { exact: true }).waitFor();
       assert.equal(await rows().count(), 25);
       const second = await page.locator("tbody th").allTextContents();
       assert.ok(second.every((value) => !first.includes(value)));
-      await page.getByRole("link", { name: "Next page", exact: true }).click();
+      await documentAction("positive-next-document", () =>
+        page.getByRole("link", { name: "Next page", exact: true }).click(),
+      );
       await page.getByText("Synthetic customer 51", { exact: true }).waitFor();
       assert.equal(await rows().count(), 5);
       assert.equal(
@@ -810,17 +861,21 @@ try {
           .count(),
         0,
       );
-      await page.goBack();
+      await documentAction("positive-back-document", () => page.goBack());
       await page.getByText("Synthetic customer 26", { exact: true }).waitFor();
-      await page.goForward();
+      await documentAction("positive-forward-document", () => page.goForward());
       await page.getByText("Synthetic customer 51", { exact: true }).waitFor();
-      await page.getByRole("link", { name: "Refresh from first page" }).click();
+      await documentAction("positive-refresh-document", () =>
+        page.getByRole("link", { name: "Refresh from first page" }).click(),
+      );
       await page.waitForURL(origin + "/os/customer-directory");
       await page.getByText("Synthetic customer 1", { exact: true }).waitFor();
       await page
         .getByLabel("Organisation state", { exact: true })
         .selectOption("SUSPENDED");
-      await page.getByRole("button", { name: "Apply filter" }).click();
+      await documentAction("positive-filter-document", () =>
+        page.getByRole("button", { name: "Apply filter" }).click(),
+      );
       await page.waitForURL(/organisation_state=SUSPENDED$/);
       assert.equal(await rows().count(), 18);
       assert.deepEqual(
@@ -837,15 +892,175 @@ try {
         !(await page.content()).includes("NEVER_EXPOSE_DIRECTORY_PRIVATE"),
       );
       for (const width of [1440, 768, 390, 320]) {
-        await page.setViewportSize({ width, height: 1000 });
-        assert.ok(
-          await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
+        await substep("layout-" + width, async () => {
+          await page.setViewportSize({ width, height: 1000 });
+          const dimensions = await page.evaluate(() => {
+            const table = document
+              .querySelector("table")
+              .getBoundingClientRect();
+            const caption = document
+              .querySelector("caption")
+              .getBoundingClientRect();
+            return {
+              viewport: innerWidth,
+              scroll: document.documentElement.scrollWidth,
+              tableWidth: table.width,
+              captionWidth: caption.width,
+              captionHeight: caption.height,
+            };
+          });
+          (report.layout ||= []).push(dimensions);
+          assert.ok(
+            dimensions.scroll <= dimensions.viewport,
+            "DIRECTORY_HORIZONTAL_OVERFLOW",
+          );
+          assert.ok(
+            dimensions.captionWidth >= dimensions.tableWidth * 0.9,
+            "CAPTION_COLLAPSED_WIDTH",
+          );
+          assert.ok(
+            dimensions.captionHeight <= 180,
+            "CAPTION_EXCESSIVE_HEIGHT",
+          );
+          await page.screenshot({
+            path: path.join(runtime, `directory-positive-${width}.png`),
+            fullPage: true,
+          });
+        });
+      }
+    },
+  );
+  await phase(
+    "native keyboard modified-click and Shell-exit navigation",
+    async () => {
+      await documentAction("keyboard-refresh-new-document", () =>
+        page
+          .getByRole("link", { name: "Refresh from first page" })
+          .press("Enter"),
+      );
+      await rows().first().waitFor();
+      assert.equal(await rows().count(), 25);
+      await substep("modified-click-opens-independent-document", async () => {
+        const [popup, response] = await Promise.all([
+          context.waitForEvent("page"),
+          context.waitForEvent("response", {
+            predicate: (response) =>
+              response.request().isNavigationRequest() &&
+              directoryNavigationKind(response.url()).directory &&
+              response.frame().page() !== page,
+          }),
+          page.getByRole("link", { name: "Refresh from first page" }).click({
+            modifiers: [os.platform() === "darwin" ? "Meta" : "Control"],
+          }),
+        ]);
+        try {
+          noStore(response.headers());
+          await popup.waitForLoadState("domcontentloaded");
+          await popup.locator("tbody tr").first().waitFor();
+          assert.equal(await popup.locator("tbody tr").count(), 25);
+        } finally {
+          await popup.close();
+        }
+      });
+      await substep("Shell-organisation-exit-new-document", async () => {
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.request().isNavigationRequest() &&
+              new URL(response.url()).pathname === "/select-organisation",
           ),
-        );
-        await page.screenshot({
-          path: path.join(runtime, `directory-positive-${width}.png`),
-          fullPage: true,
+          page
+            .getByRole("link", { name: "Synthetic KXRA owner", exact: true })
+            .click(),
+        ]);
+        assert.equal(response.status(), 200);
+        await page.waitForLoadState("domcontentloaded");
+      });
+      await documentAction("Shell-exit-back-new-directory-document", () =>
+        page.goBack(),
+      );
+      await rows().first().waitFor();
+      assert.equal(await rows().count(), 25);
+    },
+  );
+  await phase(
+    "no JavaScript and failed hydration do not reveal metadata",
+    async () => {
+      for (const mode of ["no-javascript", "blocked-hydration"]) {
+        await substep(mode, async () => {
+          const isolated = await browser.newContext({
+            javaScriptEnabled: mode !== "no-javascript",
+            serviceWorkers: "block",
+          });
+          let blockedScripts = 0;
+          try {
+            await isolated.route("**/*", (route) => {
+              const url = new URL(route.request().url());
+              if (
+                ![origin, authOrigin].includes(url.origin) ||
+                url.username ||
+                url.password
+              ) {
+                browserDenied++;
+                return route.abort();
+              }
+              if (
+                mode === "blocked-hydration" &&
+                url.pathname.endsWith(".js")
+              ) {
+                blockedScripts++;
+                return route.abort();
+              }
+              return route.continue();
+            });
+            await isolated.routeWebSocket("**/*", (route) => {
+              browserDenied++;
+              route.close({
+                code: 1008,
+                reason: "No socket needed in non-hydrated check",
+              });
+            });
+            await isolated.addCookies([
+              {
+                name: "sb-127-auth-token",
+                value: ownerSession.cookie,
+                url: origin,
+                httpOnly: true,
+                sameSite: "Lax",
+              },
+            ]);
+            const closedPage = await isolated.newPage();
+            const response = await closedPage.goto(
+              origin + "/os/customer-directory",
+              { waitUntil: "load" },
+            );
+            noStore(response.headers());
+            assert.equal(await closedPage.locator("tbody tr").count(), 25);
+            assert.equal(
+              await closedPage.locator("tbody tr").first().isVisible(),
+              false,
+            );
+            assert.equal(
+              await closedPage.getByRole("status").isVisible(),
+              true,
+            );
+            if (mode === "no-javascript")
+              assert.equal(
+                await closedPage
+                  .getByText(
+                    "JavaScript is required to display this private directory safely.",
+                  )
+                  .isVisible(),
+                true,
+              );
+            else assert.ok(blockedScripts > 0, "HYDRATION_BLOCK_NOT_EXERCISED");
+            await closedPage.screenshot({
+              path: path.join(runtime, mode + ".png"),
+              fullPage: true,
+            });
+          } finally {
+            await isolated.close();
+          }
         });
       }
     },
@@ -853,25 +1068,47 @@ try {
   await phase(
     "session deletion denies fresh requests and post-revocation navigation",
     async () => {
-      await page.goto(origin + "/os/customer-directory");
+      await documentAction("session-before-revocation-first-document", () =>
+        page.goto(origin + "/os/customer-directory"),
+      );
       await rows().first().waitFor();
-      await provider.query("delete from auth.sessions where id=$1", [
-        ownerSession.sessionId,
-      ]);
-      unavailable(await request(ownerSession.cookie));
-      await page.getByRole("link", { name: "Next page", exact: true }).click();
-      await page
-        .getByRole("heading", { name: "Directory unavailable", exact: true })
-        .waitFor();
-      assert.equal(await rows().count(), 0);
-      // Do not weaken this assertion if Next restores stale RSC data from history.
-      await page.goBack();
-      await page
-        .getByRole("heading", { name: "Directory unavailable", exact: true })
-        .waitFor();
-      assert.equal(await rows().count(), 0);
-      noStore((await page.reload()).headers());
-      assert.equal(await rows().count(), 0);
+      await substep("delete-current-original-session", () =>
+        provider.query("delete from auth.sessions where id=$1", [
+          ownerSession.sessionId,
+        ]),
+      );
+      await substep("session-revoked-direct-http", async () =>
+        unavailable(await request(ownerSession.cookie)),
+      );
+      await documentAction("session-revoked-next-document", () =>
+        page.getByRole("link", { name: "Next page", exact: true }).click(),
+      );
+      await substep("session-revoked-next-has-no-rows", async () => {
+        await page
+          .getByRole("heading", { name: "Directory unavailable", exact: true })
+          .waitFor();
+        assert.equal(await rows().count(), 0);
+      });
+      // A real document response is required. An outgoing heading cannot satisfy
+      // this step; stale restored rows remain a failure, never fixed by a test reload.
+      await documentAction("session-revoked-back-document", () =>
+        page.goBack(),
+      );
+      await substep("session-revoked-back-has-no-rows", async () => {
+        await page
+          .getByRole("heading", { name: "Directory unavailable", exact: true })
+          .waitFor();
+        assert.equal(await rows().count(), 0);
+      });
+      await documentAction("session-revoked-forward-document", () =>
+        page.goForward(),
+      );
+      await substep("session-revoked-forward-has-no-rows", async () => {
+        await page
+          .getByRole("heading", { name: "Directory unavailable", exact: true })
+          .waitFor();
+        assert.equal(await rows().count(), 0);
+      });
     },
   );
   await phase("fresh session recovery then membership revocation", async () => {
@@ -886,21 +1123,47 @@ try {
         sameSite: "Lax",
       },
     ]);
-    await page.goto(origin + "/os/customer-directory");
+    await documentAction("membership-before-revocation-fresh-document", () =>
+      page.goto(origin + "/os/customer-directory"),
+    );
     await rows().first().waitFor();
     assert.equal(await rows().count(), 25);
-    await admin.query(
-      "update kxra.organisation_memberships set state='REVOKED',revoked_at=clock_timestamp(),version=version+1 where id=$1",
-      [membership],
+    await substep("revoke-current-membership", () =>
+      admin.query(
+        "update kxra.organisation_memberships set state='REVOKED',revoked_at=clock_timestamp(),version=version+1 where id=$1",
+        [membership],
+      ),
     );
-    unavailable(await request(ownerSession.cookie));
-    await page.getByRole("link", { name: "Next page", exact: true }).click();
-    await page
-      .getByRole("heading", { name: "Access unavailable", exact: true })
-      .waitFor();
-    assert.equal(await rows().count(), 0);
-    noStore((await page.reload()).headers());
-    assert.equal(await rows().count(), 0);
+    await substep("membership-revoked-direct-http", async () =>
+      unavailable(await request(ownerSession.cookie)),
+    );
+    await documentAction("membership-revoked-next-document", () =>
+      page.getByRole("link", { name: "Next page", exact: true }).click(),
+    );
+    await substep("membership-revoked-next-has-no-rows", async () => {
+      await page
+        .getByRole("heading", { name: "Access unavailable", exact: true })
+        .waitFor();
+      assert.equal(await rows().count(), 0);
+    });
+    await documentAction("membership-revoked-back-document", () =>
+      page.goBack(),
+    );
+    await substep("membership-revoked-back-has-no-rows", async () => {
+      await page
+        .getByRole("heading", { name: "Access unavailable", exact: true })
+        .waitFor();
+      assert.equal(await rows().count(), 0);
+    });
+    await documentAction("membership-revoked-forward-document", () =>
+      page.goForward(),
+    );
+    await substep("membership-revoked-forward-has-no-rows", async () => {
+      await page
+        .getByRole("heading", { name: "Access unavailable", exact: true })
+        .waitFor();
+      assert.equal(await rows().count(), 0);
+    });
   });
   assert.equal(browserDenied, 0);
   assert.deepEqual(pageErrors, []);
@@ -908,10 +1171,7 @@ try {
   report.authRequests = authCounts;
   report.passed = true;
 } catch (error) {
-  report.failure = {
-    name: error.name,
-    message: String(error.message).slice(0, 1500),
-  };
+  report.failure = { ...safeFailure(error), ...report.active };
   try {
     const visible = browser
       ?.contexts()
@@ -996,13 +1256,30 @@ try {
     for (const [file, hash] of Object.entries(sourceHashes))
       assert.equal(digest(fs.readFileSync(path.join(root, file))), hash, file);
     cleanup.frozenSourceUnchanged = true;
-    for (const [file, hash] of Object.entries(sourceHashes))
-      assert.equal(
-        digest(fs.readFileSync(path.join(source, file))),
-        hash,
-        "RUNTIME_SOURCE_CHANGED: " + file,
-      );
-    cleanup.runtimeSourceUnchanged = true;
+    report.generatedSourceReconciliation = [];
+    report.executedSourceSha256 = {};
+    for (const [file, hash] of Object.entries(sourceHashes)) {
+      const actual = fs.readFileSync(path.join(source, file));
+      const actualHash = digest(actual);
+      report.executedSourceSha256[file] = actualHash;
+      if (actualHash !== hash) {
+        assertGeneratedNextEnv(
+          file,
+          fs.readFileSync(path.join(root, file), "utf8"),
+          actual.toString("utf8"),
+          applicationNext("os", source).version,
+        );
+        report.generatedSourceReconciliation.push({
+          file,
+          sourceSha256: hash,
+          executedSha256: actualHash,
+          classification: "EXACT_NEXT_16_4_3_DEVELOPMENT_TYPE_IMPORTS_ONLY",
+        });
+      }
+    }
+    cleanup.runtimeSourceUnchanged =
+      report.generatedSourceReconciliation.length === 0;
+    cleanup.runtimeSourceVerified = true;
   } catch {
     cleanup.errors.push(
       cleanup.frozenSourceUnchanged
@@ -1017,11 +1294,20 @@ try {
     cleanup.databaseClientsClosed &&
     cleanup.postgresStopped &&
     cleanup.frozenSourceUnchanged &&
+    cleanup.runtimeSourceVerified &&
     cleanup.errors.length === 0;
   report.authRequests = { ...authCounts };
   report.networkDenialObserved = fs.existsSync(
     path.join(runtime, "network-denials.log"),
   );
+  report.networkDenials = report.networkDenialObserved
+    ? fs
+        .readFileSync(path.join(runtime, "network-denials.log"), "utf8")
+        .trim()
+        .split("\n")
+        .slice(0, 100)
+        .map((line) => JSON.parse(line))
+    : [];
   report.cleanup = cleanup;
   report.cancelled = cancelled;
   report.asynchronousFailure = asynchronousFailure?.message || null;

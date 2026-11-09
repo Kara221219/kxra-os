@@ -9,10 +9,21 @@ assert.match(runtime, /^\/private\/tmp\/kxra-directory-joined-[A-Za-z0-9]+$/);
 const marker = JSON.parse(fs.readFileSync(runtime + "/ownership.json", "utf8"));
 assert.equal(marker.nonce, process.env.KXRA_CI_RUN_ID);
 const ports = new Set(marker.httpPorts.map(String));
-function deny() {
+function originClass(host, port, socket) {
+  if (socket)
+    return socket === marker.socket + "/.s.PGSQL." + marker.databasePort
+      ? "OWNED_SOCKET"
+      : "OTHER_SOCKET";
+  if (host === "127.0.0.1")
+    return ports.has(String(port)) ? "OWNED_LOOPBACK" : "OTHER_LOOPBACK_PORT";
+  if (["localhost", "::1", "[::1]"].includes(host)) return "LOOPBACK_ALIAS";
+  if (!host) return "MISSING_HOST";
+  return net.isIP(host) ? "NON_LOOPBACK_IP" : "NON_LOOPBACK_NAME";
+}
+function deny(reason = "UNCLASSIFIED", targetClass = "UNKNOWN") {
   fs.appendFileSync(
     runtime + "/network-denials.log",
-    "BLOCKED_NON_OWNED_TARGET\n",
+    JSON.stringify({ reason, targetClass }) + "\n",
     { mode: 0o600 },
   );
   throw Error("JOINED_PROOF_NON_OWNED_NETWORK_TARGET");
@@ -20,25 +31,42 @@ function deny() {
 function noConnectionHooks(options) {
   if (!options || typeof options !== "object") return;
   for (const key of ["lookup", "createConnection", "dispatcher", "fd"])
-    if (options[key] !== undefined) deny();
-  if (options.agent !== undefined && options.agent !== false) deny();
+    if (options[key] !== undefined)
+      deny(
+        "TRANSPORT_HOOK_" + key.toUpperCase(),
+        originClass(
+          options.hostname || options.host,
+          options.port,
+          options.socketPath,
+        ),
+      );
+  if (options.agent !== undefined && options.agent !== false)
+    deny(
+      "CUSTOM_AGENT",
+      originClass(options.hostname || options.host, options.port),
+    );
 }
 function endpoint(host, port, socket) {
   if (socket) {
-    if (socket !== marker.socket + "/.s.PGSQL." + marker.databasePort) deny();
+    if (socket !== marker.socket + "/.s.PGSQL." + marker.databasePort)
+      deny("SOCKET_TARGET", originClass(host, port, socket));
     return;
   }
   // Servers bind this literal IPv4 address. No DNS alias or caller lookup.
-  if (host !== "127.0.0.1" || !ports.has(String(port))) deny();
+  if (host !== "127.0.0.1" || !ports.has(String(port)))
+    deny("TCP_TARGET", originClass(host, port));
 }
 function urlTarget(value) {
   let url;
   try {
     url = new URL(value);
   } catch {
-    return deny();
+    return deny("INVALID_URL");
   }
-  if (url.protocol !== "http:" || url.username || url.password) deny();
+  if (url.protocol !== "http:")
+    deny("PROTOCOL", originClass(url.hostname, url.port));
+  if (url.username || url.password)
+    deny("URL_CREDENTIALS", originClass(url.hostname, url.port));
   endpoint(url.hostname, url.port);
 }
 const originalFetch = globalThis.fetch;
@@ -77,19 +105,32 @@ function wrapRequest(original) {
           "protocol",
           "socketPath",
         ])
-          if (options[key] !== undefined) deny();
+          if (options[key] !== undefined)
+            deny(
+              "URL_OPTION_" + key.toUpperCase(),
+              originClass(
+                options.hostname || options.host,
+                options.port,
+                options.socketPath,
+              ),
+            );
       }
     } else {
-      if (!first || typeof first !== "object") deny();
+      if (!first || typeof first !== "object") deny("INVALID_OPTIONS");
       noConnectionHooks(first);
-      if (first.protocol && first.protocol !== "http:") deny();
-      if (first.socketPath !== undefined) deny();
+      if (first.protocol && first.protocol !== "http:")
+        deny("PROTOCOL", originClass(first.hostname || first.host, first.port));
+      if (first.socketPath !== undefined)
+        deny(
+          "HTTP_SOCKET_OVERRIDE",
+          originClass(undefined, undefined, first.socketPath),
+        );
       if (
         first.hostname !== undefined &&
         first.host !== undefined &&
         first.hostname !== first.host
       )
-        deny();
+        deny("CONFLICTING_HOST_OPTIONS", "UNKNOWN");
       endpoint(first.hostname || first.host, first.port || 80);
     }
     return original.call(this, first, ...rest);
@@ -97,4 +138,4 @@ function wrapRequest(original) {
 }
 http.request = wrapRequest(http.request);
 http.get = wrapRequest(http.get);
-https.request = https.get = deny;
+https.request = https.get = () => deny("HTTPS_TRANSPORT", "UNKNOWN");

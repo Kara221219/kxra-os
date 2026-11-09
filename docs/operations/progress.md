@@ -1,3 +1,7 @@
+## 9 November — directory history remediation prepared, not accepted
+
+Joined77b9073 passed actual Next/SDK positive metadata SSR and pagination, then failed a strict session-revocation navigation check; Back/RSC cache restoration is strongly supported. App checkpoint1ec4458 adds document navigation and a route-local concealed/scrubbed history boundary, preserving server authority; it also fixes collapsed mobile caption layout. The diagnostic follow-up names exact substeps, requires fresh document responses, classifies network denials and reconciles only the exact generated Next typing import change. No-JS/failed hydration remains concealed. Revised browser proof, unchanged production budgets and aggregate acceptance remain pending. [Full scope and limitations](customer-directory-joined-proof-2026-11-09.md).
+
 ## 9 November — default-off customer metadata UI prepared
 
 Prepared factual selected-membership workspace labels and a server-rendered owner-only metadata directory in an isolated branch from `ec6d97e`. Reuses existing verified actor/authenticated-query composition; no auth/db/SQL/grant/marketing/payment change. Default-off and denied/unavailable states never show invented counts. Focused 46 tests, 3 verified-session tests, root types and formatting pass; independent source review found no blocking defect. Real framework HTTP/browser verification, build budgets and aggregate acceptance remain pending. [Scope and authority limitations](customer-directory-ui-2026-11-09.md).

@@ -49,3 +49,56 @@ export function ownedWebSocketUrl(value, allowed) {
     return false;
   }
 }
+
+export function assertGeneratedNextEnv(file, original, actual, nextVersion) {
+  assert.equal(file, "apps/os/next-env.d.ts", "UNREVIEWED_GENERATED_PATH");
+  assert.equal(nextVersion, "16.4.3", "UNREVIEWED_GENERATOR_VERSION");
+  const accepted = `/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/types/routes.d.ts";
+import "./.next/types/root-params.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+`;
+  assert.equal(original, accepted, "UNREVIEWED_GENERATED_SOURCE");
+  assert.equal(
+    actual,
+    accepted.replaceAll('"./.next/types/', '"./.next-dev/dev/types/'),
+    "UNREVIEWED_GENERATED_MUTATION",
+  );
+}
+
+export function safeFailure(error) {
+  const stack = [];
+  for (const match of String(error.stack || "").matchAll(
+    /(verify-customer-directory-joined\.mjs|customer-directory-joined-ownership\.mjs):(\d+):(\d+)/g,
+  ))
+    stack.push({
+      file: "scripts/" + match[1],
+      line: Number(match[2]),
+      column: Number(match[3]),
+    });
+  const message = String(error.message || "");
+  const numeric = (value) =>
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return {
+    name: ["AssertionError", "TimeoutError", "Error"].includes(error.name)
+      ? error.name
+      : "Error",
+    code: /^[A-Z][A-Z0-9_]{0,119}$/.test(message) ? message : "CHECK_FAILED",
+    actual: numeric(error.actual),
+    expected: numeric(error.expected),
+    stack: stack.slice(0, 12),
+  };
+}
+
+export function directoryNavigationKind(value) {
+  const url = new URL(value);
+  return {
+    directory: url.pathname === "/os/customer-directory",
+    cursor: url.searchParams.has("cursor"),
+    filtered: url.searchParams.has("organisation_state"),
+    fragment: Boolean(url.hash),
+  };
+}

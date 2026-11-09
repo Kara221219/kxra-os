@@ -9,6 +9,9 @@ import {
   assertPostgresOwnership,
   captureDatabaseClientFailure,
   ownedWebSocketUrl,
+  assertGeneratedNextEnv,
+  safeFailure,
+  directoryNavigationKind,
 } from "../scripts/customer-directory-joined-ownership.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -116,6 +119,12 @@ test("loopback preload rejects foreign targets before any IO and preserves appro
     assert.equal(denied.trim().split("\n").length, 22);
     assert.ok(!denied.includes("secret"));
     assert.ok(!denied.includes("example"));
+    for (const line of denied.trim().split("\n")) {
+      const record = JSON.parse(line);
+      assert.deepEqual(Object.keys(record).sort(), ["reason", "targetClass"]);
+      assert.match(record.reason, /^[A-Z_]+$/);
+      assert.match(record.targetClass, /^[A-Z_]+$/);
+    }
   } finally {
     // Exact temporary directory made by this pure test only, never a native lease.
     fs.rmSync(runtime, { recursive: true });
@@ -204,4 +213,87 @@ test("WebSocket routing allows only exact owned literal origins without credenti
       source.indexOf("context.newPage()"),
   );
   assert.ok(source.includes('serviceWorkers: "block"'));
+});
+
+test("only exact observed Next16 development import generation is reconciled", () => {
+  const original = fs.readFileSync(
+    path.join(root, "apps/os/next-env.d.ts"),
+    "utf8",
+  );
+  const generated = original.replaceAll(
+    '"./.next/types/',
+    '"./.next-dev/dev/types/',
+  );
+  assert.doesNotThrow(() =>
+    assertGeneratedNextEnv(
+      "apps/os/next-env.d.ts",
+      original,
+      generated,
+      "16.4.3",
+    ),
+  );
+  for (const actual of [
+    generated + "\n",
+    generated.replace("root-params", "different"),
+    generated.replace("next/image", "foreign/image"),
+  ])
+    assert.throws(() =>
+      assertGeneratedNextEnv(
+        "apps/os/next-env.d.ts",
+        original,
+        actual,
+        "16.4.3",
+      ),
+    );
+  assert.throws(() =>
+    assertGeneratedNextEnv("apps/os/other.ts", original, generated, "16.4.3"),
+  );
+  assert.throws(() =>
+    assertGeneratedNextEnv(
+      "apps/os/next-env.d.ts",
+      original + "\n",
+      generated,
+      "16.4.3",
+    ),
+  );
+  assert.throws(() =>
+    assertGeneratedNextEnv(
+      "apps/os/next-env.d.ts",
+      original,
+      generated,
+      "16.4.4",
+    ),
+  );
+});
+test("failure and navigation diagnostics retain useful location without raw secrets or URLs", () => {
+  const failure = safeFailure({
+    name: "AssertionError",
+    message:
+      "synthetic-secret https://user:secret@example.invalid/?cursor=private",
+    actual: 25,
+    expected: 0,
+    stack:
+      "Error: secret\n at step (/private/tmp/private-source/scripts/verify-customer-directory-joined.mjs:900:12)",
+  });
+  assert.deepEqual(failure.stack, [
+    {
+      file: "scripts/verify-customer-directory-joined.mjs",
+      line: 900,
+      column: 12,
+    },
+  ]);
+  assert.equal(failure.actual, 25);
+  assert.equal(failure.expected, 0);
+  assert.ok(!JSON.stringify(failure).includes("secret"));
+  assert.ok(!JSON.stringify(failure).includes("/private/tmp"));
+  const kind = directoryNavigationKind(
+    "http://127.0.0.1:3210/os/customer-directory?cursor=private&organisation_state=ACTIVE",
+  );
+  assert.deepEqual(kind, {
+    directory: true,
+    cursor: true,
+    filtered: true,
+    fragment: false,
+  });
+  assert.ok(!JSON.stringify(kind).includes("private"));
 });
