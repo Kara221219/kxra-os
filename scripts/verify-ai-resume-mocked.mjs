@@ -49,14 +49,20 @@ try {
   };
   let status = base,
     denied = false,
+    stalled = false,
+    heldReview,
     posts = [];
-  await page.route("**/api/ai-connection-admission**", (r) =>
-    r.fulfill({
+  await page.route("**/api/ai-connection-admission**", (r) => {
+    if (stalled) {
+      heldReview = r;
+      return;
+    }
+    return r.fulfill({
       status: denied ? 403 : 200,
       contentType: "application/json",
       body: JSON.stringify({ admission: status }),
-    }),
-  );
+    });
+  });
   await page.route("**/api/team-space/connections", (r) => {
     posts.push(r.request().postDataJSON());
     return r.fulfill({
@@ -198,6 +204,53 @@ try {
     .getByText("Review status unavailable.", { exact: false })
     .waitFor();
   assert((await page.locator("input[name=key]").count()) === 0, "denied form");
+  // Keep the real production deadline; virtual time makes the stalled read deterministic.
+  await page.clock.install();
+  denied = false;
+  stalled = true;
+  await page
+    .getByRole("button", { name: "Check review status", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Checking review…", exact: true })
+    .waitFor();
+  await page.clock.fastForward(15_001);
+  await page
+    .getByText("Review status unavailable.", { exact: false })
+    .waitFor();
+  assert(
+    await page
+      .getByRole("button", { name: "Check review status", exact: true })
+      .isEnabled(),
+    "timeout restores retry",
+  );
+  assert(
+    (await page.locator("input[name=key]").count()) === 0,
+    "timeout keeps key form hidden",
+  );
+  stalled = false;
+  status = null;
+  await page
+    .getByRole("button", { name: "Find my latest request", exact: true })
+    .click();
+  await page.locator("input[name=key]").waitFor();
+  assert(
+    (await page.locator("input[name=key]").inputValue()) === "",
+    "retry starts with empty key",
+  );
+  if (heldReview)
+    await heldReview
+      .fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ admission: base }),
+      })
+      .catch(() => {});
+  assert(
+    (await page.locator("input[name=key]").count()) === 1,
+    "retry remains usable after the aborted request",
+  );
+  assert(posts.length === 1, "read recovery must not submit a connection");
   assert(errors.length === 0, JSON.stringify(errors));
   console.log(
     JSON.stringify({
@@ -210,6 +263,8 @@ try {
         "desktop-mobile",
         "unknown-secret-projection-denied",
         "access-denied",
+        "stalled-review-timeout-and-retry",
+        "retry-stable-after-aborted-review",
       ],
       database: "NOT_USED",
       provider: "NOT_USED",

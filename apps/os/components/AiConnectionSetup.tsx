@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readAiReview } from "../lib/ai-review-lookup";
 import { ProviderIdentity } from "./ProviderIdentity";
 import { providerIdentity } from "../lib/provider-identity";
 import type { CustomerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
@@ -62,21 +63,7 @@ export function AiConnectionSetup({
     setReady(false);
     setNotice("");
     try {
-      const r = await fetch(
-        "/api/ai-connection-admission" +
-          (id ? "?id=" + encodeURIComponent(id) : ""),
-        { cache: "no-store", signal: control.signal },
-      );
-      if (!r.ok) throw Error("UNAVAILABLE");
-      const body = await r.json();
-      if (
-        !body ||
-        typeof body !== "object" ||
-        Object.keys(body).join(",") !== "admission"
-      )
-        throw Error("INVALID");
-      const value =
-        body.admission === null ? null : parseAiSetupStatus(body.admission);
+      const value = await readAiReview(control.signal, id);
       if (!control.signal.aborted) {
         setStatus(value);
         setReady(true);
