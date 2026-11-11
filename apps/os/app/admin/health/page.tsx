@@ -5,11 +5,15 @@ export const metadata = { title: "Admin health · KXRA" };
 
 export default async function AdminHealth() {
   const data = await loadPlatformAdmin(await actor());
+  const deploy =
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    "This process was not started by a Vercel deployment, so no deploy id is available.";
   const emailOn = process.env.KXRA_EMAIL_ENABLED === "true";
   const resend = Boolean(process.env.RESEND_API_KEY);
   return (
     <>
       <h1>System health</h1>
+      <p>Latest deploy: {deploy}</p>
       <p>
         Email delivery is {emailOn && resend ? "configured" : "not connected"}.
         The latest deploy is the release currently serving this app. This screen

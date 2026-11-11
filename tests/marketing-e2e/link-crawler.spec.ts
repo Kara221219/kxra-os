@@ -16,6 +16,7 @@ test("public links and linked buttons resolve on desktop and mobile widths", asy
     "/insights",
     "/about-us",
     "/lets-connect",
+    "/careers",
   ];
   const seen = new Set<string>();
   const failures: string[] = [];
@@ -29,23 +30,34 @@ test("public links and linked buttons resolve on desktop and mobile widths", asy
     if (status >= 300 && status < 400) continue;
     if (!response.headers()["content-type"]?.includes("text/html")) continue;
     await page.goto(path);
-    const hrefs = await page
-      .locator("a[href]")
-      .evaluateAll((nodes) =>
-        nodes.map((node) => node.getAttribute("href") || ""),
-      );
-    for (const href of hrefs) {
-      if (
-        !href ||
-        href.startsWith("mailto:") ||
-        href.startsWith("tel:") ||
-        href.startsWith("http://") ||
-        href.startsWith("https://")
-      )
-        continue;
-      const next = href.split(/[?#]/)[0] || path;
-      if (next.startsWith("/") && !seen.has(next)) queue.push(next);
-    }
+    const collect = async () => {
+      const hrefs = await page
+        .locator("a[href]")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("href") || ""),
+        );
+      for (const href of hrefs) {
+        if (
+          !href ||
+          href.startsWith("mailto:") ||
+          href.startsWith("tel:") ||
+          href.startsWith("http://") ||
+          href.startsWith("https://")
+        )
+          continue;
+        const next = href.split(/[?#]/)[0] || path;
+        if (next.startsWith("/") && !seen.has(next)) queue.push(next);
+      }
+    };
+    if (path === "/") {
+      if (info.project.name === "mobile")
+        await page.getByRole("button", { name: "Menu", exact: true }).click();
+      await collect();
+      for (const name of ["Solutions", "How we work"]) {
+        await page.getByRole("button", { name, exact: true }).click();
+        await collect();
+      }
+    } else await collect();
   }
   expect(failures, failures.join("\n")).toEqual([]);
   expect(seen.has("/pricing")).toBe(true);

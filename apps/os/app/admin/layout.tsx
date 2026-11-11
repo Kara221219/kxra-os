@@ -13,6 +13,7 @@ const links = [
   ["Analytics", "/admin/analytics"],
   ["Health", "/admin/health"],
   ["Settings", "/admin/settings"],
+  ["Audit log", "/admin/audit"],
 ];
 
 export const dynamic = "force-dynamic";

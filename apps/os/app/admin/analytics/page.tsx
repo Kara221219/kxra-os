@@ -15,9 +15,10 @@ export default async function AdminAnalytics() {
       <h1>Analytics</h1>
       <p>
         This view uses records KXRA already stores. It does not set a cookie.
-        Page views and traffic sources are not collected. If you later connect
-        Vercel Web Analytics, turn it on only after the cookie notice allows
-        non-essential measurement.
+        Page views, top pages and traffic sources are not stored. Adding that
+        table would be a new migration, and the release check rejects any
+        migration file that is not already in its locked list. No third-party
+        analytics cookie is set.
       </p>
       <ol>
         <li>Accounts created in 30 days: {data.signups.d30}</li>

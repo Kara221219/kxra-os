@@ -69,7 +69,13 @@ export default async function AdminUser({
         <dt>Last profile update</dt>
         <dd>{new Date(profile.updated_at).toLocaleString("en-GB")}</dd>
       </dl>
-      <h2>Security history</h2>
+      <h2>Sign-in and security history</h2>
+      <p className={styles.note}>
+        These are the security events stored for this account. A routine
+        sign-in is not given its own row. Password reset is sent only when
+        this person uses Forgot password and email delivery is switched on.
+        The owner cannot set their password from here.
+      </p>
       <ul>
         {(record.events as { event_type: string; created_at: string }[]).map(
           (event) => (

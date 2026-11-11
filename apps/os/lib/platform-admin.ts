@@ -1,4 +1,6 @@
-import { scoped } from "../../../packages/db";
+import crypto from "node:crypto";
+import { localMode, scoped } from "../../../packages/db";
+import { sealEmailDeliverySecret } from "../../../packages/integrations/email";
 import { HttpError, recentOwnerMfa, type Actor } from "./auth";
 
 /** Platform admin is the KXRA owner, with a fresh MFA challenge. */
@@ -229,6 +231,43 @@ export async function loadBillingMirror(actor: Actor) {
   );
 }
 
+export async function loadAuditLog(actor: Actor) {
+  assertPlatformAdmin(actor);
+  return scoped(
+    actor,
+    async (db) =>
+      (
+        await db.query(
+          `select id::text, action, created_at, metadata::text as metadata
+         from kxra.audit_events
+         order by created_at desc, id desc
+         limit 80`,
+        )
+      ).rows,
+  );
+}
+
+export async function addSupportNote(
+  actor: Actor,
+  requestId: string,
+  note: string,
+) {
+  assertPlatformAdmin(actor);
+  if (note.trim().length < 3)
+    throw new HttpError(
+      400,
+      "Write a note of at least 3 characters",
+      "NOTE_REQUIRED",
+    );
+  await scoped(actor, async (db) => {
+    await db.query("select kxra.add_customer_service_internal_note($1,$2,$3)", [
+      requestId,
+      crypto.randomUUID(),
+      note.trim(),
+    ]);
+  });
+}
+
 export async function loadSupportQueues(actor: Actor) {
   assertPlatformAdmin(actor);
   return scoped(actor, async (db) => {
@@ -241,7 +280,7 @@ export async function loadSupportQueues(actor: Actor) {
     ).rows;
     const tickets = (
       await db.query(
-        `select id, subject, state, request_type, submitted_at
+        `select id, subject, state, request_type, submitted_at, request_hash, version
          from kxra.customer_service_requests
          order by submitted_at desc limit 50`,
       )
@@ -269,6 +308,53 @@ export async function loadDecisionReviews(actor: Actor) {
       )
     ).rows;
     return { website, projects };
+  });
+}
+
+export async function loadOpenInvitations(actor: Actor) {
+  assertPlatformAdmin(actor);
+  return scoped(
+    actor,
+    async (db) =>
+      (
+        await db.query(
+          `select id, recipient_email, state, expires_at
+         from kxra.invitations
+         where state in ('PENDING','SENT','DELIVERY_FAILED')
+           and expires_at > now()
+         order by created_at desc
+         limit 30`,
+        )
+      ).rows,
+  );
+}
+
+export async function resendInvitation(actor: Actor, invitationId: string) {
+  assertPlatformAdmin(actor);
+  const token = crypto.randomBytes(32).toString("base64url");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const sealed =
+    !localMode() && process.env.KXRA_EMAIL_ENABLED === "true"
+      ? sealEmailDeliverySecret(token, tokenHash)
+      : null;
+  await scoped(actor, async (db) => {
+    const rows = (
+      await db.query<{ outbox_id: string }>(
+        "select * from kxra.resend_invitation($1,$2)",
+        [invitationId, tokenHash],
+      )
+    ).rows;
+    if (sealed && rows[0])
+      await db.query(
+        "select kxra.attach_transactional_email_secret($1,$2,$3,$4,$5)",
+        [
+          rows[0].outbox_id,
+          sealed.ciphertext,
+          sealed.nonce,
+          sealed.authTag,
+          sealed.secretSha256,
+        ],
+      );
   });
 }
 

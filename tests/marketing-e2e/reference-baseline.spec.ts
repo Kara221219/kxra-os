@@ -37,7 +37,7 @@ test("reference baseline shell, samples and integrations stay local and usable",
       )
       .getByRole("link", { name: /Let’s connect/ });
     await connect.click();
-    await expect(page).toHaveURL(/\/contact$/);
+    await expect(page).toHaveURL(/\/lets-connect$/);
     await expect(page.getByLabel("How can KXRA help?")).toBeVisible();
     await page.goto("/");
   });

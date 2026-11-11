@@ -48,7 +48,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               KXRA<span>GROUP</span>
             </Link>
             <h2>One place for the next move.</h2>
-            <Link className="ref-button ref-button-sage" href="/contact">
+            <Link className="ref-button ref-button-sage" href="/lets-connect">
               Let’s connect →
             </Link>
           </div>
@@ -72,7 +72,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ["Compare approaches", "/alternatives"],
                 ["Help center", "/help"],
                 ["Pricing", "/pricing"],
-                ["Contact", "/contact"],
+                ["Let’s connect", "/lets-connect"],
               ],
               Company: [
                 ["Partner with us", "/partner"],

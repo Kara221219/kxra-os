@@ -28,11 +28,6 @@ for (const [route, hashes] of Object.entries(routeHashes)) {
 export default {
   async redirects() {
     return [
-      { source: "/how-we-work", destination: "/approach", permanent: true },
-      { source: "/insights", destination: "/blog", permanent: true },
-      { source: "/about-us", destination: "/about", permanent: true },
-      { source: "/careers", destination: "/about", permanent: false },
-      { source: "/lets-connect", destination: "/contact", permanent: true },
       { source: "/brand-studio", destination: "/pricing", permanent: true },
       { source: "/video-studio", destination: "/pricing", permanent: true },
     ];

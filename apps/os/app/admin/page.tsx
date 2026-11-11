@@ -18,9 +18,9 @@ export default async function AdminHome() {
     ["New accounts, 7 days", String(data.signups.d7)],
     ["New accounts, 30 days", String(data.signups.d30)],
     ["New accounts, 90 days", String(data.signups.d90)],
-    ["Security events, 1 day", String(data.securityEvents.day)],
-    ["Security events, 7 days", String(data.securityEvents.week)],
-    ["Security events, 30 days", String(data.securityEvents.month)],
+    ["DAU", String(data.securityEvents.day)],
+    ["WAU", String(data.securityEvents.week)],
+    ["MAU", String(data.securityEvents.month)],
     ["Active subscriptions", String(data.billing.active)],
     ["Trialing", String(data.billing.trialing)],
     ["Past due", String(data.billing.pastDue)],
@@ -45,10 +45,12 @@ export default async function AdminHome() {
     <>
       <h1>Overview</h1>
       <p className={styles.note}>
-        Figures come from the KXRA database. Monthly recurring revenue counts
-        only active GBP monthly subscriptions already written by a verified
-        Stripe webhook. Nothing on this page charges a card or sends a refund.
-        Sign-in counts are security events, not a guessed daily-active number.
+        Figures come from the KXRA database. DAU, WAU and MAU count distinct
+        accounts with a security event in 1, 7 and 30 days. The database does
+        not store a row for every sign-in, and the release lock blocks the
+        migration that would add one. Monthly recurring revenue counts only
+        active GBP monthly subscriptions already written by a verified Stripe
+        webhook. Nothing on this page charges a card or sends a refund.
       </p>
       <div className={styles.grid}>
         {cards.map(([label, value]) => (

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { actor } from "../../../lib/auth";
-import { searchAdminUsers } from "../../../lib/platform-admin";
+import {
+  loadOpenInvitations,
+  searchAdminUsers,
+} from "../../../lib/platform-admin";
+import { resendInvite } from "../actions";
 import styles from "../admin.module.css";
 
 export const metadata = { title: "Admin users · KXRA" };
@@ -11,9 +15,15 @@ export default async function AdminUsers({
   searchParams: Promise<{ q?: string; state?: string }>;
 }) {
   const { q = "", state = "" } = await searchParams;
-  const rows = (await searchAdminUsers(await actor(), q)).filter((row) =>
+  const current = await actor();
+  const rows = (await searchAdminUsers(current, q)).filter((row) =>
     state ? row.account_state === state : true,
   );
+  const invitations = (await loadOpenInvitations(current)) as {
+    id: string;
+    recipient_email: string;
+    state: string;
+  }[];
   return (
     <>
       <h1>Users and organisations</h1>
@@ -67,6 +77,34 @@ export default async function AdminUsers({
         </tbody>
       </table>
       {rows.length === 0 && <p>No accounts match that search.</p>}
+      <h2>Open invitations</h2>
+      <p className={styles.note}>
+        Resend replaces the invitation link and queues the email. It is
+        delivered only when email is switched on. Verification for someone who
+        already has an account is the password-reset email they request
+        themselves.
+      </p>
+      <ul>
+        {invitations.map((invite) => (
+          <li key={invite.id}>
+            {invite.recipient_email} · {invite.state}
+            <form action={resendInvite}>
+              <input type="hidden" name="invitation_id" value={invite.id} />
+              <label>
+                <input
+                  type="checkbox"
+                  name="confirm"
+                  value="CONFIRM"
+                  required
+                />{" "}
+                Resend this invitation
+              </label>
+              <button type="submit">Resend invite</button>
+            </form>
+          </li>
+        ))}
+      </ul>
+      {invitations.length === 0 && <p>No open invitations.</p>}
     </>
   );
 }

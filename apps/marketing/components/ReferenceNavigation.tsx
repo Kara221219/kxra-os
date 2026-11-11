@@ -12,7 +12,7 @@ export const navigation = {
     ["A specific workflow", "Email operations", "/solutions/email-operations"],
   ],
   "How we work": [
-    ["The practice", "How we work", "/approach"],
+    ["The practice", "How we work", "/how-we-work"],
     ["The practice", "Workspace", "/product/workspace"],
     ["Commercial", "Pricing", "/pricing"],
     ["Commercial", "Decision Review", "/business-sprints#decision-review"],
@@ -20,8 +20,9 @@ export const navigation = {
 } as const;
 
 const directLinks = [
-  ["Insights", "/blog"],
-  ["About us", "/about"],
+  ["Insights", "/insights"],
+  ["About us", "/about-us"],
+  ["Careers", "/careers"],
 ] as const;
 
 function Mark() {
@@ -142,7 +143,7 @@ export function ReferenceNavigation() {
         <div className="ref-mobile-actions">
           <Link
             className="ref-button ref-button-gold"
-            href="/contact"
+            href="/lets-connect"
             onClick={() => setMobile(false)}
           >
             Let’s connect →
@@ -152,7 +153,7 @@ export function ReferenceNavigation() {
       <div className="ref-header-actions">
         <Link href="/signup">Create account</Link>
         <Link href="/login">Sign in</Link>
-        <Link className="ref-button ref-button-gold" href="/contact">
+        <Link className="ref-button ref-button-gold" href="/lets-connect">
           Let’s connect →
         </Link>
       </div>

@@ -63,11 +63,10 @@ export async function POST(request: Request) {
   if (routeKind[parsed.sourcePath] !== parsed.kind)
     return NextResponse.json({ message: safeMessage(400) }, { status: 400 });
   if (
-    parsed.page === "/" &&
-    parsed.kind === "ENQUIRY" &&
-    !parsed.message.startsWith("Submitted from the homepage request form.")
+    (parsed.page === "/" || parsed.page === "/lets-connect") &&
+    !parsed.message.startsWith("Submitted from ")
   ) {
-    parsed.message = `Submitted from the homepage request form.\n\n${parsed.message}`;
+    parsed.message = `Submitted from ${parsed.page}.\n\n${parsed.message}`;
     if (parsed.message.length > 4000)
       return NextResponse.json({ message: safeMessage(400) }, { status: 400 });
   }

@@ -52,4 +52,4 @@ Marketing needs `KXRA_MARKETING_ORIGIN`, `KXRA_PRIVATE_APP_URL`, `KXRA_PUBLIC_DA
 - This workspace cannot log in to GitHub or Vercel, so it cannot attach preview URLs or deploy `app.kxra-group.com`.
 - The production database must be inspected read-only before any migration. Do not treat it as empty.
 - Keep the existing email MX records when you set the web DNS.
-- The homepage enquiry is labelled in the saved message as coming from the homepage. The database column still has to use one of the three paths the current ledger allows. Changing that column needs a new migration, and the release check currently rejects any migration that is not in its locked list.
+- Homepage and Let’s connect messages record the real page. The database column cannot yet store `/` or `/lets-connect`. The exact lock, and the three files an owner review would have to approve together, are in `docs/operations/enquiry-source-path-lock.md`.

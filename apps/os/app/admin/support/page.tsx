@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { actor } from "../../../lib/auth";
 import { loadSupportQueues } from "../../../lib/platform-admin";
+import { saveSupportNote } from "../actions";
 
 export const metadata = { title: "Admin support · KXRA" };
 
-export default async function AdminSupport() {
+export default async function AdminSupport({
+  searchParams,
+}: {
+  searchParams: Promise<{ noted?: string; error?: string }>;
+}) {
+  const notice = await searchParams;
   const { enquiries, tickets } = await loadSupportQueues(await actor());
   return (
     <>
@@ -50,6 +56,8 @@ export default async function AdminSupport() {
           ))}
         </tbody>
       </table>
+      {notice.noted && <p role="status">The internal note was saved.</p>}
+      {notice.error && <p role="alert">{notice.error}</p>}
       <h2>Support requests</h2>
       <table>
         <thead>
@@ -69,7 +77,26 @@ export default async function AdminSupport() {
             }[]
           ).map((row) => (
             <tr key={row.id}>
-              <td>{row.subject}</td>
+              <td>
+                {row.subject}
+                <form action={saveSupportNote}>
+                  <input type="hidden" name="request_id" value={row.id} />
+                  <label>
+                    Internal note
+                    <textarea name="note" required minLength={3} />
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="confirm"
+                      value="CONFIRM"
+                      required
+                    />{" "}
+                    Save this note
+                  </label>
+                  <button type="submit">Add note</button>
+                </form>
+              </td>
               <td>{row.request_type}</td>
               <td>{row.state}</td>
             </tr>
