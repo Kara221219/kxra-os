@@ -1,11 +1,17 @@
 // Preload only for the disposable joined-proof Next process. Never application code.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const path = require("node:path");
 const net = require("node:net");
 const http = require("node:http");
 const https = require("node:https");
 const runtime = fs.realpathSync(process.env.KXRA_JOINED_RUNTIME || "");
-assert.match(runtime, /^\/private\/tmp\/kxra-directory-joined-[A-Za-z0-9]+$/);
+// /tmp is /private/tmp on macOS and /tmp on Linux. Accept only a direct child
+// of that canonical temp directory, with the disposable joined-proof prefix.
+const tempRoot = fs.realpathSync("/tmp");
+const name = path.basename(runtime);
+assert.equal(path.dirname(runtime), tempRoot);
+assert.match(name, /^kxra-directory-joined-[A-Za-z0-9]+$/);
 const marker = JSON.parse(fs.readFileSync(runtime + "/ownership.json", "utf8"));
 assert.equal(marker.nonce, process.env.KXRA_CI_RUN_ID);
 const ports = new Set(marker.httpPorts.map(String));
