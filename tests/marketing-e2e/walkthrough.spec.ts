@@ -7,7 +7,7 @@ test("product navigation opens a real route and browser history returns to the h
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "Menu", exact: true }).click();
   const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  await nav.getByRole("button", { name: "Product", exact: true }).click();
+  await nav.getByRole("button", { name: "How we work", exact: true }).click();
   await nav.getByRole("link", { name: "Workspace", exact: true }).click();
   await expect(page).toHaveURL(/\/product\/workspace$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

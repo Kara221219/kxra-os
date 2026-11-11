@@ -1,0 +1,85 @@
+.shell {
+  min-height: 100vh;
+  background: #fbf8f3;
+  color: #2c2a2b;
+  font-family: Georgia, "Iowan Old Style", Palatino, serif;
+}
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e6dfd2;
+}
+.bar a {
+  color: #2c2a2b;
+  text-decoration: none;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+}
+.bar a[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.main {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 64px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.card, .panel {
+  background: #fffdf8;
+  border: 1px solid #e6dfd2;
+  border-radius: 16px;
+  padding: 16px;
+}
+.card strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.1;
+}
+.card span, .note {
+  color: #5e6558;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid #efe6d6;
+  vertical-align: top;
+}
+button, .button {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #6a7362;
+  color: #fbf8f3;
+  border: 0;
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+input, select, textarea {
+  font: inherit;
+  width: min(100%, 420px);
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: white;
+}
+form {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}

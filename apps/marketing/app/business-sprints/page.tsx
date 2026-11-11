@@ -84,6 +84,7 @@ export default function BusinessSprints() {
           {sprintPackages.map((item, index) => (
             <article
               key={item.key}
+              id={item.key === "decision-review" ? "decision-review" : undefined}
               className={
                 index === 1 ? "sprint-package featured" : "sprint-package"
               }
@@ -96,7 +97,7 @@ export default function BusinessSprints() {
               <p className="sprint-price">
                 {item.priceMinor === null
                   ? "Scoped quote"
-                  : `From £${item.priceMinor / 100}`}
+                  : `£${item.priceMinor / 100}`}
               </p>
               <p>{item.summary}</p>
               <ul>

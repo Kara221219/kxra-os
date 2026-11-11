@@ -39,6 +39,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/about",
     "/approach",
     "/contact",
+    "/legal",
+    "/legal/privacy",
+    "/legal/terms",
+    "/legal/cookies",
+    "/legal/data-processing",
+    "/legal/custom-projects",
+    "/legal/refunds",
   ].map((route) => ({
     url: "https://kxra-group.com" + route,
     changeFrequency: "monthly",

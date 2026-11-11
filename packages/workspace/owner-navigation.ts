@@ -19,6 +19,7 @@ export const ownerNavigation: readonly OwnerNavigationGroup[] = [
       ["Support & Privacy", "support"],
       ["Work Log", "work-log"],
       ["Admin", "admin"],
+      ["Platform admin", "/admin"],
     ],
   },
   {

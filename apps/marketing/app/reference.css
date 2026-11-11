@@ -1,9 +1,18 @@
+@font-face {
+  font-family: "Newsreader KXRA";
+  src: url("/fonts/newsreader-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
-  --ref-paper: #f6f0e2;
-  --ref-ink: #201d18;
-  --ref-muted: #575d4d;
-  --ref-line: #dcd9ce;
-  --ref-green: #e7ecd9;
+  --ref-paper: #fbf8f3;
+  --ref-ink: #2c2a2b;
+  --ref-muted: #5e6558;
+  --ref-line: #e6dfd2;
+  --ref-green: #e7efe4;
+  --ref-sage: #6a7362;
+  --ref-gold: #c4a265;
 }
 body {
   background: var(--ref-paper);
@@ -42,9 +51,8 @@ body {
   min-height: 96px;
 }
 .ref-header[data-home="true"] {
-  position: absolute;
-  inset: 0 0 auto;
-  background: linear-gradient(#ffffff50, transparent);
+  position: relative;
+  background: var(--ref-paper);
 }
 .ref-nav {
   display: flex;
@@ -2235,5 +2243,293 @@ body {
   }
   .directory-group > h2 {
     font-size: 29px;
+  }
+}
+
+.ref-brand {
+  gap: 10px;
+  color: var(--ref-ink);
+  letter-spacing: 0;
+  font-weight: 700;
+}
+.ref-mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+.ref-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  line-height: 0.9;
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+.ref-brand-lockup small {
+  margin-top: 3px;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  font-weight: 600;
+  color: var(--ref-muted);
+}
+.ref-button-sage {
+  background: var(--ref-sage);
+  border-color: var(--ref-sage);
+  color: #fbf8f3;
+  border-radius: 999px;
+}
+.ref-button-gold {
+  background: transparent;
+  color: var(--ref-ink);
+  border: 1px solid var(--ref-gold);
+  border-radius: 999px;
+}
+.ref-text-link {
+  color: var(--ref-ink);
+  text-underline-offset: 4px;
+}
+.studio-hero {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 1.14fr);
+  gap: 28px;
+  align-items: center;
+  width: min(1180px, calc(100% - 64px));
+  margin: 12px auto 0;
+  padding-bottom: 28px;
+}
+.studio-copy .eyebrow {
+  margin: 0 0 14px;
+  color: var(--ref-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.studio-copy h1 {
+  margin: 0;
+  font-family: "Newsreader KXRA", Georgia, "Iowan Old Style", Palatino, serif;
+  font-size: clamp(56px, 6.4vw, 92px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  color: var(--ref-ink);
+}
+.studio-lead {
+  max-width: 34rem;
+  margin: 22px 0 0;
+  font-size: 18px;
+  line-height: 1.45;
+  color: #3d403c;
+}
+.studio-trust {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.studio-trust li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.studio-trust svg {
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+.studio-trust strong,
+.studio-trust span {
+  display: block;
+}
+.studio-trust strong {
+  font-size: 14px;
+}
+.studio-trust span {
+  color: var(--ref-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  margin-top: 28px;
+}
+.studio-actions .ref-text-link {
+  font-weight: 650;
+}
+.studio-scene {
+  position: relative;
+  margin: 0;
+}
+.studio-scene img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.studio-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #e4d3b0;
+  border-radius: 16px;
+  background: #fbf8f2;
+  color: var(--ref-ink);
+  box-shadow: 0 10px 24px rgba(44, 42, 43, 0.06);
+}
+.studio-card-invoice {
+  left: 0;
+  top: 3.1%;
+  width: 46%;
+  height: 42.8%;
+  padding: 8px 10px;
+}
+.studio-card-decision {
+  left: 53.8%;
+  top: 2.8%;
+  width: 45.5%;
+  height: 43.2%;
+  padding: 10px 12px;
+}
+.studio-card-assistant {
+  left: 54.9%;
+  top: 47.9%;
+  width: 44.1%;
+  height: 30.1%;
+  padding: 10px 12px;
+}
+.studio-card p,
+.studio-card h2 {
+  margin: 0;
+}
+.studio-card h2 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.studio-kicker {
+  color: var(--ref-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.studio-lines {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.studio-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #efe6d6;
+  font-size: 11px;
+}
+.studio-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.studio-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #e7efe4;
+  color: #3f5140;
+  font-size: 10px;
+  font-weight: 700;
+}
+.studio-approved {
+  margin: 6px 0 2px;
+  font-family: "Newsreader KXRA", Georgia, serif;
+  font-size: 22px;
+  line-height: 1;
+}
+.studio-meta {
+  margin-top: 4px;
+  color: var(--ref-muted);
+  font-size: 11px;
+}
+.studio-card a {
+  margin-top: 8px;
+  color: #3f5140;
+  font-size: 12px;
+  font-weight: 700;
+}
+.studio-note {
+  margin-top: 6px;
+  color: #3d403c;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.studio-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: min(1180px, calc(100% - 64px));
+  margin: 8px auto 36px;
+  color: var(--ref-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+.studio-divider:before,
+.studio-divider:after {
+  content: "";
+  width: min(140px, 18vw);
+  height: 1px;
+  background: #d9c59a;
+}
+@media (max-width: 1000px) {
+  .ref-header-actions .ref-button {
+    display: none;
+  }
+  .studio-hero {
+    grid-template-columns: 1fr;
+    width: calc(100% - 36px);
+  }
+  .studio-trust {
+    grid-template-columns: 1fr;
+  }
+  .studio-card h2,
+  .studio-card table,
+  .studio-note,
+  .studio-meta,
+  .studio-card a {
+    font-size: 11px;
+  }
+}
+@media (max-width: 700px) {
+  .studio-copy h1 {
+    font-size: clamp(48px, 14vw, 72px);
+  }
+  .studio-scene {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .studio-card,
+  .studio-card-invoice,
+  .studio-card-decision,
+  .studio-card-assistant {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 14px;
+  }
+  .studio-approved {
+    font-size: 28px;
   }
 }

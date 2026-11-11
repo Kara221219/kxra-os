@@ -109,11 +109,15 @@ test("customer-document pack is complete and records exact owner approval", asyn
     }
   }
   await page.goto("/pricing");
-  await expect(page.locator("main")).toContainText(
-    "Platform subscription under review",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Workspace plans", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText("£29");
+  await expect(page.locator("main")).toContainText("£79");
+  await expect(page.locator("main")).toContainText("£199");
+  await expect(page.locator("main")).toContainText("£250");
   await expect(page.locator("main")).not.toContainText(
-    /£29|120 generated creative variants|120 reviewed exports/,
+    /120 generated creative variants|120 reviewed exports/,
   );
   await page.goto("/legal/terms");
   await expect(page.locator("main")).toContainText(

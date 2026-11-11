@@ -9,6 +9,24 @@ export const metadata: Metadata = {
   title: { default: "KXRA Group", template: "%s · KXRA Group" },
   description: publication.brand.summary,
   metadataBase: new URL("https://kxra-group.com"),
+  applicationName: "KXRA Group",
+  openGraph: {
+    title: "KXRA Group",
+    description: publication.brand.summary,
+    url: "https://kxra-group.com",
+    siteName: "KXRA Group",
+    images: [
+      { url: "/media/hero/kxra-team-table.webp", alt: "KXRA team workspace" },
+    ],
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KXRA Group",
+    description: publication.brand.summary,
+    images: ["/media/hero/kxra-team-table.webp"],
+  },
   robots: {
     index: process.env.KXRA_ENVIRONMENT === "production",
     follow: process.env.KXRA_ENVIRONMENT === "production",
@@ -30,8 +48,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               KXRA<span>GROUP</span>
             </Link>
             <h2>One place for the next move.</h2>
-            <Link className="ref-button" href="/#request-access">
-              Talk about your workspace ↗
+            <Link className="ref-button ref-button-sage" href="/contact">
+              Let’s connect →
             </Link>
           </div>
           <div className="ref-footer-groups">

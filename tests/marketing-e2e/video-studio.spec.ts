@@ -16,7 +16,7 @@ test("retired studios have no upload or generation controls, navigation or sitem
   expect(await sitemap.text()).not.toMatch(/brand-studio|video-studio/);
   await page.goto("/pricing");
   await expect(
-    page.getByRole("heading", { name: "Platform subscription under review" }),
+    page.getByRole("heading", { name: "Workspace plans", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("120", { exact: true })).toHaveCount(0);
 });

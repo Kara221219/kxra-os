@@ -15,10 +15,13 @@ export default function OwnerNavigation({
       // a reusable Next RSC history entry. All other owner routes stay unchanged.
       const nativeEntry = documentNavigation || path === "customer-directory";
       const NavigationLink = nativeEntry || path === "enquiries" ? "a" : Link;
+      const href = path.startsWith("/")
+        ? path
+        : "/os" + (path ? "/" + path : "");
       return (
         <NavigationLink
           key={path}
-          href={"/os" + (path ? "/" + path : "")}
+          href={href}
           aria-current={active === path ? "page" : undefined}
         >
           {name}

@@ -3,11 +3,12 @@
   --forest: #171916;
   --mint: #ead9b7;
   --lime: #f4d694;
-  --paper: #f2eee5;
-  --ink: #171817;
-  --muted: #696861;
+  --paper: #fbf8f3;
+  --ink: #2c2a2b;
+  --muted: #5e6558;
   --line: rgba(23, 24, 23, 0.17);
-  --gold: #d5a857;
+  --gold: #c4a265;
+  --sage: #6a7362;
   --gold-pale: #fae9c0;
   --obsidian: #0b0c0c;
   --max: 1240px;
@@ -171,9 +172,9 @@ h3 {
   justify-content: center;
   min-height: 48px;
   padding: 0.72rem 1.1rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--sage);
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--sage);
   color: white;
   font-weight: 800;
   text-decoration: none;

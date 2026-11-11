@@ -1,70 +1,82 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHero } from "../../components/PageHero";
-import { publication } from "../../lib/publication";
+import { approvedCatalogue } from "../../../../packages/workspace/approved-catalogue";
+import { sprintPackages } from "../../lib/business-sprints";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  alternates: { canonical: "/pricing" },
+};
+
+const pounds = (minor: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(minor / 100);
 
 export default function Pricing() {
-  const commercial = publication.commercialModel;
   return (
-    <>
-      <PageHero
-        eyebrow={`Commercial model · ${commercial.status}`}
-        title="A workspace for your team. A clear scope for your business."
-      >
-        Start with a defined business need. We agree the scope and price before
-        work begins.
-      </PageHero>
-      <section className="section split">
-        <article className="card commercial-card">
-          <p className="number">PLATFORM ACCESS</p>
-          <h2>Platform subscription under review</h2>
-          <p>{commercial.subscription}</p>
-          <p>{commercial.subscriptionBoundary}</p>
-          <p>{commercial.usageBoundary}</p>
-          <p>{commercial.taxBoundary}</p>
-          <Link className="button" href="/partner">
-            Join pricing discovery
-          </Link>
-        </article>
-        <article className="card commercial-card">
-          <p className="number">SEPARATE ENGAGEMENT</p>
-          <h2>Workspace setup and implementation</h2>
-          <p>
-            Bring one team and one workflow. We agree the required connections,
-            access boundaries and implementation scope before quoting.
-          </p>
-          <p>{commercial.customProjects}</p>
-          <p>
-            Any proposal must define scope, exclusions, assumptions, milestones,
-            payment gates and an exact price before work begins.
-          </p>
-          <Link className="button" href="/#request-access">
-            Discuss your workspace
-          </Link>
-        </article>
-      </section>
-      <section className="section pricing-boundaries">
-        <p className="eyebrow">Clear commercial boundaries</p>
-        <h2>Access is explicit and auditable.</h2>
-        <div className="card-grid">
-          <article className="card">
-            <h3>No hidden custom-work entitlement</h3>
-            <p>Tool access does not create a right to bespoke delivery.</p>
+    <section className="ref-section ref-wrap ref-inner">
+      <p className="ref-kicker">PRICING</p>
+      <h1>Workspace plans</h1>
+      <p className="ref-lead">
+        One price for the workspace, not a charge per person inside the limit.
+        You bring your own model accounts, so the software price does not
+        include model usage. KXRA is not VAT registered, and VAT is not added.
+      </p>
+      <div className="ref-three">
+        {approvedCatalogue.map((plan) => (
+          <article key={plan.offer_key}>
+            <h2>{plan.name.replace("KXRA ", "")}</h2>
+            <p>
+              {pounds(plan.monthly_amount_minor)} a month for up to{" "}
+              {plan.people} {plan.people === 1 ? "person" : "people"}.
+            </p>
+            <p>Rooms, reviewed drafts, and the agents you connect.</p>
+            <Link
+              className="ref-button ref-button-sage"
+              href="/#request-access"
+            >
+              Request this plan
+            </Link>
           </article>
-          <article className="card">
-            <h3>No access inferred from payment return pages</h3>
-            <p>Provider-confirmed subscription state controls paid access.</p>
+        ))}
+      </div>
+      <h2>Separate services</h2>
+      <div className="ref-three">
+        {sprintPackages.map((item) => (
+          <article key={item.key}>
+            <h3>{item.name}</h3>
+            <p>
+              {item.priceMinor === null
+                ? "Quoted after the scope is agreed."
+                : `${pounds(item.priceMinor)}. ${item.summary}`}
+            </p>
+            <Link
+              className="ref-text-link"
+              href={
+                item.key === "implementation"
+                  ? "/custom-projects"
+                  : `/business-sprints#${item.key === "decision-review" ? "decision-review" : "packages"}`
+              }
+            >
+              {item.priceMinor === null
+                ? "Discuss a scoped project"
+                : "Request this service"}
+            </Link>
           </article>
-          <article className="card">
-            <h3>Free partner access stays separate</h3>
-            <p>{commercial.partnerAccess}</p>
-          </article>
-        </div>
-        <p className="notice">
-          Previous customer terms are preserved as historical documents. A
-          revised subscription scope and customer terms must be agreed before
-          new subscription sales.
-        </p>
-      </section>
-    </>
+        ))}
+      </div>
+      <p>
+        Requesting a plan sends an enquiry. It does not open a card payment or
+        create a subscription. Stripe checkout is used only after the business
+        Stripe account is connected, and live charges stay switched off until
+        that account is approved.
+      </p>
+      <p>
+        <Link href="/approach">See how we work</Link>
+      </p>
+    </section>
   );
 }
