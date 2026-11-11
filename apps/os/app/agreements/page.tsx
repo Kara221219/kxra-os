@@ -1,3 +1,4 @@
+import "../public-cream.css";
 import crypto from "node:crypto";
 import Link from "next/link";
 import { headers } from "next/headers";

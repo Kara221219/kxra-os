@@ -517,16 +517,6 @@ tr:last-child td {
 .skip:focus {
   top: 8px;
 }
-.login,
-.join-page {
-  background: #fbf8f3;
-  color: #2c2a2b;
-}
-.login button,
-.join-page .button {
-  background: #6a7362;
-  border-radius: 999px;
-}
 .login {
   max-width: 450px;
   margin: 9vh auto;

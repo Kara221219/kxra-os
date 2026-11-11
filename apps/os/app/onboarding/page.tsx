@@ -1,3 +1,4 @@
+import "../public-cream.css";
 import Link from "next/link";
 import { onboardingPresentation } from "../../../../packages/workspace/onboarding-presentation";
 import { redirect } from "next/navigation";

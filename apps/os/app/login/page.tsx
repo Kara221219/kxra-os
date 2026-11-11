@@ -1,3 +1,4 @@
+import "./../public-cream.css";
 import { localMode } from "../../../../packages/db";
 import Link from "next/link";
 import LocalFixtureLogin from "#kxra/local-fixture-ui";
