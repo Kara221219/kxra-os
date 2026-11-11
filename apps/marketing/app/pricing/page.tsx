@@ -23,7 +23,8 @@ export default function Pricing() {
       <p className="ref-lead">
         One price for the workspace, not a charge per person inside the limit.
         You bring your own model accounts, so the software price does not
-        include model usage. KXRA is not VAT registered, and VAT is not added.
+        include model usage. The founding price for one organisation is £29 a
+        month or £290 a year. KXRA is not VAT registered, and VAT is not added.
       </p>
       <div className="ref-three">
         {approvedCatalogue.map((plan) => (

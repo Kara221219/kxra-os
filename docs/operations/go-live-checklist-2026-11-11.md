@@ -29,8 +29,30 @@ Set these on the Vercel project for the private app (`kxra-os`), not in Git.
 | Test card checkout, not real money | Stripe test secret `sk_test_...`, test publishable key, test webhook secret, and `KXRA_MODERN_BILLING_DISPATCH_ENABLED=true` together with `KXRA_CHECKOUT_RESULT_ENABLED=true` and `KXRA_PORTAL_DELIVERY_ENABLED=true`. Leave every `KXRA_LIVE_*` flag off |
 | Real charges | A separate decision. Then `KXRA_LIVE_BILLING_ENTRY_ENABLED=true`, `KXRA_LIVE_WEBHOOK_ENABLED=true`, the live webhook secret, live account id, and a live restricted key. Do not reuse the test secret |
 | A maintenance message | `KXRA_MAINTENANCE_BANNER` on the host |
+| New Higgsfield pictures or video | A **new** Higgsfield API key in `HF_CREDENTIALS` on a private machine, never in Git or chat. The key already saved returned 401, so it cannot be reused. No generated assets exist yet. The approved spend cap is £25 in total. Do not start a subscription or repeat a failed paid request automatically |
 
-Marketing (`kxra-marketing`) needs `KXRA_MARKETING_ORIGIN`, `KXRA_PRIVATE_APP_URL`, `KXRA_PUBLIC_DATABASE_URL` and `KXRA_PUBLIC_INGRESS_SECRET`. It must not hold Stripe or Resend secrets.
+Marketing (`kxra-marketing`) needs `KXRA_MARKETING_ORIGIN`, `KXRA_PRIVATE_APP_URL`, `KXRA_PUBLIC_DATABASE_URL` and `KXRA_PUBLIC_INGRESS_SECRET`. It must not hold Stripe, Resend or Higgsfield secrets.
+
+## Prices already decided
+
+- Founding workspace price: **£29 a month or £290 a year** for one organisation. KXRA is not VAT registered, so VAT is not added.
+- Later workspace bands still in the product: Team £79 a month for five people, Business £199 a month for fifteen. Customers pay their own model providers.
+- Decision Review is a separate service. A customer requests it, buys it and tracks it. You scope it and deliver it. The public starting price is £250. A Business Improvement Sprint is £750. Implementation is quoted.
+
+## Design to keep
+
+The agreed visual system from the earlier build sessions is still in force for later design work:
+
+- matte obsidian or graphite surfaces
+- warm champagne-gold light
+- thin circuit lines
+- rounded architectural frames
+- oversized editorial type
+- controlled dark and light transitions
+- a four-stage camera move **through** the page, not a sideways or up-and-down slideshow
+- a still layout when the visitor asks for reduced motion, and a simpler stack on a phone
+
+Higgsfield was the planned way to generate those pictures and the moving shot. Because the saved key was rejected, that work has not started. The homepage currently on this branch follows the later cream reference image so the site is not empty while those assets are missing. Do not throw the obsidian direction away.
 
 ## Still blocked without you
 
@@ -38,3 +60,4 @@ Marketing (`kxra-marketing`) needs `KXRA_MARKETING_ORIGIN`, `KXRA_PRIVATE_APP_UR
 - Supabase production must be compared read-only before any migration. Do not initialise it as if it were empty.
 - DNS for `kxra-group.com`, `www` and `app` must match the current Vercel instructions. Keep the existing email MX records.
 - No live payment, refund, or customer email was sent from this work.
+- No Higgsfield image or video was generated. The saved key returned 401. A new key is required before any of that £25 budget is used.
