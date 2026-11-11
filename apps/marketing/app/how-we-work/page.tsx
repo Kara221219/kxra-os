@@ -24,8 +24,8 @@ export default function HowWeWork() {
           <span>01</span>
           <h2>Agree the work</h2>
           <p>
-            Name the problem, the person responsible, and what done means
-            before a tool is connected.
+            Name the problem, the person responsible, and what done means before
+            a tool is connected.
           </p>
         </article>
         <article>

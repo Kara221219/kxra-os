@@ -15,8 +15,8 @@ export default function CustomProjects() {
         <div className="prose">
           <h2>Start with a focused business sprint.</h2>
           <p>
-            Decision Review is £250 and a Business Improvement Sprint is
-            £750. Each request is assessed before an exact proposal is issued.
+            Decision Review is £250 and a Business Improvement Sprint is £750.
+            Each request is assessed before an exact proposal is issued.
           </p>
           <Link className="button" href="/business-sprints">
             Explore business sprints

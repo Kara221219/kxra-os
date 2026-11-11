@@ -84,7 +84,9 @@ export default function BusinessSprints() {
           {sprintPackages.map((item, index) => (
             <article
               key={item.key}
-              id={item.key === "decision-review" ? "decision-review" : undefined}
+              id={
+                item.key === "decision-review" ? "decision-review" : undefined
+              }
               className={
                 index === 1 ? "sprint-package featured" : "sprint-package"
               }

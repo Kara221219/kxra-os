@@ -32,7 +32,8 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
-.card, .panel {
+.card,
+.panel {
   background: #fffdf8;
   border: 1px solid #e6dfd2;
   border-radius: 16px;
@@ -43,7 +44,8 @@
   font-size: 28px;
   line-height: 1.1;
 }
-.card span, .note {
+.card span,
+.note {
   color: #5e6558;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 13px;
@@ -54,13 +56,15 @@ table {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
 }
-th, td {
+th,
+td {
   text-align: left;
   padding: 8px 6px;
   border-bottom: 1px solid #efe6d6;
   vertical-align: top;
 }
-button, .button {
+button,
+.button {
   font-family: Arial, Helvetica, sans-serif;
   background: #6a7362;
   color: #fbf8f3;
@@ -70,7 +74,9 @@ button, .button {
   padding: 0 14px;
   cursor: pointer;
 }
-input, select, textarea {
+input,
+select,
+textarea {
   font: inherit;
   width: min(100%, 420px);
   border: 1px solid #e6dfd2;
