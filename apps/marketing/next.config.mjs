@@ -33,6 +33,8 @@ export default {
       { source: "/about-us", destination: "/about", permanent: true },
       { source: "/careers", destination: "/about", permanent: false },
       { source: "/lets-connect", destination: "/contact", permanent: true },
+      { source: "/brand-studio", destination: "/pricing", permanent: true },
+      { source: "/video-studio", destination: "/pricing", permanent: true },
     ];
   },
   devIndicators: false,

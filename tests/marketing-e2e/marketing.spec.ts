@@ -1,10 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-  "/video-studio",
   "/",
   "/platform",
-  "/brand-studio",
   "/pricing",
   "/custom-projects",
   "/business-sprints",
@@ -55,19 +53,15 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
 });
 
 for (const { route, label } of [
-  { route: "/pricing", label: "Discuss your workspace" },
-  { route: "/brand-studio", label: "Talk to KXRA" },
-  { route: "/video-studio", label: "Talk to KXRA" },
+  { route: "/pricing", label: "Request this plan" },
 ]) {
   test(`${route} enquiry reaches the existing access form and preserves history`, async ({
     page,
   }) => {
     await page.goto(route);
-    if (route !== "/pricing")
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-        "This tool has been retired.",
-      );
-    const enquiry = page.getByRole("link", { name: label, exact: true });
+    const enquiry = page
+      .getByRole("link", { name: label, exact: true })
+      .first();
     await expect(enquiry).toHaveAttribute("href", "/#request-access");
     await enquiry.click();
     await expect(page).toHaveURL(/\/#request-access$/);

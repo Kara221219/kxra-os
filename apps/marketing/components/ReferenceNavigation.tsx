@@ -150,6 +150,7 @@ export function ReferenceNavigation() {
         </div>
       </nav>
       <div className="ref-header-actions">
+        <Link href="/signup">Create account</Link>
         <Link href="/login">Sign in</Link>
         <Link className="ref-button ref-button-gold" href="/contact">
           Let’s connect →

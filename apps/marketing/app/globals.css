@@ -10,7 +10,6 @@
   --gold: #c4a265;
   --sage: #6a7362;
   --gold-pale: #fae9c0;
-  --obsidian: #0b0c0c;
   --max: 1240px;
 }
 * {
@@ -852,8 +851,8 @@ footer p {
 }
 .journey {
   position: relative;
-  color: white;
-  background: var(--obsidian);
+  color: var(--ink);
+  background: var(--paper);
   overflow: clip;
 }
 .journey-stage {

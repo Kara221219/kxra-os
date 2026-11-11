@@ -27,9 +27,9 @@
     }
   ],
   "commercialModel": {
-    "status": "Offer revision \u00b7 subscriptions paused",
-    "subscription": "New platform subscriptions are paused while the offer is revised.",
-    "subscriptionBoundary": "No replacement subscription package is currently offered for purchase.",
+    "status": "Founding price \u00b7 \u00a329 a month or \u00a3290 a year",
+    "subscription": "The founding workspace is \u00a329 a month or \u00a3290 a year for one organisation. Team is \u00a379 a month for five people. Business is \u00a3199 a month for fifteen. No VAT is added.",
+    "subscriptionBoundary": "Checkout charges these prices only. Model use is billed by the customer's own provider.",
     "customProjects": "Discovery, integrations and bespoke implementation are proposed and priced separately.",
     "partnerAccess": "KXRA may issue auditable free partner access without creating a paid subscription.",
     "taxBoundary": "KXRA is not VAT registered, so VAT is not currently added to the stated price. Any future chargeable tax will be configured and shown before payment.",
@@ -49,5 +49,5 @@
     "Evidence before claims",
     "Human approval before consequential action"
   ],
-  "legalStatus": "Customer-document pack version 1 is owner approved at its recorded SHA-256. Customer acceptance and live sales remain disabled pending controlled activation and complete release evidence."
+  "legalStatus": "Customer-document pack version 1 remains the historical approved record. Current prices, cancellation and refunds are the pricing page and /legal/refunds."
 }
