@@ -13,6 +13,7 @@ const money = (minor: number) =>
 export default async function AdminHome() {
   const data = await loadPlatformAdmin(await actor());
   const cards = [
+    ["Users", String(data.accounts.reduce((sum, row) => sum + row.count, 0))],
     ["Organisations", String(data.organisations)],
     ["Active accounts", String(data.activeAccounts)],
     ["New accounts, 7 days", String(data.signups.d7)],

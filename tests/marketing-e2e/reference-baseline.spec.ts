@@ -27,8 +27,11 @@ test("reference baseline shell, samples and integrations stay local and usable",
     await expect(solutions).toHaveAttribute("aria-expanded", "false");
   });
   await timed("DEMO", async () => {
-    if (info.project.name === "mobile")
-      await page.getByRole("button", { name: "Menu", exact: true }).click();
+    if (info.project.name === "mobile") {
+      const toggle = page.locator(".ref-mobile-toggle");
+      if ((await toggle.getAttribute("aria-expanded")) !== "true")
+        await toggle.click();
+    }
     const connect = page
       .locator(
         info.project.name === "mobile"

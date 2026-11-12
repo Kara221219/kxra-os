@@ -194,7 +194,7 @@ test("onboarding payloads, repeated-save guard and all authority-bearing sources
     "apps/os/components/CustomerConnections.production.tsx":
       "6a8cbc859d19345d44bc08ff9b52a0970c2332221bd7d26642d66cefdcf01429",
     "apps/marketing/app/page.tsx":
-      "3e451221b69c2ebd845eadb202b77155a91c796188f29519f2ae62d098db6334",
+      "160199cf59dfb6e5e8512e7de0650a84798bc4346f4ac08699c8c8a10ab6e88e",
     "scripts/verify-build-budgets.mjs":
       "5f8492c4c352f26026bff3637add0472229e39c5a4c16d0281e805a32f38761d",
   };

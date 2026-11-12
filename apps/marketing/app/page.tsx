@@ -35,7 +35,7 @@ const faq = [
 export default function Home() {
   return (
     <div className="ref-home">
-      <section className="studio-hero">
+      <section className="studio-hero ref-hero">
         <div className="studio-copy">
           <p className="eyebrow">HUMAN INTELLIGENCE. AMPLIFIED.</p>
           <h1>
@@ -132,7 +132,9 @@ export default function Home() {
           </article>
         </figure>
       </section>
-      <p className="studio-divider">WORK BETTER. TOGETHER.</p>
+      <section className="studio-divider" aria-label="Work better together">
+        WORK BETTER. TOGETHER.
+      </section>
       <section id="workspace-preview" className="ref-preview-section ref-wrap">
         <WorkspacePreview />
         <p className="ref-caption">

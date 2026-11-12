@@ -68,7 +68,8 @@ function documentHtml(document: LegalDocument): string {
         <p>${escapeHtml(document.summary)}</p>
       </header>
       <article class="section prose legal-document">
-        <p class="notice">Current offer: Starter £29, Team £79 and Business £199 a month. Decision Review is £250 and a Business Improvement Sprint is £750. No VAT is added. Card payment starts only after Stripe is connected. Refunds are described at <a href="/legal/refunds">refunds</a>. The text below is the earlier approved pack and is kept as history. Brand Studio and Video Studio are retired and are not for sale.</p>
+        <p class="notice">Current offer: Starter £29, Team £79 and Business £199 a month. Decision Review is £250 and a Business Improvement Sprint is £750. No VAT is added. Card payment starts only after Stripe is connected. Refunds are described at <a href="/legal/refunds">refunds</a>.</p>
+        <p class="notice">Historical subscription terms: Brand Studio and Video Studio have been retired. References to those services and their prices are retained in this approved document for the record, not as a current offer. The text below is the earlier approved pack and is kept as history.</p>
         <p class="notice">Owner-approved pack version ${escapeHtml(String(legalPack.version))}, approved ${escapeHtml(legalApproval.approvedOn)}.</p>
         <dl class="legal-meta">
           <div><dt>Entity</dt><dd>${escapeHtml(legalPack.entity.legalName)} · Company ${escapeHtml(legalPack.entity.companyNumber)}</dd></div>

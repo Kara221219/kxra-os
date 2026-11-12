@@ -48,9 +48,9 @@ test("mobile nested navigation reflows and leads to the actual product catalogue
   await page.goto("/");
   await page.getByRole("button", { name: "Menu", exact: true }).click();
   const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  await nav.getByRole("button", { name: "Product", exact: true }).click();
-  await nav.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(page).toHaveURL(/\/product$/);
+  await nav.getByRole("button", { name: "Solutions", exact: true }).click();
+  await nav.getByRole("link", { name: "All solutions", exact: true }).click();
+  await expect(page).toHaveURL(/\/solutions$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(
     await page.evaluate(
