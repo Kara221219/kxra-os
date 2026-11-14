@@ -136,9 +136,30 @@ export async function loadPlatformAdmin(actor: Actor) {
   });
 }
 
-export async function searchAdminUsers(actor: Actor, term: string) {
+const ADMIN_ACCOUNT_STATES = [
+  "INVITED",
+  "REGISTERED",
+  "EMAIL_VERIFIED",
+  "ONBOARDING",
+  "ACTIVE",
+  "SUSPENDED",
+  "REVOKED",
+] as const;
+
+export async function searchAdminUsers(
+  actor: Actor,
+  term: string,
+  state = "",
+) {
   assertPlatformAdmin(actor);
   const query = term.trim().slice(0, 80);
+  if (
+    state !== "" &&
+    !ADMIN_ACCOUNT_STATES.includes(
+      state as (typeof ADMIN_ACCOUNT_STATES)[number],
+    )
+  )
+    return [];
   return scoped(actor, async (db) => {
     const rows = (
       await db.query<{
@@ -153,13 +174,14 @@ export async function searchAdminUsers(actor: Actor, term: string) {
                 o.name as organisation, p.created_at
          from kxra.profiles p
          join kxra.organisations o on o.id = p.org_id
-         where $1 = ''
+         where ($2 = '' or p.account_state = $2)
+           and ($1 = ''
             or coalesce(p.first_name, '') ilike '%' || $1 || '%'
             or coalesce(p.last_name, '') ilike '%' || $1 || '%'
-            or o.name ilike '%' || $1 || '%'
+            or o.name ilike '%' || $1 || '%')
          order by p.created_at desc
          limit 50`,
-        [query],
+        [query, state],
       )
     ).rows;
     return rows;

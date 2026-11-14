@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { readCanonicalRegularFileSync } from "./read-regular-file.mjs";
 const root = path.resolve(import.meta.dirname, "..");
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 export const customerProviderCompositionTransitions = Object.freeze({
@@ -45,9 +46,15 @@ export function readCustomerProviderCompositionFile(repo, file) {
     target.startsWith(base + path.sep),
     "PROVIDER_COMPOSITION_PATH_ESCAPE",
   );
-  assert.equal(fs.realpathSync(target), target, "PROVIDER_COMPOSITION_SYMLINK");
-  assert.ok(fs.lstatSync(target).isFile(), "PROVIDER_COMPOSITION_NOT_REGULAR");
-  return fs.readFileSync(target);
+  try {
+    return readCanonicalRegularFileSync(target).bytes;
+  } catch (error) {
+    if (error?.code === "ELOOP")
+      assert.fail("PROVIDER_COMPOSITION_SYMLINK");
+    if (error?.code === "EISDIR")
+      assert.fail("PROVIDER_COMPOSITION_NOT_REGULAR");
+    throw error;
+  }
 }
 const implementation = fs.readFileSync(fileURLToPath(import.meta.url));
 export function assertCustomerProviderCompositionRoot(repo = root) {

@@ -56,13 +56,21 @@ try {
     i++
   )
     await new Promise((resolve) => setTimeout(resolve, 100));
-  const origin = fs.readFileSync(
-    path.join(runtime, "github-fake-origin"),
-    "utf8",
+  const recorded = new URL(
+    fs.readFileSync(path.join(runtime, "github-fake-origin"), "utf8").trim(),
   );
+  if (
+    recorded.protocol !== "http:" ||
+    recorded.hostname !== "127.0.0.1" ||
+    recorded.username ||
+    recorded.password ||
+    recorded.pathname !== "/" ||
+    recorded.search ||
+    recorded.hash
+  )
+    throw Error("LOCAL_FIXTURE_ORIGIN_REQUIRED");
   const r = await fetch(
-    origin +
-      "/repos/fixture-org/fixture-repo/issues/1/comments?per_page=100&page=1",
+    `http://127.0.0.1:${recorded.port}/repos/fixture-org/fixture-repo/issues/1/comments?per_page=100&page=1`,
     {
       headers: {
         authorization: "Bearer kxra-local-github-fixture-only",

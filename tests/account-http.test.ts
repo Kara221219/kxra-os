@@ -59,6 +59,7 @@ async function browserFetch(
     );
   if ((init.method || "GET") !== "GET" && !headers.has("origin"))
     headers.set("origin", base);
+  // codeql[js/file-access-to-http] target.origin is the guarded loopback fixture origin. File-backed bodies cannot choose another host.
   const response = await fetch(target, {
     ...init,
     headers,

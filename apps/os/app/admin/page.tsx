@@ -22,12 +22,12 @@ export default async function AdminHome() {
     ["DAU", String(data.securityEvents.day)],
     ["WAU", String(data.securityEvents.week)],
     ["MAU", String(data.securityEvents.month)],
-    ["Active subscriptions", String(data.billing.active)],
-    ["Trialing", String(data.billing.trialing)],
-    ["Past due", String(data.billing.pastDue)],
-    ["Cancelled", String(data.billing.cancelled)],
-    ["MRR", money(data.billing.mrrMinor)],
-    ["ARR", money(data.billing.arrMinor)],
+    ["Legacy active subscriptions", String(data.billing.active)],
+    ["Legacy trialing", String(data.billing.trialing)],
+    ["Legacy past due", String(data.billing.pastDue)],
+    ["Legacy cancelled", String(data.billing.cancelled)],
+    ["Legacy MRR", money(data.billing.mrrMinor)],
+    ["Legacy ARR", money(data.billing.arrMinor)],
     [
       "Trial to paid",
       data.billing.trialToPaid === null
@@ -49,9 +49,12 @@ export default async function AdminHome() {
         Figures come from the KXRA database. DAU, WAU and MAU count distinct
         accounts with a security event in 1, 7 and 30 days. The database does
         not store a row for every sign-in, and the release lock blocks the
-        migration that would add one. Monthly recurring revenue counts only
-        active GBP monthly subscriptions already written by a verified Stripe
-        webhook. Nothing on this page charges a card or sends a refund.
+        migration that would add one. Subscription counts, legacy MRR, legacy
+        ARR, trial-to-paid and churn read only the legacy
+        kxra.billing_subscriptions mirror. They do not include the hosted
+        live-billing ledger in kxra_private.live_billing_bindings. A zero does
+        not mean there are no live payments. Nothing on this page charges a
+        card or sends a refund.
       </p>
       <div className={styles.grid}>
         {cards.map(([label, value]) => (

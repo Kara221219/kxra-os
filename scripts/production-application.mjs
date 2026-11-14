@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { checkServerIdentity } from "node:tls";
 import pg from "pg";
 import { applicationReleaseCohort } from "./application-release-cohort.mjs";
+import { readCanonicalRegularFileSync } from "./read-regular-file.mjs";
 import { productionDatabaseConfig } from "./production-database.mjs";
 import { productionProjectRef } from "./production-migrations-core.mjs";
 import {
@@ -37,13 +38,16 @@ export function applicationSource(environment = process.env) {
     root,
     "packages/release/production-application-targets-v1.json",
   );
-  if (
-    fs.realpathSync(profileFile) !== profileFile ||
-    !fs.lstatSync(profileFile).isFile()
-  )
-    throw Error("APPLICATION_PROFILE_REGULAR_FILE_REQUIRED");
+  let profileBytes;
+  try {
+    profileBytes = readCanonicalRegularFileSync(profileFile).bytes;
+  } catch (error) {
+    if (error?.code === "ELOOP" || error?.code === "EISDIR")
+      throw Error("APPLICATION_PROFILE_REGULAR_FILE_REQUIRED");
+    throw error;
+  }
   const profiles = validateApplicationProfiles(
-    JSON.parse(fs.readFileSync(profileFile, "utf8")),
+    JSON.parse(profileBytes.toString("utf8")),
   );
   return { sourceCommit, cohort, profiles };
 }

@@ -17,6 +17,7 @@ import {
   observeOwnedProcesses,
 } from "./owner-enquiry-proof-ownership.mjs";
 import { postgresBin } from "./postgres-bin.mjs";
+import { readCanonicalRegularFileSync } from "./read-regular-file.mjs";
 import {
   assertPostgresOwnership,
   assertGeneratedNextEnv,
@@ -106,6 +107,7 @@ const report = {
   passed: false,
 };
 const save = () =>
+  // codeql[js/http-to-file-access] Fixed private receipt for this owned local run, including its own health response. Not an upload path.
   fs.writeFileSync(
     path.join(runtime, "receipt.json"),
     JSON.stringify(report, null, 2) + "\n",
@@ -122,18 +124,22 @@ function snapshot(label, allowGenerated = false) {
   );
   const changes = [];
   for (const entry of manifest) {
-    const file = path.join(root, entry.path),
-      stat = fs.lstatSync(file);
-    assert.ok(
-      stat.isFile() && !stat.isSymbolicLink(),
-      "TRACKED_FILE_TYPE_CHANGED",
-    );
+    const file = path.join(root, entry.path);
+    let opened;
+    try {
+      opened = readCanonicalRegularFileSync(file);
+    } catch (error) {
+      if (error?.code === "ELOOP" || error?.code === "EISDIR")
+        assert.fail("TRACKED_FILE_TYPE_CHANGED");
+      throw error;
+    }
+    const stat = opened.stat;
     assert.equal(
       stat.mode & 0o111,
       entry.mode === "100755" ? 0o111 : 0,
       "TRACKED_EXECUTABLE_MODE_CHANGED",
     );
-    const bytes = fs.readFileSync(file),
+    const bytes = opened.bytes,
       actual = hash(bytes);
     if (actual !== entry.sha256) {
       assert.ok(

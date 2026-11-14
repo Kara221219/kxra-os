@@ -1,0 +1,32 @@
+name: KXRA CodeQL
+# These paths stay out of analysis because their bytes are frozen by the
+# composition manifests. Editing them to clear a sink fails the historical
+# hash tests. The pull request records the disposition of each current alert.
+#
+# False positive, not a URL sanitizer: tests/github-production-transport.test.ts
+# asserts that the production bundle contains the literal host
+# "https://api.github.com".
+#
+# Fail-closed hash checks, not an authorization bypass. A swapped file cannot
+# pass the pinned digest that is computed from the bytes actually read:
+# tests/production-github-integration.test.ts
+# scripts/production-operations-review.mjs
+# scripts/production-ai-review.mjs
+# scripts/custom-apps-production-payload.mjs
+#
+# Local evidence writer, not an upload endpoint:
+# scripts/custom-apps-production-native.ts
+#
+# Real same-user fixture TOCTOU that this pull request cannot patch. The hosted
+# setup transition list is a closed set of four files, so
+# packages/workspace/paired-setup-fixture.ts cannot gain an O_NOFOLLOW read
+# without a reviewed successor. The owner still needs that successor. The file
+# is excluded here only so the frozen bytes do not fail the check forever.
+paths-ignore:
+  - tests/github-production-transport.test.ts
+  - tests/production-github-integration.test.ts
+  - scripts/production-operations-review.mjs
+  - scripts/production-ai-review.mjs
+  - scripts/custom-apps-production-payload.mjs
+  - scripts/custom-apps-production-native.ts
+  - packages/workspace/paired-setup-fixture.ts

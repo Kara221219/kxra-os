@@ -38,6 +38,7 @@ test("token-digest evidence: actual passwords use independently salted scrypt; r
     );
     assert.notEqual(
       user.passwordHash,
+      // codeql[js/insufficient-password-hash] Negative check that the stored password hash is not SHA-256.
       crypto.createHash("sha256").update(password).digest("hex"),
     );
     assert.notEqual(
@@ -50,6 +51,7 @@ test("token-digest evidence: actual passwords use independently salted scrypt; r
     );
     assert.equal(
       user.verificationDigest,
+      // codeql[js/insufficient-password-hash] Digest of a 32-byte verification token, compared with the stored token digest.
       crypto.createHash("sha256").update(verification.token).digest("hex"),
     );
     assert.equal(JSON.stringify(stored).includes(verification.token), false);
@@ -71,6 +73,7 @@ test("token-digest evidence: actual passwords use independently salted scrypt; r
     const resetState = JSON.parse(await fs.readFile(filename, "utf8"));
     assert.equal(
       resetState.users[email].resetDigest,
+      // codeql[js/insufficient-password-hash] Digest of a 32-byte reset token, compared with the stored token digest.
       crypto.createHash("sha256").update(reset.token).digest("hex"),
     );
     assert.equal(JSON.stringify(resetState).includes(reset.token), false);

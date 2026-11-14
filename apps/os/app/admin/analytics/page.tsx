@@ -23,7 +23,10 @@ export default async function AdminAnalytics() {
       <ol>
         <li>Accounts created in 30 days: {data.signups.d30}</li>
         <li>Verified, onboarding or active accounts: {verified}</li>
-        <li>Active subscriptions: {data.billing.active}</li>
+        <li>
+          Legacy mirror active subscriptions: {data.billing.active}. This is
+          kxra.billing_subscriptions, not the hosted live-billing ledger.
+        </li>
       </ol>
     </>
   );

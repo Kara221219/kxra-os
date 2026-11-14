@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { readCanonicalRegularFileSync } from "./read-regular-file.mjs";
 const repo = path.resolve(import.meta.dirname, "..");
 const sha = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const additions = [
@@ -23,9 +24,13 @@ const additions = [
 ];
 function regular(root, relative) {
   const file = path.join(root, relative);
-  assert.equal(fs.realpathSync(file), file, "COHORT_SYMLINK_FORBIDDEN");
-  assert.ok(fs.lstatSync(file).isFile(), "COHORT_REGULAR_FILE_REQUIRED");
-  return fs.readFileSync(file);
+  try {
+    return readCanonicalRegularFileSync(file).bytes;
+  } catch (error) {
+    if (error?.code === "ELOOP") assert.fail("COHORT_SYMLINK_FORBIDDEN");
+    if (error?.code === "EISDIR") assert.fail("COHORT_REGULAR_FILE_REQUIRED");
+    throw error;
+  }
 }
 export function applicationReleaseCohort(root = repo) {
   root = fs.realpathSync(root);

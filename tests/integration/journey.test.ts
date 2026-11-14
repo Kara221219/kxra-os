@@ -300,6 +300,7 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
   );
   const beforePosts = JSON.parse(fs.readFileSync(providerFile, "utf8")).posts;
   fs.writeFileSync(modeFile, "hang-after-commit");
+  // codeql[js/http-to-file-access] Local fixture plan under the owned runtime, not a client upload.
   fs.writeFileSync(
     runtimeFile("paired-dispatch-plan.json"),
     JSON.stringify({
@@ -537,6 +538,7 @@ test("dual-credential scoped read -> exact human approval -> single fake dispatc
     (await f.invoke({ action: "read", connection_id: cid })).status,
     200,
   );
+  // codeql[js/http-to-file-access] Local journey receipt under the owned runtime, not a client upload.
   fs.writeFileSync(
     runtimeFile("integration-journey.json"),
     JSON.stringify({

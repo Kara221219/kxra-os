@@ -64,6 +64,7 @@ test("fixture lease refuses an occupied target and only releases its own token",
     assert.throws(() => acquireNativeFixtureLease("other", file), /held/);
     fs.rmdirSync(file);
     const releaseChanged = acquireNativeFixtureLease("unit", file);
+    // codeql[js/file-system-race] The test replaces the lease after the owner read to prove release refuses a foreign token.
     fs.writeFileSync(file, JSON.stringify({ token: "foreign" }));
     assert.throws(releaseChanged, /ownership changed/);
     assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).token, "foreign");

@@ -4,6 +4,7 @@ import path from "node:path";
 import { checkServerIdentity } from "node:tls";
 import pg from "pg";
 import { applicationSource as reviewedApplicationSource } from "./production-application.mjs";
+import { readCanonicalRegularFileSync } from "./read-regular-file.mjs";
 import { productionDatabaseConfig } from "./production-database.mjs";
 import { productionProjectRef } from "./production-migrations-core.mjs";
 import {
@@ -19,10 +20,16 @@ export function applicationUpgradeSource(environment = process.env) {
     root,
     "packages/release/production-application-upgrade-targets-v1.json",
   );
-  if (fs.realpathSync(file) !== file || !fs.lstatSync(file).isFile())
-    throw Error("APPLICATION_UPGRADE_PROFILE_REGULAR_FILE_REQUIRED");
+  let profileBytes;
+  try {
+    profileBytes = readCanonicalRegularFileSync(file).bytes;
+  } catch (error) {
+    if (error?.code === "ELOOP" || error?.code === "EISDIR")
+      throw Error("APPLICATION_UPGRADE_PROFILE_REGULAR_FILE_REQUIRED");
+    throw error;
+  }
   const profiles = validateUpgradeProfiles(
-    JSON.parse(fs.readFileSync(file, "utf8")),
+    JSON.parse(profileBytes.toString("utf8")),
   );
   return { ...source, profiles };
 }

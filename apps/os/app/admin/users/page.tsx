@@ -16,9 +16,7 @@ export default async function AdminUsers({
 }) {
   const { q = "", state = "" } = await searchParams;
   const current = await actor();
-  const rows = (await searchAdminUsers(current, q)).filter((row) =>
-    state ? row.account_state === state : true,
-  );
+  const rows = await searchAdminUsers(current, q, state);
   const invitations = (await loadOpenInvitations(current)) as {
     id: string;
     recipient_email: string;
@@ -27,6 +25,13 @@ export default async function AdminUsers({
   return (
     <>
       <h1>Users and organisations</h1>
+      <p className={styles.note}>
+        Rows are the accounts the selected organisation is allowed to read.
+        Customer accounts in other organisations stay hidden until a reviewed
+        database policy grants the KXRA owner that cross-tenant read. The
+        locked migration list cannot take that policy in this change. Account
+        state is applied in the query before the 50-row limit.
+      </p>
       <form method="get">
         <label>
           Search name or organisation

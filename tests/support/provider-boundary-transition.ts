@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { readCanonicalRegularFileSync } from "../../scripts/read-regular-file.mjs";
 
 /** Test-only exact source successor from accepted 29364435. Historical manifests
  * stay immutable; no normalization, release authority or runtime bypass. Both
@@ -43,13 +43,14 @@ export function historicalProviderBoundaryBytes(
   const snapshot = fileURLToPath(
     new URL("../fixtures/provider-boundary-historical.txt", import.meta.url),
   );
-  assert.equal(
-    fs.realpathSync(snapshot),
-    snapshot,
-    "PROVIDER_HISTORICAL_SNAPSHOT_SYMLINK",
-  );
-  assert.ok(fs.lstatSync(snapshot).isFile());
-  const historical = fs.readFileSync(snapshot);
+  let historical: Buffer;
+  try {
+    historical = readCanonicalRegularFileSync(snapshot).bytes;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ELOOP")
+      assert.fail("PROVIDER_HISTORICAL_SNAPSHOT_SYMLINK");
+    throw error;
+  }
   assert.equal(historical.length, transition.historicalBytes);
   assert.equal(
     sha(historical),

@@ -85,6 +85,7 @@ for (const f of [
 ])
   receipt.proof_sources[f] = sha(fs.readFileSync(path.join(root, f)));
 const write = (name, value) =>
+  // codeql[js/http-to-file-access] Exclusive private proof snapshot under this runtime. Callers do not pass a client upload path.
   fs.writeFileSync(
     path.join(runtime, name),
     JSON.stringify(value, null, 2) + "\n",

@@ -90,3 +90,14 @@ test("harness keeps one launch, distinct phases, original bounds and request/pri
   assert.equal(source.includes("--no-sandbox"), false);
   assert.equal(source.includes("console.error(error"), false);
 });
+
+test("Actions restores Chromium user namespaces before the sandboxed browser install", () => {
+  const source = fs.readFileSync(".github/workflows/ci.yml", "utf8");
+  const allow = source.indexOf(
+    "kernel.apparmor_restrict_unprivileged_userns=0",
+  );
+  const install = source.indexOf("npx playwright install --with-deps chromium");
+  assert.ok(allow > 0 && allow < install);
+  assert.equal(source.includes("--no-sandbox"), false);
+  assert.equal(source.includes("test:connectors"), true);
+});

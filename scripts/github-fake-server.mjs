@@ -10,12 +10,26 @@ if (
   throw Error("Private local fixture runtime required");
 const store = path.join(runtime, "github-provider-store.json"),
   modeFile = path.join(runtime, "github-provider-mode");
-if (!fs.existsSync(store))
-  fs.writeFileSync(
+try {
+  const created = fs.openSync(
     store,
-    JSON.stringify({ comments: [], posts: 0, nextId: 1 }),
-    { mode: 0o600 },
+    fs.constants.O_CREAT |
+      fs.constants.O_EXCL |
+      fs.constants.O_WRONLY |
+      fs.constants.O_NOFOLLOW,
+    0o600,
   );
+  try {
+    fs.writeFileSync(
+      created,
+      JSON.stringify({ comments: [], posts: 0, nextId: 1 }),
+    );
+  } finally {
+    fs.closeSync(created);
+  }
+} catch (error) {
+  if (error?.code !== "EEXIST") throw error;
+}
 function save(value) {
   const temp = store + ".tmp";
   fs.writeFileSync(temp, JSON.stringify(value), { mode: 0o600 });

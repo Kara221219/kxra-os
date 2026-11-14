@@ -32,6 +32,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # Ubuntu 24.04 sets kernel.apparmor_restrict_unprivileged_userns=1.
+      # Playwright's Chromium sandbox needs a user namespace. This runner
+      # setting restores that namespace for the job and leaves the sandbox on.
+      - name: Allow Chromium sandbox user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
