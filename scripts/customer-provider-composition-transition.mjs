@@ -49,8 +49,7 @@ export function readCustomerProviderCompositionFile(repo, file) {
   try {
     return readCanonicalRegularFileSync(target).bytes;
   } catch (error) {
-    if (error?.code === "ELOOP")
-      assert.fail("PROVIDER_COMPOSITION_SYMLINK");
+    if (error?.code === "ELOOP") assert.fail("PROVIDER_COMPOSITION_SYMLINK");
     if (error?.code === "EISDIR")
       assert.fail("PROVIDER_COMPOSITION_NOT_REGULAR");
     throw error;

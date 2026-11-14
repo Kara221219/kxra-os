@@ -28,9 +28,9 @@ export default async function AdminUsers({
       <p className={styles.note}>
         Rows are the accounts the selected organisation is allowed to read.
         Customer accounts in other organisations stay hidden until a reviewed
-        database policy grants the KXRA owner that cross-tenant read. The
-        locked migration list cannot take that policy in this change. Account
-        state is applied in the query before the 50-row limit.
+        database policy grants the KXRA owner that cross-tenant read. The locked
+        migration list cannot take that policy in this change. Account state is
+        applied in the query before the 50-row limit.
       </p>
       <form method="get">
         <label>

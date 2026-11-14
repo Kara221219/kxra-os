@@ -107,7 +107,7 @@ const report = {
   passed: false,
 };
 const save = () =>
-  // codeql[js/http-to-file-access] Fixed private receipt for this owned local run, including its own health response. Not an upload path.
+  // codeql[js/http-to-file-access]
   fs.writeFileSync(
     path.join(runtime, "receipt.json"),
     JSON.stringify(report, null, 2) + "\n",

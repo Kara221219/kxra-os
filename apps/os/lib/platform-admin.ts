@@ -146,11 +146,7 @@ const ADMIN_ACCOUNT_STATES = [
   "REVOKED",
 ] as const;
 
-export async function searchAdminUsers(
-  actor: Actor,
-  term: string,
-  state = "",
-) {
+export async function searchAdminUsers(actor: Actor, term: string, state = "") {
   assertPlatformAdmin(actor);
   const query = term.trim().slice(0, 80);
   if (

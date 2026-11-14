@@ -6,7 +6,9 @@ import path from "node:path";
 import { readCanonicalRegularFileSync } from "../scripts/read-regular-file.mjs";
 
 test("regular file bytes come from the opened descriptor", () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kxra-regular-file-"));
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "kxra-regular-file-"),
+  );
   try {
     const file = path.join(directory, "note.txt");
     fs.writeFileSync(file, "kept");
@@ -19,7 +21,9 @@ test("regular file bytes come from the opened descriptor", () => {
 });
 
 test("a final symlink is not followed", () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kxra-regular-link-"));
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "kxra-regular-link-"),
+  );
   try {
     const file = path.join(directory, "note.txt");
     const link = path.join(directory, "link.txt");

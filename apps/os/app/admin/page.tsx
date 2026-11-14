@@ -53,8 +53,8 @@ export default async function AdminHome() {
         ARR, trial-to-paid and churn read only the legacy
         kxra.billing_subscriptions mirror. They do not include the hosted
         live-billing ledger in kxra_private.live_billing_bindings. A zero does
-        not mean there are no live payments. Nothing on this page charges a
-        card or sends a refund.
+        not mean there are no live payments. Nothing on this page charges a card
+        or sends a refund.
       </p>
       <div className={styles.grid}>
         {cards.map(([label, value]) => (
