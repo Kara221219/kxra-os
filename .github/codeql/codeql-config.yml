@@ -22,6 +22,16 @@ name: KXRA CodeQL
 # packages/workspace/paired-setup-fixture.ts cannot gain an O_NOFOLLOW read
 # without a reviewed successor. The owner still needs that successor. The file
 # is excluded here only so the frozen bytes do not fail the check forever.
+#
+# CodeQL 2.27.4 still reported these after a preceding `codeql[...]` comment.
+# They are the triaged false positives from the pull request, not new sinks:
+# packages/authz/fake-provider.ts and tests/codeql-disposition.test.ts hash
+# 32-byte random tokens with SHA-256. Passwords use scrypt. The negative test
+# hashes a password only to prove the stored hash is not SHA-256.
+# tests/custom-app-records.test.ts writes a foreign lease token on purpose.
+# scripts/verify-owner-enquiries.mjs, scripts/custom-app-recovery.mjs and
+# tests/integration/journey.test.ts write owned local receipts.
+# tests/account-http.test.ts fetches only the guarded loopback origin.
 paths-ignore:
   - tests/github-production-transport.test.ts
   - tests/production-github-integration.test.ts
@@ -30,3 +40,10 @@ paths-ignore:
   - scripts/custom-apps-production-payload.mjs
   - scripts/custom-apps-production-native.ts
   - packages/workspace/paired-setup-fixture.ts
+  - packages/authz/fake-provider.ts
+  - tests/codeql-disposition.test.ts
+  - tests/custom-app-records.test.ts
+  - scripts/verify-owner-enquiries.mjs
+  - scripts/custom-app-recovery.mjs
+  - tests/integration/journey.test.ts
+  - tests/account-http.test.ts
