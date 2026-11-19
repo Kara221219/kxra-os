@@ -10,7 +10,13 @@ import {
 
 const root = path.resolve(import.meta.dirname, "..");
 const application = path.join(root, "apps", "marketing");
-const output = path.join(application, ".next");
+// Keep the hash scan on the same directory Next uses. A staging value of
+// KXRA_NEXT_DIST_DIR must not leave this script reading an empty .next.
+const output = path.resolve(
+  application,
+  process.env.KXRA_NEXT_DIST_DIR ||
+    (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
+);
 const command = [
   applicationNext("marketing").binary,
   "build",
@@ -85,8 +91,18 @@ build(
   ["ignore", "ignore", "inherit"],
 );
 const hashes = inlineHashesByRoute();
-if (!Object.keys(hashes).length)
+if (!Object.keys(hashes).length) {
+  // Vercel can finish `next build` without writing the static HTML this
+  // script hashes. The collect-mode build is already on disk; replacing it
+  // with an empty hash set would block inline scripts.
+  if (process.env.VERCEL === "1") {
+    console.log(
+      "No static marketing HTML was emitted; keeping the collect-mode build.",
+    );
+    process.exit(0);
+  }
   throw new Error("No static marketing pages found");
+}
 console.log(
   `Building marketing with exact hashes for ${Object.keys(hashes).length} static routes...`,
 );
