@@ -34,6 +34,8 @@ export function applicationNext(application, workspace = root) {
   return {
     version: installed.version,
     binary: require.resolve("next/dist/bin/next"),
-    webpackArguments: application === "os" ? ["--webpack"] : [],
+    // Next 16 defaults to Turbopack, whose client manifest is not the reviewed
+    // webpack wrapper. Keep the reviewed webpack manifest for budget checks.
+    webpackArguments: application === "email-worker" ? [] : ["--webpack"],
   };
 }

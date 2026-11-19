@@ -44,7 +44,7 @@ test("each application resolves its approved binary rather than the root version
     assert.equal(osNext.version, "16.4.6");
     assert.deepEqual(osNext.webpackArguments, ["--webpack"]);
     assert.equal(marketing.version, "16.4.6");
-    assert.deepEqual(marketing.webpackArguments, []);
+    assert.deepEqual(marketing.webpackArguments, ["--webpack"]);
     assert.notEqual(marketing.binary, osNext.binary);
     for (const entry of [worker]) {
       assert.equal(entry.version, "15.5.28");
