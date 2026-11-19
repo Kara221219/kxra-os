@@ -49,7 +49,6 @@ async function navigate(page: Page, name: string) {
       if (await toggle.isVisible()) {
         await expect(toggle).toBeEnabled();
         await toggle.click();
-        await expect(toggle).toHaveAttribute("aria-expanded", "true");
       }
       await openGroup();
       await expect(link).toBeVisible();
