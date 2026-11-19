@@ -36,7 +36,10 @@ export function installDirectoryDocumentLifecycle(
     freshDocument();
   }
   function restore(event: PageTransitionEvent) {
-    if (event.persisted) freshDocument();
+    // A cancelled navigation can hide the document and drop its children
+    // without putting the page in the back/forward cache. Reload so the
+    // server renders the inbox again instead of leaving it missing.
+    if (event.persisted || content.childElementCount === 0) freshDocument();
   }
   browser.addEventListener("pagehide", conceal, true);
   browser.addEventListener("pageshow", restore, true);

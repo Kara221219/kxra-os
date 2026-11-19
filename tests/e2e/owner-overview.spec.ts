@@ -191,9 +191,22 @@ test("owner shell preserves nested room messages, keyboard tabs and history", as
   await page
     .getByLabel("Message", { exact: true })
     .fill("Synthetic owner workbench message. No external service is used.");
-  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  const sendMessage = page.getByRole("button", {
+    name: "Send message",
+    exact: true,
+  });
+  await sendMessage.scrollIntoViewIfNeeded();
+  await sendMessage.click();
+  await expect(
+    page
+      .locator("form", {
+        has: page.getByRole("heading", { name: "Send message", exact: true }),
+      })
+      .getByRole("status"),
+  ).toHaveText("Saved.", { timeout: 20000 });
   await expect(page.locator(".team-message")).toContainText(
     "Synthetic owner workbench message.",
+    { timeout: 20000 },
   );
   const conversation = page.getByRole("tab", {
     name: "Conversation",

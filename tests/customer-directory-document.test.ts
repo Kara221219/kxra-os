@@ -14,8 +14,10 @@ function fixture(type = "navigate") {
   const status = { hidden: false };
   const content = {
     style: { visibility: "hidden" },
+    childElementCount: 1,
     replaceChildren() {
       clears++;
+      this.childElementCount = 0;
     },
   };
   const location = {
@@ -89,6 +91,15 @@ test("leaving scrubs metadata before a snapshot; persisted restoration requests 
   assert.equal(f.reloads(), 1);
   f.stop();
   assert.equal(f.listeners.size, 0);
+});
+test("pageshow after a cancelled navigation reloads a scrubbed document", () => {
+  const f = fixture();
+  f.listeners.get("pagehide")!({});
+  assert.equal(f.clears(), 1);
+  assert.equal(f.content.childElementCount, 0);
+  f.listeners.get("pageshow")!({ persisted: false });
+  assert.equal(f.reloads(), 1);
+  f.stop();
 });
 test("normal pageshow does not reload, document history does, and fragment keyboard navigation remains native", () => {
   const f = fixture();

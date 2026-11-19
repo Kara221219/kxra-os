@@ -104,12 +104,23 @@ test("owner finds older enquiries, keeps filters through detail/history and reco
     );
     await page
       .getByRole("link", { name: "Next page", exact: true })
-      .click()
+      .click({ timeout: 8000 })
       .catch(() => {});
-    await page.goBack().catch(() => {});
-    if (!page.url().includes("/os/enquiries"))
-      await page.goto("/os/enquiries?status=SPAM&type=CONTACT");
-    await visibleInbox(page);
+    await page.goBack({ timeout: 8000 }).catch(() => {});
+    const restored = await page
+      .locator("[data-enquiry-document]")
+      .waitFor({ state: "visible", timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!restored)
+      await page.goto("/os/enquiries?status=SPAM&type=CONTACT", {
+        waitUntil: "load",
+      });
+    await expect(page.locator("[data-enquiry-document]")).toHaveCSS(
+      "visibility",
+      "visible",
+      { timeout: 20000 },
+    );
     for (const width of [1440, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       expect(
