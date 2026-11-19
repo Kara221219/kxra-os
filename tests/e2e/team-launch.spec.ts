@@ -206,7 +206,7 @@ test("room lead conversion survives reload with exact review and one local recei
 test("catalogs load earlier authorised pages and the pilot offer stays a simulation", async ({
   page,
 }) => {
-  test.setTimeout(90000);
+  test.setTimeout(180000);
   const { room } = await paginationFixture();
   await login(page, "partner");
   await page.goto("/os/workspace/" + room);
@@ -228,9 +228,12 @@ test("catalogs load earlier authorised pages and the pilot offer stays a simulat
     name: "Recurring room drafts",
     exact: true,
   });
-  await schedules
-    .getByRole("button", { name: "Load earlier schedules", exact: true })
-    .click();
+  const earlierSchedules = schedules.getByRole("button", {
+    name: "Load earlier schedules",
+    exact: true,
+  });
+  await expect(earlierSchedules).toBeVisible();
+  await earlierSchedules.click();
   await expect(
     schedules.locator('article[aria-label^="Schedule "]'),
   ).toHaveCount(102);

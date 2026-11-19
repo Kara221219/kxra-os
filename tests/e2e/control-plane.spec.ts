@@ -38,17 +38,21 @@ async function navigate(page: Page, name: string) {
         await summary.click();
     };
     // Closed groups hide their links on every viewport. The menu button is
-    // display:none above 760px, so open a visible summary first and never
-    // wait out the test timeout on a hidden desktop toggle.
+    // display:none above 760px and stays disabled until hydration, so open a
+    // visible summary first and only click an enabled mobile toggle.
     await openGroup();
     if (!(await link.isVisible())) {
       const toggle = owner.getByRole("button", {
         name: "Open navigation",
         exact: true,
       });
-      if (await toggle.isVisible())
-        await toggle.click({ timeout: 5000 }).catch(() => {});
+      if (await toggle.isVisible()) {
+        await expect(toggle).toBeEnabled();
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      }
       await openGroup();
+      await expect(link).toBeVisible();
     }
     await link.click();
     return;
