@@ -22,16 +22,19 @@ async function fixtureLogin(page: Page, fixture: string) {
 async function navigate(page: Page, name: string) {
   const owner = page.getByRole("navigation", { name: "Owner navigation" });
   if (await owner.count()) {
-    const toggle = owner.getByRole("button", {
-      name: "Open navigation",
-      exact: true,
-    });
-    if (await toggle.isVisible()) await toggle.click();
     const link = owner.getByRole("link", {
       name,
       exact: true,
       includeHidden: true,
     });
+    // Desktop keeps the links visible and hides this toggle. A visibility
+    // check can race stylesheet application, so only open the menu when the
+    // destination link itself is not yet visible.
+    if (!(await link.isVisible())) {
+      await owner
+        .getByRole("button", { name: "Open navigation", exact: true })
+        .click();
+    }
     const group = link.locator("xpath=ancestor::details");
     if ((await group.count()) && (await group.getAttribute("open")) === null)
       await group.locator("summary").click();
