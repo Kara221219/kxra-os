@@ -48,29 +48,41 @@ export function pairedSetupFixtureBoundary(
     )
       return fail();
   }
-  const file = path.join(runtime, "database.json"),
-    meta = fs.lstatSync(file);
-  if (
-    !meta.isFile() ||
-    meta.isSymbolicLink() ||
-    meta.uid !== process.getuid?.() ||
-    (meta.mode & 0o077) !== 0
-  )
+  const file = path.join(runtime, "database.json");
+  let descriptor: number;
+  try {
+    descriptor = fs.openSync(
+      file,
+      fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW,
+    );
+  } catch {
     return fail();
-  const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
-  if (
-    cfg.host !== path.join(runtime, "socket") ||
-    fs.realpathSync(cfg.host) !== cfg.host ||
-    cfg.user !== "kxra_app" ||
-    cfg.database !== "postgres" ||
-    cfg.password ||
-    cfg.connectionString ||
-    cfg.ssl
-  )
-    return fail();
-  const value = Object.freeze({ runtime, [brand]: true as const });
-  valid.add(value);
-  return value;
+  }
+  try {
+    const meta = fs.fstatSync(descriptor);
+    if (
+      !meta.isFile() ||
+      meta.uid !== process.getuid?.() ||
+      (meta.mode & 0o077) !== 0
+    )
+      return fail();
+    const cfg = JSON.parse(fs.readFileSync(descriptor, "utf8"));
+    if (
+      cfg.host !== path.join(runtime, "socket") ||
+      fs.realpathSync(cfg.host) !== cfg.host ||
+      cfg.user !== "kxra_app" ||
+      cfg.database !== "postgres" ||
+      cfg.password ||
+      cfg.connectionString ||
+      cfg.ssl
+    )
+      return fail();
+    const value = Object.freeze({ runtime, [brand]: true as const });
+    valid.add(value);
+    return value;
+  } finally {
+    fs.closeSync(descriptor);
+  }
 }
 const claims = z
   .object({

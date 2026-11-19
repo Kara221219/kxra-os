@@ -34,7 +34,7 @@ test("offline composition mapping is frozen and contains only the two exact requ
       historical:
         "66577b16812a33ea0f2757dd7f217b0300a3e09794fffc933e17b99e25790833",
       successor:
-        "bc2d23b706f1b4b0d4d814c2f9899a527fbee36f7ed7b0f0c90c1159c54d5447",
+        "43c867471a5e60268d6c55830c5cdd13c510efc30cfbca8524fd8dc61429d98f",
     },
   });
   assert.equal(

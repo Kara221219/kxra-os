@@ -12,6 +12,10 @@ import {
   historicalCompositionBytes,
   pairedSetupEnvironmentAppend,
 } from "./support/composition-policy-bytes";
+import {
+  isNextSecurityTransitionFile,
+  verifyNextSecurityTransition,
+} from "./support/next-security-transition";
 const root = path.resolve(import.meta.dirname, ".."),
   sha = (b: Buffer) => crypto.createHash("sha256").update(b).digest("hex"),
   prior = Buffer.from("# Existing controls\nKXRA_BILLING_HTTP_ENABLED=false\n"),
@@ -73,18 +77,17 @@ test("paired composition preserves historical manifests and exact authority pins
     );
     const files =
       prior.unchangedPolicyFiles ?? prior.unchangedAuthorityPolicyFiles;
-    for (const f of files)
-      assert.equal(
-        sha(
-          historicalCompositionBytes(
-            f.path,
-            fs.readFileSync(path.join(root, f.path)),
-            f.sha256,
-          ),
-        ),
-        f.sha256,
-        f.path,
-      );
+    for (const f of files) {
+      const bytes = fs.readFileSync(path.join(root, f.path));
+      if (isNextSecurityTransitionFile(f.path))
+        verifyNextSecurityTransition(f.path, bytes, f.sha256);
+      else
+        assert.equal(
+          sha(historicalCompositionBytes(f.path, bytes, f.sha256)),
+          f.sha256,
+          f.path,
+        );
+    }
   }
   assert.deepEqual(m.migrationPromotions, []);
   assert.match(

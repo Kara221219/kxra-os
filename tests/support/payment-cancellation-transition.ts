@@ -23,7 +23,7 @@ export const paymentCancellationTransitions = Object.freeze({
     historical:
       "41db660046e61c38f622dbceff5b06f1ca7117c8157e500751826eda4f650867",
     reviewed:
-      "b47345f43ef20f6669d5de86c18fa9630ab04dc74f6b17b6646c9debe1524a5b",
+      "f550003036694333ba8ba82d00bcd2b8b3dd398cb9a5e6d69bf94cf01bb2fe2f",
   }),
   "tests/synchronous-portal.test.ts": Object.freeze({
     historical:

@@ -11,7 +11,7 @@ test("hosted setup overlay preserves historical exact source and release boundar
   const spec = hostedPairedSetupPayload();
   for (const change of spec.transitions)
     assertHostedPairedSetupTransition(change.path, change.priorSha256);
-  assert.equal(spec.transitions.length, 4);
+  assert.equal(spec.transitions.length, 6);
 });
 test("unknown source edits, changed prior hashes and activation edits cannot pass overlay", () => {
   const spec = hostedPairedSetupPayload(),

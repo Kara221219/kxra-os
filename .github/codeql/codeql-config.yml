@@ -17,12 +17,6 @@ name: KXRA CodeQL
 # Local evidence writer, not an upload endpoint:
 # scripts/custom-apps-production-native.ts
 #
-# Real same-user fixture TOCTOU that this pull request cannot patch. The hosted
-# setup transition list is a closed set of four files, so
-# packages/workspace/paired-setup-fixture.ts cannot gain an O_NOFOLLOW read
-# without a reviewed successor. The owner still needs that successor. The file
-# is excluded here only so the frozen bytes do not fail the check forever.
-#
 # CodeQL 2.27.4 still reported these after a preceding `codeql[...]` comment.
 # They are the triaged false positives from the pull request, not new sinks:
 # packages/authz/fake-provider.ts and tests/codeql-disposition.test.ts hash
@@ -39,7 +33,6 @@ paths-ignore:
   - scripts/production-ai-review.mjs
   - scripts/custom-apps-production-payload.mjs
   - scripts/custom-apps-production-native.ts
-  - packages/workspace/paired-setup-fixture.ts
   - packages/authz/fake-provider.ts
   - tests/codeql-disposition.test.ts
   - tests/custom-app-records.test.ts

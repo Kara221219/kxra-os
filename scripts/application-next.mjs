@@ -5,8 +5,8 @@ import { createRequire } from "node:module";
 
 const root = path.resolve(import.meta.dirname, "..");
 const approved = {
-  os: "16.4.3",
-  marketing: "15.5.28",
+  os: "16.4.6",
+  marketing: "16.4.6",
   "email-worker": "15.5.28",
 };
 

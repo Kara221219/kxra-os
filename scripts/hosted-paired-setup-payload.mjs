@@ -13,6 +13,8 @@ const changes = [
   "apps/os/components/PairedSetupForm.tsx",
   "apps/os/components/PairedSetupPage.production.tsx",
   "apps/os/lib/paired-setup.production.ts",
+  "apps/os/package.json",
+  "packages/workspace/paired-setup-fixture.ts",
   "tests/production-paired-composition.test.ts",
 ];
 export function hostedPairedSetupPayload(root = repo) {

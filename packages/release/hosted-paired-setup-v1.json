@@ -26,9 +26,19 @@
       "sha256": "a8549d70293dc701076292709da09bb7e99606b81d10fde4f4f0dcb153fe9795"
     },
     {
+      "path": "apps/os/package.json",
+      "priorSha256": "243607f503fc2e230002fd8c9883f19863445be0d40c9cad36777a285df652e5",
+      "sha256": "136804ba827f0c5c5fa2a00b9c1007b90f95d38238a1503eb06c33d462029ea2"
+    },
+    {
+      "path": "packages/workspace/paired-setup-fixture.ts",
+      "priorSha256": "ae38d356a1027ac03c914629546d4dea2b6afb5d319922eb748f8f2d84d56383",
+      "sha256": "c0194c627e18fc87d7c784d0dfeed44c95fd066a9a0de202ce928b14bcf3cb54"
+    },
+    {
       "path": "tests/production-paired-composition.test.ts",
       "priorSha256": "86b31c15b0b42227e5defec12583604e613ae5c5908c8dfcd627346517cb97cb",
-      "sha256": "0e2f02bd82b853e0937e93a6125cf7eec6afb47fe7ae5abbd37776af3aadaea4"
+      "sha256": "974e62b80508d33779dba859a35bee59b0d47039797a0bd5fdc78dba8b6579c0"
     }
   ],
   "sourceFiles": [
@@ -43,6 +53,14 @@
     {
       "path": "apps/os/lib/paired-setup.production.ts",
       "sha256": "a8549d70293dc701076292709da09bb7e99606b81d10fde4f4f0dcb153fe9795"
+    },
+    {
+      "path": "apps/os/package.json",
+      "sha256": "136804ba827f0c5c5fa2a00b9c1007b90f95d38238a1503eb06c33d462029ea2"
+    },
+    {
+      "path": "packages/workspace/paired-setup-fixture.ts",
+      "sha256": "c0194c627e18fc87d7c784d0dfeed44c95fd066a9a0de202ce928b14bcf3cb54"
     },
     {
       "path": "packages/workspace/paired-setup-hosted.ts",
@@ -74,11 +92,11 @@
     },
     {
       "path": "tests/hosted-paired-setup-payload.test.ts",
-      "sha256": "40a5aecfaabf28cf643673a9809a4aa64eb5ffcefa0e69909676eb70a7f07cc9"
+      "sha256": "934e7ba31c10c02b90afa11ea6fb0ed8c81fedb2a3793a58a98baaae7a2b8e94"
     },
     {
       "path": "tests/production-paired-composition.test.ts",
-      "sha256": "0e2f02bd82b853e0937e93a6125cf7eec6afb47fe7ae5abbd37776af3aadaea4"
+      "sha256": "974e62b80508d33779dba859a35bee59b0d47039797a0bd5fdc78dba8b6579c0"
     }
   ],
   "preservedSources": [

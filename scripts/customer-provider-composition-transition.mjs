@@ -18,7 +18,7 @@ export const customerProviderCompositionTransitions = Object.freeze({
     historical:
       "66577b16812a33ea0f2757dd7f217b0300a3e09794fffc933e17b99e25790833",
     successor:
-      "bc2d23b706f1b4b0d4d814c2f9899a527fbee36f7ed7b0f0c90c1159c54d5447",
+      "43c867471a5e60268d6c55830c5cdd13c510efc30cfbca8524fd8dc61429d98f",
   }),
 });
 const manifests = Object.freeze({
@@ -27,7 +27,7 @@ const manifests = Object.freeze({
   "production-paired-integration-v1.json":
     "38b9b43a226211647d61529b250e2040213c9f9e7ceedcc19a3e2055cf24af33",
   "hosted-paired-setup-v1.json":
-    "53e708b1017cdcc09f86206c8d75cd6f640ab54907fe13cbdacebb9b41ab705a",
+    "ef04ad3d8f97bad84a380bc9c42daf855c65174ab7f9b6c965089dfb263d35d2",
 });
 function canonicalRelativePath(file) {
   assert.ok(
