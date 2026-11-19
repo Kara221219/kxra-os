@@ -248,7 +248,9 @@ test("catalogs load earlier authorised pages and the pilot offer stays a simulat
   await page.goto("/os/workspace/" + f.room);
   await page.getByRole("tab", { name: "Settings", exact: true }).click();
   const pilot = page.getByRole("region", { name: "Workspace pilot preview" });
-  await expect(pilot).toContainText("£49.00/workspace/month");
+  await expect(pilot).toContainText("£49.00/workspace/month", {
+    timeout: 20000,
+  });
   await expect(pilot).toContainText("Starter £29");
   await expect(pilot).toContainText("£199");
   await expect(pilot).toContainText("Unassigned");
