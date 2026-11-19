@@ -42,10 +42,15 @@ export function ReferenceNavigation() {
   const root = useRef<HTMLElement>(null),
     buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const path = usePathname();
-  // Close after the route changes. Closing inside the link click unmounts
-  // that link before Next.js can follow it, so the mobile menu click stays
-  // on the current page.
+  const publishedPath = useRef<string | null>(null);
+  // Close after a real route change. Closing inside the link click unmounts
+  // that link before Next.js can follow it. The first published path is not
+  // a navigation: resetting there closes a menu opened while the router
+  // finishes hydrating.
   useEffect(() => {
+    const previous = publishedPath.current;
+    publishedPath.current = path;
+    if (previous === null || previous === path) return;
     setOpen(null);
     setMobile(false);
   }, [path]);
