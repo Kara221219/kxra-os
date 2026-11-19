@@ -9,7 +9,7 @@ export const nextSecurityTransitions = Object.freeze({
     historical:
       "ce48430caddc9238be58bc3b72a9d8a3a168e7cd21ff3907b59f06f5505e6314",
     reviewed:
-      "67bfcfcfcd89b75d8f62762b62f0528ad07ade1145a860d72220b8cc2b934121",
+      "6943a99e8571e5c597229a758e1c467f6476ad9cab61bd58dac0d047ff9366cb",
   }),
 });
 
