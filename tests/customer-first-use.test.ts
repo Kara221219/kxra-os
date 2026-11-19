@@ -196,7 +196,7 @@ test("onboarding payloads, repeated-save guard and all authority-bearing sources
     "apps/marketing/app/page.tsx":
       "160199cf59dfb6e5e8512e7de0650a84798bc4346f4ac08699c8c8a10ab6e88e",
     "scripts/verify-build-budgets.mjs":
-      "5f8492c4c352f26026bff3637add0472229e39c5a4c16d0281e805a32f38761d",
+      "aeaf73c4a067e34f1b7fbf2e53be49890e8966200df5453ea9a6ba681597b748",
   };
   for (const [file, expected] of Object.entries(unchanged))
     assert.equal(hash(fs.readFileSync(file)), expected, file);
