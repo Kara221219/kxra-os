@@ -30,6 +30,7 @@ scripts/*
 !scripts/build-marketing.mjs
 !scripts/marketing-script-elements.mjs
 !scripts/build-email-worker.mjs
+!scripts/application-next.mjs
 !scripts/verify-staging-config.mjs
 !scripts/staging-config.mjs
 
