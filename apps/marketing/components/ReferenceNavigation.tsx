@@ -42,6 +42,9 @@ export function ReferenceNavigation() {
   const root = useRef<HTMLElement>(null),
     buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const path = usePathname();
+  // Close after the route changes. Closing inside the link click unmounts
+  // that link before Next.js can follow it, so the mobile menu click stays
+  // on the current page.
   useEffect(() => {
     setOpen(null);
     setMobile(false);
@@ -117,14 +120,7 @@ export function ReferenceNavigation() {
                     {links
                       .filter((l) => l[0] === group)
                       .map((l) => (
-                        <Link
-                          key={l[2]}
-                          href={l[2]}
-                          onClick={() => {
-                            setOpen(null);
-                            setMobile(false);
-                          }}
-                        >
+                        <Link key={l[2]} href={l[2]}>
                           {l[1]}
                           <span aria-hidden="true">↗</span>
                         </Link>
@@ -136,16 +132,12 @@ export function ReferenceNavigation() {
           </div>
         ))}
         {directLinks.map(([label, href]) => (
-          <Link key={href} href={href} onClick={() => setMobile(false)}>
+          <Link key={href} href={href}>
             {label}
           </Link>
         ))}
         <div className="ref-mobile-actions">
-          <Link
-            className="ref-button ref-button-gold"
-            href="/lets-connect"
-            onClick={() => setMobile(false)}
-          >
+          <Link className="ref-button ref-button-gold" href="/lets-connect">
             Let’s connect →
           </Link>
         </div>
