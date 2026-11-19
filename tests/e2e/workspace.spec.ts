@@ -11,19 +11,34 @@ async function fixtureLogin(page: Page, fixture: string) {
 async function navigate(page: Page, name: string) {
   const owner = page.getByRole("navigation", { name: "Owner navigation" });
   if (await owner.count()) {
-    const toggle = owner.getByRole("button", {
-      name: "Open navigation",
-      exact: true,
-    });
-    if (await toggle.isVisible()) await toggle.click();
     const link = owner.getByRole("link", {
       name,
       exact: true,
       includeHidden: true,
     });
     const group = link.locator("xpath=ancestor::details");
-    if ((await group.count()) && (await group.getAttribute("open")) === null)
-      await group.locator("summary").click();
+    const summary = group.locator("summary");
+    const openGroup = async () => {
+      if (
+        (await group.count()) &&
+        (await group.getAttribute("open")) === null &&
+        (await summary.isVisible())
+      )
+        await summary.click();
+    };
+    // Closed groups hide their links on every viewport. The menu button is
+    // display:none above 760px, so open a visible summary first and never
+    // wait out the test timeout on a hidden desktop toggle.
+    await openGroup();
+    if (!(await link.isVisible())) {
+      const toggle = owner.getByRole("button", {
+        name: "Open navigation",
+        exact: true,
+      });
+      if (await toggle.isVisible())
+        await toggle.click({ timeout: 5000 }).catch(() => {});
+      await openGroup();
+    }
     await link.click();
     return;
   }
