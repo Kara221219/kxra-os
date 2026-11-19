@@ -280,7 +280,7 @@ export const helpArticles = [
       ],
       [
         "Read the current terms",
-        "The privacy notice and customer documents define the current policies. Old subscription terms are preserved as historical documents while new subscriptions remain paused.",
+        "The privacy notice, terms and refunds page describe the current workspace plans. Older Brand Studio and Video Studio wording is kept only as history.",
       ],
     ],
     related: ["account-security", "request-workspace-access"],

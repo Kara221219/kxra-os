@@ -20,6 +20,42 @@ async function fixtureLogin(page: Page, fixture: string) {
 }
 
 async function navigate(page: Page, name: string) {
+  const owner = page.getByRole("navigation", { name: "Owner navigation" });
+  if (await owner.count()) {
+    const link = owner.getByRole("link", {
+      name,
+      exact: true,
+      includeHidden: true,
+    });
+    const group = link.locator("xpath=ancestor::details");
+    const summary = group.locator("summary");
+    const openGroup = async () => {
+      if (
+        (await group.count()) &&
+        (await group.getAttribute("open")) === null &&
+        (await summary.isVisible())
+      )
+        await summary.click();
+    };
+    // Closed groups hide their links on every viewport. The menu button is
+    // display:none above 760px and stays disabled until hydration, so open a
+    // visible summary first and only click an enabled mobile toggle.
+    await openGroup();
+    if (!(await link.isVisible())) {
+      const toggle = owner.getByRole("button", {
+        name: "Open navigation",
+        exact: true,
+      });
+      if (await toggle.isVisible()) {
+        await expect(toggle).toBeEnabled();
+        await toggle.click();
+      }
+      await openGroup();
+      await expect(link).toBeVisible();
+    }
+    await link.click();
+    return;
+  }
   const mobileMenu = page.locator(".mobile-menu > summary");
   const desktopLink = page
     .getByRole("navigation", { name: "Main navigation" })
@@ -114,6 +150,11 @@ test("AT-22 owner Dashboard, Portfolio and Idea Inbox are operational", async ({
   await fixtureLogin(page, "owner");
   await expect(
     page.getByRole("heading", { name: "Your operating overview" }),
+  ).toBeVisible();
+  await expect(page.locator(".owner-metric")).toHaveCount(4);
+  await navigate(page, "Venture overview");
+  await expect(
+    page.getByRole("heading", { name: "Venture operating overview" }),
   ).toBeVisible();
   await expect(page.locator(".control-section")).toHaveCount(4);
   for (const section of [

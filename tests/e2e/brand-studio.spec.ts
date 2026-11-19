@@ -9,7 +9,20 @@ test("studios are retired and not offered in the authenticated catalogue", async
   await expect(page).toHaveURL(/\/os/);
   await page.goto("/os/tools");
   await expect(
-    page.getByRole("heading", { name: "Project workrooms" }),
+    page
+      .locator('.workroom-grid a[href="/os/workspace"]')
+      .getByRole("heading", {
+        name: "Team workspace",
+        exact: true,
+      }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('.workroom-grid a[href="/os/workrooms"]')
+      .getByRole("heading", {
+        name: "Earlier project discussions",
+        exact: true,
+      }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Brand Studio|Video Studio/ }),

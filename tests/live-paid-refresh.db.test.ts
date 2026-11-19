@@ -1,3 +1,4 @@
+import { seedReviewedBusinessFixture } from "./support/reviewed-business-fixture";
 import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -316,6 +317,24 @@ test("0110 genuine runner executes bounded due refresh, concurrent leases and ge
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision,subscription_id) values($1,$2,'KXRA_STARTER_V1',$3,$4)",
       [org, customer, revision, subscription],
     );
+
+    await admin.query(
+      "insert into kxra_private.live_paid_policies(id,revision,enabled,offer_key,mapping_revision,terms_document_id,terms_document_version,terms_url,message,activation_review_sha256,terms_review_sha256,presentation_sha256,tax_review_sha256,cancellation_review_sha256,grace_review_sha256,refund_review_sha256,trial_review_sha256,ai_review_sha256,access_rule,cancellation_mode,grace_seconds,refund_mode,trial_access,past_due_access,proof_ttl_seconds) values($1,1,true,'KXRA_STARTER_V1',$2,$3,1,$4,$5,$6,$7,$8,$6,$6,$6,$6,$6,$6,'CURRENT_COLLECTED_ACTIVE_ONLY','END_OF_PAID_PERIOD',0,'DENY_ANY_REFUND',false,false,120)",
+      [
+        policy,
+        revision,
+        document,
+        termsUrl,
+        message,
+        review,
+        terms,
+        presentation,
+      ],
+    );
+    await seedReviewedBusinessFixture(admin.query.bind(admin), {
+      org_id: org,
+      actor_id: actor,
+    });
     await admin.query(
       "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,state,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time,created_at,expires_at,consumed_at,provider_session_id,result_sha256) values($1,$2,$3,'CHECKOUT','CONSUMED',$4,'KXRA_STARTER_V1',$5,$6,0,now()-interval '2 days',now()-interval '2 days',now()-interval '2 days'+interval '20 minutes',now()-interval '2 days'+interval '1 minute',$7,$6)",
       [
@@ -331,19 +350,6 @@ test("0110 genuine runner executes bounded due refresh, concurrent leases and ge
     await admin.query(
       "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
       [org, checkout],
-    );
-    await admin.query(
-      "insert into kxra_private.live_paid_policies(id,revision,enabled,offer_key,mapping_revision,terms_document_id,terms_document_version,terms_url,message,activation_review_sha256,terms_review_sha256,presentation_sha256,tax_review_sha256,cancellation_review_sha256,grace_review_sha256,refund_review_sha256,trial_review_sha256,ai_review_sha256,access_rule,cancellation_mode,grace_seconds,refund_mode,trial_access,past_due_access,proof_ttl_seconds) values($1,1,true,'KXRA_STARTER_V1',$2,$3,1,$4,$5,$6,$7,$8,$6,$6,$6,$6,$6,$6,'CURRENT_COLLECTED_ACTIVE_ONLY','END_OF_PAID_PERIOD',0,'DENY_ANY_REFUND',false,false,120)",
-      [
-        policy,
-        revision,
-        document,
-        termsUrl,
-        message,
-        review,
-        terms,
-        presentation,
-      ],
     );
     await admin.query("commit");
     setupCommitted = true;

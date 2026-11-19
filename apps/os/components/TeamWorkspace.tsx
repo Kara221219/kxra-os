@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { CustomerAiPolicy } from "../../../packages/workspace/customer-ai-policy";
 const roomViews = [
   "conversation",
   "tasks",
@@ -29,9 +30,24 @@ import type {
 type Detail = Awaited<ReturnType<typeof teamDetail>>;
 type Project = { id: string; name: string };
 import { ActionForm } from "./TeamActionForm";
-import { RoomKnowledge } from "./RoomKnowledge";
-import { RoomMemory } from "./RoomMemory";
 import { WorkspacePilot } from "./WorkspacePilot";
+import dynamic from "next/dynamic";
+const RoomKnowledge = dynamic(
+  () => import("./RoomKnowledge").then((module) => module.RoomKnowledge),
+  { loading: () => <p role="status">Loading room knowledge…</p> },
+);
+const RoomMemory = dynamic(
+  () => import("./RoomMemory").then((module) => module.RoomMemory),
+  { loading: () => <p role="status">Loading room memory…</p> },
+);
+const ConnectionManager = dynamic(
+  () => import("./ModelConnections").then((m) => m.ModelConnections),
+  { loading: () => <p>Loading model connections…</p> },
+);
+const RoomPairedAgents = dynamic(
+  () => import("./RoomPairedAgents").then((module) => module.RoomPairedAgents),
+  { loading: () => <p>Loading paired agents…</p> },
+);
 import { RoomBridge } from "./RoomBridge";
 import { RoomCases } from "./RoomCases";
 import { RoomCollaboration } from "./RoomCollaboration";
@@ -46,19 +62,29 @@ export function TeamWorkspace({
   detail,
   actorId,
   local,
+  hostedOperations = false,
+  customApps = false,
   candidates = [],
   isOrgOwner = false,
   knowledge,
+  aiPolicy,
+  accessNavigation,
+  roomCreationUnavailable,
 }: {
+  accessNavigation: React.ReactNode;
+  roomCreationUnavailable: React.ReactNode;
   rooms: TeamRoom[];
   projects: Project[];
   connections: ModelConnection[];
   detail?: Detail;
   actorId: string;
   local: boolean;
+  hostedOperations?: boolean;
+  customApps?: boolean;
   isOrgOwner?: boolean;
   candidates?: { account_id: string; display_name: string }[];
   knowledge?: Awaited<ReturnType<typeof teamKnowledge>>;
+  aiPolicy: CustomerAiPolicy;
 }) {
   const router = useRouter(),
     search = useSearchParams(),
@@ -208,7 +234,11 @@ export function TeamWorkspace({
           </p>
         </div>
         <Link href="/os/workspace">All rooms</Link>
+        {(local || customApps) && room ? (
+          <Link href={`/os/custom-apps/${room.id}`}>Custom apps</Link>
+        ) : null}
       </div>
+      {accessNavigation}
       {local && (
         <p className="notice">
           Local demonstration: synthetic models only. No provider is billed and
@@ -242,7 +272,9 @@ export function TeamWorkspace({
                 {r.access === "PRIVATE" ? "◈" : "#"} {r.name}
               </Link>
             ))}
-          {!rooms.length && <p>Create your first room to start.</p>}
+          {!rooms.length && projects.length > 0 && (
+            <p>Create your first room to start.</p>
+          )}
           {!!rooms.length &&
             !rooms.some((r) =>
               r.name.toLowerCase().includes(roomQuery.toLowerCase()),
@@ -254,7 +286,9 @@ export function TeamWorkspace({
                 </button>
               </p>
             )}
-          <Link href="/os/workspace">＋ Create a room</Link>
+          {projects.length > 0 && (
+            <Link href="/os/workspace">＋ Create a room</Link>
+          )}
           <hr />
           <Link href="/os/projects">Projects</Link>
           <Link href="/os/files">Files & knowledge</Link>
@@ -268,9 +302,9 @@ export function TeamWorkspace({
                 <article className="panel">
                   <h2>One place for shared work</h2>
                   <p>
-                    Create a room for a project or a private team conversation.
-                    Add an agent with a defined role, choose its model, then ask
-                    it to work on a message or thread.
+                    Open a shared room, or create one when you have contributor
+                    access to a project. Model availability depends on your
+                    connection and current workspace access.
                   </p>
                 </article>
                 <article className="panel">
@@ -282,55 +316,63 @@ export function TeamWorkspace({
                   </p>
                 </article>
               </div>
-              <ActionForm
-                path=""
-                title="Create room"
-                navigate
-                build={(d) => ({
-                  name: d.get("name"),
-                  project_id: d.get("project_id"),
-                  guidelines: d.get("guidelines"),
-                  access: d.get("access"),
-                })}
-              >
-                <label>
-                  Room name
-                  <input
-                    name="name"
-                    maxLength={120}
-                    required
-                    placeholder="Customer success"
-                  />
-                </label>
-                <label>
-                  Project
-                  <select name="project_id" aria-label="Project" required>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
+              {projects.length > 0 ? (
+                <ActionForm
+                  path=""
+                  title="Create room"
+                  navigate
+                  build={(d) => ({
+                    name: d.get("name"),
+                    project_id: d.get("project_id"),
+                    guidelines: d.get("guidelines"),
+                    access: d.get("access"),
+                  })}
+                >
+                  <label>
+                    Room name
+                    <input
+                      name="name"
+                      maxLength={120}
+                      required
+                      placeholder="Customer success"
+                    />
+                  </label>
+                  <label>
+                    Project
+                    <select name="project_id" aria-label="Project" required>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Who can see this?
+                    <select name="access">
+                      <option value="PRIVATE">Only invited room members</option>
+                      <option value="PROJECT">
+                        Everyone with access to this project
                       </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Who can see this?
-                  <select name="access">
-                    <option value="PRIVATE">Only invited room members</option>
-                    <option value="PROJECT">
-                      Everyone with access to this project
-                    </option>
-                  </select>
-                </label>
-                <label>
-                  Room guidelines
-                  <textarea
-                    name="guidelines"
-                    maxLength={4096}
-                    placeholder="Purpose, constraints and the decisions this room owns"
-                  />
-                </label>
-              </ActionForm>
-              <ConnectionManager connections={connections} local={local} />
+                    </select>
+                  </label>
+                  <label>
+                    Room guidelines
+                    <textarea
+                      name="guidelines"
+                      maxLength={4096}
+                      placeholder="Purpose, constraints and the decisions this room owns"
+                    />
+                  </label>
+                </ActionForm>
+              ) : (
+                roomCreationUnavailable
+              )}
+              <ConnectionManager
+                connections={connections}
+                local={local}
+                aiPolicy={aiPolicy}
+              />
             </>
           ) : (
             <>
@@ -701,6 +743,7 @@ export function TeamWorkspace({
                       </ActionForm>
                     )}
                     <ConnectionManager
+                      aiPolicy={aiPolicy}
                       connections={connections}
                       local={local}
                     />
@@ -790,13 +833,22 @@ export function TeamWorkspace({
                   />
                 )}
                 {tab === "bridge" && (
-                  <RoomBridge
-                    key={room!.id}
-                    roomId={room!.id}
-                    messages={messages}
-                    local={local}
-                    canManage={canManage}
-                  />
+                  <>
+                    {local && isOrgOwner && canManage && (
+                      <RoomPairedAgents
+                        key={room!.id + "paired"}
+                        roomId={room!.id}
+                        messages={messages}
+                      />
+                    )}
+                    <RoomBridge
+                      key={room!.id}
+                      roomId={room!.id}
+                      messages={messages}
+                      local={local}
+                      canManage={canManage}
+                    />
+                  </>
                 )}
                 {(
                   ["remodeling", "roles", "recruiting", "travel"] as string[]
@@ -844,6 +896,7 @@ export function TeamWorkspace({
                     canManage={canManage}
                     canWrite={canWrite}
                     local={local}
+                    hostedOperations={hostedOperations}
                   />
                 )}
               </div>
@@ -901,94 +954,5 @@ export function TeamWorkspace({
         )}
       </div>
     </div>
-  );
-}
-function ConnectionManager({
-  connections,
-  local,
-}: {
-  connections: ModelConnection[];
-  local: boolean;
-}) {
-  return (
-    <details className="panel">
-      <summary>Model connections ({connections.length})</summary>
-      <p>
-        Keys are stored encrypted on the server and are never returned to the
-        browser. Connections belong to you; only agents you explicitly attach
-        may use them.
-      </p>
-      {connections.map((c) => (
-        <div className="team-message" key={c.id}>
-          <strong>
-            {c.name} · {c.model}
-          </strong>
-          <ActionForm
-            path={"/connections/" + c.id}
-            title={c.enabled ? "Disconnect model" : "Enable model"}
-            build={() => ({ enabled: !c.enabled })}
-          >
-            <p>{c.enabled ? "Available to attached agents" : "Disabled"}</p>
-          </ActionForm>
-        </div>
-      ))}
-      <ActionForm
-        path="/connections"
-        title="Connect model"
-        build={(d) => ({
-          name: d.get("name"),
-          provider: d.get("provider"),
-          model: d.get("model"),
-          endpoint_id: d.get("endpoint_id") || "",
-          key: d.get("key"),
-        })}
-      >
-        <label>
-          Connection name
-          <input name="name" required maxLength={120} />
-        </label>
-        <label>
-          Provider
-          <select name="provider">
-            {(local
-              ? ["FIXTURE"]
-              : ["OPENAI", "ANTHROPIC", "GOOGLE", "OPENROUTER", "COMPATIBLE"]
-            ).map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Model ID
-          <input
-            name="model"
-            required
-            defaultValue={local ? "fixture-draft" : ""}
-            maxLength={160}
-          />
-        </label>
-        {!local && (
-          <label>
-            Custom endpoint name (compatible providers only)
-            <input name="endpoint_id" maxLength={80} />
-          </label>
-        )}
-        <label>
-          {local ? "Synthetic key" : "API key"}
-          <input
-            type="password"
-            name="key"
-            required
-            autoComplete="off"
-            defaultValue={local ? "local-fixture" : ""}
-          />
-        </label>
-        <p>
-          {local
-            ? "Use the generated demonstration model. Real keys are rejected here."
-            : "OpenAI, Anthropic, Google and OpenRouter protocols are supported. Other compatible providers require an administrator-approved endpoint. Model availability and billing are controlled by your provider."}
-        </p>
-      </ActionForm>
-    </details>
   );
 }

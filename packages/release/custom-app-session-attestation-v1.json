@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "classification": "REVIEW_ONLY_ORIGINAL_SESSION_ATTESTATION_NOT_HOSTED_AUTHORIZATION",
+  "baseCommit": "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
+  "authorization": false,
+  "defaultEnabled": false,
+  "fullReleaseEligible": false,
+  "numberedMigrationsChanged": false,
+  "hostedExecutorImplemented": false,
+  "existingSessionsBackfilled": false,
+  "payload": {
+    "path": "database/production/custom-app-session-attestation-v1.sql",
+    "sha256": "14c84faeadddecd2e54cc77b43c533abe7cf5e11793f0078cec93058884644d6"
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/os/lib/auth.ts",
+      "sha256": "ddce14732e58257f45b55499b8545b5cfb9eeb612d4292cc13abfd41b1896270"
+    },
+    {
+      "path": "packages/db/index.ts",
+      "sha256": "e4df0c2af6939f4016b1bb60fdb4c783dff650968d5eaae36af991b0bac6d85a"
+    },
+    {
+      "path": "tests/production-apps-composition.test.ts",
+      "sha256": "8a1099b3f3523cf5976c3b96d809940eea938fad0ab271a2d5339557c218b151"
+    },
+    {
+      "path": "packages/authz/hosted-session-attestation.ts",
+      "sha256": "8207a9c21ea21742224b1a14337138fe0d3e07257fd8be4659e98aebffff8392"
+    }
+  ],
+  "preservedSources": [
+    {
+      "path": "packages/release/production-apps-integration-v1.json",
+      "sha256": "b1a12b9c83899054db6b47e27a4929439133c2bb3b01969e3d503191beecad30"
+    },
+    {
+      "path": "database/production/custom-apps-v1.sql",
+      "sha256": "f12f01f2406a318561aeecd2a02c93e6fb9cd64d7dbaaf06b7e5ee1e076fab3a"
+    },
+    {
+      "path": "database/production/custom-apps-v1.manifest.json",
+      "sha256": "9ed41fc14965f37538f79ffb266c8371702a1adda380602518261e3fb8ac6158"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+    }
+  ],
+  "transitions": [
+    {
+      "path": "apps/os/lib/auth.ts",
+      "sha256": "ddce14732e58257f45b55499b8545b5cfb9eeb612d4292cc13abfd41b1896270",
+      "priorSha256": "7a8aab854fccb0ed8eb55202f642ff1af5219943c7448c2fc8a216802c3ffd57"
+    },
+    {
+      "path": "packages/db/index.ts",
+      "sha256": "e4df0c2af6939f4016b1bb60fdb4c783dff650968d5eaae36af991b0bac6d85a",
+      "priorSha256": "fee9662c674d5d29dc8efe94d866cd211275fc78e62640a5b79f3b2cf255135f"
+    },
+    {
+      "path": "tests/production-apps-composition.test.ts",
+      "sha256": "8a1099b3f3523cf5976c3b96d809940eea938fad0ab271a2d5339557c218b151",
+      "priorSha256": "e519f83689393231fcb2102e8c00796f5bb5315e5d4f4b7862a8a016cab79354"
+    }
+  ],
+  "tables": [
+    "kxra_private.custom_app_session_bindings"
+  ],
+  "functions": [
+    "kxra_private.custom_app_access_token_hook",
+    "kxra_private.custom_app_original_session_current",
+    "kxra_private.custom_app_provider_session_identity",
+    "kxra_private.custom_app_session_capture",
+    "kxra_private.custom_app_session_immutable",
+    "kxra_private.custom_app_session_version",
+    "kxra_private.custom_apps_access",
+    "kxra_private.custom_apps_paid_access_v1"
+  ],
+  "liveGates": [
+    "Exact Supabase auth.sessions schema and transaction/role ordering on deployed Auth version",
+    "No existing sessions backfilled: sessions predating installation, missing-account creation or missing timestamps require fresh sign-in. Existing pending identities can become eligible at the same bound version after ACTIVE/verified.",
+    "Coordinated Auth/application restore and provider session invalidation before any old-snapshot resumption",
+    "Reviewed same-database cohort install, hook configuration and real getUser/getClaims/MFA/refresh/tenant/paid browser acceptance; all activation remains off"
+  ]
+}

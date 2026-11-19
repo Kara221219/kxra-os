@@ -1,0 +1,78 @@
+{
+  "kind": "LOCAL_REFRESH_CONNECTION_REUSE_ACCEPTANCE",
+  "base_commit": "d60a463941bc10430dccf359f8b189a4d6e1107e",
+  "branch": "codex/billing-refresh-session-20261105",
+  "source_sha256": {
+    "packages/integrations/billing-refresh-session.ts": "4822fec3d2660b335b716373489f4ae2c5f2fa3599bed4f3c10e23c365bb9a82",
+    "packages/integrations/billing-http-runtime.ts": "9315143323780d29453cc7c3ee748390ae80b44e33722f31c85ef75e7cda2733",
+    "tests/billing-refresh-session.test.ts": "810c62333e25e42cc6b0e8099988b149f23362d1797084d9b86328fdd1721fc2",
+    "tests/billing-http.test.ts": "4a76094359a834ae534127dc6138a5ce1d88c39de13710f0deb4fafba93c6152",
+    "tests/billing-refresh-session/native.test.ts": "c343258d47ed6944d95d92a11f4eca0dfe6de6c4d1440be492e310d84ddd8ac5",
+    "scripts/verify-billing-refresh-session.mjs": "eeb6dcdf81ad56576ef7908af64d5059f8c5da1af8577eb163f8b9d850897ee4"
+  },
+  "unchanged_authority_budget_sources": {
+    "packages/integrations/live-paid-access.ts": "469e9796cf90bf47be4a9b5bad10b260b4835e3b5f1099a323aa2b458ddfc042",
+    "packages/integrations/live-paid-refresh-worker.ts": "6523887cc49d814430b2ec84962477243c028fa455b7253f75ea3318ba59cd74",
+    "packages/integrations/live-stripe-payment-evidence.ts": "617c5693d037fc67f5410231d041f8f445f0ad1b4e447ad1257bff7e359b0661",
+    "packages/integrations/live-checkout-consent.ts": "6799f5676003cbdb43051ff2346925b00d264b71af5b3615b2af51753ff67229",
+    "packages/integrations/billing-refresh-capacity.ts": "39cb854b53246be17965a4387bfebf974160f1dff5df2217d98a05de6f0d22ca",
+    "packages/integrations/billing-refresh-scheduler.ts": "f9311e355226dfcbbce5c049fae31ed95532d3444f3b3998732002b9b0793fea",
+    "packages/integrations/billing-read-allowance.ts": "3d2e6763351e08d899ae60708959ae3ccaf64813db2292ead5b76de09408fb39",
+    "packages/integrations/billing-http-controller.ts": "066b70b880ea876e2011ad8c32dd1b7748d2ad62381a23f8f42059dad014c37e",
+    "supabase/migrations/0110_bounded_paid_proof_refresh.sql": "e1a3748c1c2256fe5cc922e07687aa041dfad341838583e450afd850e1a6bf1c",
+    "supabase/migrations/0113_billing_scheduler_read_budget.sql": "9a10c0587409c3db0d22e72fc023732857740128c8ee2277feb894605d9a2f61"
+  },
+  "regressions": {
+    "passed": 139,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/kxra-refresh-session-complete-final.tap",
+    "sha256": "098f01ca78f81688382f0fdb5831e7c9912f8b6511f3ddcddd3a7fe9b1af88ba"
+  },
+  "native": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "receipt": "/private/tmp/kxra-rs-1GZPSI/receipt.json",
+    "receipt_sha256": "c548bc8110cdb51d07bd9b359cd4c12188058cbe75920591929020d04e1cdaeb",
+    "owned_postgres_stopped": true,
+    "lease_released": true,
+    "proof_source_hashes_match": true,
+    "queries_in_comparison": 20,
+    "baseline_connections_asserted": 20,
+    "candidate_connections_asserted": 1,
+    "identity_checks_per_path": 20,
+    "not_a_tls_latency_measurement": true
+  },
+  "retained_earlier_receipts": [
+    "/private/tmp/kxra-rs-BvaV1F/receipt.json",
+    "/private/tmp/kxra-rs-Nvn5tt/receipt.json",
+    "/private/tmp/kxra-rs-vzIYt1/receipt.json",
+    "/private/tmp/kxra-rs-fKEOBs/receipt.json",
+    "/private/tmp/kxra-rs-UtoFyr/receipt.json"
+  ],
+  "checks": {
+    "typecheck": "PASS",
+    "scoped_prettier": "PASS",
+    "secret_scan": "PASS_1275_FILES",
+    "diff_check": "PASS"
+  },
+  "provider_reads_per_strict_success": 20,
+  "provider_requests_per_invocation_ceiling": 32,
+  "proof_age_limit_seconds": 300,
+  "receipt_budget_ms_including_cleanup": 55000,
+  "provider_budget_ms": 45000,
+  "provider_calls": false,
+  "hosted_actions": false,
+  "schedules_changed": false,
+  "customer_policy_changed": false,
+  "activation_authority": false,
+  "review": "AUTHOR_ADVERSARIAL_SOURCE_REVIEW_PLUS_INDEPENDENT_NATIVE_INVARIANT_CHECKS; NO_EXTERNAL_REVIEWER_EXECUTION_CLAIMED",
+  "limitations": [
+    "No hosted or TLS latency acceptance",
+    "No provider-read allocation increase or headroom SLA",
+    "No global pool or cross-invocation reuse",
+    "Retained DB sockets need separately measured slot budget",
+    "No full-platform CI or production build claimed"
+  ]
+}

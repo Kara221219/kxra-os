@@ -16,6 +16,7 @@ const schema = z.object({
   company: z.string().trim().max(160).optional().default(""),
   message: z.string().trim().min(20).max(4000),
   sourcePath: z.enum(["/partner", "/submit-opportunity", "/contact"]),
+  page: z.string().trim().max(200).optional().default(""),
   consent: z.union([z.literal(true), z.literal("true")]).transform(() => true),
   website: z.string().max(200).optional().default(""),
   sprintPackage: z
@@ -61,6 +62,14 @@ export async function POST(request: Request) {
   } as const;
   if (routeKind[parsed.sourcePath] !== parsed.kind)
     return NextResponse.json({ message: safeMessage(400) }, { status: 400 });
+  if (
+    (parsed.page === "/" || parsed.page === "/lets-connect") &&
+    !parsed.message.startsWith("Submitted from ")
+  ) {
+    parsed.message = `Submitted from ${parsed.page}.\n\n${parsed.message}`;
+    if (parsed.message.length > 4000)
+      return NextResponse.json({ message: safeMessage(400) }, { status: 400 });
+  }
   if (parsed.sprintPackage) {
     if (parsed.kind !== "CUSTOM_PROJECT" || !parsed.desiredOutcome)
       return NextResponse.json({ message: safeMessage(400) }, { status: 400 });

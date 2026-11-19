@@ -1,11 +1,14 @@
+import {
+  hostedMigrationManifest,
+  assertNoHostedFixtureObjects,
+  expectedHostedDatabase as expectedProductionDatabase,
+} from "./hosted-release-guard.mjs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { productionDatabaseConfig } from "./production-database.mjs";
 import {
-  expectedProductionDatabase,
-  migrationManifest,
   productionProjectRef,
   reconcileMigrationState,
 } from "./production-migrations-core.mjs";
@@ -46,6 +49,7 @@ import {
 } from "./staging-legal-documents-core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const hostedMigrations = hostedMigrationManifest(root);
 const command = process.argv[2] || "plan";
 const validation = validateProductionBootstrap(process.env, command);
 if (!validation.ok)
@@ -81,7 +85,7 @@ function repositoryState() {
 }
 
 const seedManifest = canonicalSeedManifest(root);
-const migrations = migrationManifest(root);
+const migrations = hostedMigrations;
 
 async function migrationState(database) {
   const table = (
@@ -146,6 +150,7 @@ async function bootstrapEvent(database) {
 }
 
 async function inspect(database, sourceCommit) {
+  await assertNoHostedFixtureObjects(database);
   const migration = await migrationState(database);
   if (!migration.complete)
     return {
@@ -225,6 +230,7 @@ const database = new pg.Client(
 );
 await database.connect();
 try {
+  await assertNoHostedFixtureObjects(database);
   await database.query("set statement_timeout='30s'");
   const target = (
     await database.query(
@@ -276,6 +282,7 @@ try {
       "select pg_advisory_lock(hashtext('kxra-production-bootstrap'))",
     );
     try {
+      await assertNoHostedFixtureObjects(database);
       await database.query("begin");
       try {
         const lockedSeed = await seedState(database);

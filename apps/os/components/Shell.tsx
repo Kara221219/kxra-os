@@ -1,36 +1,12 @@
 import Link from "next/link";
 import type { Actor } from "../lib/auth";
-const ownerNav = [
-  ["Dashboard", ""],
-  ["Getting started", "start"],
-  ["Workspace", "workspace"],
-  ["Operating Model", "operating-model"],
-  ["Improvement Loop", "improvements"],
-  ["Portfolio", "portfolio"],
-  ["Idea Inbox", "ideas"],
-  ["Projects", "projects"],
-  ["Tasks", "tasks"],
-  ["Business Tools", "tools"],
-  ["Custom Projects", "custom-projects"],
-  ["Support & Privacy", "support"],
-  ["Research", "sources"],
-  ["Experiments", "experiments"],
-  ["Decisions", "decisions"],
-  ["Risks", "risks"],
-  ["Finance", "finance"],
-  ["Partners", "partners"],
-  ["WhatsApp", "whatsapp"],
-  ["AI Team", "agents"],
-  ["Skills", "skills"],
-  ["Routines", "routines"],
-  ["Run History", "runs"],
-  ["Work Log", "work-log"],
-  ["Approvals", "approvals"],
-  ["Knowledge", "knowledge"],
-  ["Assets", "files"],
-  ["Admin", "admin"],
-];
-const partnerNav = [
+import OwnerNavigation from "./OwnerNavigation";
+import styles from "./OwnerOperations.module.css";
+import {
+  customerWorkspace,
+  workspacePresentation,
+} from "../../../packages/workspace/workspace-presentation";
+const memberNav = [
   ["Home", ""],
   ["Getting started", "start"],
   ["Workspace", "workspace"],
@@ -51,55 +27,75 @@ export default function Shell({
   active,
   children,
   local,
+  documentNavigation = false,
 }: {
   actor: Actor;
   active: string;
   children: React.ReactNode;
   local: boolean;
+  documentNavigation?: boolean;
 }) {
-  const links = actor.role === "owner" ? ownerNav : partnerNav;
+  const isOwner =
+    actor.security_role === "KXRA_OWNER" && actor.organisation_kind === "KXRA";
+  const NavigationLink = documentNavigation ? "a" : Link;
+  const links = customerWorkspace(actor)
+    ? memberNav.filter(([, path]) => path !== "whatsapp")
+    : memberNav;
+  const presentation = workspacePresentation(actor);
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isOwner ? ` ${styles.shell}` : ""}`}>
       <a href="#content" className="skip">
         Skip navigation
       </a>
       <aside>
-        <Link className="wordmark" href="/os">
-          KXRA<span>OS</span>
-        </Link>
-        <p className="nav-label">
-          {actor.role === "owner" ? "Group workspace" : "Partner workspace"}
-        </p>
-        <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map(([name, path]) => (
-            <Link
-              key={name}
-              aria-current={active === path ? "page" : undefined}
-              href={"/os" + (path ? "/" + path : "")}
-            >
-              {name}
-            </Link>
-          ))}
-        </nav>
-        <details className="mobile-menu">
-          <summary>Menu</summary>
-          <nav aria-label="Mobile navigation">
-            {links.map(([name, path]) => (
-              <Link
-                key={name}
-                aria-current={active === path ? "page" : undefined}
-                href={"/os" + (path ? "/" + path : "")}
-              >
-                {name}
-              </Link>
-            ))}
-          </nav>
-        </details>
+        <NavigationLink className="wordmark" href="/os">
+          KXRA<span>{isOwner ? "GROUP" : "OS"}</span>
+        </NavigationLink>
+        <p className="nav-label">{presentation.label}</p>
+        {isOwner ? (
+          <OwnerNavigation
+            active={active}
+            documentNavigation={documentNavigation}
+          />
+        ) : (
+          <>
+            <nav className="desktop-nav" aria-label="Main navigation">
+              {links.map(([name, path]) => (
+                <NavigationLink
+                  key={name}
+                  aria-current={active === path ? "page" : undefined}
+                  href={"/os" + (path ? "/" + path : "")}
+                >
+                  {name}
+                </NavigationLink>
+              ))}
+            </nav>
+            <details className="mobile-menu">
+              <summary>Menu</summary>
+              <nav aria-label="Mobile navigation">
+                {links.map(([name, path]) => (
+                  <NavigationLink
+                    key={name}
+                    aria-current={active === path ? "page" : undefined}
+                    href={"/os" + (path ? "/" + path : "")}
+                  >
+                    {name}
+                  </NavigationLink>
+                ))}
+              </nav>
+            </details>
+          </>
+        )}
         <div className="identity">
-          <Link href="/select-organisation" title="Change organisation">
+          <NavigationLink
+            href="/select-organisation"
+            title="Change organisation"
+          >
             {actor.organisation_name}
-          </Link>
-          <Link href="/os/profile">{actor.display_name}</Link>
+          </NavigationLink>
+          <NavigationLink href="/os/profile">
+            {actor.display_name}
+          </NavigationLink>
           <form action="/api/auth" method="post">
             <button className="text-button" name="logout" value="1">
               Sign out
@@ -110,12 +106,9 @@ export default function Shell({
       <div className="main-area">
         <header className="topbar">
           <span>
-            KXRA GROUP <span className="slash">/</span>{" "}
-            {actor.role === "owner"
-              ? "Operating overview"
-              : "Assigned projects"}
+            KXRA GROUP <span className="slash">/</span> {presentation.heading}
           </span>
-          <Link href="/os/ask">Ask KXRA ↗</Link>
+          <NavigationLink href="/os/ask">Ask KXRA ↗</NavigationLink>
         </header>
         {local && (
           <div className="local-banner">
@@ -123,11 +116,11 @@ export default function Shell({
           </div>
         )}
         <main id="content">
-          {active === "" && (
+          {active === "" && !isOwner && (
             <p className="notice">
-              <Link href="/os/start">
+              <NavigationLink href="/os/start">
                 Getting started: check recorded access and open your workspace ↗
-              </Link>
+              </NavigationLink>
             </p>
           )}
           {children}

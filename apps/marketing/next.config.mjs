@@ -26,6 +26,12 @@ for (const [route, hashes] of Object.entries(routeHashes)) {
 }
 
 export default {
+  async redirects() {
+    return [
+      { source: "/brand-studio", destination: "/pricing", permanent: true },
+      { source: "/video-studio", destination: "/pricing", permanent: true },
+    ];
+  },
   devIndicators: false,
   distDir:
     process.env.KXRA_NEXT_DIST_DIR ||

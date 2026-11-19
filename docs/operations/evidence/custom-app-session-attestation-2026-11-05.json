@@ -1,0 +1,136 @@
+{
+  "status": "PASS_LOCAL_SYNTHETIC_ONLY",
+  "baseCommit": "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
+  "nativeReceipt": {
+    "classification": "LOCAL_SYNTHETIC_AUTH_SESSION_HOOK_NOT_PROVIDER_ACCEPTANCE",
+    "baseCommit": "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
+    "sourceCommit": "2b74d665c81893aa100b91b14813e2b40fe9fcfa",
+    "payloadSha256": "14c84faeadddecd2e54cc77b43c533abe7cf5e11793f0078cec93058884644d6",
+    "phases": [
+      "Immutable INSERT-only original version, refresh no rebinding, incoming claim stripped/metadata ignored, no backfill, permanent missing-account/null-time tombstones, ownership mismatch/identity update/direct hook/table ACL denial; original RLS predicate OID and policies preserved",
+      "Synthetic ES256 issuer in memory, actual Supabase SDK getUser/getClaims boundary, authenticated create/review/publish/save/read/retry; original token+refresh+forged-current-version+foreign-session denial after account revocation; fresh sign-in succeeds; deterministic account bump/session DELETE/not_after UPDATE versus waiting save; deleted ID cannot rebind",
+      "Exact full combined catalogue/data/ACL/constraint/policy/sequence preservation on graceful restart and fresh empty-target restore; new signed synthetic claims use preserved original binding; old revoked/deleted sessions still deny, receipt replay remains exactly once, source unchanged by target probe"
+    ],
+    "verifiedRuntimeSources": [
+      {
+        "path": "apps/os/lib/auth.ts",
+        "sha256": "ddce14732e58257f45b55499b8545b5cfb9eeb612d4292cc13abfd41b1896270"
+      },
+      {
+        "path": "packages/db/index.ts",
+        "sha256": "e4df0c2af6939f4016b1bb60fdb4c783dff650968d5eaae36af991b0bac6d85a"
+      },
+      {
+        "path": "tests/production-apps-composition.test.ts",
+        "sha256": "8a1099b3f3523cf5976c3b96d809940eea938fad0ab271a2d5339557c218b151"
+      },
+      {
+        "path": "packages/authz/hosted-session-attestation.ts",
+        "sha256": "8207a9c21ea21742224b1a14337138fe0d3e07257fd8be4659e98aebffff8392"
+      }
+    ],
+    "verifiedPreservedSources": [
+      {
+        "path": "packages/release/production-apps-integration-v1.json",
+        "sha256": "b1a12b9c83899054db6b47e27a4929439133c2bb3b01969e3d503191beecad30"
+      },
+      {
+        "path": "database/production/custom-apps-v1.sql",
+        "sha256": "f12f01f2406a318561aeecd2a02c93e6fb9cd64d7dbaaf06b7e5ee1e076fab3a"
+      },
+      {
+        "path": "database/production/custom-apps-v1.manifest.json",
+        "sha256": "9ed41fc14965f37538f79ffb266c8371702a1adda380602518261e3fb8ac6158"
+      },
+      {
+        "path": ".env.example",
+        "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+      }
+    ],
+    "sourceVerifier": "sessionAttestationPayload: exact bytes, inventory and explicit prior-cohort transitions",
+    "restoreTarget": "kxra_session_restore_2accb9e4b987",
+    "dumpSha256": "5ebacc83ad0865d46a65cc6bc2e9001a68cfddf7b3381d8412ed4f19c9ac2cfe",
+    "knownLiveGates": [
+      "No real Auth service/provider sessions/hook transaction or hosted getUser/getClaims acceptance",
+      "Session creation hook ordering, correct schema/role and same authoritative DB must be verified on actual version",
+      "Old Auth/application snapshots require coordinated revocation/provider-session invalidation before reopening; same-database restore cannot prove external revocation continuity",
+      "No feature/hook activation, cohort numbering, hosted deployment or full launch acceptance supplied"
+    ]
+  },
+  "nativeRuntime": "/private/tmp/kxra-session-UjuWUt/.runtime/proof",
+  "cleanup": {
+    "clean": true,
+    "resourceCloses": [
+      "fulfilled",
+      "fulfilled",
+      "fulfilled",
+      "fulfilled"
+    ],
+    "postgresStop": 0,
+    "postgresStatus": 3
+  },
+  "retainedArtifacts": [
+    {
+      "path": "source.dump",
+      "sha256": "5ebacc83ad0865d46a65cc6bc2e9001a68cfddf7b3381d8412ed4f19c9ac2cfe"
+    },
+    {
+      "path": "source-catalog.json",
+      "sha256": "8b988e3f294c6800a736a1cce0808a8b2113285e76b2ce9a8e5e5e75a7de73b0"
+    },
+    {
+      "path": "source-data.json",
+      "sha256": "ab348aa1f8238a5cff284dde7e8cdbe64d540508665a2ec193681d4a09157c95"
+    },
+    {
+      "path": "source-after-probe.json",
+      "sha256": "f9cb5c6f47593b1b848dcb0d4b66737b66fa56cd32f2e78d95b79f3a4bd84318"
+    }
+  ],
+  "canonical": {
+    "tests": 1404,
+    "passed": 1404,
+    "failed": 0,
+    "migrations": 119,
+    "protectedTables": 216,
+    "log": "/private/tmp/kxra-capps-ci-exwpF2/services.log",
+    "cleanup": {
+      "postgresStopExitCode": 0,
+      "postgresStatusExitCode": 3,
+      "postgresAbsent": true,
+      "applicationExited": true,
+      "marketingExited": true,
+      "productionMarketingExited": true
+    },
+    "scope": "Canonical integration data excludes new Auth/session extension; dedicated receipt proves extension recovery."
+  },
+  "focusedTests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "builds": [
+    "OS Next16.4.3",
+    "marketing Next15.5.28",
+    "email-worker Next15.5.28"
+  ],
+  "checks": [
+    "typecheck/full formatting lint",
+    "artifact exclusions",
+    "secret scan",
+    "diff whitespace"
+  ],
+  "osBudget": {
+    "maximumBytes": 204204,
+    "limitBytes": 204800
+  },
+  "independentReview": {
+    "remainingConcreteHighMedium": 0,
+    "finalReceiptRuntimePreservedSqlHashesChecked": true
+  },
+  "limitations": [
+    "Synthetic Auth table and in-memory signed issuer/getUser transport, not a real Auth service/session",
+    "No real hook configuration, provider credentials, hosted acceptance or activation",
+    "Current-dataset same-cluster restart/fresh DB restore does not prove older-backup revocation continuity"
+  ],
+  "permissionBlocker": null
+}

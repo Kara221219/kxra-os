@@ -1,3 +1,4 @@
+import { postgresBin } from "./postgres-bin.mjs";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,23 +12,7 @@ const runtime = path.resolve(
 );
 const data = path.join(runtime, "postgres");
 const socket = path.join(runtime, "socket");
-function postgresBin() {
-  if (process.env.KXRA_PG_BIN) return process.env.KXRA_PG_BIN;
-  for (const candidate of [
-    "/opt/homebrew/opt/postgresql@14/bin",
-    "/opt/homebrew/opt/postgresql@16/bin",
-    "/usr/local/opt/postgresql@14/bin",
-    "/usr/local/opt/postgresql@16/bin",
-  ])
-    if (fs.existsSync(path.join(candidate, "pg_ctl"))) return candidate;
-  try {
-    return execFileSync("pg_config", ["--bindir"], {
-      encoding: "utf8",
-    }).trim();
-  } catch {
-    throw Error("PostgreSQL binaries unavailable; set KXRA_PG_BIN");
-  }
-}
+
 const bin = postgresBin();
 const port = Number(process.env.KXRA_PG_PORT || 55439);
 if (!Number.isInteger(port) || port < 1024 || port > 65535)

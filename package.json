@@ -26,6 +26,9 @@
     "start": "npm run start -w @kxra/os",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test:connector-aggregate": "node scripts/verify-connector-aggregate.mjs",
+    "test:connector-production": "node scripts/verify-connector-production.mjs",
+    "test:connectors": "node scripts/verify-customer-connectors.mjs",
     "test:artifact": "node scripts/verify-production-artifact.mjs",
     "test:marketing": "playwright test -c playwright.marketing.config.ts",
     "test:publication": "node scripts/verify-publication-snapshot.mjs",
@@ -33,6 +36,10 @@
     "test:restart": "node scripts/verify-persistence.mjs",
     "test:restore": "node scripts/verify-backup-restore.mjs",
     "worker:paid-proof-refresh": "tsx scripts/paid-proof-refresh-worker.ts --once",
+    "billing:reconciliation-status": "node --import tsx scripts/billing-webhook-reconciliation-status.ts --once",
+    "worker:reduced-billing-shadow": "node --import tsx scripts/reduced-billing-shadow.ts --once",
+    "worker:billing-refresh-scheduler": "node --import tsx scripts/billing-refresh-scheduler.ts --run",
+    "test:billing-lifecycle": "node scripts/billing-lifecycle-acceptance.mjs --synthetic",
     "worker:files": "tsx scripts/file-worker.ts --once",
     "worker:files:watch": "tsx scripts/file-worker.ts --watch",
     "worker:team": "tsx scripts/team-job-worker.ts",
@@ -97,7 +104,15 @@
     "test:ci": "node scripts/ci.mjs",
     "lint": "npm run typecheck && npm run format:check",
     "check": "npm run lint && npm run test:dependencies && npm test && npm run test:migrations && npm run test:publication && npm run test:marketing-boundary && npm run build && npm run test:marketing-csp && npm run test:build-budgets && npm run test:artifact && npm run test:secrets",
-    "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\""
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,mjs,css}\" \"packages/**/*.ts\" \"scripts/*.{mjs,ts}\" \"tests/**/*.ts\" \"playwright*.ts\"",
+    "dev:custom-apps": "node scripts/local.mjs --custom-apps",
+    "test:custom-apps": "node scripts/custom-apps-verify.mjs",
+    "test:custom-app-recovery": "node scripts/custom-app-recovery.mjs",
+    "test:integration": "node scripts/verify-integration.mjs",
+    "test:integration-ci": "node scripts/integration-ci.mjs",
+    "release:check": "node scripts/verify-hosted-release-source.mjs",
+    "test:release-guard-native": "node scripts/verify-hosted-release-native.mjs",
+    "release:prepare-review": "node scripts/prepare-production-review-candidate.mjs"
   },
   "dependencies": {
     "@higgsfield/client": "^0.2.6",
@@ -114,10 +129,10 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "lighthouse": "13.5.0",
+    "next": "16.4.6",
     "prettier": "^3.9.6",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "next": "16.4.3"
+    "typescript": "^5.9.2"
   },
   "overrides": {
     "postcss": "8.5.28",

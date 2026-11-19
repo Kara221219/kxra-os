@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   ciPhaseConfiguration,
   serviceVerificationCommands,
+  runPrerequisitePhases,
+  disposablePostgresCleanupPassed,
 } from "../scripts/ci-phases.mjs";
 
 test("full CI owns a fresh browser runtime after a separate nonrecursive service phase", () => {
@@ -39,4 +41,28 @@ test("focused workspace mode stays separate and incompatible modes are rejected"
     () => ciPhaseConfiguration(["--services-only", "--team-workspace"]),
     /CI_PHASE_CONFLICT/,
   );
+});
+
+test("a failed or uncertain child cleanup prevents every subsequent fixture", () => {
+  for (const status of [1, null]) {
+    const started: string[] = [];
+    assert.throws(
+      () =>
+        runPrerequisitePhases((flag: string) => {
+          started.push(flag);
+          return flag === "--room-delivery-only" ? status : 0;
+        }),
+      /CI_PREREQUISITE_FAILED/,
+    );
+    assert.deepEqual(started, ["--services-only", "--room-delivery-only"]);
+  }
+  assert.equal(disposablePostgresCleanupPassed(0, 3), true);
+  for (const [stop, probe] of [
+    [1, 3],
+    [null, 3],
+    [0, 0],
+    [0, 1],
+    [0, null],
+  ])
+    assert.equal(disposablePostgresCleanupPassed(stop, probe), false);
 });

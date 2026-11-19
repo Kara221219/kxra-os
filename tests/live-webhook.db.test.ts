@@ -121,6 +121,14 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
   try {
     await db.query("begin");
     await db.query("set local statement_timeout='10s'");
+    assert.ok(
+      (
+        await db.query(
+          "select to_regprocedure('kxra_private.webhook_reconciliation_scope_attestation()') installed",
+        )
+      ).rows[0].installed,
+      "Install the reviewed unmatched-quarantine proposal before this composition test",
+    );
     assert.equal(
       (
         await db.query(
@@ -324,7 +332,7 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           [unmatched.event_id, "cus_unknownSynthetic"],
         )
       ).rows[0].state,
-      "UNMATCHED",
+      "REVIEW_REQUIRED",
     );
     assert.equal(
       (
@@ -341,7 +349,7 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           [unmatched.event_id, customer],
         )
       ).rows[0].state,
-      "MATCHED",
+      "REVIEW_REQUIRED",
     );
     assert.equal(
       (
@@ -350,7 +358,51 @@ test("live wakeup SQL: immutable duplicate/conflict receipts, generation invalid
           [unmatched.event_id, customer],
         )
       ).rows[0].state,
+      "REVIEW_REQUIRED",
+    );
+    const held = (
+      await db.query(
+        "select state,org_id from kxra_private.live_webhook_queue where event_id=$1",
+        [unmatched.event_id],
+      )
+    ).rows[0];
+    assert.equal(held.state, "HELD");
+    assert.equal(held.org_id, null);
+    assert.equal(
+      Number(
+        (
+          await db.query(
+            "select version from kxra_private.live_billing_bindings where org_id=$1",
+            [org],
+          )
+        ).rows[0].version,
+      ),
+      1,
+      "An unmatched event/customer argument cannot assign ownership or invalidate another tenant",
+    );
+    assert.equal(
+      (
+        await worker(
+          "select kxra_private.resolve_unmatched_live_wakeup($1,$2) state",
+          [event.event_id, customer],
+        )
+      ).rows[0].state,
       "MATCHED",
+      "Already server-associated event may be confirmed without a new assignment",
+    );
+    // Preserve stale-generation discovery coverage using a genuinely associated
+    // new signed-ingress fixture event, not an arbitrary unmatched customer ID.
+    assert.equal(
+      (
+        await worker(record, [
+          JSON.stringify({
+            ...event,
+            event_id: `evt_${crypto.randomBytes(12).toString("hex")}`,
+            payload_sha256: hash("synthetic-known-generation"),
+          }),
+        ])
+      ).rows[0].state,
+      "QUEUED",
     );
     assert.equal(
       Number(

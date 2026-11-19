@@ -1,0 +1,151 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+  color: #163a30;
+}
+.header,
+.row,
+.actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.header {
+  margin-bottom: 36px;
+}
+.badge {
+  font-size: 12px;
+  border: 1px solid #b5c9bb;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #eff5ef;
+}
+.intro {
+  max-width: 680px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.panel {
+  background: white;
+  border: 1px solid #cbd8ce;
+  padding: 26px;
+  border-radius: 18px;
+  margin: 20px 0;
+}
+.notice,
+.error {
+  padding: 16px;
+  border-radius: 10px;
+  background: #e9f0e7;
+}
+.error {
+  background: #fff0e9;
+  color: #792d1b;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0;
+}
+.check input {
+  width: auto;
+  margin-top: 4px;
+}
+.small {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #496456;
+}
+.page label {
+  display: block;
+  margin: 16px 0;
+}
+.page label.check {
+  display: flex;
+}
+.page select,
+.page textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid #9ab09f;
+  border-radius: 8px;
+  font: inherit;
+}
+.page button {
+  margin: 6px 8px 6px 0;
+}
+.secondary {
+  color: #254738;
+  background: #f0f4ef;
+  border: 1px solid #b5c9bb;
+}
+.page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 16px;
+}
+.facts dt {
+  font-size: 12px;
+  color: #496456;
+}
+.facts dd {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.facts time,
+.read time {
+  font-size: 12px;
+}
+.read,
+.review {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #bed1c3;
+  border-radius: 12px;
+}
+.read ul {
+  padding-left: 20px;
+}
+.read li {
+  margin: 16px 0;
+}
+.note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f3f5f0;
+  padding: 16px;
+  border-radius: 8px;
+}
+.digest {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+  font-size: 12px;
+}
+@media (max-width: 640px) {
+  .page {
+    padding: 20px 16px 48px;
+  }
+  .panel {
+    padding: 18px;
+  }
+  .facts {
+    grid-template-columns: 1fr;
+  }
+  .row {
+    align-items: flex-start;
+  }
+  .page h1 {
+    font-size: 36px;
+  }
+}

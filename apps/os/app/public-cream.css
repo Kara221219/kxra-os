@@ -1,0 +1,12 @@
+.login,
+.join-page,
+.onboarding-page {
+  background: #fbf8f3;
+  color: #2c2a2b;
+}
+.login button,
+.join-page .button,
+.onboarding-page .button {
+  background: #6a7362;
+  border-radius: 999px;
+}

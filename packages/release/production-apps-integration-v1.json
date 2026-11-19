@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "classification": "LOCAL_PRODUCTION_APPS_COMPOSITION_REVIEW_ONLY",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "numberedMigrationsChanged": false,
+  "customerPolicyChanged": false,
+  "baseComposition": "835b7578b20b295994ba5ca016edd87342d41631",
+  "reviewedAppsHead": "77cd082308525a8b75ad282fb84a54aeef7e6e1b",
+  "wholeBranchMerge": "644e1cb9ef09c8e5d8499857b650838e792bc4a4",
+  "integratedSourceFiles": [
+    {
+      "path": "apps/os/app/(custom-app-records)/os/apps/[room]/[app]/page.tsx",
+      "sha256": "45d55f23028b3a33301f820d6da8662a86919fecaa71c2c8c181698f358318aa"
+    },
+    {
+      "path": "apps/os/app/(custom-apps)/os/custom-apps/[room]/page.tsx",
+      "sha256": "a1e7accb6220875124034344cba9f5443a617651fa3f02fcfe60fcfbf763cb19"
+    },
+    {
+      "path": "apps/os/app/api/custom-apps/[room]/[[...path]]/route.ts",
+      "sha256": "de0f07bb0a5484cb60215f1c0132b9eb3d480f3fdea6586bb3c574c2c1a4383f"
+    },
+    {
+      "path": "apps/os/app/os/[[...segments]]/page.tsx",
+      "sha256": "8d08643000c3b03bc3061e198fbaef275c0968001a853c027bcbfe8d77566604"
+    },
+    {
+      "path": "apps/os/components/CustomApps.tsx",
+      "sha256": "b4d76eccd0ab37f3b715ded3cbc8793d1015d9575f0e6bcf713eacbe63f9f6e2"
+    },
+    {
+      "path": "apps/os/components/TeamWorkspace.tsx",
+      "sha256": "32360768f2ab8caba9e9f3859d8a9a7c1ce8e04cf15d10de56b65b036e75764e"
+    },
+    {
+      "path": "apps/os/lib/auth.ts",
+      "sha256": "7a8aab854fccb0ed8eb55202f642ff1af5219943c7448c2fc8a216802c3ffd57"
+    },
+    {
+      "path": "apps/os/lib/custom-app-http.ts",
+      "sha256": "65dcd99ffe664d54ae5e1c060c3790d2009d3b9d7a61425b1a95475e75ee0938"
+    },
+    {
+      "path": "apps/os/lib/custom-app-record-copy.ts",
+      "sha256": "ebd5bf7a5c921b6711374dc49ceec9adf75bcc0a4d416455b34132538de6f456"
+    },
+    {
+      "path": "apps/os/lib/custom-app-records.ts",
+      "sha256": "7b42e54c9596f9ca5502735dedd13bb6f32ef0526930a5977d7ea1bfd6434c7a"
+    },
+    {
+      "path": "apps/os/lib/custom-apps.ts",
+      "sha256": "a9986d429446a92fdecffb80b6e509cfdf5631a9bbfb6ecfa7caf0ced37c5c8c"
+    },
+    {
+      "path": "database/production/custom-apps-v1.manifest.json",
+      "sha256": "9ed41fc14965f37538f79ffb266c8371702a1adda380602518261e3fb8ac6158"
+    },
+    {
+      "path": "database/production/custom-apps-v1.sql",
+      "sha256": "f12f01f2406a318561aeecd2a02c93e6fb9cd64d7dbaaf06b7e5ee1e076fab3a"
+    },
+    {
+      "path": "packages/custom-apps/access.ts",
+      "sha256": "dc43ce3fd8690d140829ba15215d028c08e9c619aacba95ef80469513ac04b0c"
+    },
+    {
+      "path": "packages/db/index.ts",
+      "sha256": "fee9662c674d5d29dc8efe94d866cd211275fc78e62640a5b79f3b2cf255135f"
+    },
+    {
+      "path": "scripts/custom-apps-browser-native.ts",
+      "sha256": "63ddc03c9f24f2beb7e925c2ffe31b2a52112ea7244dc9130733e917b8dd4a34"
+    },
+    {
+      "path": "scripts/custom-apps-composition-native.ts",
+      "sha256": "74d16e7533fbd1b2d5a3b9cef408e059d74132c265663ddbe2ae83a7cb96d92a"
+    },
+    {
+      "path": "scripts/custom-apps-production-native.ts",
+      "sha256": "f3f5480dfeec71da3466679647ad547b7292b91a861fdbac1ce1ef6d9611f252"
+    },
+    {
+      "path": "scripts/custom-apps-production-payload.mjs",
+      "sha256": "32bdb4236aed3be5e8754bf18664297c4af202ae78b554202360aa734cacedf7"
+    },
+    {
+      "path": "scripts/custom-apps-production-probe.ts",
+      "sha256": "3ca6aa88a6b100339b703d9edc7b5a754b40f2266833c3eb9ad4344dbcbd41e9"
+    },
+    {
+      "path": "scripts/custom-apps-target-native.ts",
+      "sha256": "6e62623a4d1061ab2670706c95c852cf5ea4ab15a82b3ba3bb7fe2f3c5d9608f"
+    },
+    {
+      "path": "scripts/verify-custom-apps-production.mjs",
+      "sha256": "e90d7cdad37f0a51667cb1dfce4d4f0e55cb20ed5dfd9787a713f0adaee757da"
+    },
+    {
+      "path": "tests/custom-apps-production.test.ts",
+      "sha256": "d28425149689ed4d02775b82397f67d7e21711f00bdcf0d35d814cc3fe89f1d8"
+    },
+    {
+      "path": "tests/production-apps-composition.test.ts",
+      "sha256": "e519f83689393231fcb2102e8c00796f5bb5315e5d4f4b7862a8a016cab79354"
+    }
+  ],
+  "preservedCompositionFiles": [
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-github-integration-v1.json",
+      "sha256": "380e941ae76c8fbc1ad9f86a09dede2f6859198dbaf0a8afed3a26654b60e5aa"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    },
+    {
+      "path": "packages/release/production-paired-integration-v1.json",
+      "sha256": "38b9b43a226211647d61529b250e2040213c9f9e7ceedcc19a3e2055cf24af33"
+    },
+    {
+      "path": "packages/release/production-payment-integration-v1.json",
+      "sha256": "2320140c02adfd04835866033afca8b91b9beda4e9be2d100e544294b9cc6b70"
+    },
+    {
+      "path": "packages/release/production-refresh-integration-v1.json",
+      "sha256": "c43660a8faaaae96342760a321625198a92bf1b5ea3cae551d4675aa970272cd"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "f271d06baeaa5704c0c410b42e9ba83b2061953acd3dabb6fa8fe253effb15e8"
+    }
+  ],
+  "fixtureOnly": true,
+  "hostedExecutorImplemented": false,
+  "tables": 6,
+  "functions": 15,
+  "authorityFenceTables": 27,
+  "migrationStrategy": "canonical117 plus separately reviewed genuine AI118/review119 and unnumbered GitHub/paired/apps; no promotion, numbering or hosted apply",
+  "remainingGates": [
+    "Production migration cohort and numbering review; explicit upgrade for existing local-app tables",
+    "Trusted original-provider-session epoch attestation and real auth/MFA/refresh acceptance",
+    "Hosted activation, recovery/load and product-wide launch acceptance"
+  ]
+}

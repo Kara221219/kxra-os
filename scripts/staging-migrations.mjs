@@ -1,16 +1,20 @@
+import {
+  hostedMigrationManifest,
+  assertNoHostedFixtureObjects,
+  expectedHostedDatabase as expectedStagingDatabase,
+} from "./hosted-release-guard.mjs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { stagingDatabaseConfig } from "./staging-database.mjs";
 import {
-  expectedStagingDatabase,
-  migrationManifest,
   reconcileMigrationState,
   validateStagingMigrator,
 } from "./staging-migrations-core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const hostedMigrations = hostedMigrationManifest(root);
 const command = process.argv[2] || "plan";
 const validation = validateStagingMigrator(process.env, command);
 if (!validation.ok)
@@ -18,7 +22,7 @@ if (!validation.ok)
     `Staging migration guard rejected:\n- ${validation.findings.join("\n- ")}`,
   );
 
-const manifest = migrationManifest(root);
+const manifest = hostedMigrations;
 if (manifest.length !== expectedStagingDatabase.migrations)
   throw Error("STAGING_EXPECTED_MIGRATION_COUNT_CHANGED");
 
@@ -62,6 +66,7 @@ async function tracking(database) {
 }
 
 async function verify(database) {
+  await assertNoHostedFixtureObjects(database);
   const tracked = await tracking(database);
   const state = reconcileMigrationState(
     manifest,
@@ -99,6 +104,7 @@ const database = new pg.Client(
 );
 await database.connect();
 try {
+  await assertNoHostedFixtureObjects(database);
   await database.query("set statement_timeout='30s'");
   const target = (
     await database.query(
@@ -125,6 +131,7 @@ try {
       "select pg_advisory_lock(hashtext('kxra-staging-migrations'))",
     );
     try {
+      await assertNoHostedFixtureObjects(database);
       await database.query(`create table if not exists public.kxra_schema_migrations(
         name text primary key,sha256 text not null check(sha256~'^[a-f0-9]{64}$'),
         source_commit text not null check(source_commit~'^[a-f0-9]{40}$'),

@@ -1,13 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openReferenceMenu(page: Page) {
+  const toggle = page.locator(".ref-mobile-toggle");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  // A click during hydration can land before the client handler is attached,
+  // and the button label then stays "Menu". Repeat until the panel is open.
+  await expect(async () => {
+    if ((await toggle.getAttribute("aria-expanded")) !== "true")
+      await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true", {
+      timeout: 2000,
+    });
+  }).toPass({ timeout: 15000 });
+}
 
 test("product navigation opens a real route and browser history returns to the homepage", async ({
   page,
 }, info) => {
   await page.goto("/");
-  if (info.project.name === "mobile")
-    await page.getByRole("button", { name: "Menu", exact: true }).click();
+  if (info.project.name === "mobile") await openReferenceMenu(page);
   const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  await nav.getByRole("button", { name: "Product", exact: true }).click();
+  await nav.getByRole("button", { name: "How we work", exact: true }).click();
   await nav.getByRole("link", { name: "Workspace", exact: true }).click();
   await expect(page).toHaveURL(/\/product\/workspace$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -46,11 +59,13 @@ test("mobile nested navigation reflows and leads to the actual product catalogue
 }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await openReferenceMenu(page);
   const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  await nav.getByRole("button", { name: "Product", exact: true }).click();
-  await nav.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(page).toHaveURL(/\/product$/);
+  const solutions = nav.getByRole("button", { name: "Solutions", exact: true });
+  await solutions.click();
+  await expect(solutions).toHaveAttribute("aria-expanded", "true");
+  await nav.getByRole("link", { name: "All solutions", exact: true }).click();
+  await expect(page).toHaveURL(/\/solutions$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(
     await page.evaluate(

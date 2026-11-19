@@ -16,23 +16,33 @@ test("reference baseline shell, samples and integrations stay local and usable",
   await timed("MENU", async () => {
     if (info.project.name === "mobile")
       await page.getByRole("button", { name: "Menu", exact: true }).click();
-    const product = page.getByRole("button", { name: "Product", exact: true });
-    await product.click();
-    await expect(product).toHaveAttribute("aria-expanded", "true");
+    const solutions = page.getByRole("button", {
+      name: "Solutions",
+      exact: true,
+    });
+    await solutions.click();
+    await expect(solutions).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
-    await expect(product).toBeFocused();
-    await expect(product).toHaveAttribute("aria-expanded", "false");
+    await expect(solutions).toBeFocused();
+    await expect(solutions).toHaveAttribute("aria-expanded", "false");
   });
   await timed("DEMO", async () => {
-    await page
-      .getByRole("button", { name: "Book a demo", exact: true })
-      .click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("dialog")).toContainText(
-      "No time slot is booked automatically.",
-    );
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).not.toBeVisible();
+    if (info.project.name === "mobile") {
+      const toggle = page.locator(".ref-mobile-toggle");
+      if ((await toggle.getAttribute("aria-expanded")) !== "true")
+        await toggle.click();
+    }
+    const connect = page
+      .locator(
+        info.project.name === "mobile"
+          ? ".ref-mobile-actions"
+          : ".ref-header-actions",
+      )
+      .getByRole("link", { name: /Let’s connect/ });
+    await connect.click();
+    await expect(page).toHaveURL(/\/lets-connect$/);
+    await expect(page.getByLabel("How can KXRA help?")).toBeVisible();
+    await page.goto("/");
   });
   const preview = page.locator(".ref-workspace");
   await timed("INVOICES", async () => {

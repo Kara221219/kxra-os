@@ -83,9 +83,19 @@ test("AT-31/32 browser tenant selection and exact legal gate fail closed", async
     await page
       .getByRole("button", { name: `${organisationName} · ORG_ADMIN` })
       .click();
-    await expect(page).toHaveURL(/\/os$/);
+    await expect(page).toHaveURL(/\/os\/workspace$/);
     await expect(
-      page.getByRole("heading", { name: "Your project workspace" }),
+      page.getByRole("heading", { name: "Your team workspace", exact: true }),
+    ).toBeVisible();
+    // The customer home is the team workspace. Exercise the existing project
+    // surface explicitly so the original selected-tenant visibility proof remains.
+    await page
+      .getByRole("navigation", { name: "Main navigation", exact: true })
+      .getByRole("link", { name: "My Projects", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/os\/projects$/);
+    await expect(
+      page.getByRole("heading", { name: "Projects", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(`BROWSER-${suffix}`, { exact: true }).first(),

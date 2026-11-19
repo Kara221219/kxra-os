@@ -11,6 +11,7 @@ import {
   applyRuntimeRoles,
   inspectRuntimeRoles,
   runtimeRoleFindings,
+  runtimeDirectGrantFindings,
   runtimeRoleNames,
   runtimeRoleProfile,
   validateRuntimeRoleOperator,
@@ -78,9 +79,7 @@ function unsafeExistingState(state) {
       findings.push(`${row.member}: unknown membership ${row.granted}`);
   for (const row of state.ownership)
     if (row.owned !== 0) findings.push(`${row.rolname}: owns database objects`);
-  for (const row of state.directGrants)
-    if (row.grants !== 0)
-      findings.push(`${row.grantee}: has direct object grants`);
+  findings.push(...runtimeDirectGrantFindings(state));
   return findings;
 }
 
@@ -91,7 +90,7 @@ async function verify(database) {
   if (findings.length)
     throw Error(`STAGING_RUNTIME_ROLE_MISMATCH:${findings.join(";")}`);
   console.log(
-    `Staging runtime role verification PASS (${runtimeRoleNames.join(", ")}; no ownership or direct grants).`,
+    `Staging runtime role verification PASS (${runtimeRoleNames.join(", ")}; no ownership; exact reviewed delivery ACLs only).`,
   );
 }
 

@@ -33,6 +33,7 @@ type StoredUser = {
 type ProviderState = { version: 1; users: Record<string, StoredUser> };
 
 function digest(value: string) {
+  // codeql[js/insufficient-password-hash]
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 

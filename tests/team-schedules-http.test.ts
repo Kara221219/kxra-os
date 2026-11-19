@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import pg from "pg";
+import { localModeConfiguration } from "../packages/authz/local-guard";
 import { runtimeFile } from "./support/runtime";
 import {
   knowledgeFixture,
@@ -28,9 +29,16 @@ async function as(
   pool = app,
   tenant = org,
 ) {
+  assert.ok(
+    localModeConfiguration(process.env) && !process.env.VERCEL_ENV,
+    "Direct SQL fixtures require the guarded local runtime",
+  );
   const db = await pool.connect();
   try {
     await db.query("begin");
+    await db.query(
+      "select set_config('request.kxra.execution_mode','fixture',true),set_config('request.kxra.hosted_room_jobs','off',true),set_config('request.kxra.team_grant','',true)",
+    );
     await db.query("set local role authenticated");
     await db.query(
       "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",

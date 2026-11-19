@@ -1,6 +1,6 @@
 import { validateStagingTarget } from "./staging-migrations-core.mjs";
 
-export const runtimeRoleProfile = "KXRA-RUNTIME-ROLES-V1";
+export const runtimeRoleProfile = "KXRA-RUNTIME-ROLES-V2-ROOM-DELIVERY";
 export const runtimeRoleNames = ["kxra_app", "kxra_public_ingress"];
 
 function validPassword(value) {
@@ -44,7 +44,9 @@ export async function inspectRuntimeRoles(database) {
   ).rows;
   const memberships = (
     await database.query(
-      `select member.rolname member,granted.rolname granted,membership.admin_option
+      `select member.rolname member,granted.rolname granted,membership.admin_option,
+         case when current_setting('server_version_num')::int>=160000 then (to_jsonb(membership)->>'inherit_option')::boolean else member.rolinherit end inherit_option,
+         case when current_setting('server_version_num')::int>=160000 then (to_jsonb(membership)->>'set_option')::boolean else true end set_option
        from pg_auth_members membership
        join pg_roles member on member.oid=membership.member
        join pg_roles granted on granted.oid=membership.roleid
@@ -77,7 +79,97 @@ export async function inspectRuntimeRoles(database) {
       [runtimeRoleNames],
     )
   ).rows;
-  return { roles, memberships, ownership, directGrants };
+  // Inspect exact ACL tuples as well as shared dependencies. A count alone
+  // cannot distinguish the reviewed role-none delivery RPCs from broader access.
+  const directAcl = (
+    await database.query(
+      `
+    select role.rolname grantee,'SCHEMA' object_kind,n.oid object_oid,n.nspname identity,
+      a.privilege_type,a.is_grantable,(a.grantor=n.nspowner) owner_grantor
+    from pg_namespace n cross join lateral aclexplode(n.nspacl) a
+    join pg_roles role on role.oid=a.grantee where role.rolname=any($1::text[])
+    union all
+    select role.rolname,case when p.prokind='f' then 'FUNCTION' else 'UNREVIEWED_ROUTINE' end,p.oid,n.nspname||'.'||p.proname||'('||oidvectortypes(p.proargtypes)||')',
+      a.privilege_type,a.is_grantable,(a.grantor=p.proowner)
+    from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    cross join lateral aclexplode(p.proacl) a
+    join pg_roles role on role.oid=a.grantee where role.rolname=any($1::text[])
+  `,
+      [runtimeRoleNames],
+    )
+  ).rows;
+  const directDependencies = (
+    await database.query(
+      `
+    select role.rolname grantee,
+      case dependency.classid when 'pg_namespace'::regclass then 'SCHEMA'
+        when 'pg_proc'::regclass then 'FUNCTION' else 'UNREVIEWED' end object_kind,
+      dependency.objid object_oid,dependency.objsubid subobject
+    from pg_roles role join pg_shdepend dependency
+      on dependency.refclassid='pg_authid'::regclass and dependency.refobjid=role.oid
+      and dependency.deptype='a' and dependency.classid<>'pg_auth_members'::regclass
+      and (dependency.dbid=0 or dependency.dbid=(select oid from pg_database where datname=current_database()))
+    where role.rolname=any($1::text[])
+  `,
+      [runtimeRoleNames],
+    )
+  ).rows;
+  return {
+    roles,
+    memberships,
+    ownership,
+    directGrants,
+    directAcl,
+    directDependencies,
+  };
+}
+
+export function runtimeDirectGrantFindings(state) {
+  const findings = [];
+  for (const name of runtimeRoleNames) {
+    const expectedAcl =
+      name === "kxra_app"
+        ? [
+            "SCHEMA:kxra_room_worker:USAGE",
+            "FUNCTION:kxra_room_worker.next(uuid):EXECUTE",
+            "FUNCTION:kxra_room_worker.maintain(uuid):EXECUTE",
+            "FUNCTION:kxra_room_worker.health():EXECUTE",
+          ].sort()
+        : [];
+    const acl = (state.directAcl || []).filter((item) => item.grantee === name);
+    const dependencies = (state.directDependencies || []).filter(
+      (item) => item.grantee === name,
+    );
+    const actualAcl = acl
+      .map(
+        (item) => `${item.object_kind}:${item.identity}:${item.privilege_type}`,
+      )
+      .sort();
+    const unsafeAcl =
+      acl.some(
+        (item) => item.is_grantable !== false || item.owner_grantor !== true,
+      ) || JSON.stringify(actualAcl) !== JSON.stringify(expectedAcl);
+    const objectKeys = new Set(
+      acl.map((item) => `${item.object_kind}:${item.object_oid}`),
+    );
+    const unsafeDependencies =
+      dependencies.some(
+        (item) =>
+          item.subobject !== 0 ||
+          !objectKeys.has(`${item.object_kind}:${item.object_oid}`),
+      ) ||
+      dependencies.length !== objectKeys.size ||
+      dependencies.length !==
+        (state.directGrants.find((item) => item.grantee === name)?.grants || 0);
+    if (
+      !Array.isArray(state.directAcl) ||
+      !Array.isArray(state.directDependencies) ||
+      unsafeAcl ||
+      unsafeDependencies
+    )
+      findings.push(`${name}: runtime role has direct object grants`);
+  }
+  return findings;
 }
 
 export function runtimeRoleFindings(state) {
@@ -107,20 +199,20 @@ export function runtimeRoleFindings(state) {
       findings.push(`${name}: unsafe role attributes`);
     const actual = state.memberships
       .filter((item) => item.member === name)
-      .map((item) => `${item.granted}:${item.admin_option}`)
+      .map(
+        (item) =>
+          `${item.granted}:${item.admin_option}:${item.inherit_option}:${item.set_option}`,
+      )
       .sort();
-    const expected = expectedMemberships[name].map((role) => `${role}:false`);
+    const expected = expectedMemberships[name].map(
+      (role) => `${role}:false:false:true`,
+    );
     if (JSON.stringify(actual) !== JSON.stringify(expected))
       findings.push(`${name}: unexpected role memberships`);
     if (state.ownership.find((item) => item.rolname === name)?.owned !== 0)
       findings.push(`${name}: runtime role owns database objects`);
-    if (
-      (state.directGrants.find((item) => item.grantee === name)?.grants || 0) >
-      0
-    )
-      findings.push(`${name}: runtime role has direct object grants`);
   }
-  return findings;
+  return [...findings, ...runtimeDirectGrantFindings(state)];
 }
 
 export async function applyRuntimeRoles(
@@ -165,8 +257,16 @@ export async function applyRuntimeRoles(
   await database.query("alter role kxra_public_ingress reset all");
   await database.query("revoke anon,authenticated from kxra_app");
   await database.query("revoke anon,authenticated from kxra_public_ingress");
-  await database.query("grant anon,authenticated to kxra_app");
-  await database.query("grant anon to kxra_public_ingress");
+  const modernMembershipOptions =
+    Number(
+      (await database.query("show server_version_num")).rows[0]
+        .server_version_num,
+    ) >= 160000;
+  const options = modernMembershipOptions
+    ? " with admin false, inherit false, set true"
+    : "";
+  await database.query("grant anon,authenticated to kxra_app" + options);
+  await database.query("grant anon to kxra_public_ingress" + options);
   await database.query("set local password_encryption='scram-sha-256'");
   await database.query(
     "select set_config('kxra.operator.app_password',$1,true),set_config('kxra.operator.ingress_password',$2,true)",

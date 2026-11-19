@@ -9,6 +9,10 @@ import pg from "pg";
 import { localModeConfiguration } from "../packages/authz/local-guard";
 import { liveEntryStatus } from "../packages/authz/live-billing-entry-contract";
 
+import {
+  seedSyntheticAdmissionTerms,
+  seedReviewedBusinessFixture,
+} from "./support/reviewed-business-fixture";
 import { bindSyntheticModernScope } from "./support/modern-billing-scope-db";
 import type {
   ModernExecutionMode,
@@ -72,7 +76,8 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
       ? "select kxra_private.own_live_billing_status() value"
       : "select kxra_private.staging_sandbox_own_live_billing_status() value";
   let scope: ModernScopeTag | null = null;
-  const hash = "b".repeat(64);
+  const syntheticTerms = "Synthetic billing status checkout terms";
+  const hash = crypto.createHash("sha256").update(syntheticTerms).digest("hex");
   let revision = 0;
   type Context = { actor: string; org: string };
   async function fixture() {
@@ -253,6 +258,14 @@ test("own live billing SQL status: own verified tenant, disabled/fresh/pending/b
     await bound(binding);
     assert.equal((await read(binding))!.state, "BOUND");
     assert.deepEqual((await read(binding))!.available_actions, ["CHECKOUT"]);
+    await seedSyntheticAdmissionTerms(db.query.bind(db), {
+      org_id: binding.org,
+      content: syntheticTerms,
+    });
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: binding.org,
+      actor_id: binding.actor,
+    });
     const checkout = crypto.randomUUID();
     await db.query(
       "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) select $1,org_id,$2,'CHECKOUT',customer_id,offer_key,mapping_revision,$3,version,now() from kxra_private.live_billing_bindings where org_id=$4",

@@ -1,12 +1,10 @@
 import crypto from "node:crypto";
+import { resolveVerifiedSupabasePrincipal } from "../../../packages/authz/hosted-session-attestation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { localMode, query, type Principal } from "../../../packages/db";
 import { localPrincipal } from "#kxra/local-runtime";
-import {
-  hostedTotpTimestamp,
-  requiresHostedMfa,
-} from "../../../packages/authz/supabase-mfa";
+import { requiresHostedMfa } from "../../../packages/authz/supabase-mfa";
 
 export const organisationContextCookie = "kxra_organisation";
 
@@ -102,19 +100,7 @@ export async function supabase(transport?: typeof fetch) {
 export async function principal(): Promise<Principal | null> {
   if (localMode()) return localPrincipal();
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
-  const client = await supabase();
-  const { data, error } = await client.auth.getUser();
-  if (error || !data.user) return null;
-  const { data: claims, error: claimsError } = await client.auth.getClaims();
-  if (claimsError || claims?.claims.sub !== data.user.id) return null;
-  return {
-    id: data.user.id,
-    aal: claims.claims.aal === "aal2" ? "aal2" : "aal1",
-    auth_time: hostedTotpTimestamp(claims.claims),
-    email: data.user.email,
-    email_verified: Boolean(data.user.email_confirmed_at),
-    source: "supabase",
-  };
+  return resolveVerifiedSupabasePrincipal(await supabase());
 }
 
 export async function availableOrganisations(

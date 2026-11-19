@@ -1,3 +1,83 @@
+## 3 November — dedicated custom-app restart/restore accepted
+
+Closed the explicitly remaining graceful-restart and fresh-database restore gap for the five installed custom-app tables. Receipt `.runtime/cr-e82522/receipt.json` is PASS: exact data/catalog preservation, schema pins, immutable record history, publication/rollback state, idempotent interrupted-save recovery, tenant isolation and Chromium rendering after restart and restore. Source/target retained stopped; shared lease released. Final guard11/11 and existing custom-app aggregate16/16 pass. No canonical checks, application code or proposal SQL were changed. [Exact scope, evidence and portable integration handoff](custom-app-recovery-local-2026-11-03.md). Same-cluster fresh-database recovery is proved; crash, independent-cluster/role, hosted and combined-lane recovery remain separate gaps.
+
+## 3 November — persistent local custom-app records
+
+Added typed room-scoped customer records and a customer form UI on the isolated custom-app branch, continuing `3e14d4113a28ff560442b56fd279d7c5274dfe34`. Records pin immutable schema versions, append immutable revisions, use idempotent operation receipts, and preserve original data through publication/rollback. Preview data remains separate. SQL stays in an additive local proposal; release migration discovery, other worktrees and hosted capabilities remain unchanged. Final checks passed: 16/16 focused lifecycle/data/browser tests, 1,246/1,246 canonical service tests, root lint, OS build/budget (203,258/204,800), migrations/RLS and canonical restart/restore. Independent review has no remaining concrete high/medium findings. Shared native lease was respected. See [current scope and verification](custom-app-records-local-2026-11-03.md). This is functional local synthetic form/data behavior, not full app-builder or hosted parity.
+
+## 3 November — isolated synthetic custom-app lifecycle
+
+Implemented a constrained declarative form lifecycle on `codex/custom-app-local-lifecycle`, based exactly on `43e3906859b58e69370a1069a44e6dc1cefc6d03`. Room-scoped schema registration, isolated native-control previews, immutable PostgreSQL JSON artifacts/digests, local publication and revision-checked historical rollback work with synthetic fixtures. The fixture extension is unnumbered and local-only; no release migration, hosted enablement, external publishing, credentials or payments are changed. Independent security findings were fixed. Final verification passed: 8/8 isolated lifecycle/security tests, 1,244/1,244 canonical service tests, migrations/RLS, restart/restore, root lint, OS build and bundle budget (203,226/204,800 bytes). See [scope, operation, validation and remaining gaps](custom-app-local-lifecycle-2026-11-03.md). This is a usable local vertical slice, not Kylon parity or launch readiness.
+
+## 31 October — unmatched-event quarantine and read-only operator handoff
+
+Prepared a narrow correction for the legacy customer-only unmatched resolver. The unnumbered `supabase/proposals/billing-unmatched-quarantine.sql` refuses new customer assignment, confirms only an existing association supported by stored verified customer/subscription references, guards queue state changes and quarantines unproven legacy associations without deleting receipts or rewriting bindings/paid authority. Unresolved `HELD` rows remain non-claimable. Metadata and an operator-supplied customer ID are not ownership proof. No automatic Stripe/provider call or financial/policy change was added.
+
+A separately default-off operator CLI reports finite scoped counts/age, not event/customer/account IDs or readiness. It uses the existing TLS genuine runner in `BEGIN READ ONLY`; a diagnostic-only immutable-scope-digest helper avoids the original attestation's FOR SHARE lock. Billing dispatch/refresh flags stay off. Nine new unit cases plus16 webhook cases pass25/25, root types/formatting and integration-patch checks pass, and the disabled CLI exits before profile/SQL/provider use. These synthetic client tests do NOT execute the new SQL.
+
+Native verification is pending the explicitly release-owned window: apply the reviewed proposal as an allocated migration plus `integration/webhook-unmatched-quarantine-tests.patch`, then run the prepared `billing-webhook-reconciliation.db.test.ts`, adapted webhook suite and combined lifecycle in both modes. The patch is unapplied and `git apply --check` passes. No native fixture was started, no hosted/financial operation was attempted, and no security/tool denial was bypassed. This is prepared source, not a deployed fix or a new490-check receipt.
+
+[Morning handoff](billing-morning-handoff-2026-10-31.md) distinguishes settled prices/seats/BYOK/business intent from unapproved age/grace/current-terms choices and exact activation dependencies. It corrects the coarse Stripe flag name to `charges_enabled`; actual charges/payout readiness remains UNOBSERVED. The24-hour age and7/30-day grace/recovery proposals remain unapproved. All default safeguards and the no-spending/no-paid-activation instruction persist. Further trustworthy unmatched association needs a separately reviewed proof path, not arbitrary customer IDs or automatic provider lookups. This lane is ready to hand off at the native/policy/hosted authorization gates.
+
+## 30 October — overnight owner hold and non-blocking cancellation fix
+
+Latest owner instruction cancels marketing/video/visual redesign and prohibits payments, purchases, credit spending and paid activation without explicit permission. The24-hour evidence age and current-workspace7/30-day grace/recovery proposals are NOT approved; recommendations are held for morning. Existing production proof expiry, zero-grace defaults, disabled flags and financial/provider settings remain unchanged. No new customer feature, native server start, hosted action, credential or financial operation was performed in this follow-up.
+
+Fixed a concrete bounded-reader failure: error paths must request cancellation without awaiting an uncooperative underlying `cancel()` promise. All affected billing response/webhook readers now return their existing fail-closed result promptly, and the shadow deadline rejects0/negative/nonfinite/>45-second overrides. Adversarial tests cover hanging cancellation after429, size/chunk overflow and preflight rejection.289 focused billing checks pass, followed by a16-case webhook rerun including two new LIVE/sandbox unmatched-refund metadata-denial cases; these overlap and are not summed. Root types and OS production build pass. The new tests prove that a refund without reliable customer/subscription association does not guess identity from metadata; automatic canonical-resource resolution remains a separate pre-activation gate, not silently solved.
+
+Earlier490-check fresh native-backed composition remains the receipt for the preceding candidate; it was not rerun or recounted for this TypeScript error-path follow-up. Both earlier owned clusters remain stopped and the native lease is released. Production migration/integration, authenticated provider delivery, current workspace terms/policy and actual account readiness remain release-owner gates. Source and recommendations are preserved for morning review.
+
+## 30 October — implemented reduced-read shadow path; fresh490-check acceptance
+
+The reduced-read candidate is implemented and native-tested, beyond the earlier reference model. Successful LIVE/sandbox paths measure7 physical GETs instead of20, using existing money validators plus one bounded per-attempt snapshot and immutable hash-verified historical consent. A separate default-off CLI, empty/private SQL config, RLS-protected consent/job/observation tables, coalesced durable inbox trigger, genuine-worker claim/current/finish CAS, seven-permit shared read reservations, four-starts/second local pacing and three-job cap are supplied. It cannot write paid authority, extend expiry, ACK the original queue or clear production reconciliation. Current proof TTL and all customer/provider settings remain unchanged. [Implementation, costs and owner decision](reduced-billing-shadow-acceptance-2026-10-30.md).
+
+Fresh combined command `node scripts/billing-lifecycle-acceptance.mjs --synthetic --shadow` passed490 checks:464 services plus13 native cases per mode, with admission and the full unnumbered shadow SQL actually installed in each fixture. Both113-migration/RLS checks and owned stops passed. Receipt `/private/tmp/kxra-billing-acceptance-mKH4dh/receipt.json` records stopped servers, no provider acceptance and no activation authority; test-source SHA256 `7c9b92bd020fdbe9b732cf2d2e29476240d9367f873ce9ffd562db5edeec9a21`. Final serial lease released and IPC28→28; no unrelated IPC/service was changed. Earlier baseline475-check acceptance is retained separately. Root types, targeted63 checks, source secret scan and OS build/budget also pass; OS15 pages, largest204618/204800 bytes. Later root type results cover the new shadow files; no hosted build/latency/bill is thereby established.
+
+Native assertions cover commit failure before webhook ACK, duplicate/reordered event replay, immutable consent, one claim across independent connections, foreign-token denial, admin suspension, superseding revisions, Retry-After/backoff, five-crash DEAD state, cross-mode/table privilege denial and exact preservation of production paid-proof fields. Unit tests explicitly demonstrate the remaining missed-provider-change risk of a single observation. Synthetic fixture issues and an owned client cleanup hang were corrected before the fresh combined pass; the one identified hung test child was stopped and its wrapper cleaned its server. A retry harness reused one diagnostic filename; that overwritten raw failure is only retained in the tool transcript, not misrepresented as a preserved original log. Source full-run failure receipts remain intact.
+
+For16 workspaces, proposed15m/1h/6h/24h ages imply322560/80640/13440/3360 periodic GETs per30 days at the measured7-read path. These ages are NOT activated. Review a24-hour maximum only for routine already-paid work if the owner accepts up to one day of missed-event exposure; new purchases/seats and designated consequential actions need stricter current verification. Known event and local suspension checks are distinct from missed-event exposure. Hosted dispatch/result reauthorization, exact maximum running-work duration, current terms/grace, migration allocation, provider sandbox acceptance and actual account traffic/budget remain integration gates. No exceptional allocation purchase or always-on daemon is recommended merely to preserve the old loop.
+
+## 30 October — serial native acceptance passed; reader and claim-delay corrections
+
+Coordinated serial acceptance passed475 checks:451 service checks,12 LIVE native cases and12 STAGING_SANDBOX native cases, with the pinned admission proposal actually installed in both generated fixtures. Both113-migration/RLS checks passed. Receipt `/private/tmp/kxra-billing-acceptance-QOsh6S/receipt.json` records `fixture_servers_stopped:true`; shared-memory count returned27→27 and `/tmp/kxra-native-serial.lock` was released. No unrelated service/IPC was touched. Earlier failure receipts are retained: the CJS setup script, extra synthetic policy SQL value and second legal-document version conflict were corrected before this clean pass. These are local synthetic results, not provider/hosted acceptance.
+
+Bounded billing readers now copy into a fixed-capacity buffer, retain no input views/per-chunk arrays and reject more than4096 chunks (plus the existing64-empty bound). Adversarial one-byte floods, oversized backing-buffer views and signed-byte preservation are covered. Capacity now includes first durable-claim fanout delay; unknown delay consumes55seconds. Scheduler configuration requires an explicit maximum claim delay, and an overrun pauses new fanout while existing work drains. Exact-boundary and delayed-first-claim tests pass. The default-off example's1second claim bound is an assumption needing measurement, not guaranteed database latency.
+
+## 30 October — admission fixture adaptation and lower-read design review
+
+All seven identified native billing suites now seed legitimate synthetic terms/paid policy/business evidence before CHECKOUT insertion, including historical rows and the second Team tenant. Ledger/concurrency fixtures receive explicit shared canonical synthetic policy setup. Existing policy-unavailable negatives remain via savepoints; an own-admin request without review is denied before setup. The lifecycle command now includes ledger and checkout-presentation suites. These are source adaptations requiring admission's separately owned migration; no default-allow, migration numbering or trigger bypass was added. Native composition remains pending the release-coordinated shared-memory window, and no cluster restart was attempted.
+
+The [architecture review](billing-refresh-architecture-review-2026-10-30.md) supersedes any recommendation to buy an always-on host or obtain excessive reads just to preserve the current loop. It maps all20 GETs, distinguishes actual scope/payment/consent/revocation invariants from inherited120/300-second financial age, proposes durable event-led/coalesced reconciliation and quantifies1h/6h/24h stale-access/read trade-offs. Four/eight-GET graph targets are unimplemented and explicitly labelled. A test-only, non-authoritative reference model exercises deadline, replay, crash, cross-tenant, concurrent revocation, failed-read, persistence-before-ack and cache-revision semantics;11 focused checks plus root types pass. Production expiry, SQL, transport, entitlements and provider settings are unchanged. The owner decision is an explicit maximum financial-age threat model, not approval of millions of GETs.
+
+## 30 October — admission composition checkpoint
+
+Static review of admission tip `2efac7c8d8d6df32c36aac4596ae899fc523036c` confirms existing billing RPC signatures survive via wrappers; scheduler transports need no replacement. Preserve the wrappers and insertion/claim trigger during release integration. A guarded synthetic review fixture helper now requires the installed admission schema, exact canonical approved synthetic terms/paid policy, generated private local socket and original fixture administrator. It binds four evidence classes to the tenant/customer/scope/mapping/terms/tax tuple; it is test infrastructure, never real clearance. Offline validation and root types pass; native helper execution remains unverified.
+
+Seven existing billing DB suites need setup ordering adaptations before they can pass with the admission trigger installed. These adaptations are **not complete**; see [exact composition map](checkout-admission-interface-2026-10-30.md). No new migration number, Auth edit, provider call, shared UI patch or hosted setting was introduced. No further PostgreSQL start was attempted while release coordinates exhausted shared-memory capacity. The complete two-mode lifecycle and new budget migration native tests remain pending, not denied and not passed.
+
+## 30 October — separate BYOK follow-up
+
+Owner-confirmed BYOK/provider-paid copy and real-connection cost acknowledgement are implemented separately from the scheduler candidate. Provider output/error and telemetry boundaries reject secret leakage without a KXRA-funded fallback. Nine synthetic checks, root types and OS build pass; largest bundle204618/204800 bytes with the original limit. [Exact scope/limits](byok-billing-disclosure-2026-10-30.md). Worldwide intent is settled but actual admission is a separate required gate; no current terms, countries, account settings, credentials or charges were activated. The shipping zero-grace policy is unchanged pending the explicit current-workspace applicability decision.
+
+## 30 October — scheduler candidate and immediate pending gates
+
+Scheduler/lifecycle follow-up to `d2ee06b` is prepared locally with default-off flags, durable scoped read-budget source (migration0113), paced bounded concurrency, failure/drain controls, an executable synthetic two-mode lifecycle command and a corrected occupied-slot capacity calculation. Focused318 checks plus19 final scheduler/policy checks, root types, OS build and dependency/secret guards pass. **New native verification is pending:** fresh `initdb` failed on macOS shared-memory ID exhaustion, owned cleanup passed, and no other task's IPC/processes were changed. Existing Docker socket has no running engine. Release owner should coordinate a free local fixture slot or an isolated native Linux run, then execute `npm run test:billing-lifecycle` and aggregate CI/CodeQL before integrating/activating this migration.
+
+Immediate owner issue: strict evidence costs20 GETs/refresh; ordinary Stripe allocation cannot sustain even one five-minute workspace. Actual increased account allocation is unverified; do not manufacture approval or lengthen proofs. [Scheduler/owner packet](billing-scheduler-operations-2026-10-30.md) includes read counts, bounded plan and illustrative host costs. Current-workspace seven-day grace applicability is also unresolved; test-only [policy reconciliation](workspace-renewal-policy-reconciliation-2026-10-30.md) uses7/30-day first-failure deadlines and grants no access. BYOK and worldwide business intent are settled; keep their legal/provider/payment/tax qualification and the empty public terms catalogue explicit. [Checkout/admission contract](checkout-admission-interface-2026-10-30.md) is ready for the separate admission engineer; billing owns pre-POST and generation rechecks, not an invented geopolitical list. Coarse current payments/payouts flags remain UNOBSERVED here.
+
+## 30 October — billing acceptance handoff
+
+An isolated billing candidate based on `b4ea429bc30864f93b17e88bb17104b2b727d188` repairs unbounded empty-chunk reads in modern live/sandbox webhook handling, retains signed raw bytes, adds missing default-off environment example settings and a strict non-secret refresh-capacity planner. It contains no Auth/recovery or migration edits. Focused424/424 checks, root types/changed formatting, OS production build, dependency/publication/secret guards pass; owned native LIVE/sandbox PG17 fixtures stopped. These are local receipts, not aggregate or provider acceptance.
+
+Release integration and remaining gates are explicit in [billing launch acceptance](billing-launch-acceptance-2026-10-30.md). Critical operating constraint: HTTP refresh handles one workspace;55-second receipt budget plus a full minute polling wait can exceed the60-second due window. Longer proof TTL alone does not solve it. Prove approved scheduler concurrency/cadence/cost and synchronized backlog freshness, plus an authorized webhook path through All Deployments protection. Existing Stripe catalogue/Test resources must be reused. Deployed credentials/mode, provider lifecycle, exact private policy/mapping and owner commercial/payout requirements remain unverified. No push/deploy/settings/financial operation or customer contact was performed; all hosted integration belongs to release owner.
+
+## 30 October — existing hosted room operations candidate (local only)
+
+An isolated candidate on `d2ee06b` adds a default-off bounded hosted wakeup, target-bound expiring execution grants, authenticated stop controls independent of admissions, and an executable fresh-fixture suite. It reuses the existing requester/tenant/room claims, leases, pinned inputs, retry limits, cancellation and uncertain-outcome semantics; it does not create a new agent product. Billing refresh scheduling is untouched.
+
+The combined local suite passed 20/20, the final native refinement passed 4/4, and the OS build passed. The additive SQL remains a review proposal outside the frozen 112-migration sequence. No hosted schema, role, credential, trigger, scheduler, provider or deployment was created or changed. Shared `team-workspace.ts` and DB transaction changes require integration review; genuine protected delivery, provider acceptance, monitoring and independent QA/security remain launch gates. See [the candidate and approval inventory](hosted-room-operations-candidate-2026-10-30.md).
+
 ## 25 October — separate marketing journey and route inventory (local proposal)
 
 Base `310886b267afb1b9f769c13f058a429a779e3562` remote CI 40204222793 retains its failure: the mobile reference-baseline case exceeded 30 seconds. All 44 fixed phase begin/pass records were emitted, including the final page-error assertion at 31,984ms. Ten catalogue full-page navigations accounted for 20,799ms; screenshot 5,150ms; integrations 3,935ms. This establishes recorded cumulative duration, not a proven product/control defect or memory-exhaustion cause.
@@ -740,9 +820,9 @@ Full `stripe-full-1-ci.log` exited 0: **295** service/DB/HTTP/security tests, **
 
 **Exact source/evidence distinction:** full-run delta/migration bytes are pinned in `.runtime/workspace-parity/stripe-full-1-source-manifest.json`; `stripe-full-1-ci.log` ends Hermetic CI PASS. Afterwards, only the private stored-session SELECT policy was tightened from current-owner to current fresh-MFA requester, with eight assertions added in tests/pilot-stripe.test.ts. `.runtime/workspace-parity/stripe-session-policy.log` and `stripe-session-policy-result.json` pass all eight boundaries and91/199RLS on the strictly identified owned disposable CI store. It was restarted without bootstrap/seeding/reset, tested and stopped. RuntimeJS stayed unchanged; typecheck/artifact/bundle/secret checks pass afterward. No second full-platform run is claimed after that SQL-only change. The final candidate must still be validated against its exact assembled source.
 
-Full-run restore: **199 tables / 7,349 synthetic rows / 51 objects / RTO3s**. OS gzip181.8KiB/200; marketing118.8/140. Secret/publication620files/6patterns. Artifacts exclude21fixture markers/12private-local source classes; CSP71exact hashes/116SRI references/4119header chars. Mobile Lighthouse97performance/100accessibility,LCP2427ms/CLS0/TBT108ms; desktop100/100,LCP428ms/CLS0/TBT0. These are local synthetic results, not staging/production recovery or provider acceptance.
+Full-run restore: **199 tables / 7,349 synthetic rows / 51 objects / RTO 3s**. OS gzip181.8KiB/200; marketing118.8/140. Secret/publication620files/6patterns. Artifacts exclude21fixture markers/12private-local source classes; CSP71exact hashes/116SRI references/4119header chars. Mobile Lighthouse97performance/100accessibility,LCP2427ms/CLS0/TBT108ms; desktop100/100,LCP428ms/CLS0/TBT0. These are local synthetic results, not staging/production recovery or provider acceptance.
 
-**Failures/fixes retained:** focused1 new service tests passed but migration verification caught absent explicit deny policy on ungranted pilot_stripe_config; added deny policy, no grants opened. Focused2 passed37service/14browser/RLS/OSbuild. Focused3 passed38service/RLS but13/14browser: mobile post-reload Jobs click preceded hydration; persisted run was successful and Conversation remained selected. Trace/context/screenshot saved in stripe-focused-3-mobile-failure. Native tabs now wait for existing ready state; full desktop/mobile job journeys pass, with no increased timeout or weakened assertion. Explicit immutable provider event guard also passed full CI.
+**Failures/fixes retained:** focused1 new service tests passed but migration verification caught absent explicit deny policy on ungranted pilot_stripe_config; added deny policy, no grants opened. Focused2 passed 37service/14browser/RLS/OSbuild. Focused3 passed38service/RLS but13/14browser: mobile post-reload Jobs click preceded hydration; persisted run was successful and Conversation remained selected. Trace/context/screenshot saved in stripe-focused-3-mobile-failure. Native tabs now wait for existing ready state; full desktop/mobile job journeys pass, with no increased timeout or weakened assertion. Explicit immutable provider event guard also passed full CI.
 
 **Delivered:** strict test-only account/price/product/customer/portal protocol validation, checkout/portal/reconciliation API/UI behind reviewed empty/disabled config, separate signature webhook, exact event replay, stale/tied event handling and invalid-offer denial quarantine, canonical version-fenced reconciliation, terminal cancellation, actual five-person pending/membership/invitation holds, current customer mapping checks and work/late-output fences. No body-selected identity/role/price/customer grants. Hosted readiness remains unavailable and fixture simulation cannot mutate provider mode. Legacy checkout410/livemode:false retained.
 
@@ -1178,3 +1258,413 @@ Evidence: original d5 CI failed before any production-UI case, after earlier sui
 References: [Playwright supported browser channels](https://playwright.dev/docs/browsers), [launchServer sandbox/channel options](https://playwright.dev/docs/api/class-browsertype), [Chromium Ubuntu AppArmor guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md), [official Ubuntu 24.04 runner inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md). The current runner inventory lists installed Google Chrome; its version can change with the image. No user-namespace or AppArmor restriction is disabled by this source revision.
 
 Local terminal receipt: six mocked production-rendered cases passed on unchanged Mac browser selection with native sandbox enabled, owned process absence and directory cleanup verified. Eleven focused tests consist of four new browser-configuration/privacy regressions and seven existing form tests. The initial restricted-executor loopback failure and subsequent successful ordinary local execution are preserved in the sanitized local receipt; no raw browser output or credential values were retained. Root independently reviewed the narrow configuration/diagnostic change. Publication and remote CI still require approval for the exact candidate.
+
+# Unpublished release integration — 2026-10-30
+
+The isolated `rel30` integration checkout starts at frozen recovery source `d5e16baef6ea918e775d6e967973984a3faef98e` and includes the separately reviewed default-off BYOK enforcement repair (`9614db78fe510a2e86da84c46df8c232b6c414bc`, locally cherry-picked). Exact server enablement is required before vault/endpoint/provider access; fixture hints do not bypass it. Five synthetic tests, full typechecking and independent review passed. Caller tenant database admission can still precede the gate. No hosted/provider acceptance is established.
+
+Do not replace the frozen recovery artifact with this source under an earlier approval. Billing and design remain separate worker candidates pending integration review and final aggregate checks. Canonical staging, build holds, protections, credentials, database and payment state are unchanged by this local integration.
+
+The fixture callback helper now validates the same guarded loopback origin before attaching cookies. Its focused foreign-target negative test and full typechecking passed; combined positive HTTP acceptance is pending. Auth alert review in `docs/security/auth-alert-review-20261030.md` documents random-token/idempotency digest uses and the separate scrypt password verifier. Existing remote findings remain open; no suppression or dismissal was performed.
+
+### Isolated launch security triage — 2026-10-30 (local only)
+
+Read-only exact-release-branch CodeQL metadata confirms21 older open findings (11 high,10 medium); the default-branch query is empty and is not release evidence. Local operator/build tooling mitigations replace filesystem overwrite races with exclusive creation, private custody, retained descriptors and bounded public-address-pinned video downloads. See [the full finding dispositions and launch risk register](../security/launch-security-triage-20261030.md). Auth/recovery and billing implementation files were not edited; alert5's callback-cookie origin guard remains with the recovery owner.
+
+Validation passed26 tenant/RLS database cases,148 focused tooling/payment/HTTP cases in a fresh guarded fixture, and7 final adversarial tooling cases; TypeScript, changed-file formatting, whitespace and publication secret checks passed. Provider transport was synthetic; no financial transaction, external send, hosted mutation, shared browser, push, deployment, alias, flag or protection change occurred. Exact integrated CI/CodeQL, hosted recovery/session acceptance, hosted tenant denials and payment-lane acceptance remain pending. Keep existing protections, three holds and13 disabled flags. No paying-customer readiness assertion follows from these local results.
+
+
+### Token/dataflow reviewer disposition — 2026-10-30 (local follow-up)
+
+Current read-only source/sink metadata and QA evidence refine the remaining11 findings:8 false positives for the reported weakness,2 original outbound-boundary true positives locally mitigated by b21dd40, and1 unresolved media-content condition before newly generated asset publication. See [the detailed classifications and acceptance thresholds](../security/codeql-disposition-20261030.md). In particular alert1's current sink hashes the random reset token for email idempotency, and alert23 is an initial JSON ledger write; prior broad group labels are superseded by the sink-specific review.
+
+The small follow-up restricts saved provider request IDs, forbids status redirects, bounds status metadata to64 KiB and validates returned status/job fields. It preserves uncertain submission ledgers and performs no SDK/provider request.16 standalone checks, TypeScript, changed-file formatting and secret checks passed. Auth/recovery and billing implementation files remain untouched; remote dispositions, exact integrated CI/artifact evidence, alert5 and hosted acceptance remain owned by release/auth/QA/billing. Initial SDK response policy and actual media validation remain conditional manual-tool gates.
+
+### Integrated operator status bounds — October 30, 2026
+
+The unpublished integration includes the reviewed fixed-origin request-ID/status helper and its follow-up resource-bound repair. Status reads retain the 64 KiB body limit, add cumulative limits of 64 empty reads and 4,096 total reads including EOF, preserve exact emitted byte views and bound stalled reads/cancellation. Extremely fragmented legitimate responses fail closed. Combined provider/tooling/disposition/status tests passed 27/27 with no skips, and full typechecking passed; the earlier callback-origin negative test also passed. No manual operator, provider, browser or hosted action was executed by these tests. All remote findings remain subject to exact final-source analysis. Billing, design and operations integration plus aggregate acceptance remain pending.
+
+### Actual hero media validation — 2026-10-30 (offline only)
+
+The supplied2688×1152 PNG and all8 AVIF/WebP exports passed bounded full-raster decode, dimensions, metadata and provenance-hash checks. All8 site copies match; independent in-memory execution of the worker's RGB/Lanczos/AVIF65-WebP82 export policy reproduced every file byte-for-byte. An offline exact-hash raster review helper and3 negative/positive tests were added;19 combined media/security/account checks, TypeScript, formatting and secret checks passed. No asset-owner files or dependencies were changed.
+
+See [the exact hashes, pipeline evidence and supported trust boundary](../security/reviewed-hero-media-20261030.md). The available20-second timing draft also passed full local H.264/AAC decode with network/external tracks disabled, but is not approved for publication. The still hero does not use the historical alert22 MP4; that unavailable downloaded-video condition remains open. Final integrated byte/artifact/HTTP evidence and existing hosted auth/tenant/payment gates remain with release owners. No hosted/provider action, media generation or publication occurred.
+
+### Independent launch QA handoff — 30 October 2026
+
+Use tests/launch-qa/README.md and the executable run.mjs in a clean isolated integrated candidate. Preserve current release/auth ownership of deployments, shared browser and feature/configuration gates. Supply exact integrated SHA/lockfile/migrations and supported offer/workflows; return synthetic receipts separately from hosted acceptance. The independent go/no-go checklist and billing scheduler timing acceptance contract are docs/operations/launch-qa-2026-10-30.md. Dedicated security ownership covers the21 retained alerts. This baseline excludes d5e16ba and concurrent billing/design. No independent production mutation/push is authorized or performed.
+
+Follow-up: exact room-operation guards/UI/marketing/SQL contract and operations-engineer scope are in hosted-room-operations-handoff-2026-10-30.md; owner-launch-decisions-2026-10-30.md carries settled catalogue/no-added-VAT decisions forward and lists only unresolved concrete inputs. New hosted-operation contract3/3 and root typecheck pass. No product code or hosted state changed; full final combinedSHA acceptance is pending.
+
+Owner packet refinement: launch-policy-reconciliation-2026-10-30.md isolates ADR0047 seven-day grace/read-only approval versus current zero-grace-only implementation; no blanket policy supersession is inferred from catalogue changes. Final current workspace text/hash and explicit applicable policy mapping remain needed. No repeated price/VAT/support-address/recovery-exception question is proposed. Payments/payout flags remain unobserved; only coarse private status is needed from the account owner.
+
+Independent operations review: candidate4a21b80 passes supplied21-case invocation and targeted default-off3-case guard; extended native6-case invocation proves actual DB-wrapper requester/tenant/grant rejection, revocation serialization and postdispatch cancel/UNCERTAIN late-output fences. QA-only commit9d1255b19524bb76af8c0b7bcfb4c93554d1ed5b is based directly on4a21b80 in task3/qa-operations-4a21. The data-flow/retention/B2B/portal/refund/proration/rights evidence and confirmed BYOK/worldwide delta are in launch-data-flow-matrix-2026-10-30.md. Final combinedSHA, eligibility implementation and hosted operations remain pending; source review is not compliance/provider acceptance.
+
+### Local queued-grant authority correction — 2026-10-30
+
+The isolated operations follow-up rejects/hides ordinary hosted browser drains, restricts empty-grant execution to the guarded fixture mode and separates pre-grant admission from grant-bound runtime dispatch/publication. Existing on-demand runs and stop controls remain separate. Native withdrawal/atomicity/replay and existing job/schedule/provider tests passed 23/23 before one final fixture-only causal/cleanup clarification. Its exact-source rerun is pending local shared-memory capacity (initdb stopped before server start); final typecheck, formatting and OS build passed. See the operations candidate packet for source-specific evidence, preserved failures and remaining migration/billing/hosted gates. No global IPC, credentials, provider or hosted state changed.
+
+### Local business/BYOK admission candidate — 30 October 2026
+
+Prepared isolated fail-closed business declaration/eligibility candidate on d5, with no hosted actions or shared signup/checkout edits. New page/API, private policy/review schema proposal and payment fences are documented in business-admission-candidate-2026-10-30.md. Signup/billing linkage is an unapplied integration patch requiring parent/release/billing coordination. Final terms, jurisdiction/provider/tax evidence and aggregate acceptance remain gates; worldwide applications do not establish unrestricted coverage.
+# Local admission policy follow-up — 2026-10-30
+
+The policy supersession correction is isolated from root/external checkouts. It records immutable first enablement, selects only the newest ever-enabled policy, and still requires that policy to be enabled/time-valid. Drafts remain inert; withdrawal cannot fall back to earlier clearance. Six pure/source checks passed; native regression cases are added but pending QA's exclusive database window. Use the corrected unapplied proposal in final-source rehearsal, not an unreviewed backfill of an installed older proposal. No hosted actions, role changes, country/provider policy changes, credentials or activation occurred.
+
+
+
+- 2026-10-31 final local correction: OS production-client Webpack uses size module identifiers; follow-redirects is patched to 1.16.2. Marketing, catalogue and all OS components remain identical to `8319`. See [CI/security correction](ci-correction-2026-10-31.md) for validation, cache tradeoff and remaining remote/hosted gates.
+
+## 3 November — paired-agent isolated branch handover
+
+Use only .runtime/byoa-paired-agent / codex/byoa-paired-agent based on exact43e3906859b58e69370a1069a44e6dc1cefc6d03. This is a new bounded fixture-only architecture, not a modification of the frozen release or old rc0091. Proposed migration0118 adds two protected KXRA tables and two private credential ledgers; expected118/216/209. Server-resolved opaque capabilities enter authenticated RLS transactions, with tenant/private-owner/session/source/approval gates and no general login. One-time START permission, duplicate receipt binding, offline/reconnect, cancellation/revoke/late-publication and uncertainty all have executable acceptance.
+
+Final paired-check-4.log:10focused tests +118/216RLS +1440/390px actual UI cycles pass. Lint/typecheck, OSproductionbuild and compressed201971/204800budget pass; source secret scan passes. Independent read-only review reports no remaining concrete blocker after fixes; tests were executed by implementation, not reviewer. All test app/PG processes stopped. Own generated build caches are ignored, no destructive cleanup. Next16 generated apps/os/AGENTS.md guidance is retained as framework support.
+
+Contracts/evidence: docs/workspace/paired-agent-slice.md and .runtime/paired-check-{1,2,3,4}.log in this isolated worktree; successful synthetic UI screenshots/result are in /tmp/kxra-paired-ukU5cP. No actual provider/CLI/authentication, real access grant, installer, background service, arbitrary filesystem/shell, publish/push/deploy or hosted mutation. Original native interface still throws for real adapters, manual provenance unchanged. Customer-paid provider intent does not authorize sign-in/installation. Parent must review real-provider/hosted acceptance and migration ordering before any later activation. No broad connector or marketing redesign was added.
+
+## Paired transport follow-up to35eb760 — isolated source only
+
+Use the new [transport handoff](../workspace/paired-agent-transport.md) for executable foreground Codex stdio source, memory-only setup/reconnect/revocation behavior, stub acceptance and live gates. The unpublished0118 definition now creates pre-principal resolution directly in a dedicated schema with no transient private-schema grant; proposed0119 asserts that fresh boundary and adds task/fence status. Reconcile0118/0119 order and explicit resolver-schema privileges before later release integration. Frozen release/other worktrees and hosted grants/data remain untouched. Do not run the real CLI mode or live pairing without separate action-specific approval.
+## 2026-11-03 local connector development handoff
+
+Branch `codex/customer-connectors-local`, based exactly on `43e3906859b58e69370a1069a44e6dc1cefc6d03`, adds the isolated local synthetic connector slice. Run `npm run test:connectors`; see [connector implementation evidence and production limits](customer-connector-slice-2026-11-03.md). The connector DDL proposal is applied only by its disposable harness, is absent from staging migration discovery, and has not been applied to staging or production. No real credentials, provider calls, grants, deployment or payments were used. The frozen release and paired-agent work were left untouched.
+
+Final verified stopping point: dedicated connector proof 12/12, legacy service suite 1,242/1,242, migration/RLS, restart and restore all passed; production builds/artifact/budgets/CSP and independent review passed. No external acceptance or hosted activation was performed.
+
+## 2026-11-03 customer UI/mock-adapter follow-up
+
+On the same isolated connector branch, `/os/connections` now provides a local mock customer flow; production uses a not-found page and existing denied API runtime. The atomic mock adapter invokes the scoped SQL RPC and validates results before commit/UI state updates. The final focused proof passed 23/23; independent pure checks passed 4/4 and review found no blocking issue. The original checkpoint `5962a56` remains retained, including its historical 1,242-test legacy result. See [UI verification and remaining real-provider work](customer-connector-ui-slice-2026-11-03.md). No release migration, provider credential, OAuth grant, new signing key, hosted activation, deployment or spending was introduced.
+
+Final actual production-artifact HTTP proof passed (mock page404, agent API503, unauthenticated customer API401), alongside final lint, OS build, artifact, budget, CSP and secret checks. No checks remain running or blocked.
+
+## 2026-11-03 GitHub outbox local checkpoint
+
+The connector branch now contains an isolated GitHub issue-comments wire adapter, durable queued/claimed/uncertain/accepted/rejected/nonexecuted/cancelled state, single-attempt receipts and read-only reconciliation. New DDL remains in `database/proposals/github-connector-outbox.sql`; release 117 discovery and other worktrees are untouched. Fresh dedicated 39-test and current-source 1,242-test aggregates, actual crash/restart proofs, isolated wire 6-test regressions and independent review pass. Production remains denied. [Detailed evidence, exact boundaries, integration overlaps and remaining real-provider work](github-outbox-slice-2026-11-03.md).
+
+## Paired Codex policy correction — integrate aftera9a025f
+
+The [offline/stub correction](../workspace/paired-codex-policy-correction.md) supersedes a9a025f's retired untrusted protocol setting and unrestricted default launcher. Integrate its exact forthcoming correction commit/manifest before combined acceptance; do not treat stub identity/config acknowledgements as installed-version or provider authorization. Existing corrected118/119, source-bound approvals, manual guard and tenant/session authority remain unchanged. No other branch was merged.
+
+
+## 3 November — isolated combined local integration
+
+Final paired5e724, connector f51ef62 and custom-app2278702 histories are composed only in the task-4 clone. Task/account-specific dual-credential orchestration, independent human write approval and schema review import are implemented as an unnumbered fixture extension. Combined restart/restore, ACL, UI, budget and full CI acceptance is in progress; see [contract and exact remaining scope](local-feature-integration-2026-11-03.md). Frozen release, source feature worktrees and hosted/provider state are unchanged.
+
+
+## 4 November — full canonical CI passed; native lease handed off
+
+The isolated integration has passed full canonical CI at56a34ef, complete extension-installed crash/restart/restore and source/restored browser proof, and independent review. Code commitdd0f49d adds final verification-only hardening; its targeted rerun and production/dedicated regressions remain pending the staging-precheck shared-lease opportunity. The previous CI lease was released with all four cleanup receipts confirmed. See [exact evidence and remaining gates](local-feature-integration-2026-11-03.md). No source feature branch, frozen release, hosted/provider state, real credentials, charges, push or deployment changed.
+
+
+## 4 November — final recovery, production denial and connector regressions passed
+
+The final combined run from `b661c7c` verified the current `dd0f49d` code: complete extension-installed atomic restore, three fresh application identities, actual worker crash with no POST replay, exact private ACL/data/sequence inventories, and source/restored desktop/mobile browser and idempotent receipt flows. Production HTTP denial and the dedicated connector checks (39 focused plus six overlapping wire checks) and restart passed. All own leases are released; PostgreSQL status 3 and application port absence are verified. The corrected staging precheck has the next shared-lease opportunity; the dedicated custom-app regression is prepared but unstarted. [Current report and evidence](local-feature-integration-2026-11-03.md). No hosted/provider/real CLI/customer-data/push/deployment activity occurred.
+
+
+## 4 November — local integration acceptance complete
+
+After the corrected staging precheck confirmed seven native cases and released its own lease, the dedicated custom-app cohort passed 16/16 cases at `7834697`, with 119 migrations / 221 protected kxra tables. PostgreSQL status 3, absent PID file, refused app port and exact own-lease release were verified. Full canonical CI, final combined crash/restart/restore, source/restored desktop/mobile receipts, production HTTP denial, connector regressions and independent review are all passed. The local scope has no remaining blocker. [Acceptance, reproducible inputs and later release needs](local-feature-integration-2026-11-03.md). This remains a synthetic local prerequisite: no hosted migration, deployment, real credentials/provider/CLI/inference, charges, push or marketing send occurred.
+
+## 4 November — synthetic GitHub vault/receipt branch
+
+Isolated `codex/github-vault-synthetic-20261104` starts at integration `8016c2e`; no integration or frozen-release edits. It provides opt-in encrypted fake-token custody and exact installation/scope binding through the local adapter, plus receipt-only historical publication after customer identity withdrawal. The proposal DDL is outside migration discovery and only the new disposable verifier installs it. Focused 13/13 plus existing wire 6/6, lint and independent read-only source review passed; aggregate 1,285-case service/restart/restore and dedicated 39-case connector plus six overlapping wire/restart regressions passed. All fixture leases released. See [report](github-vault-synthetic-2026-11-04.md) for limits and later real-provider/vault/access approvals. Real provider access, external acceptance and production readiness remain unproven.
+
+
+## 2026-11-04 synthetic vault integration
+
+Reviewed checkpoint `70d2072` merged into the isolated integration lane. The combined fixture/recovery catalogue now includes its private vault and receipt state; concurrent worker permit capacity is reserved before awaiting a claim. See [local vault integration](vault-integration-local-2026-11-04.md) for scope, evidence and remaining real-provider gates. No hosted or real-provider activation.
+
+
+## 2026-11-04 billing deadline test correction
+
+The exact3538071 full canonical CI exposed a reproduced wall-clock/timer ordering assertion. The correction retains the real20ms hung-body timer and production behavior while using an injected logical expiry clock and adding post-expiry provider/SQL/receipt checks. See [deadline correction](billing-deadline-test-correction-2026-11-04.md); the failed original result remains preserved separately.
+
+## 4 November — synthetic custody process checkpoint
+
+`codex/github-custody-boundary-20261104` starts exactly at `0912eb8` in a separate task-2 worktree. A fake custody process owns versioned keys; the async broker revalidates exact current SQL authority after decryption. Key/workload retirement, key-loss no-send, startup/disconnect cleanup and protocol bounds are covered. Focused 29/29 (15 new, 14 existing) plus wire 6/6, lint and independent review passed; aggregate 1,285-case service/restart/restore regression passed; all own fixture leases released. [Report](github-custody-boundary-2026-11-04.md) lists the modified shared broker/proposal/verifier overlap and remaining managed-vault, token/provider, real-access, operational recovery and release approval gates. No real credentials, persistent provider access, external provider actions, hosted changes, deployment or spending occurred.
+
+
+## 2026-11-04 combined custody integration
+
+Checkpoint58c5958 merged conflict-free. Combined recovery now retains memory-key coverage and adds an isolated custody-envelope cohort; reviewed bounded child cleanup fails closed on uncertain exit. Focused30+6wire andlint pass. See [combined custody integration](custody-integration-local-2026-11-04.md) and the enclosing acceptance receipt for exact-head recovery/CI status. No hosted or real-provider activation.
+
+
+## 2026-11-04 hosted release guard and next-work handoff
+
+Additive source/target guards refuse fixture migrations/extensions in hosted migration/seed/bootstrap operators while local119 discovery remains. Current integration intentionally reports BLOCKED offline. Exact117 native verification and final checks are recorded outside source. See [release guard](production-release-guard-2026-11-04.md) and [provider eligibility/setup handoff](provider-eligibility-setup-handoff-2026-11-04.md). No hosted action or new provider feature.
+
+
+## 2026-11-04 production117 review strategy
+
+No enabled production dependency on fixture0118/0119 was found. An exact-hash local builder prepares a separate117 review candidate with explicit exclusions, preserving the integrated119 lane and guard. The target-prefix planner remains read-only/no-apply; initialized production still needs a separately reviewed upgrade path. See [production117 strategy](production117-manifest-strategy-2026-11-04.md) for dependency, CI-cohort, failure/rollback and remaining-decision evidence. No migration execution is claimed while the no-apply scope is clarified.
+
+## 4 November — provider/business eligibility binding
+
+Candidate branch `codex/ai-business-admission-20261104` starts exactly at `9e2fe569`; source is isolated under task-2/ai-business-admission. New proposal and server helper bind two-stage connection review to provider/model/resolved endpoint/credential fingerprint and current business review, pin stored ciphertext/run authority, and recheck before key access and after DNS. Focused29/29 plus lint/OS build/budget/artifact and independent review passed; aggregate baseline1,285-case service/restart/restore regression passed; all own fixture leases released. The separate UI lane must adopt the review-reference resume contract; release owns numbering/cohort/manifest. [Exact handoff and unresolved policy decisions](ai-business-admission-2026-11-04.md). No real credentials, provider actions, hosted changes, deployment or spending occurred.
+
+## Isolated AI resume preparation — 4 November
+
+See [policy and verification boundary](ai-resume-policy-packet-2026-11-04.md). Own-intent GET and conflict DTO support reload/manual reference, exact reviewed resubmission and explicit business/provider mismatch/expiry/session/withdrawal actions. Passwords are cleared on dispatch; malformed/unconfirmed responses require fresh status. Lazy model connection component preserves fixture setup and the unchanged byte limit. SQL remains proposal-only and NOT EXECUTED under parent hold; do not merge/apply/deploy based on mocked acceptance. Required native RLS/ACL/race/recovery and policy decisions remain open.
+
+
+### Disposable native acceptance after scope clarification
+
+Parent authorized only fresh disposable local cluster DDL. The structured resume proposal executed inside a rolled-back test transaction:38 focused checks and migration/RLS verification passed, with exact owned socket/data-directory isolation and stop0/status3/noPID cleanup. First failed timestamp-fixture log retained; corrected fixture preserves all constraints. See updated policy packet for remaining full recovery/concurrent race/real end-to-end/canonical-CI and production policy gates. Hosted/existing databases were untouched.
+
+
+### Complete structured-resume local acceptance
+
+The exact committed complete runner clones a fresh owned source/runtime, preserves fixture-only restrictions, and uses unchanged application routes with signed loopback Auth and real disposable PostgreSQL. Browser pending/review/exact-reference save, graceful restart, exact extension catalogue/data/sequence restore and restored-only browser marker passed at c436346; final source retains full snapshots/hashes for reproduction. All five deterministic concurrent authority-loss cases deny saves without persisting credentials/bindings. A replacement private helper's inherited PUBLIC EXECUTE was revoked; the strict allowlist remains unchanged. Full canonical CI is separately keyed to the exact candidate head, never inferred from focused results. Run `node scripts/verify-ai-resume-complete.mjs` and `node scripts/integration-ci.mjs` from a clean committed candidate with the shared native lease free. No merge, hosted changes or policy approval is implied.
+
+
+2026-11-04 production composition: full requested feature launch remains the objective. Hus explicitly rejected reducing scope for speed. No pilot substitution, terms/financial-policy change, hosted operation or deployment is authorized by this local composition.
+
+## Full-feature production composition
+
+Use the separate composition checkout and [review packet](production-composition-2026-11-04.md). Preserve full launch scope and existing terms/financial commitments. New AI118 review source is not a full-feature deployment manifest; original hosted guard remains closed. Native117/fresh118/rollback/legacy/recovery evidence is distinct from canonical119 CI. Never promote fixture pairing/connectors/apps or manufacture legacy AI authority. Final exact-source receipts are retained outside the worktree; source branches remain unchanged.
+
+
+## 4 November — independent human review application wiring
+
+An isolated branch adds default-off internal owner review UI/API backed by exact customer/provider/policy grants, frozen request authority and immutable decision/withdrawal receipts. No authority is seeded. Native blocked-lock races, actual browser lost-ack read recovery and installed-schema restore are exercised separately from canonical119. See [operator review handoff](review-operations-2026-11-04.md) for exact scope, reproduction, custody/grant decisions and production migration gates. Full launch scope and existing customer commitments remain unchanged; no hosted or provider action. Final commit-specific acceptance is retained outside source.
+
+
+## 5 November — review operations production composition
+
+The entire reviewed five-commit operator branch is merged into an isolated composition, preserving both source checkouts. A new offline hash-bound117→genuineAI118→review119 cohort rejects fixture history and arbitrary extensions; original hosted guards/operators remain unchanged. Combined acceptance explicitly checks catalogue/data/ACL and both public-ledger rollback, fresh/upgrade equivalence, browser review/withdrawal and restored no-duplicate authority. See [composition handoff](production-operations-composition-2026-11-05.md); final exact-head results remain external evidence. Default-off, policy/hosted/full-launch gates and existing commitments remain preserved.
+
+
+## 5 November — offline production GitHub HTTPS boundary
+
+An isolated branch after bde07e3 implements a separate default-off fixed-origin/TLS/DNS-pinned executor with exact server binding/lease/approval checks, mandatory irreversible attempt-consumption port, bounded sanitized responses/rate evidence and no automatic retries. Fixture adapters, production503 routes and migration guards remain unchanged. See [blocker assessment and precise handoff](github-production-transport-2026-11-05.md). Production durable consumption/outbox/worker, broker/installation/custody and actual provider acceptance remain unimplemented or gated; pairing still requires genuine schema/admission and real CLI/tool/auth acceptance. Native tests use only owned loopback TLS and generated synthetic material; final source-specific receipts remain outside source. No provider calls, real credentials, hosted action, activation, deployment or spending.
+
+## Isolated GitHub production outbox, 2026-11-05
+
+Review the entire delta from transport `e1bcc90dd37566bbe7991b5adad3adab31fa4d92` on `codex/github-production-outbox-20261105`; do not cherry-pick only its final evidence/documentation commit. `docs/operations/github-production-outbox-2026-11-05.md` documents the SQL authority, irreversible consumption, receipt custody, writer-fence dependencies and exact remaining production gates. Keep the unnumbered payload out of hosted manifests until a separately reviewed composition exists. Both server execution flags remain default-off. Final exact-head acceptance and cleanup are in the external sibling acceptance-evidence handoff.
+
+## Independent rollback fence, 2026-11-05
+
+The isolated `codex/github-external-rollback-fence-20261105` delta starts at `413ac0b`. Review and integrate its entire delta. `docs/operations/github-external-rollback-fence-2026-11-05.md` explains stable-write witnesses, one-time external SEND, separate operator reconciliation and the actual older-snapshot proof. The independent SQL payload is not part of application backups or hosted manifests. Keep production default-off until independent durability/continuity, realm authorization, current authority reconciliation and verifiable worker quiescence/fenced egress are accepted; a finite settling timer is insufficient.
+
+## Production GitHub composition integration, 2026-11-05
+
+Use the entire `codex/production-github-integration-20261105` branch delta after bde07e3, including whole-branch merge01e8e52 and the pinned integration manifest. See `docs/operations/production-github-integration-2026-11-05.md`. No migration or activation is authorized. Keep canonical fixtures, genuine119/outbox application review, and the independently durable external-store domain separate. Source91bff50 component evidence is historical; final integration acceptance must name its own exact committed head and cleanup.
+
+2026-11-05 — Isolated payment-repair branch based041d200 now requires payment_method_update.enabled=true before modern portal POST in LIVE/sandbox, retaining plan updatesOFF/cancellationON and all authority checks. Synthetic regressions confirm malformed/missing/false settings deny before POST and past-due paid proof staysDENY during authorised billing repair. Final234/234 focused checks, types/format/secret/diff pass; one stale positive fixture initially failed and was corrected. Added exact-file receipt and offline capacity design/projection: example16-workspace headroom2s,4s claim fails, independent read-allocation shortfall. No SQL/policy/schedule/credential/provider/hosted/financial changes or native fixture startup. Hosted configuration/card-repair and later capacity implementation/acceptance remain separate.
+
+## Payment-repair production composition, 2026-11-05
+
+Use the full `codex/production-payment-integration-20261105` branch after041d200, including merge24678ce, pinned payment-policy manifest and exact-head acceptance. See `docs/operations/production-payment-integration-2026-11-05.md`. No hosted setting or Stripe call is authorised. Cancel-only configurations now fail closed; real repair/cancellation configuration and actual capacity require separate acceptance. All existing GitHub ledger continuity/quiescence and full-feature release gates remain held.
+
+2026-11-05 — Isolated d60a463-based refresh-session candidate reuses one verified connection per invocation while retaining separate transactions/current identity checks and unchanged authority/read/scheduler policy. Native20-transaction comparison reduces connections20→1; eight real PostgreSQL cases plus139 module/regression cases pass. Cleanup reserve inside55s and idle-error handling fixed during adversarial review. Native fixture1GZPSI stopped/released; receipts/source hashes retained. No TLS/hosted throughput guarantee or solved read-allocation claim; retained-socket capacity tradeoff documented. No schedule/provider/credential/financial changes, migration or activation. External integration source review remains separate.
+
+2026-11-05 local refresh-session composition: reviewed 03c5c917 merged into isolated d60a463-based branch at a04422db8eba507cfb7516eff90bd8652dc25511; no runtime conflict changes, source/authority pins in production-refresh-integration-v1.json. Exact integrated-head acceptance pending; hosted/provider/capacity/slot/activation gates remain. See production-refresh-integration-2026-11-05.md and sibling acceptance-evidence.
+
+## 5 November — paired execution admission follow-up
+
+Review the full isolated `codex/paired-execution-admission` delta afterd60a463 and its [handoff](paired-execution-admission-2026-11-05.md). The helper has no default production ports and leaves503/404/native guards closed. Genuine authenticated RLS authority/reviews, independently durable consume/restore fencing, authenticated measurements, immutable contained launch and atomic publication are required before wiring. Synthetic port tests are not production admission or actual tool-isolation/provider acceptance. No other branch was merged; no migration is proposed by this slice.
+
+## 5 November — paired authority store follow-up
+
+The isolated paired branch now includes unnumbered app-authority and external-fence SQL proposals plus a storage-only injected adapter; see [handoff and remaining gates](paired-authority-store-2026-11-05.md). Preserve default-off production guards. App receipts alone do not prove external execution authority; paid/business policy composition, live device authority, contained launch, external launch verification, atomic publication and operational continuity remain unwired. Native tests must acquire the existing shared fixture lease and name exact source/cleanup; never clear another task's lock. No production migration, real credential/provider access, deployment or spend is authorized.
+
+Paired-store checkpoint remains **not installation-ready**: independent source findings closed,42 focused checks and static boundaries pass, but native verifier refused the live `feature-integration-full-ci` lease before allocating resources. Wait for that owner to release the lock, then run `node scripts/verify-paired-admission-store.mjs` on the clean corrected checkpoint; do not clear its lock or weaken assertions. Process-inspection sandbox failure during earlier transport tests was escalated, two exact owned descendants reconciled/stopped, and the capability-enabled retry passed. No approval denial, pending owned database startup, hosted change or real-provider action occurred.
+
+Paired-store fixture lease blocker resolved: owner release independently verified, then exact code8c2ca36692b0f09d071d416091c74362a52605d4 passed14/14 native scenarios in `/private/tmp/kxra-pas-aOvR35`. Read acceptance/acl/cleanup receipts in `.runtime/pas`; both owned clusters stopped cleanly, exact own lease released, shared lock absent afterward. Initial13acb8b seed-audit failure also cleaned fully; correction supplies only generated fixture admin audit context. Independent source/evidence review closed findings. Integrate the complete isolated branch delta only after review; the two SQL files remain unnumbered, uninstalled proposals, and app receipts remain storage-only. These results do not authorize production activation, credentials, provider calls or rollout.
+
+## Paired setup/policy follow-up, 5 November
+
+Review full `codex/paired-setup-policy` delta after a737c82; see [request-only setup handoff](paired-setup-policy-2026-11-05.md). The new proposal requires genuine AI118 plus paired authority SQL; no installation/activation is authorized. It creates only disabled agents and five-minute owner-scoped request records, never device credentials or persistent access. All live/UI/execution/approval/provider gates remain explicit. Use only the exact-source shared-lease verifier and owned cleanup receipts for native acceptance; never clear another task's lock.
+
+Paired setup/policy final local acceptance: code3cc71600846d520c9fdbe3fea67e6eddbee6678d passes26 native +46 focused checks; see retained `/private/tmp/kxra-pas-M303Bw/.runtime/pas` receipts and `.runtime/paired-setup-manifest.json`. Complete isolated branch delta aftera737c82 is the integration unit. Both owned clusters stopped/status3/no PID files, exact own lease released and shared lease absent; independent read-only source/evidence review has no findings. The final handoff commit is docs-only. Keep all default-off guards: this slice supplies authenticated request preparation/current policy composition, not customer pairing credentials, runtime authority, subscription permission or hosted execution. Unnumbered SQL installation, real verified auth integration and all live gates require separate release/action review.
+
+## Local paired setup UI, 5 November
+
+Review complete isolated `codex/paired-setup-ui` delta after b2a9715; see [scope and verification](paired-setup-ui-2026-11-05.md). Local `/os/paired-setup` and `/api/paired-setup` require a strict owned synthetic fixture boundary and purpose-specific test cookie; production imports remain disabled. No fixture-to-Supabase relabel, live auth, pairing credential or activation exists. New selector SQL is an unnumbered proposal after accepted setup-policy SQL. Use exact-source shared-lease browser verifier and retain lease if any UI/cluster cleanup is uncertain. Main navigation and all live/device/execution/provider gates remain separate.
+
+Paired setup UI final acceptance: use full isolated `codex/paired-setup-ui` delta afterb2a9715, native/build/test codee7c338ccda52dcc2745ae08313298af729164781 plus docs-only handoff.31 local browser/DB scenarios,51 focused regressions and static checks pass; production API503/pagepaused,24page budget max204021/204800. Read `/private/tmp/kxra-pas-5Ru3B0/.runtime/pas` receipts/screenshots and `.runtime/paired-setup-ui-manifest.json`. Cleanup confirmed for both clusters, fresh Chromium, owned Next group/port and separate build/server; no uncertain resource state or foreign lock removal. This remains standalone fixture UI/request preparation with explicit fixture provenance, not real auth, device credentials/activation, provider execution or deployment. Main navigation and release/live gates remain separately reviewed.
+
+2026-11-05 local paired composition: complete300179a branch merged at 4766cbea2912a5c681e3a4da96b74cce892d818a onto d650a8d, retaining both documentation tails. Independent review exposed composed row/fence/FK inversion; narrow local correction and genuine119+GH+paired race/restore/browser proof added. Existing manifests unchanged, exact default-off fixture suffix reviewed. Combined exact-head acceptance pending; all live/hosted/provider/financial gates remain. See production-paired-integration-2026-11-05.md.
+
+
+## 5 November — default-off production custom-app path
+
+Closed the fixture-only HTTP/SQL and independent-review gaps on an isolated branch based exactly on integrated commit `835b757`. Added verified Supabase/signed-session, current live-paid tenant authority, immutable review/publication/record paths and hosted navigation. The unnumbered production payload/manifest are review-only; no canonical migration discovery or hosted target changed. The synthetic native lifecycle/revocation/restart/fresh-target recovery proof passes. All production builds, unchanged 204,800-byte OS budget, artifact and secret checks pass. Independent final review found no remaining concrete high/medium defects. Final canonical 1,400/1,400 tests, migrations/RLS/restart/restore and focused 9/9 tests pass; exact dedicated extension receipt and scope are in the [integration handoff](custom-apps-production-2026-11-05.md). Trusted original-session token-hook provisioning, cohort approval, feature activation and real hosted acceptance remain gates.
+
+
+
+Production apps integration: see `production-apps-combined-2026-11-05.md` and `packages/release/production-apps-integration-v1.json`. Entire reviewed branch integrated locally; exact-head combined acceptance pending. No hosted change or activation.
+
+
+## 5 November — original-session attestation implemented locally
+
+On an isolated branch based exactly on `2b74d66`, implemented immutable provider-session capture and a private token hook that preserves the original account version through refresh. The existing verified server identity and paid/tenant checks now carry and validate the signed provider session ID. No old session backfill or hosted activation was supplied. Dedicated signed-synthetic SDK/HTTP/DB/revocation-race/restart/fresh-target proof passes; canonical 1,404/1,404 tests, migrations/RLS/restart/restore, all builds, unchanged bundle budget, lint/artifact/secrets pass. Independent final review found no remaining concrete high/medium defect and checked receipt hashes against source. [Implementation, exact evidence and live acceptance gates](custom-app-original-session-2026-11-05.md). Real Auth schema/role/transaction ordering, hook configuration, hosted browser acceptance and coordinated older-restore session invalidation remain gates.
+
+
+
+Original-session combined local integration: see `production-session-combined-2026-11-05.md` and exact source manifest `packages/release/production-session-integration-v1.json`. Hook/configuration/activation remain off; current exact-head acceptance is tracked by the retained task evidence handoff.
+
+
+## 7 November — local period-end cancellation guard
+
+Modern LIVE/sandbox portal creation now rejects immediate, missing or malformed cancellation modes before POST, preserving the settled paid-period-end promise. The source correction passed 277 focused synthetic regressions, with a retained failing-before proof and independent diff review. No provider or hosted action occurred. See [handoff and remaining customer gates](cancellation-period-end-2026-11-07.md) and [source-bound receipt](evidence/cancellation-period-end-2026-11-07.json). Exact-composition aggregate and hosted acceptance remain required.
+
+## 7 November application cohort handoff
+
+Use the isolated production-release-cohort branch, not the historical dirty Desktop checkout. The new application125 artifact is verified locally and preserves existing canonical/history bytes; external fences remain separate databases. Do not use the unchanged hosted117 operator to apply it. Merge reviewed paired session fence/runtime and historical source transitions, then rerun exact combined acceptance. Full hosted signup/payment/AI/use remains unproven. Details: application-release-cohort-2026-11-07.md.
+
+
+Cancellation composition follow-up: preserve historical payment/paired manifests byte for byte and accept only four exact reviewed source transitions through a test-only helper. Negative substitution tests and the 118-case payment/refresh/GitHub/portal subset pass. The paired test fallback is coordinated with the service worker; final combined aggregate acceptance remains pending.
+
+
+## 7 November — paired setup original-session fence
+
+Prepared an additive production SQL payload and owned native verification for stale provider-session denial. Existing request idempotency and authority stay intact; the narrow runtime helper and Auth writer use the paired transaction fence without reversing custom-app lock order. No canonical migration, historical profile, hosted target, payment or activation is changed. See [scope and verification](paired-setup-session-local-2026-11-07.md).
+
+
+## 7 November — application126 incremental command
+
+Use the new `scripts/production-application.mjs` only after its target/schema/Auth prerequisites and deployment authorization are independently established. The old hosted117 initializer is unchanged. Source-derived catalogues do not prove hosted Auth hook/session ordering or customer acceptance. See [operator interface and recovery](production-application-operator-2026-11-07.md).
+
+
+## 7 November — prefix 82 upgrade handoff
+
+The separate application 82 upgrade path is designed for the actual historical prefix. The old 117 initializer and reviewed 117–126 operator remain unchanged. Ledger RLS stays enabled, and the current service_role ledger grants deliberately block apply. See [interface, evidence requirements and recovery](production-application82-upgrade-2026-11-07.md). Hosted privilege remediation, backup/recovery, actual Auth/customer acceptance and zero-overage approval remain separate gates.
+
+
+## 7 November — source-only publication guard candidate
+
+Prepared a separate local candidate from `fa49a0f1173c3d1896bf9b796c6b2d9ef78bc399` with automatic Git deployments disabled at all three verified Vercel app roots. Application source, historical manifest/pins, SQL, workflows and deployment allow boundaries remain unchanged. Independent review and any remote publication remain separate gates; no first-push behavior was tested and no deployment, provider setting, activation or spending action occurred. See [source-only sequence and limitations](source-only-publication-2026-11-07.md).
+
+## 8 November — GitHub identity observation handoff
+
+The independent observer adds read-only provider identity verification code without changing routes, SQL, manifests or activation. Keep its `IDENTITY_OBSERVATION_ONLY` evidence separate from execution authority and token-scope/custody proof. Run the new exact-head loopback TLS verifier before integration acceptance. See [interfaces, limitations and remaining production work](github-installation-observer-2026-11-08.md). No real account, credential, provider call or deployment was used.
+
+## 8 November — GitHub shared rate coordination
+
+The new review-only rate SQL belongs in a separate durable failure/restore domain and seeds no activation. Use the explicit adapter and default-off wrapper only after canonical realm/workload/custody and recovery decisions are accepted. Observer quota classes remain separate unfinished wiring. See [interfaces, verification and restore limitations](github-rate-coordinator-2026-11-08.md). No real credential, provider, hosted, payment or deployment action occurred.
+
+## 8 November — existing-token broker handoff
+
+The new default-off broker can supply the existing executor/observer lease contract, but it relies on separately accepted issuer, current-authority-store and custody adapters. Hash consistency is not provider-origin proof. Keep the raw returned lease backend-only and retain all existing execution/rate/recovery gates. See [interfaces, tests and required real ownership decisions](github-existing-lease-broker-2026-11-08.md). Historical SQL/release/runtime bytes are unchanged.
+
+
+## 8 November 2026 — local marketing enquiry-link correction
+
+Isolated candidate based on `8eb644e8d992550727bdc7d772241f93f1e36305` corrects only the enquiry links on `/pricing`, `/brand-studio` and `/video-studio`: `/#contact` had no homepage target; all three now use the existing `/#request-access` enquiry form. The retired-tool text, pricing/terms, public snapshot, deployment guards and all feature flags are unchanged. The frozen combined release checkout was not modified.
+
+The new browser regression first failed on the original pricing link (`/#contact` received instead of `/#request-access`). On final source, the isolated optimized marketing build passed. `node scripts/verify-marketing-csp.mjs` passed for 93 static routes / 795 script references; the existing marketing-only 140 KiB client-budget computation passed at 127259/143360 bytes. `node node_modules/@playwright/test/cli.js test -c playwright.marketing.config.ts --grep 'enquiry reaches the existing access form|AT-17 required public routes'` passed 8/8 on loopback with `KXRA_EXPECT_PRODUCTION_CSP=true`: desktop and iPhone 13 Chromium checks cover all required public routes, each corrected CTA, the actual form destination, unchanged retirement state and browser Back. Root `tsc --noEmit --incremental false`, changed-source formatting, publication hash/boundary guards and 11 HTML/timing tests passed. The build log and original failing browser trace remain under `.runtime/marketing-cta/` in this isolated worktree; the owned server was stopped.
+
+This is local navigation/artifact verification, not full-platform or hosted acceptance. No form was submitted, no provider used, and no publication, account/configuration change, payment or deployment occurred. Current source still presents subscriptions as paused and the current workspace terms catalogue is empty. Those commercial/release gates must be reconciled separately before advertising an available subscription; the snapshot's deliberately disabled source marker is not a permission to toggle publication on. Actual live-domain, hosted enquiry delivery, private inbox handling and purchase journeys were not verified by this correction.
+
+
+## 8 November — isolated owner operating overview
+
+Added an owner-only operational home, selected-organisation SELECT snapshot, guarded enquiry inbox and stable selected-event navigation in a separate branch from `7f1d111`. Grouped owner navigation and scoped styling follow the existing marketing landing; all public design files, partner/WhatsApp/portfolio routes, non-owner navigation and authority gates remain intact. Historical source manifests are unchanged, with a narrow exact-source transition for the catch-all route and its verifier chain.
+
+Final local app checks pass: 16 pure, 7 native/HTTP and 25 Chromium browser cases (one deliberate duplicate-matrix skip), 36 fresh screenshots, typecheck, three production builds, unchanged asset budgets, CSP/SRI and artifact isolation. The first budget excess was resolved by deferring inactive Knowledge/Memory editors with unchanged authority. Owned server/database stopped and lease released. A separate asynchronous startup-failure check proves the final runner releases its lease when no child starts; the composed candidate will rerun that corrected runner. No hosted or provider action occurred. The full customer directory, modern billing/usage, governed content editing and real publication telemetry remain separate required contracts, not omitted product scope. See [source plan, limits and verification](owner-operating-overview-2026-11-08.md).
+
+
+## 8 November — composed owner and provider candidate
+
+Prepared an isolated candidate from frozen marketing commit `7f1d1112f81a35d304a7e8810d4f68a5e4b2572c`. Provider author commit `fff986341cb05908a1805133efdfb4b3a96ed74a` is composed as `32ef1b57edc25b5dcbdc72e884fff927d48e3ae3`; owner author commit `1592ce46b669a9e744b550843288405d4bc754fa` is composed as `7448e720d3508ee959001d2c5fd3af68178d1907`. The changes do not overlap. The prior checkout and historical manifests remain unchanged.
+
+The owner-only cream/ink/sage overview groups existing navigation and reads the selected organisation's enquiries, approvals, tasks and activity with existing authority. Authentic local OpenAI API and OpenRouter marks identify existing connections and review cards; literal provider values and action gates are preserved. Anthropic/Claude and Google/Gemini remain text pending permitted asset-use evidence. See the owner and provider review documents for scope and provenance. Marketing artwork and all deployment, payment, secret, artifact, CSP and budget gates are unchanged. Separate owner metadata SQL work is not included.
+
+Combined acceptance is pending on this committed source. Run the corrected owner native/Chromium verifier separately, followed by the normal canonical integration CI in its short owned checkout, serially under the normal fixture lease. Keep final exact-head receipts outside tracked source; author-only results above are not combined acceptance. WebKit is unavailable and real Safari was not used. Full customer administration, global billing, live publication/deployment, governed website editing, private unauthenticated root and the non-owner partner-labelled customer journey remain gaps. No hosted/provider/payment/publication acceptance is claimed. The existing source-disclosure audit covers only the prior marketing candidate, not this new source tree.
+
+
+## 8 November — metadata-only customer directory preparation
+
+An isolated local slice prepares a strict platform-owner customer-workspace directory: six metadata fields, stored lifecycle state, bounded live UUID pagination and no private room/account/contact/billing contents. The default-off TypeScript adapter requires fresh verified owner/session authority; the separately reviewed SQL proposal takes the existing authority fence, independently guards direct reads and removes all runtime/default ACL grants. Existing tenant RLS, immutable application126, UI routes and activation remain unchanged. See [contract, authority and integration gates](customer-metadata-directory-2026-11-08.md). Source-bound native proof and review are separate from pure contract tests; no hosted application, live grants, deployment or spending are implied.
+
+
+## 8 November — three-part local verification candidate
+
+The clean owner/provider checkpoint `c2f558488b0fd99bce70bfb7245dbcbe2c69b144` remains frozen separately. This new isolated candidate additionally composes the complete eight-file metadata branch delta from `7f1d1112f81a35d304a7e8810d4f68a5e4b2572c` to `af2af32e5b2b154649c667631ba53f52b560ad57`, preserving both prior append-only notes. This supersedes the preceding composition entry's metadata exclusion only for this new candidate. The six non-shared metadata files exactly match that accepted tip. SQL SHA-256 is `80033853a6600e1493160583d53acd986a7c81fe90e93153cfd0f7adcf3f1d23`.
+
+The metadata reader remains default-off and unwired, with no live grants, migrations, UI activation or hosted changes. Genuine application126 metadata native proof is distinct from canonical synthetic fixture119 CI; neither establishes real framework/live Auth integration. Final source-bound metadata proof, corrected owner acceptance and canonical CI will run serially on this committed head. Final receipts remain outside tracked source. All previously stated product, browser, publication and source-disclosure limitations remain.
+
+
+## 9 November — default-off customer metadata UI prepared
+
+Prepared factual selected-membership workspace labels and a server-rendered owner-only metadata directory in an isolated branch from `ec6d97e`. Reuses existing verified actor/authenticated-query composition; no auth/db/SQL/grant/marketing/payment change. Default-off and denied/unavailable states never show invented counts. Focused 46 tests, 3 verified-session tests, root types and formatting pass; independent source review found no blocking defect. Real framework HTTP/browser verification, build budgets and aggregate acceptance remain pending. [Scope and authority limitations](customer-directory-ui-2026-11-09.md).
+
+
+## 9 November — directory history remediation prepared, not accepted
+
+Joined77b9073 passed actual Next/SDK positive metadata SSR and pagination, then failed a strict session-revocation navigation check; Back/RSC cache restoration is strongly supported. App checkpoint1ec4458 adds document navigation and a route-local concealed/scrubbed history boundary, preserving server authority; it also fixes collapsed mobile caption layout. The diagnostic follow-up names exact substeps, requires fresh document responses, classifies network denials and reconciles only the exact generated Next typing import change. No-JS/failed hydration remains concealed. Revised browser proof, unchanged production budgets and aggregate acceptance remain pending. [Full scope and limitations](customer-directory-joined-proof-2026-11-09.md).
+
+## 9 November — customer first-use source candidate
+
+The separate branch from frozen `b78cedc` now sends verified CUSTOMER/CLIENT memberships to the real team workspace, replaces the OS duplicate brochure with gated workspace entry, and makes onboarding copy match the selected relationship without changing any of its nine submitted steps. No-writable-project states point to existing access/support paths rather than an empty required selector. Main marketing and all authority/payment/migration/directory activation boundaries are unchanged. The two pinned UI files use a narrow exact successor map; the original owner manifest is checked unconditionally before any transition acceptance. Offline verification passed 84 focused tests plus types/formatting and source-boundary checks. Do not treat this as runtime or release acceptance: run the prepared synthetic role/browser cases, existing owner/partner/onboarding cases, build/budgets and aggregate checks on the exact committed source. [Full scope and remaining limits](customer-first-use-2026-11-09.md).
+
+## 9 November — first-use fixture cleanup successor
+
+Do not reuse the `6ee60db` focused receipt as completed acceptance: native7/build/budgets passed, but desktop browser teardown attempted to delete a membership referenced by active context events. The isolated successor retains organisation/membership/audit history and revokes only the generated fixture membership with exact scope. New assertions cover inactive-context exclusion, original PARTNER continuity, repeated cleanup and database close. No application, SQL or source-pin changes; 87 offline tests and full lint pass. Review and rerun against the new full tracked tree before proceeding with aggregate acceptance. [Details](customer-first-use-2026-11-09.md#fixture-cleanup-successor-after-the-6ee60db-focused-run).
+
+## 9 November — first-use legacy test expectations aligned
+
+Preserve the failed `e0878ed` canonical receipt: two expectations still described the previous UI, and later legal/isolation assertions were not reached. The isolated successor updates only brand-studio and phase2 identity/legal browser tests plus appended notes. It proves current workspace and earlier-discussion destinations, then explicitly opens Projects before the unchanged customer visibility, forged-context, PARTNER return and exact legal checks. No global replacements, application edits or gate changes. Full lint and 87 offline tests pass. Reviewer clearance and a new full-tree-bound runtime run remain required; do not treat old receipts as successor acceptance. [Details](customer-first-use-2026-11-09.md#test-expectation-alignment-after-the-e0878ed-canonical-stop).
+
+
+## 9 November — owner enquiry inbox candidate prepared
+
+An isolated successor from frozen `3c6907e` adds complete read-only enquiry pagination, recorded status/type filters and detail return context using existing owner SELECT authority. Dedicated exact and invalid-segment routes preserve the historical catchall and all release manifests. Native enquiry entry/navigation and a route-local concealed history boundary reuse existing lifecycle protections; the legacy Ideas preview is unchanged and outside this claim. No marketing, payment, SQL, grant or publication change. Focused pure tests and TypeScript pass; independent review and source-bound native/browser, build/budgets and canonical CI remain pending. [Scope and verification limits](owner-enquiries-2026-11-09.md).
+
+
+## 9 November — customer billing interruption recovery
+
+Isolated from accepted 3c6907e, exact matching CUSTOMER/CHECKOUT status can now release the stale pending UI latch after a lost reservation response. Refresh shares a serialized 35-second total operation budget; unmount aborts and fences late checkout/portal navigation. No backend, authority, policy, provider or flag change. Local 146 focused tests, 22 desktop/mobile component scenarios, 16 composition checks, types and all builds/budgets pass; independent review is clean. Full composed/hosted acceptance remains separate. See [scope, verification and remaining gates](billing-entry-recovery-2026-11-09.md).
+
+
+## 9 November — enquiry proof startup classification successor
+
+The first combined `941c629` focused run stopped before readiness, native tests or browser tests with `POSTGRES_PROCESS_MISSING`. Its retained receipt shows initdb/single-user ancestry followed by a valid server; the PostgreSQL log reports normal readiness and shutdown. The initial PID-file bytes were not retained, so a negative standalone PID versus a partial/disappearing initialization file cannot be distinguished conclusively. Cleanup, source verification and lease release were confirmed. Preserve that failed candidate and receipt.
+
+This harness-only successor classifies absent, standalone and incomplete startup records as bounded not-ready before any process lookup. Complete positive records must match the expected directory, epoch, port, Unix socket and ready state, then survive a coherent second read and unchanged strict process identity. A missing or replaced positive server still fails closed; no absolute-value PID conversion or blind retry is used. Safe PID/state/reason observations are retained. Application, billing, SQL, release manifests and runtime authority are unchanged. Pure startup/ownership/inbox tests pass; independent source review and a newly coordinated full-tree-bound run remain required.
+
+
+## 9 November — enquiry browser locator successor
+
+The `925a958` focused run passed native acceptance, then stopped at the first desktop browser case after actual pagination reached rows 51–61 of 61. Retained HTML and the accessible snapshot show correctly named Status and Submission type comboboxes. The installed Playwright exact-label engine includes nested option text when matching the wrapping label, causing the exact Status label locator to miss that control. This test-only successor uses exact combobox role/name locators for both Status uses and Submission type, preserving exact SPAM/CONTACT expectations and every subsequent privacy/history assertion. No application, fixture helper, billing or SQL bytes change. Preserve the failed receipt; browser completion, billing proof and canonical acceptance remain pending a fresh coordinated run.
+
+The same test-only successor also corrects the source-proven skip-link interaction: the link is positioned outside the viewport until focused, so forcing a pointer click is not valid. The test now focuses the named Skip navigation link, verifies focus and viewport placement, presses Enter and checks the #content hash before the unchanged inbox-visibility assertion.
+
+
+## 9 November — enquiry tenant-history setup successor
+
+The `c4096f3` focused run passed native acceptance and the complete first desktop browsing case. Its second browser case reached the legitimate organisation-selection gate after adding a second active membership, before the tenant-switch history checks. The sole original membership had been implicitly resolved without setting a selected-organisation cookie. This test-only successor now uses the real owner selection form and verifies /os plus the owner overview before constructing history. It also awaits the same owner-reset result after each real second-tab customer switch. Suspension tests, fresh no-store history GETs, no-private-content assertions and cleanup remain unchanged. Application, authority, fixture helpers, billing and SQL remain exact. Preserve the failed receipt; remaining browser, billing and canonical acceptance are still pending.
+
+
+## 9 November — customer provider text-boundary candidate
+
+An isolated local successor from accepted `29364435` restricts customer BYOK responses to supported final text, excluding recognized reasoning and rejecting mixed tool/action/media payloads. Exact enablement is rechecked after admission/DNS and before decryption, dispatch and response return. Synthetic, zero-network regressions cover negative protocol cases, late withdrawal, secret redaction, transport limits and exact source-pin tampering. Historical manifests remain unchanged through a bounded offline transition for the provider and the two required composition-helper successors. No tools, UI, SQL, credentials, payments, activation or deployment changed.
+
+Gemini requests do not currently ask for thought summaries; this is a synthetic boundary proof, not an observed live leak. Final text remains untrusted, and post-dispatch suppression cannot reverse a provider call or charge. Unknown-usage zero semantics and the saved-connection readiness label remain unchanged. Independent frozen-source review and any later runtime/aggregate acceptance are separate gates. See [scope, official sources, verification and limits](customer-provider-boundary-2026-11-09.md).
+
+
+## 9 November — customer provider offline path-proof successor
+
+Preserve frozen `844300c` and its 35 passing synthetic checks. Independent review identified a remaining direct shared-helper alias that could reach its generic unchanged-hash branch with a rewritten expected pin. A separate offline-only successor validates canonical relative paths before that branch and adds alias/self-consistent-pin regressions for both provider transition helpers. Only the reviewed helper successor hashes and append-only notes are updated; runtime provider, UI, SQL, authority and all historical manifests remain exact. Fresh frozen-source verification and final review apply to this successor.
+
+
+## 9 November — saved model-connection state candidate
+
+Successor to `04c78f14` changes only `ModelConnections` presentation: persisted enabled/disabled settings no longer assert availability, and the page explains per-run authorization/configuration checks. It does not validate a key, test provider health, activate a provider or resolve unknown usage accounting. Existing data authority, controls, async form behavior and all historical manifests remain unchanged.
+
+Passed: `tsx --test --test-concurrency=1 tests/provider-identity.test.ts` (8 tests, including 8 rendered state/provider combinations), `npm run typecheck`, changed-file Prettier and `git diff --check`. Prepared but unrun: `tests/e2e/team-workspace.spec.ts` / "workspace creation, agent conversation and run history persist", with saved-state/fixture/disclaimer assertions and a disconnect/enable round trip. Independent review and coordinated source-bound browser/native, build/budget and canonical gates remain required; no live provider, hosted mutation, charge or deployment was attempted.
+
+
+## 9 November — bounded customer AI review lookup
+
+Isolated from `9d60e69`, the customer AI connection setup GET now has a 15-second total deadline covering response headers and JSON consumption. A stalled read aborts its transport and returns the existing fail-closed unavailable state, restoring review lookup controls without showing the key form. Cancellation still suppresses stale component updates; a late response cannot replace a settled timeout or subsequent retry. Envelope/status validation, no-store, reference encoding and server authority remain unchanged. POST submission is deliberately unchanged and is not covered by the new deadline. No SQL, billing, provider execution, credentials, marketing, activation or deployment changed.
+
+Nine synthetic recovery tests and eight existing provider-presentation tests pass. Root TypeScript passes. The isolated headless mocked component harness passes its nine case groups, including timeout/retry and stability after an aborted read (late-settlement exclusion is covered by the helper unit test, not proved by the browser route), with confirmed browser/server shutdown and exact fixture-lease release. It uses no database or provider and does not establish live acceptance. Independent source review found no actionable bugs in the application/helper/unit-test change. Full build/budgets, native database/HTTP acceptance and canonical aggregate acceptance remain separate and have not been run for this candidate.
+
+Final aggregate lint/offline-boundary rerun was started but stalled in TypeScript after the earlier successful standalone typecheck. Git subsequently reported its shared worktree metadata missing; no repair or commit was attempted. The local source remains an uncommitted candidate, not a published or accepted release.
+
+## 14 November — launch-branch CI sandbox and alert triage
+
+The verify workflow restores the Chromium user namespace on the Ubuntu 24.04 runner and does not turn the sandbox off. Editable check-then-read sinks now use a no-follow descriptor read. Frozen composition files were left byte-for-byte, with their CodeQL disposition recorded for the pull request. Admin subscription metrics are labelled as the legacy mirror, and the user search filters account state before the row limit. Cross-tenant admin visibility still needs a reviewed migration, which this locked set does not include. The mobile catalogue link stays mounted until the route changes, so the click can navigate. Next 16.4.6 is the reviewed OS and marketing version. The lockfile change is a named successor of the historical pin. The paired setup fixture opens its database file with O_NOFOLLOW under the extended hosted setup transition list. apps/os and apps/marketing allow Git deployments again for the staging projects. Interrupted enquiry history reloads a scrubbed document, and the mobile room message assertion waits until the save status and the message are both present. Owner navigation opens a visible disclosure summary before the mobile menu button, so a desktop-hidden toggle cannot consume the test timeout. The marketing menu closes only after a real route change, and the narrow mobile catalogue test repeats the menu click until the panel is open. Marketing and OS page budgets are 164 KiB and 202 KiB after the Next 16.4.6 webpack runtime. The mobile owner menu is opened only after its toggle is enabled. The open state renames that button, so the test waits for the destination link instead of the old name. The schedule catalogue test waits for the earlier-page button, and the pilot preview assertion waits for its request. The deployment allowlist includes scripts/application-next.mjs, which the OS and marketing build wrappers import and which no other excluded script needs. @kxra/marketing depends on parse5 8.0.1, the only root package its build scripts import. The marketing hash scan uses the same dist directory as Next, and a Vercel build that emits no static HTML keeps the collect-mode output.

@@ -4,7 +4,11 @@ import path from "node:path";
 import { localModeConfiguration } from "#kxra/local-guard";
 import { databaseConnectionString, databaseSsl } from "./ssl";
 import { hostedSelfServiceConfiguration } from "../authz/hosted-self-service";
+import { hostedRoomOperations } from "../workspace/hosted-operations";
+import { customAppsIdentityAllowed } from "../custom-apps/access";
 export type Principal = {
+  /** Internal server-resolved grant, never accepted from HTTP input. */
+  room_worker_grant?: string;
   id: string;
   aal: "aal1" | "aal2";
   /** Server-resolved request context. Never populate this from JWT metadata. */
@@ -14,6 +18,8 @@ export type Principal = {
   email_verified?: boolean;
   session_version?: number;
   provider_session_version?: number;
+  /** Verified provider session ID; never populate from request bodies or metadata. */
+  provider_session_id?: string;
   source?: "fixture" | "fake-provider" | "supabase";
 };
 let pool: pg.Pool | undefined;
@@ -84,6 +90,11 @@ export async function scoped<T>(
           email: actor?.email,
           email_verified: actor?.email_verified,
           session_version: actor?.session_version,
+          provider_session_version: actor?.provider_session_version,
+          provider_session_id:
+            actor?.source === "supabase"
+              ? actor.provider_session_id
+              : undefined,
           role: actor ? "authenticated" : "anon",
         }),
         actor?.organisation_id || "",
@@ -94,6 +105,22 @@ export async function scoped<T>(
         ? "fixture"
         : "hosted",
     ]);
+    await db.query(
+      "select set_config('request.kxra.hosted_room_jobs',$1,true),set_config('request.kxra.team_grant',$2,true)",
+      [hostedRoomOperations() ? "on" : "off", actor?.room_worker_grant || ""],
+    );
+    if (actor?.room_worker_grant) {
+      if (
+        !hostedRoomOperations() ||
+        !(
+          await db.query(
+            "select kxra_private.team_execution_grant_validate($1) active",
+            [actor.room_worker_grant],
+          )
+        ).rows[0]?.active
+      )
+        throw Error("ROOM_EXECUTION_GRANT_UNAVAILABLE");
+    }
     // Local-only self-service preparation cannot be enabled by request input/JWT metadata.
     await db.query(
       "select set_config('request.kxra.local_self_service',$1,true)",
@@ -112,6 +139,17 @@ export async function scoped<T>(
       [
         hostedAdmission ? "on" : "off",
         hostedAdmission && actor?.source === "supabase" ? "on" : "off",
+      ],
+    );
+    await db.query(
+      "select set_config('request.kxra.custom_apps_verified',$1,true)",
+      [
+        !localMode() &&
+        customAppsIdentityAllowed(actor?.source, false) &&
+        actor?.provider_session_version !== undefined &&
+        actor.provider_session_version === actor.session_version
+          ? "on"
+          : "off",
       ],
     );
     const result = await work(db);

@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import https from "node:https";
 import dns from "node:dns/promises";
 import net from "node:net";
+import { publicIpv4 } from "../net/public-address";
 import { z } from "zod";
 export const providers = [
   "OPENAI",
@@ -26,9 +27,20 @@ export const connectionInput = z
       .string()
       .regex(/^[a-zA-Z0-9_-]{0,80}$/)
       .default(""),
-    key: z.string().min(1).max(8000),
+    key: z
+      .string()
+      .min(1)
+      .max(8000)
+      .refine((value) => !/[\r\n\0]/.test(value)),
+    customer_billed_acknowledged: z.boolean().default(false),
+    admission_id: z.string().uuid().optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) =>
+      value.provider === "FIXTURE" || value.customer_billed_acknowledged,
+    "CUSTOMER_PROVIDER_COST_ACKNOWLEDGEMENT_REQUIRED",
+  );
 export type Connection = {
   id: string;
   org_id: string;
@@ -89,32 +101,18 @@ export function endpoint(
     throw Error("ENDPOINT_REJECTED");
   return url;
 }
-const denied = new net.BlockList();
-for (const [ip, prefix] of [
-  ["0.0.0.0", 8],
-  ["10.0.0.0", 8],
-  ["100.64.0.0", 10],
-  ["127.0.0.0", 8],
-  ["169.254.0.0", 16],
-  ["172.16.0.0", 12],
-  ["192.0.0.0", 24],
-  ["192.0.2.0", 24],
-  ["192.168.0.0", 16],
-  ["198.18.0.0", 15],
-  ["198.51.100.0", 24],
-  ["203.0.113.0", 24],
-  ["224.0.0.0", 4],
-  ["240.0.0.0", 4],
-] as const)
-  denied.addSubnet(ip, prefix);
-export function publicIpv4(address: string) {
-  return net.isIPv4(address) && !denied.check(address);
-}
+export { publicIpv4 };
 export type Transport = (
   url: URL,
   headers: Record<string, string>,
   body: unknown,
+  authorize?: (target: URL) => Promise<void>,
 ) => Promise<unknown>;
+function requireModelProviderEnabled() {
+  // No caller/fixture hint can enable an external provider. Local demonstration
+  // output is handled separately under the verified local-mode guard.
+  if (process.env.KXRA_AI_ENABLED !== "true") throw Error("PROVIDER_DISABLED");
+}
 export async function resolveProviderAddress(
   hostname: string,
   lookup: (hostname: string) => Promise<{ address: string }[]> = (host) =>
@@ -143,10 +141,22 @@ export async function resolveProviderAddress(
     clearTimeout(timer);
   }
 }
-export const secureTransport: Transport = async (url, headers, body) => {
+export const secureTransport: Transport = async (
+  url,
+  headers,
+  body,
+  authorize,
+) => {
+  requireModelProviderEnabled();
+  if (!authorize) throw Error("AI_ADMISSION_REQUIRED");
+  await authorize(url);
+  requireModelProviderEnabled();
   // Pin the validated DNS answer to this socket. No redirects, proxies or localhost endpoints.
   const address = await resolveProviderAddress(url.hostname);
-  return new Promise((resolve, reject) => {
+  requireModelProviderEnabled();
+  await authorize(url);
+  requireModelProviderEnabled();
+  const raw = await new Promise((resolve, reject) => {
     const request = https.request(
       url,
       {
@@ -197,15 +207,23 @@ export const secureTransport: Transport = async (url, headers, body) => {
     request.on("error", () => reject(Error("PROVIDER_UNAVAILABLE")));
     request.end(JSON.stringify(body));
   });
+  requireModelProviderEnabled();
+  return raw;
 };
-export async function generate(
+async function generateWithCustomerKey(
   c: Connection,
   system: string,
   context: string,
   transport: Transport = secureTransport,
+  authorize?: (target: URL) => Promise<void>,
 ) {
-  const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`),
-    url = endpoint(c);
+  requireModelProviderEnabled();
+  if (transport === secureTransport && !authorize)
+    throw Error("AI_ADMISSION_REQUIRED");
+  const url = endpoint(c);
+  if (authorize) await authorize(url);
+  requireModelProviderEnabled();
+  const key = openKey(c.encrypted_key, `${c.org_id}:${c.id}`);
   const headers: Record<string, string> = {},
     textRequest = {
       model: c.model,
@@ -241,7 +259,9 @@ export async function generate(
         max_tokens: 1200,
       };
   }
-  const raw = await transport(url, headers, body);
+  requireModelProviderEnabled();
+  const raw = await transport(url, headers, body, authorize);
+  requireModelProviderEnabled();
   // Provider content is untrusted text, never executable HTML, permissions or tool calls.
   const count = z.number().int().min(0).max(10000000).optional().default(0);
   let output: string,
@@ -251,9 +271,34 @@ export async function generate(
     const v = z
       .object({
         stop_reason: z.string(),
-        content: z.array(
-          z.object({ type: z.string(), text: z.string().optional() }),
-        ),
+        // Content payloads are closed; envelope and usage metadata remain open.
+        // Reasoning is separate from a customer-visible final text draft.
+        content: z
+          .array(
+            z.discriminatedUnion("type", [
+              z
+                .object({
+                  type: z.literal("text"),
+                  text: z.string(),
+                  citations: z.array(z.unknown()).nullable().optional(),
+                })
+                .strict(),
+              z
+                .object({
+                  type: z.literal("thinking"),
+                  thinking: z.string(),
+                  signature: z.string(),
+                })
+                .strict(),
+              z
+                .object({
+                  type: z.literal("redacted_thinking"),
+                  data: z.string(),
+                })
+                .strict(),
+            ]),
+          )
+          .min(1),
         usage: z
           .object({ input_tokens: count, output_tokens: count })
           .optional(),
@@ -262,21 +307,46 @@ export async function generate(
     if (v.stop_reason !== "end_turn") throw Error("PROVIDER_INCOMPLETE");
     output = v.content
       .filter((x) => x.type === "text")
-      .map((x) => x.text || "")
+      .map((x) => x.text)
       .join("\n");
     input_tokens = v.usage?.input_tokens || 0;
     output_tokens = v.usage?.output_tokens || 0;
   } else if (c.provider === "GOOGLE") {
     const v = z
       .object({
-        candidates: z.array(
-          z.object({
-            finishReason: z.string(),
-            content: z.object({
-              parts: z.array(z.object({ text: z.string().optional() })),
+        candidates: z
+          .array(
+            z.object({
+              finishReason: z.string(),
+              content: z
+                .object({
+                  role: z.literal("model").optional(),
+                  parts: z
+                    .array(
+                      z
+                        .object({
+                          text: z.string(),
+                          thought: z.boolean().optional(),
+                          // A signature can also accompany final text; it is not a thought flag.
+                          thoughtSignature: z.string().optional(),
+                          partMetadata: z
+                            .record(z.string(), z.unknown())
+                            .optional(),
+                          speechMetadata: z
+                            .object({
+                              speaker: z.string().optional(),
+                              style: z.string().optional(),
+                            })
+                            .optional(),
+                        })
+                        .strict(),
+                    )
+                    .min(1),
+                })
+                .strict(),
             }),
-          }),
-        ),
+          )
+          .max(1),
         usageMetadata: z
           .object({ promptTokenCount: count, candidatesTokenCount: count })
           .optional(),
@@ -284,21 +354,76 @@ export async function generate(
       .parse(raw);
     if (v.candidates[0]?.finishReason !== "STOP")
       throw Error("PROVIDER_INCOMPLETE");
-    output = v.candidates[0].content.parts.map((x) => x.text || "").join("\n");
+    output = v.candidates[0].content.parts
+      .filter((x) => x.thought !== true)
+      .map((x) => x.text)
+      .join("\n");
     input_tokens = v.usageMetadata?.promptTokenCount || 0;
     output_tokens = v.usageMetadata?.candidatesTokenCount || 0;
   } else {
+    const reasoningMetadata = {
+      id: z.string().nullable().optional(),
+      format: z.string().nullable().optional(),
+      index: z.number().int().optional(),
+    };
     const v = z
       .object({
-        choices: z.array(
-          z.object({
-            finish_reason: z.string(),
-            message: z.object({
-              content: z.string().nullable(),
-              refusal: z.string().nullable().optional(),
+        choices: z
+          .array(
+            z.object({
+              finish_reason: z.string(),
+              message: z
+                .object({
+                  role: z.literal("assistant").optional(),
+                  model: z.string().optional(),
+                  name: z.string().optional(),
+                  content: z.string().nullable(),
+                  refusal: z.string().nullable().optional(),
+                  // Empty/absent action fields are compatible; an action or audio
+                  // payload cannot be silently discarded as a completed text draft.
+                  tool_calls: z.array(z.never()).nullable().optional(),
+                  function_call: z.null().optional(),
+                  audio: z.null().optional(),
+                  images: z.array(z.never()).nullable().optional(),
+                  annotations: z.array(z.unknown()).optional(),
+                  reasoning: z.string().nullable().optional(),
+                  reasoning_content: z.string().nullable().optional(),
+                  reasoning_details: z
+                    .array(
+                      z
+                        .discriminatedUnion("type", [
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.text"),
+                              text: z.string().nullable().optional(),
+                              signature: z.string().nullable().optional(),
+                            })
+                            .strict(),
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.summary"),
+                              summary: z.string(),
+                            })
+                            .strict(),
+                          z
+                            .object({
+                              ...reasoningMetadata,
+                              type: z.literal("reasoning.encrypted"),
+                              data: z.string(),
+                            })
+                            .strict(),
+                        ])
+                        .nullable(),
+                    )
+                    .nullable()
+                    .optional(),
+                })
+                .strict(),
             }),
-          }),
-        ),
+          )
+          .max(1),
         usage: z
           .object({ prompt_tokens: count, completion_tokens: count })
           .optional(),
@@ -310,7 +435,52 @@ export async function generate(
     input_tokens = v.usage?.prompt_tokens || 0;
     output_tokens = v.usage?.completion_tokens || 0;
   }
-  if (!output.trim() || output.length > 12000)
+  if (!output.trim() || output.length > 12000 || output.includes(key))
     throw Error("PROVIDER_INVALID_RESPONSE");
   return { output, input_tokens, output_tokens };
+}
+
+/** Never allow provider/decryption/schema exceptions containing a customer's
+ * key, headers or response body to escape this boundary. No platform-key
+ * fallback is used if the customer's encrypted connection cannot be opened. */
+export async function generate(
+  c: Connection,
+  system: string,
+  context: string,
+  transport: Transport = secureTransport,
+  authorize?: (target: URL) => Promise<void>,
+) {
+  try {
+    const result = await generateWithCustomerKey(
+      c,
+      system,
+      context,
+      transport,
+      authorize,
+    );
+    requireModelProviderEnabled();
+    return result;
+  } catch (error) {
+    const allowed = new Set([
+      "PROVIDER_DISABLED",
+      "AI_ADMISSION_REQUIRED",
+      "VAULT_NOT_CONFIGURED",
+      "ENDPOINT_NOT_CONFIGURED",
+      "ENDPOINT_REJECTED",
+      "PROVIDER_RATE_LIMIT",
+      "PROVIDER_REJECTED",
+      "PROVIDER_TIMEOUT",
+      "PROVIDER_UNAVAILABLE",
+      "PROVIDER_RESPONSE_TOO_LARGE",
+      "PROVIDER_INVALID_RESPONSE",
+      "PROVIDER_INCOMPLETE",
+    ]);
+    const code =
+      error instanceof Error && allowed.has(error.message)
+        ? error.message
+        : error instanceof z.ZodError
+          ? "PROVIDER_INVALID_RESPONSE"
+          : "PROVIDER_UNAVAILABLE";
+    throw Error(code);
+  }
 }

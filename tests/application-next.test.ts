@@ -24,12 +24,13 @@ function fixture() {
       "SYNTHETIC_NOT_EXECUTED",
     );
   };
-  next(root, "16.4.3");
+  next(root, "16.4.6");
   for (const app of ["os", "marketing", "email-worker"]) {
     write(path.join(root, "apps", app, "package.json"), {
-      dependencies: { next: app === "os" ? "16.4.3" : "15.5.28" },
+      dependencies: { next: app === "email-worker" ? "15.5.28" : "16.4.6" },
     });
-    if (app !== "os") next(path.join(root, "apps", app), "15.5.28");
+    if (app === "email-worker") next(path.join(root, "apps", app), "15.5.28");
+    if (app === "marketing") next(path.join(root, "apps", app), "16.4.6");
   }
   return { root, write, close: () => fs.rmSync(root, { recursive: true }) };
 }
@@ -40,9 +41,12 @@ test("each application resolves its approved binary rather than the root version
     const osNext = applicationNext("os", f.root),
       marketing = applicationNext("marketing", f.root),
       worker = applicationNext("email-worker", f.root);
-    assert.equal(osNext.version, "16.4.3");
+    assert.equal(osNext.version, "16.4.6");
     assert.deepEqual(osNext.webpackArguments, ["--webpack"]);
-    for (const entry of [marketing, worker]) {
+    assert.equal(marketing.version, "16.4.6");
+    assert.deepEqual(marketing.webpackArguments, ["--webpack"]);
+    assert.notEqual(marketing.binary, osNext.binary);
+    for (const entry of [worker]) {
       assert.equal(entry.version, "15.5.28");
       assert.deepEqual(entry.webpackArguments, []);
       assert.notEqual(entry.binary, osNext.binary);
@@ -57,6 +61,10 @@ test("missing scoped version cannot silently use an incompatible root Next", () 
   try {
     fs.rmSync(path.join(f.root, "apps/marketing/node_modules"), {
       recursive: true,
+    });
+    f.write(path.join(f.root, "node_modules/next/package.json"), {
+      name: "next",
+      version: "16.4.3",
     });
     assert.throws(
       () => applicationNext("marketing", f.root),
@@ -75,14 +83,14 @@ test("unreviewed application, declared range and installed patch fail closed", (
       /APPLICATION_UNREVIEWED/,
     );
     f.write(path.join(f.root, "apps/os/package.json"), {
-      dependencies: { next: "^16.4.3" },
+      dependencies: { next: "^16.4.6" },
     });
     assert.throws(
       () => applicationNext("os", f.root),
       /DECLARED_VERSION_UNREVIEWED/,
     );
     f.write(path.join(f.root, "apps/os/package.json"), {
-      dependencies: { next: "16.4.3" },
+      dependencies: { next: "16.4.6" },
     });
     f.write(path.join(f.root, "node_modules/next/package.json"), {
       name: "next",

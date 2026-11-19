@@ -1,0 +1,43 @@
+# Persistent local custom-app records — 3 November 2026
+
+Follow-up: the dedicated [custom-app graceful-restart/fresh-database restore proof](custom-app-recovery-local-2026-11-03.md) now passes for the installed extension. The original checkpoint's unverified restore statement below is historical; crash and independent-cluster/role recovery are still unverified.
+
+Continuation of `3e14d4113a28ff560442b56fd279d7c5274dfe34`, in `/Users/kara/Documents/Codex/2026-11-03/task-3/custom-apps`, branch `codex/custom-app-local-lifecycle`. This adds a functional synthetic local form/data slice. It does not establish hosted availability, arbitrary app building, external publishing, or Kylon parity.
+
+## Delivered behavior
+
+Use `npm run dev:custom-apps`, sign in with a synthetic fixture identity, and open the room's **Local custom apps** builder. Register and publish a form, then follow **Use app** to `/os/apps/{room}/{app}`. Authorized room writers can create, inspect and edit typed records. Room viewers can inspect records. The app's room creator retains schema/publication authority.
+
+Supported values are strings for text/multiline/select and booleans for checkboxes. Required values, selected options, exact field keys and bounded field lengths are checked by HTTP and independently by SQL. Unknown fields and identity/role payloads are rejected. No scripts, provider actions, financial arithmetic or arbitrary code run.
+
+Each record is permanently pinned to its original immutable schema version. Header rows and record revisions are append-only. Edits compare the current record revision and app revision; publication is serialized with admission. A changed app or competing edit fails closed. Historical records render with their original field labels/types and become read-only under a different publication. Rolling back a schema does not rewrite data; records pinned to the restored active schema can be edited again. There is no automatic schema/data migration or record deletion.
+
+Every save uses a unique operation ID plus stable record ID. Exact authorized repeats return the original immutable receipt, including after publication changes. Changed payloads, another actor's operation, stale edits and cross-app record IDs fail. A rolled-back transaction creates neither records nor receipts and can retry normally. The UI keeps an unknown save in page memory, offers an exact retry and an author-scoped receipt check, and preserves that unresolved operation even if a later retry is denied. A successful save with failed refresh is explicitly confirmed and is not resubmitted. Reload shows persisted database results and never automatically resubmits; unsaved drafts and unresolved operation controls are not persisted across reload.
+
+Builder preview remains an opaque sandbox without scripts/network/storage/submission. Filling it never writes a customer record. Persisted values render as escaped React text, not HTML. Persistent app records are accessed through authenticated scoped transactions and organization/project/room RLS, including immediate membership withdrawal. No browser credentials or record drafts are persisted by this UI.
+
+The installer adds `packages/custom-apps/local-records-schema.sql` after the original extension. The original lifecycle SQL is unchanged, including immutable schema artifacts, publication and rollback authority. Proposal tables are deliberately absent from `supabase/migrations`; the frozen release and its 117-file migration discovery remain unchanged. Existing synthetic local stores can install the additive proposal without changing prior artifacts.
+
+There are at most 500 records per app and 100 immutable revisions per record. Lists have stable app-bound UUID cursors and pages of 50 records. There is no individual-record permission model beyond the containing room, no full-text search, archive, export, numeric/date field types, app-specific automation or hosted entitlement activation.
+
+## Verification and independent review
+
+The focused native harness (`npm run test:custom-apps`) uses a fresh private database and loopback application, and verifies SQL/HTTP isolation plus real Chromium record creation/editing/rendering. It also verifies preview separation, exact concurrent replay, one optimistic-lock winner, immutable history, publication/rollback pins, foreign tenant/app/record/cursor denial, genuine read-only membership, revocation, malformed values, caps and stable pagination. Browser cases abort before dispatch, drop a committed response, retry after a denial and reconcile the original receipt without adding a record/revision. Required whitespace and malformed cursors have additional negative coverage.
+
+Independent review identified that a later retry's 4xx response cannot prove an earlier unknown request did not commit. That defect is fixed and covered by the browser test. Final reviewed authorization, immutable history, schema pins, publication serialization and operation replay had no remaining concrete high/medium findings. The final browser implementation uses native field constraints; the complete validator remains in HTTP and SQL. Static UI copy is supplied from the server, and customer/builder route graphs are separated to keep the existing bundle limit.
+
+`/tmp/kxra-native-serial.lock` is the shared native lease. The custom-app harness atomically refuses any occupied lease and only removes its exact owner token after normal owned-database shutdown. Canonical verification is also run under this lease. Other lanes' locks, fixture stores and processes are never removed/restarted. Abrupt SIGKILL may leave a lease/resources requiring explicit owner recovery; stale leases are never deleted automatically.
+
+Final verification:
+
+- Focused final suite: **16/16 passed**, including the final customer route, all new typed-record cases and the existing schema/publication/preview lifecycle. RLS verification: **117 release migrations, 219 protected tables** (five proposal tables). Receipt: `.runtime/custom-app-records-acceptance-final.log`.
+- Canonical service aggregate: **1,246/1,246 passed**, root lint/dependency policy, **117 migrations / 214 protected release tables**, restart persistence, and empty-target restore (214 tables, 7,902 rows, 49 objects, measured RTO 3 seconds). Receipt: `.runtime/custom-app-records-canonical-final.log`. This aggregate does not install proposal tables; its restart/restore proof covers the canonical dataset, not a custom-record disaster-recovery rehearsal.
+- Final root typecheck/format lint passed (`.runtime/custom-app-records-lint-final.log`). OS production build passed (`.runtime/custom-app-records-build-separated.log`); all 19 page graphs fit the unchanged 204,800-byte budget, largest 203,258 bytes (`.runtime/custom-app-records-budget-final.log`). Public snapshot, marketing boundary and source secret checks passed. Counts overlap across suites and must not be summed.
+- The first SQL installation exposed an unparenthesized CASE expression in PL/pgSQL; that was corrected. The first browser interceptor removed its route before a request finished; it now waits for the actual unknown-outcome state, intercepts only POSTs and uses bounded waits. Bundle failures were resolved by the separate customer route rather than raising the budget or removing record behavior. Shared-lease refusals did not start any database; retries occurred only after observing release, with atomic acquisition.
+- Final independent review found no concrete high/medium defects. All owned test services shut down normally and owner leases released. No final implementation check is failed or blocked.
+
+Not run: complete private/public product browser suites, a custom-record database restore/crash drill, hosted/provider acceptance, remote advisors, external publishing or live payments. No production/staging migration, account change, provider call, push, deployment or spending occurred.
+
+## Recovery note
+
+The preceding read-only search found only four retained `/tmp/kxra-paired-*` fixtures, with a small browser receipt recording widths 1440/390, passed true and providerCalls false. No source checkout was located in the visible Codex repositories. `ps` was denied by the sandbox and was not retried. No private session storage was read. The parent then positively recovered thread `01a155a9-89b6-7779-a8d2-4ac265257022`, branch `codex/byoa-paired-agent`, commit `35eb760d385a772354eb23f5f5ba8a24413817a8`, at `/Users/kara/Desktop/P1/The KXRA Group/.runtime/byoa-paired-agent`. That parent-reported checkpoint was not independently inspected here; recovery searching stopped. Its fixtures and source were left untouched.

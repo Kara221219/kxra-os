@@ -266,6 +266,85 @@ test("raw size/deadline gates run before signature parsing or persistence and ca
   assert.equal((await handler(declared)).status, 400);
 });
 
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const) {
+  test(`${mode}: empty-chunk flood cancels before scope lookup or persistence`, async () => {
+    let reads = 0,
+      cancelled = false,
+      calls = 0;
+    const create =
+      mode === "LIVE"
+        ? createLiveWebhookHandler
+        : createStagingSandboxWebhookHandler;
+    const handler = create({
+      configuration: () => ({ ...endpoint, execution: undefined }),
+      loadExecutionScope: async () => {
+        calls++;
+        throw Error("must not read database");
+      },
+      record: async () => {
+        calls++;
+      },
+    });
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        reads++;
+        controller.enqueue(new Uint8Array());
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const response = await handler(
+      new Request(
+        `${endpoint.origin}/api/webhooks/${mode === "LIVE" ? "workspace-live" : "workspace-sandbox"}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: stream,
+          duplex: "half",
+        } as RequestInit,
+      ),
+    );
+    assert.equal(response.status, 400);
+    assert.equal(cancelled, true);
+    assert.ok(reads <= 66);
+    assert.equal(calls, 0);
+  });
+}
+
+test("bounded empty chunks preserve the signed raw bytes", async () => {
+  const good = signed(fixture());
+  let recorded = 0;
+  const handler = createLiveWebhookHandler({
+    configuration: () => endpoint,
+    now: () => now,
+    record: async () => {
+      recorded++;
+    },
+  });
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (let i = 0; i < 64; i++) controller.enqueue(new Uint8Array());
+      controller.enqueue(new Uint8Array(good.raw.subarray(0, 20)));
+      controller.enqueue(new Uint8Array(good.raw.subarray(20)));
+      controller.close();
+    },
+  });
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": good.signature,
+      },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(recorded, 1);
+});
+
 test("modern sandbox verifies original false mode through the same webhook engine; production rejects it", async () => {
   const f = modernBillingFixture("STAGING_SANDBOX");
   const ep = {
@@ -344,3 +423,170 @@ test("invalid HMAC cannot trigger private scope lookup", async () => {
   assert.equal(response.status, 400);
   assert.equal(loaded, 0);
 });
+
+test("one-byte chunk flood cancels at the chunk budget before signature/scope/persistence", async () => {
+  let cancelled = false,
+    reads = 0,
+    loaded = 0,
+    recorded = 0;
+  const { execution, ...shell } = endpoint;
+  const handler = createLiveWebhookHandler({
+    configuration: () => shell,
+    loadExecutionScope: async () => {
+      loaded++;
+      return execution;
+    },
+    record: async () => {
+      recorded++;
+    },
+    now: () => now,
+  });
+  const stream = new ReadableStream<Uint8Array>({
+    pull(c) {
+      reads++;
+      c.enqueue(new Uint8Array([32]));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(cancelled, true);
+  assert.ok(reads <= 4099);
+  assert.equal(loaded + recorded, 0);
+});
+
+test("signed webhook survives small views into a large reused backing buffer", async () => {
+  const good = signed(fixture()),
+    backing = new Uint8Array(16_000_000);
+  const split = Math.floor(good.raw.length / 2);
+  let step = 0,
+    recorded = 0;
+  const handler = createLiveWebhookHandler({
+    configuration: () => endpoint,
+    record: async (e) => {
+      recorded++;
+      assert.equal(
+        e.payload_sha256,
+        crypto.createHash("sha256").update(good.raw).digest("hex"),
+      );
+    },
+    now: () => now,
+  });
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      pull(c) {
+        if (step === 2) {
+          c.close();
+          return;
+        }
+        const part =
+          step++ === 0 ? good.raw.subarray(0, split) : good.raw.subarray(split);
+        backing.fill(90);
+        backing.set(part, 8_000_000);
+        c.enqueue(backing.subarray(8_000_000, 8_000_000 + part.length));
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const response = await handler(
+    new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": good.signature,
+      },
+      body: stream,
+      duplex: "half",
+    } as RequestInit),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(recorded, 1);
+});
+
+test(
+  "chunk-budget rejection returns before an uncooperative cancellation settles",
+  { timeout: 1000 },
+  async () => {
+    let cancelled = false,
+      recorded = 0;
+    const handler = createLiveWebhookHandler({
+      configuration: () => endpoint,
+      record: async () => {
+        recorded++;
+      },
+    });
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        c.enqueue(new Uint8Array([32]));
+      },
+      cancel() {
+        cancelled = true;
+        return new Promise<void>(() => {});
+      },
+    });
+    const response = await handler(
+      new Request(`${endpoint.origin}/api/webhooks/workspace-live`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: stream,
+        duplex: "half",
+      } as RequestInit),
+    );
+    assert.equal(response.status, 400);
+    assert.equal(cancelled, true);
+    assert.equal(recorded, 0);
+  },
+);
+
+for (const mode of ["LIVE", "STAGING_SANDBOX"] as const)
+  test(`${mode}: unmatched refund retains its verified event ID and never guesses tenant/customer from metadata`, () => {
+    const scoped = modernBillingFixture(mode),
+      scope = scoped.execution.execution_scope;
+    const endpoint = {
+      ...scoped,
+      project: scope.project_ref,
+      account_id: scope.account_id,
+      origin: "https://kxra.example",
+      secret,
+    };
+    const event = {
+      ...fixture("refund.created"),
+      livemode: scope.livemode,
+      account: scope.account_id,
+      data: {
+        object: {
+          id: "re_syntheticHeld",
+          object: "refund",
+          charge: "ch_syntheticHeld",
+          metadata: {
+            org_id: "FORGED_TENANT",
+            customer: "cus_forged123",
+            subscription: "sub_forged123",
+            role: "KXRA_OWNER",
+          },
+        },
+      },
+    };
+    const s = signed(event);
+    const value = (
+      mode === "LIVE" ? normalizeLiveWebhook : normalizeStagingSandboxWebhook
+    )(s.raw, s.signature, endpoint, now)!;
+    assert.equal(value.event_id, event.id);
+    assert.equal(value.event_type, "refund.created");
+    assert.equal(value.customer_id, null);
+    assert.equal(value.subscription_id, null);
+    assert.equal(value.invoice_id, null);
+    assert.doesNotMatch(
+      JSON.stringify(value),
+      /FORGED_TENANT|cus_forged|sub_forged|KXRA_OWNER/,
+    );
+  });

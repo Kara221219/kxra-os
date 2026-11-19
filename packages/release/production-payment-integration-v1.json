@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "classification": "LOCAL_PAYMENT_REPAIR_COMPOSITION_NOT_RELEASE_AUTHORIZATION",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "termsPricesFinancialCommitmentsChanged": false,
+  "sqlOrScheduleChanges": false,
+  "baseComposition": "041d2009ea5258c9e5806c98360168f2b8f4e800",
+  "reviewedPaymentHead": "8eb3f9d4c5a88fc885bc8a9b4a9077bc511d83d8",
+  "wholeBranchMerge": "24678ce4f6303c65ab18024811bafc0c1e831e92",
+  "paymentSourceFiles": [
+    {
+      "path": "packages/integrations/live-catalogue-stripe.ts",
+      "sha256": "113f0a152b0f3320ee5d25a1187c22c76bb43ee8d277b0101f9bc612212f9e99"
+    },
+    {
+      "path": "tests/live-catalogue-stripe.test.ts",
+      "sha256": "063d7a6ad3715212b7ca3e229526b82c30276455b8705f43fe2f1e871ca0c123"
+    },
+    {
+      "path": "tests/live-paid-access.test.ts",
+      "sha256": "be72c2634ff7b4c30a8a85fcb70a16b055f66594e7642f9c0cc5d4de39dec038"
+    },
+    {
+      "path": "tests/synchronous-portal.test.ts",
+      "sha256": "9ccca8578dbf8426115c3bea17a0722c065fa0c6cde75506f170a5fd5b218b33"
+    }
+  ],
+  "unchangedPolicyFiles": [
+    {
+      "path": ".env.example",
+      "sha256": "d7ea2acb79a88e313f22d27302a42c8567d6489b22d803e49ab49252ab8d7b27"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "ce48430caddc9238be58bc3b72a9d8a3a168e7cd21ff3907b59f06f5505e6314"
+    },
+    {
+      "path": "packages/workspace/approved-catalogue-v1.json",
+      "sha256": "193932dc692f630eb7ca09f7e9a6761e783d1be7358573535dfe7c8411205d29"
+    },
+    {
+      "path": "packages/workspace/approved-catalogue.ts",
+      "sha256": "eeaa3b50be1178db905ecb08e15ed4d573195f8dd484ed37c9ded04ab2d180b4"
+    },
+    {
+      "path": "packages/integrations/live-paid-access.ts",
+      "sha256": "469e9796cf90bf47be4a9b5bad10b260b4835e3b5f1099a323aa2b458ddfc042"
+    },
+    {
+      "path": "packages/integrations/modern-billing-scope.ts",
+      "sha256": "edb60b15b15dcf34aac52a82537bbdd48670485953c523a45c9b99e09c9ecb65"
+    },
+    {
+      "path": "packages/authz/portal-delivery.ts",
+      "sha256": "d593fcb441194d9d0bbfad120efa3c25ad8d32892e60ef754265361db006191e"
+    },
+    {
+      "path": "packages/integrations/billing-refresh-capacity.ts",
+      "sha256": "39cb854b53246be17965a4387bfebf974160f1dff5df2217d98a05de6f0d22ca"
+    },
+    {
+      "path": "packages/integrations/billing-read-allowance.ts",
+      "sha256": "3d2e6763351e08d899ae60708959ae3ccaf64813db2292ead5b76de09408fb39"
+    },
+    {
+      "path": "supabase/migrations/0104_authoritative_live_paid_access.sql",
+      "sha256": "aa05f9abba5d8229d0fc951bd441a6688fb4cb551e504451f749dac8517fda8f"
+    },
+    {
+      "path": "supabase/migrations/0110_bounded_paid_proof_refresh.sql",
+      "sha256": "e1a3748c1c2256fe5cc922e07687aa041dfad341838583e450afd850e1a6bf1c"
+    },
+    {
+      "path": "packages/release/hosted-schema-policy-v1.json",
+      "sha256": "ecdf9b887c2a8c80448e0f206cad2a1cf1d061c13d57a03485901642909d5557"
+    },
+    {
+      "path": "packages/release/production-ai-review-v1.json",
+      "sha256": "fe44b6fc00515ca90d24df7574034aff693a9b8682f25ab95314f38c55ef6eff"
+    },
+    {
+      "path": "packages/release/production-operations-review-v1.json",
+      "sha256": "0b6c47f63d68f55292fc53afb3576594445b57d6f7e153f458dbcce421a3b175"
+    },
+    {
+      "path": "packages/release/production-github-integration-v1.json",
+      "sha256": "380e941ae76c8fbc1ad9f86a09dede2f6859198dbaf0a8afed3a26654b60e5aa"
+    }
+  ],
+  "migrationPromotions": [],
+  "scope": "Modern LIVE and STAGING_SANDBOX existing portal configuration requires payment_method_update.enabled true; no paid entitlement authority",
+  "hostedGates": [
+    "Existing exact portal configuration must support payment-method repair; cancel-only or malformed configurations intentionally refuse session creation",
+    "Verify current END_OF_PAID_PERIOD cancellation configuration/behavior and plan updates disabled; cancellation timing is not independently verified by this patch",
+    "No automatic provider setting mutation or alternative configuration fallback; separately authorize any Stripe configuration/repair acceptance",
+    "Capacity/coordinator/admission remediation remains a proposal; actual provider allowance and timing/topology require acceptance; no grace/TTL/schedule relaxation",
+    "Preserve all GitHub ledger durability/continuity/workload/restore-quiescence/provider and full-feature migration/hosted activation gates"
+  ]
+}

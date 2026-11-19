@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
+import { localModeConfiguration } from "../packages/authz/local-guard";
 import { execFileSync } from "node:child_process";
 import { runtimeFile, testOrigin as base } from "./support/runtime";
 import {
@@ -30,9 +31,16 @@ async function as(
   values: unknown[] = [],
   tenant = org,
 ) {
+  assert.ok(
+    localModeConfiguration(process.env) && !process.env.VERCEL_ENV,
+    "Direct SQL fixtures require the guarded local runtime",
+  );
   const db = await pool.connect();
   try {
     await db.query("begin");
+    await db.query(
+      "select set_config('request.kxra.execution_mode','fixture',true),set_config('request.kxra.hosted_room_jobs','off',true),set_config('request.kxra.team_grant','',true)",
+    );
     await db.query("set local role authenticated");
     await db.query(
       "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true),set_config('request.kxra.org_id',$3,true)",
@@ -574,8 +582,7 @@ test("queued context, membership and tenant withdrawal fail closed without expos
   assert.equal((await drain(f)).processed, false);
   assert.equal((await state(f, disconnected.id)).state, "CANCELLED");
   await ok(`/connections/${connection}`, f.cookie, { enabled: true });
-  const current = await enqueue(f),
-    db = await admin.connect();
+  const current = await enqueue(f);
   assert.equal(
     (
       await as(
@@ -587,8 +594,14 @@ test("queued context, membership and tenant withdrawal fail closed without expos
     ).rows[0].active,
     true,
   );
+  const db = await admin.connect();
   try {
     await db.query("begin");
+    // Preserve the same trusted fixture scope inside the withdrawal transaction;
+    // absence of this mode must not make the authority-withdrawal assertion pass.
+    await db.query(
+      "select set_config('request.kxra.execution_mode','fixture',true),set_config('request.kxra.hosted_room_jobs','off',true),set_config('request.kxra.team_grant','',true)",
+    );
     await db.query(
       "update kxra.account_identities set session_version=session_version+1 where account_id=$1",
       [partner],

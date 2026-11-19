@@ -1,3 +1,4 @@
+import { seedReviewedBusinessFixture } from "./support/reviewed-business-fixture";
 import { readPrivateFixtureJson } from "./support/private-fixture-json";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -137,24 +138,7 @@ test("0111: reviewed CHECKOUT presentation is read-only, scoped and worker-only 
       "insert into kxra_private.live_billing_bindings(org_id,customer_id,offer_key,mapping_revision) values($1,$2,$3,$4)",
       [org, customer, row.offer_key, revision],
     );
-    await db.query(
-      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT',$4,$5,$6,$7,0,now())",
-      [request, org, actor, customer, row.offer_key, revision, termsHash],
-    );
-    await db.query(
-      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
-      [org, request],
-    );
-    await reject(getter, [request]);
-    assert.equal(
-      (
-        await db.query(
-          "select state from kxra_private.live_billing_intents where id=$1",
-          [request],
-        )
-      ).rows[0].state,
-      "REQUESTED",
-    );
+
     const origin =
       mode === "LIVE"
         ? "https://app.kxra-group.com"
@@ -188,6 +172,36 @@ test("0111: reviewed CHECKOUT presentation is read-only, scoped and worker-only 
         expected.presentation_sha256,
       ],
     );
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: org,
+      actor_id: actor,
+    });
+    await db.query(
+      "insert into kxra_private.live_billing_intents(id,org_id,actor_id,kind,customer_id,offer_key,mapping_revision,terms_review_sha256,observed_version,auth_time) values($1,$2,$3,'CHECKOUT',$4,$5,$6,$7,0,now())",
+      [request, org, actor, customer, row.offer_key, revision, termsHash],
+    );
+    await db.query(
+      "update kxra_private.live_billing_bindings set checkout_intent_id=$2 where org_id=$1",
+      [org, request],
+    );
+    await db.query("savepoint unavailable_policy");
+    await db.query(
+      "update kxra_private.live_paid_policies set enabled=false where id=$1",
+      [policy],
+    );
+    await reject(getter, [request]);
+    assert.equal(
+      (
+        await db.query(
+          "select state from kxra_private.live_billing_intents where id=$1",
+          [request],
+        )
+      ).rows[0].state,
+      "REQUESTED",
+    );
+    await db.query("rollback to savepoint unavailable_policy");
+    await db.query("release savepoint unavailable_policy");
+
     const before = (
       await db.query(
         "select to_jsonb(r) row from kxra_private.live_billing_intents r where id=$1",

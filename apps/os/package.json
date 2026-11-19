@@ -3,6 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "imports": {
+    "#kxra/github-connectors-page": {
+      "development": "./components/GithubConnectionsPage.local.tsx",
+      "default": "./components/CustomerConnections.production.tsx"
+    },
+    "#kxra/github-connectors-runtime": {
+      "development": "./lib/github-connectors.local.ts",
+      "default": "./lib/github-connectors.production.ts"
+    },
+    "#kxra/customer-connectors-page": {
+      "development": "./components/CustomerConnectionsPage.local.tsx",
+      "default": "./components/CustomerConnections.production.tsx"
+    },
+    "#kxra/customer-connectors-runtime": {
+      "development": "./lib/customer-connectors.local.ts",
+      "default": "./lib/customer-connectors.production.ts"
+    },
     "#kxra/local-runtime": {
       "development": "./lib/local-runtime.ts",
       "default": "./lib/local-runtime.production.ts"
@@ -10,6 +26,22 @@
     "#kxra/local-fixture-ui": {
       "development": "./components/LocalFixtureLogin.tsx",
       "default": "./components/LocalFixtureLogin.production.tsx"
+    },
+    "#kxra/paired-integration": {
+      "development": "./lib/paired-integration.local.ts",
+      "default": "./lib/paired-integration.production.ts"
+    },
+    "#kxra/paired-delegations-ui": {
+      "development": "./components/PairedDelegations.tsx",
+      "default": "./components/PairedDelegations.production.tsx"
+    },
+    "#kxra/paired-setup-runtime": {
+      "development": "./lib/paired-setup.local.ts",
+      "default": "./lib/paired-setup.production.ts"
+    },
+    "#kxra/paired-setup-page": {
+      "development": "./components/PairedSetupPage.local.tsx",
+      "default": "./components/PairedSetupPage.production.tsx"
     }
   },
   "scripts": {
@@ -25,7 +57,7 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

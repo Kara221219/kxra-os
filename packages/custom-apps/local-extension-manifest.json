@@ -1,0 +1,60 @@
+{
+  "schema": "KXRA_CUSTOM_APP_LOCAL_EXTENSION_V1",
+  "canonical_migrations": 117,
+  "canonical_kxra_tables": 214,
+  "canonical_kxra_functions": 207,
+  "sources": [
+    {
+      "file": "packages/custom-apps/local-schema.sql",
+      "sha256": "e1f2a6250c4c8c82fbf6be6fd27daa41a9c923d534ff00e2dccf6d3ff8d621b6"
+    },
+    {
+      "file": "packages/custom-apps/local-records-schema.sql",
+      "sha256": "a3ef09fc9b9ae0ef7b29218b368d501b8ab254850bce91bfd6bcc36198ee4145"
+    }
+  ],
+  "tables": [
+    "kxra.custom_apps",
+    "kxra.custom_app_versions",
+    "kxra.custom_app_releases",
+    "kxra.custom_app_records",
+    "kxra.custom_app_record_versions"
+  ],
+  "functions": [
+    {
+      "identity": "kxra_private.custom_app_schema_valid(jsonb)",
+      "security_definer": false,
+      "authenticated_execute": false
+    },
+    {
+      "identity": "kxra_private.custom_apps_local()",
+      "security_definer": false,
+      "authenticated_execute": true
+    },
+    {
+      "identity": "kxra_private.custom_app_immutable()",
+      "security_definer": false,
+      "authenticated_execute": false
+    },
+    {
+      "identity": "kxra.custom_app_register(uuid,uuid,integer,jsonb)",
+      "security_definer": true,
+      "authenticated_execute": true
+    },
+    {
+      "identity": "kxra.custom_app_release(uuid,uuid,integer,integer,text)",
+      "security_definer": true,
+      "authenticated_execute": true
+    },
+    {
+      "identity": "kxra_private.custom_app_values_valid(jsonb,jsonb)",
+      "security_definer": false,
+      "authenticated_execute": false
+    },
+    {
+      "identity": "kxra.custom_app_record_save(uuid,uuid,uuid,uuid,integer,integer,integer,jsonb)",
+      "security_definer": true,
+      "authenticated_execute": true
+    }
+  ]
+}

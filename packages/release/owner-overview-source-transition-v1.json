@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "classification": "LOCAL_OWNER_UI_SOURCE_TRANSITION_NOT_RELEASE_AUTHORIZATION",
+  "baseCommit": "7f1d1112f81a35d304a7e8810d4f68a5e4b2572c",
+  "authorization": false,
+  "fullReleaseEligible": false,
+  "defaultEnabled": false,
+  "customerPolicyChanged": false,
+  "numberedMigrationsChanged": false,
+  "transitions": [
+    {
+      "path": "apps/os/app/os/[[...segments]]/page.tsx",
+      "priorSha256": "8d08643000c3b03bc3061e198fbaef275c0968001a853c027bcbfe8d77566604",
+      "sha256": "7b112f91e130f680aa13609e1a72377d9f0e5295bad60de5979d92f19b439a6a"
+    },
+    {
+      "path": "scripts/session-attestation-payload.mjs",
+      "priorSha256": "4473ed9f541553dd3e211b43c10f3b98e6a3f0d7f064b67d262f80e85d142c70",
+      "sha256": "f43133621f0c8c047d9fbd975414033cb0a2bd52e2a60289678477fa377e504c"
+    },
+    {
+      "path": "tests/production-session-composition.test.ts",
+      "priorSha256": "253b17f0f1daa7463ad40f8568e069909f3e7c5fa414860a8a5d17f5fdf2fd7f",
+      "sha256": "5fb5a1bf38418e3f155cbed09a23893e96ccbda4e2a1e059a1f083102a68b08c"
+    },
+    {
+      "path": "apps/os/components/TeamWorkspace.tsx",
+      "priorSha256": "32360768f2ab8caba9e9f3859d8a9a7c1ce8e04cf15d10de56b65b036e75764e",
+      "sha256": "8d6be8aa5578e47d24909f9f36ca7a00d03fb1b8ce742309dfdd6b3cc09256ee"
+    }
+  ]
+}

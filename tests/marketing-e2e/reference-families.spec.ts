@@ -4,15 +4,13 @@ test("original illustrated hero is responsive, static and locally served", async
 }) => {
   await page.goto("/");
   const image = page.getByRole("img", {
-    name: /Original illustration of people collaborating/,
+    name: /team meeting at a stone table/,
   });
   await expect(image).toBeVisible();
   await expect
     .poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth))
     .toBeGreaterThan(0);
-  expect(await image.getAttribute("src")).toContain(
-    "kxra-collaborative-cutaway-v1.png",
-  );
+  expect(await image.getAttribute("src")).toContain("kxra-team-table.webp");
   await expect(page.locator("canvas")).toHaveCount(0);
   for (const width of [360, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 950 });

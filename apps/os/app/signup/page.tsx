@@ -1,3 +1,4 @@
+import "../public-cream.css";
 import { localMode, query } from "../../../../packages/db";
 import { principal } from "../../lib/auth";
 import { SelfServiceSignup } from "../../components/SelfServiceSignup";

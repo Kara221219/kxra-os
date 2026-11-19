@@ -1,14 +1,15 @@
+import {
+  hostedMigrationManifest,
+  assertNoHostedFixtureObjects,
+  expectedHostedDatabase as expectedStagingDatabase,
+} from "./hosted-release-guard.mjs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { stagingDatabaseConfig } from "./staging-database.mjs";
 import { ids, importSeeds, org, projectId } from "./seed.mjs";
-import {
-  expectedStagingDatabase,
-  migrationManifest,
-  reconcileMigrationState,
-} from "./staging-migrations-core.mjs";
+import { reconcileMigrationState } from "./staging-migrations-core.mjs";
 import {
   canonicalSeedManifest,
   reconcileSeedState,
@@ -16,6 +17,7 @@ import {
 } from "./staging-seeds-core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const hostedMigrations = hostedMigrationManifest(root);
 const command = process.argv[2] || "plan";
 const validation = validateStagingSeeder(process.env, command);
 if (!validation.ok)
@@ -59,7 +61,7 @@ async function requireMigrations(database) {
       "select name,sha256 from public.kxra_schema_migrations order by name",
     )
   ).rows;
-  const migrations = migrationManifest(root);
+  const migrations = hostedMigrations;
   if (migrations.length !== expectedStagingDatabase.migrations)
     throw Error("STAGING_EXPECTED_MIGRATION_COUNT_CHANGED");
   const state = reconcileMigrationState(migrations, rows, true);
@@ -93,6 +95,7 @@ async function seedState(database) {
 }
 
 async function verify(database) {
+  await assertNoHostedFixtureObjects(database);
   await requireMigrations(database);
   const tracked = await seedState(database);
   const state = reconcileSeedState(manifest, tracked.rows, tracked.unmanaged);
@@ -171,6 +174,7 @@ const database = new pg.Client(
 );
 await database.connect();
 try {
+  await assertNoHostedFixtureObjects(database);
   await database.query("set statement_timeout='30s'");
   const target = (
     await database.query(
@@ -198,6 +202,7 @@ try {
       "select pg_advisory_lock(hashtext('kxra-staging-canonical-seeds'))",
     );
     try {
+      await assertNoHostedFixtureObjects(database);
       await database.query(`create table if not exists public.kxra_seed_imports(
         profile text primary key,sha256 text not null check(sha256~'^[a-f0-9]{64}$'),
         source_commit text not null check(source_commit~'^[a-f0-9]{40}$'),

@@ -2,62 +2,55 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
 export const navigation = {
-  Product: [
-    ["Explore", "Overview", "/product"],
-    ["Explore", "Workspace", "/product/workspace"],
-    ["Explore", "Agents", "/product/agents"],
-    ["Explore", "Bring your own agents", "/bring-your-own-agent"],
-    ["Build", "Apps", "/apps"],
-    ["Build", "Workflows", "/product/workflows"],
-    ["Build", "Skills", "/product/skills"],
-    ["Build", "Tools", "/product/tools"],
-  ],
   Solutions: [
-    ["For technical teams", "Internal apps", "/solutions/internal-apps"],
-    ["For technical teams", "Access & governance", "/product/access"],
-    ["For business owners", "Team context", "/solutions/team-context"],
-    ["For business owners", "Email operations", "/solutions/email-operations"],
-    ["Explore", "All solutions", "/solutions"],
-    ["For business owners", "All use cases", "/use-cases"],
+    ["Start here", "All solutions", "/solutions"],
+    ["Start here", "Use cases", "/use-cases"],
+    ["A specific workflow", "Team context", "/solutions/team-context"],
+    ["A specific workflow", "Internal tools", "/solutions/internal-apps"],
+    ["A specific workflow", "Email operations", "/solutions/email-operations"],
   ],
-  Partners: [
-    ["Join", "Partner program", "/partner"],
-    ["Join", "Apply", "/partner/apply"],
-    ["Learn", "Learning path", "/partner/learn"],
-    ["Learn", "Toolkit", "/partner/toolkit"],
-    ["Learn", "Materials", "/partner/materials"],
-    ["Deliver", "Client workshop", "/partner/workshop"],
-    ["Deliver", "Embedded delivery", "/partner/fde"],
-  ],
-  Integrations: [
-    ["Your connected tools", "Gmail", "/integrations/gmail"],
-    ["Your connected tools", "Slack", "/integrations/slack"],
-    ["Your connected tools", "Notion", "/integrations/notion"],
-    ["Explore", "All integrations", "/integrations"],
-    ["Your connected tools", "Models", "/product/models"],
-    ["Tools & capabilities", "Tools", "/product/tools"],
-    ["Tools & capabilities", "Skills", "/product/skills"],
-  ],
-  Resources: [
-    ["Explore", "About KXRA", "/about"],
-    ["Explore", "Resources", "/resources"],
-    ["Explore", "KXRA notes", "/blog"],
-    ["Explore", "Compare approaches", "/alternatives"],
-    ["Learn & support", "Help center", "/help"],
-    ["Learn & support", "Developer guidance", "/resources/developers"],
-    ["Learn & support", "FAQ", "/#faq"],
-    ["Learn & support", "Customer documents", "/legal"],
+  "How we work": [
+    ["The practice", "How we work", "/how-we-work"],
+    ["The practice", "Workspace", "/product/workspace"],
+    ["Commercial", "Pricing", "/pricing"],
+    ["Commercial", "Decision Review", "/business-sprints#decision-review"],
   ],
 } as const;
+
+const directLinks = [
+  ["Insights", "/insights"],
+  ["About us", "/about-us"],
+  ["Careers", "/careers"],
+] as const;
+
+function Mark() {
+  return (
+    <svg className="ref-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <path
+        fill="#c4a265"
+        d="M5 3h7.2v9.2L22.4 3H30L18.2 16 30 29h-7.8l-9.8-10.2V29H5V3z"
+      />
+    </svg>
+  );
+}
+
 export function ReferenceNavigation() {
   const [open, setOpen] = useState<string | null>(null),
     [mobile, setMobile] = useState(false);
   const root = useRef<HTMLElement>(null),
     buttons = useRef<Record<string, HTMLButtonElement | null>>({});
-  const dialog = useRef<HTMLDialogElement>(null);
   const path = usePathname();
+  const publishedPath = useRef<string | null>(null);
+  // Close after a real route change. Closing inside the link click unmounts
+  // that link before Next.js can follow it. The first published path is not
+  // a navigation: resetting there closes a menu opened while the router
+  // finishes hydrating.
   useEffect(() => {
+    const previous = publishedPath.current;
+    publishedPath.current = path;
+    if (previous === null || previous === path) return;
     setOpen(null);
     setMobile(false);
   }, [path]);
@@ -79,136 +72,88 @@ export function ReferenceNavigation() {
     };
   }, [open]);
   return (
-    <>
-      <header ref={root} className="ref-header" data-home={path === "/"}>
-        <Link href="/" className="ref-brand">
-          KXRA<span>GROUP</span>
-        </Link>
-        <button
-          className="ref-mobile-toggle"
-          aria-expanded={mobile}
-          aria-controls="reference-menu"
-          onClick={() => setMobile(!mobile)}
-        >
-          {mobile ? "Close" : "Menu"}
-        </button>
-        <nav
-          id="reference-menu"
-          className={mobile ? "ref-nav ref-nav-open" : "ref-nav"}
-          aria-label="Primary navigation"
-        >
-          {Object.entries(navigation).map(([name, links]) => (
-            <div className="ref-menu" key={name}>
-              <button
-                ref={(el) => {
-                  buttons.current[name] = el;
-                }}
-                aria-expanded={open === name}
-                aria-controls={"menu-" + name}
-                onClick={() => setOpen(open === name ? null : name)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setOpen(name);
-                    requestAnimationFrame(() =>
-                      root.current
-                        ?.querySelector<HTMLElement>("#menu-" + name + " a")
-                        ?.focus(),
-                    );
-                  }
-                }}
-              >
-                {name}
-                <span aria-hidden="true">⌄</span>
-              </button>
-              {open === name && (
-                <div id={"menu-" + name} className="ref-mega">
-                  {Array.from(new Set(links.map((l) => l[0]))).map((group) => (
-                    <section key={group}>
-                      <h2>{group}</h2>
-                      {links
-                        .filter((l) => l[0] === group)
-                        .map((l) => (
-                          <Link
-                            key={l[2]}
-                            href={l[2]}
-                            onClick={() => {
-                              setOpen(null);
-                              setMobile(false);
-                            }}
-                          >
-                            {l[1]}
-                            <span aria-hidden="true">↗</span>
-                          </Link>
-                        ))}
-                    </section>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-          <Link href="/pricing">Pricing</Link>
-          <div className="ref-mobile-actions">
+    <header ref={root} className="ref-header" data-home={path === "/"}>
+      <Link href="/" className="ref-brand" aria-label="KXRA Group">
+        <Mark />
+        <span className="ref-brand-lockup">
+          KXRA
+          <small>GROUP</small>
+        </span>
+      </Link>
+      <button
+        className="ref-mobile-toggle"
+        aria-expanded={mobile}
+        aria-controls="reference-menu"
+        onClick={() => setMobile(!mobile)}
+      >
+        {mobile ? "Close" : "Menu"}
+      </button>
+      <nav
+        id="reference-menu"
+        className={mobile ? "ref-nav ref-nav-open" : "ref-nav"}
+        aria-label="Primary navigation"
+      >
+        {Object.entries(navigation).map(([name, links]) => (
+          <div className="ref-menu" key={name}>
             <button
-              className="ref-button ref-button-outline"
-              onClick={() => {
-                setMobile(false);
-                dialog.current?.showModal();
+              ref={(el) => {
+                buttons.current[name] = el;
+              }}
+              aria-expanded={open === name}
+              aria-controls={"menu-" + name}
+              onClick={() => setOpen(open === name ? null : name)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setOpen(name);
+                  requestAnimationFrame(() =>
+                    root.current
+                      ?.querySelector<HTMLElement>("#menu-" + name + " a")
+                      ?.focus(),
+                  );
+                }
               }}
             >
-              Book a demo
+              {name}
+              <span aria-hidden="true">⌄</span>
             </button>
-            <Link
-              className="ref-button"
-              href="/#request-access"
-              onClick={() => setMobile(false)}
-            >
-              Request access ↗
-            </Link>
+            {open === name && (
+              <div id={"menu-" + name} className="ref-mega">
+                {Array.from(new Set(links.map((l) => l[0]))).map((group) => (
+                  <section key={group}>
+                    <h2>{group}</h2>
+                    {links
+                      .filter((l) => l[0] === group)
+                      .map((l) => (
+                        <Link key={l[2]} href={l[2]}>
+                          {l[1]}
+                          <span aria-hidden="true">↗</span>
+                        </Link>
+                      ))}
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
-        </nav>
-        <div className="ref-header-actions">
-          <Link href="/login">Sign in</Link>
-          <button
-            className="ref-button ref-button-outline"
-            onClick={() => dialog.current?.showModal()}
-          >
-            Book a demo
-          </button>
-          <Link className="ref-button" href="/#request-access">
-            Request access ↗
+        ))}
+        {directLinks.map(([label, href]) => (
+          <Link key={href} href={href}>
+            {label}
+          </Link>
+        ))}
+        <div className="ref-mobile-actions">
+          <Link className="ref-button ref-button-gold" href="/lets-connect">
+            Let’s connect →
           </Link>
         </div>
-      </header>
-      <dialog
-        ref={dialog}
-        className="ref-dialog"
-        onClick={(e) => {
-          if (e.target === dialog.current) dialog.current.close();
-        }}
-      >
-        <button
-          className="ref-dialog-close"
-          aria-label="Close demonstration request"
-          onClick={() => dialog.current?.close()}
-        >
-          ×
-        </button>
-        <p className="ref-kicker">LET’S WALK THROUGH IT</p>
-        <h2>See what your team could do.</h2>
-        <p>
-          Tell us about the workflow you want to improve. We’ll agree a
-          demonstration with you. No time slot is booked automatically.
-        </p>
-        <Link
-          className="ref-button"
-          href="/contact"
-          onClick={() => dialog.current?.close()}
-        >
-          Request a demonstration ↗
+      </nav>
+      <div className="ref-header-actions">
+        <Link href="/signup">Create account</Link>
+        <Link href="/login">Sign in</Link>
+        <Link className="ref-button ref-button-gold" href="/lets-connect">
+          Let’s connect →
         </Link>
-        <a href="mailto:info@kxra-group.com">info@kxra-group.com</a>
-      </dialog>
-    </>
+      </div>
+    </header>
   );
 }

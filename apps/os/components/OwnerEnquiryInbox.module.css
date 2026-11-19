@@ -1,0 +1,59 @@
+.inbox {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+.inbox form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+.inbox label {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.inbox select {
+  max-width: 100%;
+}
+.inbox article {
+  padding: 1.25rem;
+  border: 1px solid #d9ded3;
+  border-radius: 14px;
+  background: #fffefa;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.inbox article p {
+  white-space: pre-wrap;
+}
+.inbox nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: center;
+}
+.inbox dl {
+  display: grid;
+  grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+}
+.inbox dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.inbox h2 {
+  margin-top: 0;
+}
+@media (max-width: 520px) {
+  .inbox form {
+    display: grid;
+  }
+  .inbox dl {
+    grid-template-columns: 1fr;
+  }
+  .inbox dt {
+    font-weight: 600;
+  }
+}

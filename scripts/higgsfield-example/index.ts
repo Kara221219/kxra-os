@@ -4,10 +4,14 @@ import {
   AuthenticationError,
   NotEnoughCreditsError,
 } from "@higgsfield/client/v2";
-import fs from "node:fs";
+import {
+  openPrivateFile,
+  privateDirectory,
+} from "../private-operator-files.mjs";
 import path from "node:path";
 const ledger = path.resolve(".runtime/higgsfield-seedance-example.json");
 
+let ledgerFile: ReturnType<typeof openPrivateFile> | undefined;
 async function main() {
   const credentials = process.env.HF_CREDENTIALS;
   const confirmation = process.env.KXRA_HIGGSFIELD_BILLABLE_CONFIRMATION;
@@ -24,13 +28,9 @@ async function main() {
     );
   }
 
-  if (fs.existsSync(ledger))
-    throw Error(
-      "Generation already tracked; inspect the ledger before any retry.",
-    );
-  fs.mkdirSync(path.dirname(ledger), { recursive: true, mode: 0o700 });
-  fs.writeFileSync(
-    ledger,
+  privateDirectory(path.dirname(ledger));
+  ledgerFile = openPrivateFile(ledger, true);
+  ledgerFile.write(
     JSON.stringify(
       {
         status: "SUBMITTING",
@@ -44,7 +44,6 @@ async function main() {
       null,
       2,
     ),
-    { mode: 0o600, flag: "wx" },
   );
   config({ credentials, maxRetries: 0, maxPollTime: 15 * 60 * 1000 });
 
@@ -64,8 +63,7 @@ async function main() {
   );
 
   const status = String(result.status).toLowerCase();
-  fs.writeFileSync(
-    ledger,
+  ledgerFile.write(
     JSON.stringify(
       {
         status,
@@ -76,12 +74,11 @@ async function main() {
       null,
       2,
     ),
-    { mode: 0o600 },
   );
   const videoUrl = result.video?.url;
 
   if (status === "completed" && videoUrl) {
-    console.log(videoUrl);
+    console.log(JSON.stringify({ status, hasVideo: true, ledger }));
   } else if (
     ["failed", "canceled", "cancelled", "moderated", "nsfw"].includes(status)
   ) {
@@ -93,43 +90,43 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  const rejection =
-    error instanceof AuthenticationError
-      ? "AUTHENTICATION_REJECTED"
-      : error instanceof NotEnoughCreditsError
-        ? "API_CREDITS_REQUIRED"
-        : null;
-  if (rejection && fs.existsSync(ledger))
-    fs.writeFileSync(
-      ledger,
-      JSON.stringify(
-        {
-          status: rejection,
-          updatedAt: new Date().toISOString(),
-          videoUrl: null,
-        },
-        null,
-        2,
-      ),
-      { mode: 0o600 },
-    );
-  if (rejection) {
-    console.error(
-      rejection === "AUTHENTICATION_REJECTED"
-        ? "Higgsfield rejected the saved API credential. A valid key ID and secret must be entered locally."
-        : "Higgsfield API credits are unavailable. No completed video URL was returned.",
-    );
+main()
+  .catch((error) => {
+    const rejection =
+      error instanceof AuthenticationError
+        ? "AUTHENTICATION_REJECTED"
+        : error instanceof NotEnoughCreditsError
+          ? "API_CREDITS_REQUIRED"
+          : null;
+    if (rejection && ledgerFile)
+      ledgerFile.write(
+        JSON.stringify(
+          {
+            status: rejection,
+            updatedAt: new Date().toISOString(),
+            videoUrl: null,
+          },
+          null,
+          2,
+        ),
+      );
+    if (rejection) {
+      console.error(
+        rejection === "AUTHENTICATION_REJECTED"
+          ? "Higgsfield rejected the saved API credential. A valid key ID and secret must be entered locally."
+          : "Higgsfield API credits are unavailable. No completed video URL was returned.",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const safeMessage =
+      error instanceof Error &&
+      /^(HF_CREDENTIALS|Billable generation is locked|Generation ended|Generation did not return|Generation already tracked)/.test(
+        error.message,
+      )
+        ? error.message
+        : "Higgsfield request failed before a completed video URL was returned.";
+    console.error(safeMessage);
     process.exitCode = 1;
-    return;
-  }
-  const safeMessage =
-    error instanceof Error &&
-    /^(HF_CREDENTIALS|Billable generation is locked|Generation ended|Generation did not return|Generation already tracked)/.test(
-      error.message,
-    )
-      ? error.message
-      : "Higgsfield request failed before a completed video URL was returned.";
-  console.error(safeMessage);
-  process.exitCode = 1;
-});
+  })
+  .finally(() => ledgerFile?.close());

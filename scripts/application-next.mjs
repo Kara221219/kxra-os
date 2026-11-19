@@ -5,8 +5,8 @@ import { createRequire } from "node:module";
 
 const root = path.resolve(import.meta.dirname, "..");
 const approved = {
-  os: "16.4.3",
-  marketing: "15.5.28",
+  os: "16.4.6",
+  marketing: "16.4.6",
   "email-worker": "15.5.28",
 };
 
@@ -34,6 +34,8 @@ export function applicationNext(application, workspace = root) {
   return {
     version: installed.version,
     binary: require.resolve("next/dist/bin/next"),
-    webpackArguments: application === "os" ? ["--webpack"] : [],
+    // Next 16 defaults to Turbopack, whose client manifest is not the reviewed
+    // webpack wrapper. Keep the reviewed webpack manifest for budget checks.
+    webpackArguments: application === "email-worker" ? [] : ["--webpack"],
   };
 }

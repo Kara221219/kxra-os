@@ -141,7 +141,39 @@ test("self-service verifies before provisioning, recovers one tenant and gates p
       428,
     );
     await page.reload();
+    await expect(
+      page.getByText("Customer onboarding", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("checkbox", {
+        name: "I understand that KXRA access is project-scoped.",
+      })
+      .check();
+    await page
+      .getByRole("button", { name: "Save and continue", exact: true })
+      .click();
+    await expect(page).toHaveURL(/onboarding\?step=2$/);
+    await page.getByLabel("First name", { exact: true }).fill("Synthetic");
+    await page.getByLabel("Last name", { exact: true }).fill("Customer");
+    await page
+      .getByRole("button", { name: "Save and continue", exact: true })
+      .click();
+    await expect(page).toHaveURL(/onboarding\?step=3$/);
+    await page.getByRole("link", { name: "Back", exact: true }).click();
+    await expect(page.getByLabel("First name", { exact: true })).toHaveValue(
+      "Synthetic",
+    );
+    await page.reload();
+    await expect(page.getByLabel("Last name", { exact: true })).toHaveValue(
+      "Customer",
+    );
+    // Repeated saves of completed steps preserve the nine-step backend contract.
     await completeOnboarding(page);
+    await page.goto("/os?tour=1");
+    await expect(page).toHaveURL(/\/os\/workspace\?tour=1$/);
+    await expect(
+      page.getByRole("heading", { name: "Your team workspace", exact: true }),
+    ).toBeVisible();
     await page.goto("/os/start");
     await expect(
       page.getByRole("heading", {

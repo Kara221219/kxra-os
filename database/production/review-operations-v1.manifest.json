@@ -1,0 +1,28 @@
+{
+  "status": "REVIEW_ONLY_NOT_HOSTED_AUTHORIZATION",
+  "baseComposition": "58fdd5f48d2ecd693ef831aab41601086fdeeb7c",
+  "baseline": 117,
+  "requiredAiPayloadSha256": "0799585191c249be5dfbe6d99dd634c81ec31fcd00a1285c9f2e2890df8ea654",
+  "payload": "database/production/review-operations-v1.sql",
+  "payloadSha256": "cfc334b9665e7f1dedf6d8fb808d612aac1bbc28dd72bbccf27ca2fbba16c4c5",
+  "privateTables": [
+    "review_operator_grants",
+    "review_requests",
+    "review_operation_receipts"
+  ],
+  "publicEntry": "kxra.review_operations(text,jsonb,text)",
+  "privateHelpers": [
+    "review_operations_immutable()",
+    "review_operator_active(uuid,text)",
+    "review_policy_write_fence()",
+    "review_authority_fence(uuid,uuid,text)",
+    "review_subject_context(uuid,uuid)",
+    "review_public_context(jsonb,uuid,timestamptz,jsonb,boolean)"
+  ],
+  "policyWriteFenceTrigger": "a00_review_policy_write_fence",
+  "defaultEnabled": false,
+  "seededGrants": false,
+  "seededPolicies": false,
+  "hostedEligible": false,
+  "fullFeatureLaunchRequired": true
+}

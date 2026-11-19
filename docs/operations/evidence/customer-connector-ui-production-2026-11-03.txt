@@ -1,0 +1,5 @@
+
+> kxra-genesis-os@0.1.0 test:connector-production
+> node scripts/verify-connector-production.mjs
+
+Production connector boundary PASS (page 404, no mock UI, agent API 503, unauthenticated customer API 401; no database or provider configured).

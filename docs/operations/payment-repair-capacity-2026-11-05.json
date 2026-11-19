@@ -1,0 +1,117 @@
+{
+  "base_commit": "041d2009ea5258c9e5806c98360168f2b8f4e800",
+  "kind": "OFFLINE_PLANNING_ONLY",
+  "actual_provider_allocation_observed": false,
+  "deployed_schedule_observed": false,
+  "activation_authority": false,
+  "cases": [
+    {
+      "name": "current_example_16_due",
+      "input": {
+        "maximum_due_workspaces": 16,
+        "parallel_invocations": 16,
+        "schedule_interval_ms": 1000,
+        "scheduler_jitter_ms": 1000,
+        "first_claim_delay_ms": 1000,
+        "proof_ttl_seconds": 120
+      },
+      "result": {
+        "state": "PROJECTED_HEADROOM",
+        "discovery_window_ms": 60000,
+        "waves": 1,
+        "first_claim_fanout_delay_ms": 1000,
+        "worst_case_completion_ms": 58000,
+        "headroom_ms": 2000,
+        "hosted_acceptance": false,
+        "activation_authority": false
+      }
+    },
+    {
+      "name": "ttl_300_alone",
+      "input": {
+        "maximum_due_workspaces": 16,
+        "parallel_invocations": 16,
+        "schedule_interval_ms": 1000,
+        "scheduler_jitter_ms": 1000,
+        "first_claim_delay_ms": 1000,
+        "proof_ttl_seconds": 300
+      },
+      "result": {
+        "state": "PROJECTED_HEADROOM",
+        "discovery_window_ms": 60000,
+        "waves": 1,
+        "first_claim_fanout_delay_ms": 1000,
+        "worst_case_completion_ms": 58000,
+        "headroom_ms": 2000,
+        "hosted_acceptance": false,
+        "activation_authority": false
+      }
+    },
+    {
+      "name": "claim_delay_4s",
+      "input": {
+        "maximum_due_workspaces": 16,
+        "parallel_invocations": 16,
+        "schedule_interval_ms": 1000,
+        "scheduler_jitter_ms": 1000,
+        "first_claim_delay_ms": 4000,
+        "proof_ttl_seconds": 120
+      },
+      "result": {
+        "state": "INSUFFICIENT_HEADROOM",
+        "discovery_window_ms": 60000,
+        "waves": 1,
+        "first_claim_fanout_delay_ms": 4000,
+        "worst_case_completion_ms": 61000,
+        "headroom_ms": -1000,
+        "hosted_acceptance": false,
+        "activation_authority": false
+      }
+    },
+    {
+      "name": "two_waves",
+      "input": {
+        "maximum_due_workspaces": 16,
+        "parallel_invocations": 8,
+        "schedule_interval_ms": 1000,
+        "scheduler_jitter_ms": 1000,
+        "first_claim_delay_ms": 1000,
+        "proof_ttl_seconds": 120
+      },
+      "result": {
+        "state": "INSUFFICIENT_HEADROOM",
+        "discovery_window_ms": 60000,
+        "waves": 2,
+        "first_claim_fanout_delay_ms": 1000,
+        "worst_case_completion_ms": 115000,
+        "headroom_ms": -55000,
+        "hosted_acceptance": false,
+        "activation_authority": false
+      }
+    }
+  ],
+  "allowance_cases": [
+    {
+      "workspaces": 1,
+      "result": {
+        "state": "INSUFFICIENT_REVIEWED_ALLOWANCE",
+        "minimum_monthly_reads": 172780,
+        "repeated_run_monthly_ceiling": 23040000,
+        "available_monthly_reads": 8000,
+        "provider_allocation_verified": false,
+        "activation_authority": false
+      }
+    },
+    {
+      "workspaces": 16,
+      "result": {
+        "state": "INSUFFICIENT_REVIEWED_ALLOWANCE",
+        "minimum_monthly_reads": 2764480,
+        "repeated_run_monthly_ceiling": 23040000,
+        "available_monthly_reads": 8000,
+        "provider_allocation_verified": false,
+        "activation_authority": false
+      }
+    }
+  ]
+}

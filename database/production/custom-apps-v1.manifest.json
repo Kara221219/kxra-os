@@ -1,0 +1,86 @@
+{
+  "classification": "REVIEW_ONLY_NOT_HOSTED_AUTHORIZATION",
+  "baseCommit": "835b7578b20b295994ba5ca016edd87342d41631",
+  "baseline": "canonical117 or an independently reviewed production cohort without local custom-app objects",
+  "payload": "database/production/custom-apps-v1.sql",
+  "payloadSha256": "f12f01f2406a318561aeecd2a02c93e6fb9cd64d7dbaaf06b7e5ee1e076fab3a",
+  "defaultEnabled": false,
+  "hostedEligible": false,
+  "numberedMigrationsChanged": false,
+  "policyOrFinancialDataSeeded": false,
+  "hostedExecutorImplemented": false,
+  "tables": [
+    "kxra.custom_app_record_versions",
+    "kxra.custom_app_records",
+    "kxra.custom_app_releases",
+    "kxra.custom_app_reviews",
+    "kxra.custom_app_versions",
+    "kxra.custom_apps"
+  ],
+  "functions": [
+    "kxra.custom_app_record_save",
+    "kxra.custom_app_register",
+    "kxra.custom_app_release",
+    "kxra.custom_app_release_reviewed",
+    "kxra.custom_app_review",
+    "kxra.custom_app_review_status",
+    "kxra_private.custom_app_authority_fence",
+    "kxra_private.custom_app_immutable",
+    "kxra_private.custom_app_review_current",
+    "kxra_private.custom_app_room_current",
+    "kxra_private.custom_app_schema_valid",
+    "kxra_private.custom_app_values_valid",
+    "kxra_private.custom_app_write_fence",
+    "kxra_private.custom_apps_access",
+    "kxra_private.custom_apps_local"
+  ],
+  "authorityFenceTables": [
+    "kxra.account_identities",
+    "kxra.billing_customers",
+    "kxra.invitations",
+    "kxra.legal_acceptances",
+    "kxra.legal_document_requirements",
+    "kxra.legal_documents",
+    "kxra.organisation_memberships",
+    "kxra.organisations",
+    "kxra.pilot_stripe_bindings",
+    "kxra.profiles",
+    "kxra.project_memberships",
+    "kxra.projects",
+    "kxra.team_room_members",
+    "kxra.team_rooms",
+    "kxra.workspace_pilots",
+    "kxra_private.business_declarations",
+    "kxra_private.business_eligibility_policies",
+    "kxra_private.business_eligibility_reviews",
+    "kxra_private.live_billing_activation",
+    "kxra_private.live_billing_bindings",
+    "kxra_private.live_billing_intents",
+    "kxra_private.live_billing_mappings",
+    "kxra_private.live_customer_intents",
+    "kxra_private.live_paid_access",
+    "kxra_private.live_paid_policies",
+    "kxra_private.live_paid_receipts",
+    "kxra_private.modern_billing_execution_identity"
+  ],
+  "localEngineSources": [
+    {
+      "path": "packages/custom-apps/local-schema.sql",
+      "sha256": "e1f2a6250c4c8c82fbf6be6fd27daa41a9c923d534ff00e2dccf6d3ff8d621b6"
+    },
+    {
+      "path": "packages/custom-apps/local-records-schema.sql",
+      "sha256": "a3ef09fc9b9ae0ef7b29218b368d501b8ab254850bce91bfd6bcc36198ee4145"
+    }
+  ],
+  "liveGates": [
+    "Trusted Supabase access-token hook must issue immutable top-level kxra_session_version bound to the ORIGINAL provider session and its account authority version; refresh must preserve it or reject revoked session IDs, never stamp the current database version onto an old session. Absent or stale claim denies. Hook provisioning/real session acceptance not supplied.",
+    "Release owner must allocate migration number, review current cohort compatibility/global authority fence contention and verify live paid/legal/session/review policy; no activation or install port supplied.",
+    "Production authenticated hosted/browser/signup/pay/use acceptance, independent infrastructure backup/restore, operations/load and arbitrary-source isolation remain separate."
+  ],
+  "integrationCorrections": [
+    "Authority shared fence replaces explicit and implicit existing-row locks; all internal app relationships retained",
+    "Current reviewer room/mandatorylegal predicate mirrors actual0031+0083, admin bypass preserved",
+    "Final postwait clock based principal/paid/member/project/reviewer/MFA revalidation without policy/TTL changes"
+  ]
+}

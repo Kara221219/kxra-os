@@ -1,5 +1,14 @@
 import path from "node:path";
 export default {
+  async redirects() {
+    return [
+      {
+        source: "/forgot-password",
+        destination: "/reset-password",
+        permanent: false,
+      },
+    ];
+  },
   distDir:
     process.env.KXRA_NEXT_DIST_DIR ||
     (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
@@ -12,6 +21,10 @@ export default {
     // Keep the new development MCP server/file logger disabled. CI retains
     // bounded diagnostics rather than raw request/browser logs.
     mcpServer: false,
+  },
+  webpack(config, { dev, isServer }) {
+    if (!dev && !isServer) config.optimization.moduleIds = "size";
+    return config;
   },
   async headers() {
     return [

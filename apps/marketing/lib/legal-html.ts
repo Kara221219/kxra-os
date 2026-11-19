@@ -34,7 +34,7 @@ function footer(): string {
       <a href="/legal/cookies">Cookies</a>
       <a href="/legal">Customer documents</a>
     </nav>
-    <p class="preview-note">Private build preview · publication is disabled</p>
+    <p>KXRA Group · info@kxra-group.com</p>
   </footer>`;
 }
 
@@ -68,8 +68,9 @@ function documentHtml(document: LegalDocument): string {
         <p>${escapeHtml(document.summary)}</p>
       </header>
       <article class="section prose legal-document">
-        <p class="notice">Owner-approved version ${escapeHtml(String(legalPack.version))}, approved ${escapeHtml(legalApproval.approvedOn)}. Customer acceptance and live sales remain disabled until the controlled release checks pass.</p>
-        <p class="notice">Historical subscription terms: Brand Studio and Video Studio have been retired. References to those services and their prices are retained in this approved document for the record, not as a current offer. New platform subscription sales are paused; see <a href="/pricing">current pricing and scope</a>.</p>
+        <p class="notice">Current offer: Starter £29, Team £79 and Business £199 a month. Decision Review is £250 and a Business Improvement Sprint is £750. No VAT is added. Card payment starts only after Stripe is connected. Refunds are described at <a href="/legal/refunds">refunds</a>.</p>
+        <p class="notice">Historical subscription terms: Brand Studio and Video Studio have been retired. References to those services and their prices are retained in this approved document for the record, not as a current offer. The text below is the earlier approved pack and is kept as history.</p>
+        <p class="notice">Owner-approved pack version ${escapeHtml(String(legalPack.version))}, approved ${escapeHtml(legalApproval.approvedOn)}.</p>
         <dl class="legal-meta">
           <div><dt>Entity</dt><dd>${escapeHtml(legalPack.entity.legalName)} · Company ${escapeHtml(legalPack.entity.companyNumber)}</dd></div>
           <div><dt>Audience</dt><dd>${escapeHtml(document.audience)}</dd></div>

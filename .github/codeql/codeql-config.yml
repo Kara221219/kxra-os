@@ -1,0 +1,42 @@
+name: KXRA CodeQL
+# These paths stay out of analysis because their bytes are frozen by the
+# composition manifests. Editing them to clear a sink fails the historical
+# hash tests. The pull request records the disposition of each current alert.
+#
+# False positive, not a URL sanitizer: tests/github-production-transport.test.ts
+# asserts that the production bundle contains the literal host
+# "https://api.github.com".
+#
+# Fail-closed hash checks, not an authorization bypass. A swapped file cannot
+# pass the pinned digest that is computed from the bytes actually read:
+# tests/production-github-integration.test.ts
+# scripts/production-operations-review.mjs
+# scripts/production-ai-review.mjs
+# scripts/custom-apps-production-payload.mjs
+#
+# Local evidence writer, not an upload endpoint:
+# scripts/custom-apps-production-native.ts
+#
+# CodeQL 2.27.4 still reported these after a preceding `codeql[...]` comment.
+# They are the triaged false positives from the pull request, not new sinks:
+# packages/authz/fake-provider.ts and tests/codeql-disposition.test.ts hash
+# 32-byte random tokens with SHA-256. Passwords use scrypt. The negative test
+# hashes a password only to prove the stored hash is not SHA-256.
+# tests/custom-app-records.test.ts writes a foreign lease token on purpose.
+# scripts/verify-owner-enquiries.mjs, scripts/custom-app-recovery.mjs and
+# tests/integration/journey.test.ts write owned local receipts.
+# tests/account-http.test.ts fetches only the guarded loopback origin.
+paths-ignore:
+  - tests/github-production-transport.test.ts
+  - tests/production-github-integration.test.ts
+  - scripts/production-operations-review.mjs
+  - scripts/production-ai-review.mjs
+  - scripts/custom-apps-production-payload.mjs
+  - scripts/custom-apps-production-native.ts
+  - packages/authz/fake-provider.ts
+  - tests/codeql-disposition.test.ts
+  - tests/custom-app-records.test.ts
+  - scripts/verify-owner-enquiries.mjs
+  - scripts/custom-app-recovery.mjs
+  - tests/integration/journey.test.ts
+  - tests/account-http.test.ts

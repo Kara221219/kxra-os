@@ -1,3 +1,7 @@
+import {
+  seedReviewedBusinessFixture,
+  seedSyntheticAdmissionTerms,
+} from "./support/reviewed-business-fixture";
 import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
@@ -50,7 +54,10 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
     otherOrg = crypto.randomUUID(),
     intent = crypto.randomUUID();
   const customer = `cus_${crypto.randomBytes(12).toString("hex")}`,
-    hash = "a".repeat(64);
+    hash = crypto
+      .createHash("sha256")
+      .update("Synthetic ledger admission terms")
+      .digest("hex");
   async function call(
     sql: string,
     values: unknown[] = [],
@@ -189,6 +196,20 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
       `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
       [intent],
       "owner",
+      true,
+    );
+    await seedSyntheticAdmissionTerms(db.query.bind(db), {
+      org_id: org,
+      content: "Synthetic ledger admission terms",
+    });
+    await seedReviewedBusinessFixture(db.query.bind(db), {
+      org_id: org,
+      actor_id: owner,
+    });
+    await call(
+      `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
+      [intent],
+      "owner",
     );
     await call(
       `select kxra_private.${prefix}request_live_billing_intent($1,'CHECKOUT','KXRA_STARTER_V1')`,
@@ -213,12 +234,12 @@ test("live ledger SQL: authority, single consumption, immutable receipts and qua
         .digest("hex");
     await db.query(
       `insert into kxra.legal_documents(id,org_id,document_type,audience,version,title,rendered_content,content_sha256,status,effective_at,immutable_object_key,owner_approval_reference,owner_approved_at)
-        values($1,$2,'TERMS','CUSTOMER',1,'Synthetic ledger terms','Synthetic only',$3,'APPROVED',now(),'synthetic/ledger-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())`,
+        values($1,$2,'TERMS','CUSTOMER',2,'Synthetic ledger terms','Synthetic only',$3,'APPROVED',now(),'synthetic/ledger-terms','SYNTHETIC_NOT_REAL_APPROVAL',now())`,
       [document, org, legalHash],
     );
     await db.query(
       `insert into kxra.legal_document_requirements(id,org_id,document_id,document_version,document_sha256,state,effective_at,acceptance_wording,acceptance_wording_version,acceptance_wording_sha256)
-        values($1,$2,$3,1,$4,'ACTIVE',now(),'Synthetic accept',1,encode(sha256(convert_to('Synthetic accept','UTF8')),'hex'))`,
+        values($1,$2,$3,2,$4,'ACTIVE',now(),'Synthetic accept',1,encode(sha256(convert_to('Synthetic accept','UTF8')),'hex'))`,
       [requirement, org, document, legalHash],
     );
     await call(

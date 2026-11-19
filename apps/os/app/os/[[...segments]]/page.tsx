@@ -1,5 +1,10 @@
+import { customerWorkspace } from "../../../../../packages/workspace/workspace-presentation";
+import ownerOverviewStyles from "../../../components/OwnerOverview.module.css";
+import { customAppsIdentityAllowed } from "../../../../../packages/custom-apps/access";
+import { hostedRoomOperations } from "../../../../../packages/workspace/hosted-operations";
 import { WorkspaceStart } from "../../../components/WorkspaceStart";
 import { TeamWorkspace } from "../../../components/TeamWorkspace";
+import { customerAiPolicy } from "../../../../../packages/workspace/customer-ai-policy";
 import { teamKnowledge } from "../../../lib/team-knowledge";
 import { TeamTasks, TeamRuns } from "../../../components/TeamOperations";
 import {
@@ -24,6 +29,14 @@ import {
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import Shell from "../../../components/Shell";
+import OwnerOverview, {
+  OwnerOverviewUnavailable,
+} from "../../../components/OwnerOverview";
+import {
+  ownerOverview,
+  ownerEnquiryInbox,
+  ownerWorkLogEntry,
+} from "../../../lib/owner-overview";
 import AccountControls from "../../../components/AccountControls";
 import {
   InvitationList,
@@ -220,6 +233,8 @@ export default async function Workspace({
     from?: string;
     to?: string;
     tour?: string;
+    enquiry?: string;
+    entry?: string;
   }>;
 }) {
   let a: Actor;
@@ -246,6 +261,10 @@ export default async function Workspace({
   const { segments = [] } = await params;
   const section = segments[0] || "";
   const queryParameters = await searchParams;
+  if (!section && customerWorkspace(a))
+    redirect(
+      queryParameters.tour === "1" ? "/os/workspace?tour=1" : "/os/workspace",
+    );
   const filter = queryParameters.project;
   let content: React.ReactNode;
   const projects = await listProjects(a);
@@ -260,11 +279,53 @@ export default async function Workspace({
     if (section === "start") {
       content = <WorkspaceStart local={localMode()} />;
     } else if (!section && a.role === "owner") {
+      try {
+        const snapshot = await ownerOverview(a);
+        content = (
+          <OwnerOverview
+            snapshot={snapshot}
+            className={ownerOverviewStyles.overview}
+          />
+        );
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 403) throw error;
+        content = (
+          <OwnerOverviewUnavailable className={ownerOverviewStyles.overview} />
+        );
+      }
+    } else if (section === "enquiries") {
+      const enquiries = await ownerEnquiryInbox(a, queryParameters.enquiry);
+      content = (
+        <>
+          <Heading
+            title="Website enquiries"
+            sub="Private website submissions for your selected organisation."
+          />
+          {queryParameters.enquiry ? (
+            <p className="owner-inbox-note">
+              Selected enquiry.{" "}
+              <Link href="/os/enquiries">Return to the recent inbox ↗</Link>
+            </p>
+          ) : (
+            <p className="owner-inbox-note">
+              Showing the latest {enquiries.length} submissions, up to 50. This
+              is a recent inbox view, not the total number received.
+            </p>
+          )}
+          <p className="owner-inbox-note">
+            Enquiries are unverified; opening this page does not contact anyone
+            or change their status.
+          </p>
+          <PublicEnquiryInbox rows={enquiries} />
+        </>
+      );
+    } else if (section === "venture-overview") {
+      owner(a);
       const dashboard = await ownerDashboard(a);
       content = (
         <>
           <Heading
-            title="Your operating overview"
+            title="Venture operating overview"
             sub="Persisted work that needs attention, a decision, or review."
           />
           <div className="dashboard-control-grid">
@@ -561,6 +622,7 @@ export default async function Workspace({
         : [];
       content = (
         <TeamWorkspace
+          aiPolicy={customerAiPolicy}
           knowledge={
             detail ? await teamKnowledge(a, detail.room.id) : undefined
           }
@@ -571,7 +633,27 @@ export default async function Workspace({
           actorId={a.id}
           isOrgOwner={a.role === "owner"}
           local={localMode()}
+          customApps={customAppsIdentityAllowed(a.source, localMode())}
+          hostedOperations={hostedRoomOperations()}
           candidates={candidates}
+          accessNavigation={
+            <p className="notice">
+              <Link href="/os/start">Check workspace access</Link>
+              {" · "}
+              <Link href="/os/support">Support &amp; privacy</Link>
+            </p>
+          }
+          roomCreationUnavailable={
+            <section className="panel">
+              <h2>Room creation needs project access</h2>
+              <p>
+                You have no writable projects in this organisation. You can
+                still open rooms shared with you. Ask your workspace
+                administrator for contributor access, or{" "}
+                <Link href="/os/support">request help from support</Link>.
+              </p>
+            </section>
+          }
         />
       );
     } else if (section === "workrooms") {
@@ -648,9 +730,13 @@ export default async function Workspace({
             sub="Start with your project and the work you need to move forward."
           />
           <div className="workroom-grid">
+            <Link className="panel workroom-card" href="/os/workspace">
+              <h2>Team workspace</h2>
+              <p>Open shared rooms, tasks and your model connections.</p>
+            </Link>
             <Link className="panel workroom-card" href="/os/workrooms">
-              <h2>Project workrooms</h2>
-              <p>Discuss work and prepare a scoped handoff.</p>
+              <h2>Earlier project discussions</h2>
+              <p>Return to existing project conversations and handoffs.</p>
             </Link>
             <Link className="panel workroom-card" href="/os/ask">
               <h2>Ask KXRA</h2>
@@ -1462,23 +1548,31 @@ export default async function Workspace({
       owner(a);
       const page = Math.max(1, Number(queryParameters.page || 1) || 1);
       if (filter) await project(a, filter);
-      const result = await listWorkLog(a, {
-        project: filter,
-        actor: queryParameters.actor,
-        department: queryParameters.department,
-        type: queryParameters.type,
-        status: queryParameters.status,
-        from: queryParameters.from,
-        to: queryParameters.to,
-        page,
-        pageSize: 50,
-      });
+      const result = queryParameters.entry
+        ? await ownerWorkLogEntry(a, queryParameters.entry)
+        : await listWorkLog(a, {
+            project: filter,
+            actor: queryParameters.actor,
+            department: queryParameters.department,
+            type: queryParameters.type,
+            status: queryParameters.status,
+            from: queryParameters.from,
+            to: queryParameters.to,
+            page,
+            pageSize: 50,
+          });
       content = (
         <>
           <Heading
             title="Work Log"
             sub="Durable, attributable events linked to the artifacts that produced them."
           />
+          {queryParameters.entry && (
+            <p className="owner-inbox-note">
+              Selected recorded event.{" "}
+              <Link href="/os/work-log">Return to the full work log ↗</Link>
+            </p>
+          )}
           <WorkLogView
             result={result}
             filters={{

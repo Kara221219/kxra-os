@@ -1,0 +1,60 @@
+{
+  "reviewedOn": "2026-11-08",
+  "purpose": "Local provider identification in connection and review cards; no endorsement, account activation or live provider acceptance is implied.",
+  "assets": [
+    {
+      "provider": "OPENAI",
+      "file": "openai-blossom-black.svg",
+      "sourceUrl": "https://cdn.openai.com/brand/openai-logos.zip",
+      "archiveEntry": "OpenAI-logos/SVGs/OAI_OpenAI-Blossom_Black.svg",
+      "archiveSha256": "c54e85ab5884228f89f0230dd8effa8d588cad78166fe954135f4afa553222db",
+      "guidelinesUrl": "https://openai.com/brand/",
+      "copyrightOwner": "OpenAI",
+      "usage": "Unmodified official black Blossom, with original canvas and clear space, subordinate to KXRA and accompanied by OpenAI API text. OpenAI marks usage terms apply; this is not an open-source logo license. No co-branding lockup or partnership claim.",
+      "sha256": "75c1e9fffa5e8c437bec1d67197a73992bca45d166c6ff23215185dea8fae92a",
+      "bytes": 2415
+    },
+    {
+      "provider": "OPENROUTER",
+      "file": "openrouter-glyph-ink.svg",
+      "sourceUrl": "https://openrouter.ai/brand/logos/transparent/glyph/svg/glyph-ink.svg",
+      "guidelinesUrl": "https://openrouter.ai/brand",
+      "copyrightOwner": "OpenRouter, Inc.",
+      "usage": "Official public Ink glyph for light backgrounds. Used without recoloring, stretching or remixing. Brand page offers the assets for use; no separate open-source logo license was found. Original rights remain with OpenRouter.",
+      "sha256": "91be6b8a91745f089bfe42b89a5cbcd4b666fca6473610f9a6c11a31bd7523bc",
+      "bytes": 563
+    }
+  ],
+  "textOnly": [
+    {
+      "provider": "ANTHROPIC",
+      "label": "Anthropic",
+      "guidelinesUrl": "https://assets.claude.com/f7874b435aabdaee5f836e888b4439b9b56a934b.pdf",
+      "assetSourceUrl": "https://www.anthropic.com/press-kit",
+      "reason": "Anthropic trademark guidelines require specific permission and prior approval of materials. No KXRA approval evidence is available. No Anthropic or Claude image is included; retain existing factual text."
+    },
+    {
+      "provider": "GOOGLE",
+      "label": "Google",
+      "guidelinesUrl": "https://partnermarketinghub.withgoogle.com/brands/google/use-cases/product-co-branding/",
+      "assetSourceUrl": "https://partnermarketinghub.withgoogle.com/brands/google-gemini/brand-introduction/",
+      "reason": "Google API guidance specifies plain-text references. Gemini-specific assets redirect to a login; no approved KXRA asset-use evidence is available. Do not substitute a Google G or an invented Gemini sparkle."
+    },
+    {
+      "provider": "CHATGPT_SUBSCRIPTION",
+      "label": "ChatGPT subscription",
+      "guidelinesUrl": "https://openai.com/brand/",
+      "reason": "Consumer ChatGPT identity is distinct from OpenAI API. Existing subscription setup remains text-only and confirmation-required; no component changes that route."
+    },
+    {
+      "provider": "COMPATIBLE",
+      "label": "Compatible provider",
+      "reason": "Protocol category, not a brand. Never infer a logo from a model, endpoint or user-entered connection name."
+    },
+    {
+      "provider": "FIXTURE",
+      "label": "Local fixture",
+      "reason": "Synthetic local connection, not a real provider. Never display a real provider logo."
+    }
+  ]
+}

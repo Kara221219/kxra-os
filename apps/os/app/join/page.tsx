@@ -1,3 +1,4 @@
+import "../public-cream.css";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { invitationFragmentPath } from "../../../../packages/authz/invitation-link";

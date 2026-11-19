@@ -296,42 +296,80 @@ test("shared provider POST ceiling is independent of GET budget and never retrie
   assert.equal(posts, 2);
   assert.equal(r.provider_posts, 2);
 });
-test("batch full-response deadline cancels a hung body and does not launch the next item", async () => {
-  const f = fixture();
-  f.ports.nowMs = Date.now;
-  f.ports.durationMs = 20;
-  let cancelled = false;
-  f.ports.fetch = async () =>
-    new Response(
-      new ReadableStream({
-        pull: () => new Promise(() => {}),
-        cancel() {
-          cancelled = true;
-        },
-      }),
-    );
-  f.ports.customer = async (id, p) => {
-    await assert.rejects(
-      p.fetch("https://api.stripe.com/v1/account", {
-        headers: {
-          authorization: `Bearer ${f.environment.STRIPE_SECRET_KEY}`,
-          "stripe-version": LIVE_STRIPE_API_VERSION,
-        },
-      }),
-    );
-    return {
-      state: "RECORDED",
-      intent_id: id,
-      outcome: "UNCERTAIN",
-      entitlement_authority: false,
+test(
+  "batch full-response deadline cancels a hung body and does not launch the next item",
+  { timeout: 5000 },
+  async () => {
+    const f = fixture();
+    // Exercise the real body-cancellation timer, but make admission at expiry
+    // deterministic: timer delivery and Date.now() need not agree to the ms.
+    let now = 0;
+    f.ports.nowMs = () => now;
+    f.ports.durationMs = 20;
+    let cancelled = false;
+    let completions = 0;
+    f.ports.fetch = async (_input, init) =>
+      new Response(
+        new ReadableStream({
+          pull: () => new Promise(() => {}),
+          cancel() {
+            assert.equal(init?.signal?.aborted, true);
+            cancelled = true;
+            now = 20;
+          },
+        }),
+      );
+    f.ports.checkout = async () =>
+      assert.fail("No next item after batch expiry");
+    const base = f.ports.execute!;
+    f.ports.execute = async (command) => {
+      if (command.text.includes("finish_live_customer_intent")) {
+        assert.deepEqual(command, {
+          text: "select kxra_private.staging_sandbox_finish_live_customer_intent($1,$2)",
+          values: [ids[0], "{}"],
+        });
+        completions++;
+        return "UNCERTAIN";
+      }
+      return base(command);
     };
-  };
-  const r = await f.run();
-  assert.equal(r.state, "BUDGET_EXHAUSTED");
-  assert.equal(r.attempted, 1);
-  assert.equal(r.provider_requests, 1);
-  assert.equal(cancelled, true);
-});
+    f.ports.customer = async (id, p) => {
+      const fetch = () =>
+        p.fetch("https://api.stripe.com/v1/account", {
+          headers: {
+            authorization: `Bearer ${f.environment.STRIPE_SECRET_KEY}`,
+            "stripe-version": LIVE_STRIPE_API_VERSION,
+          },
+        });
+      await assert.rejects(fetch());
+      assert.equal(cancelled, true);
+      assert.equal(now, 20);
+      await assert.rejects(fetch());
+      await assert.rejects(p.execute({ text: "select something", values: [] }));
+      // Expiry must still allow this already-in-flight driver's durable receipt.
+      await p.execute({
+        text: "select kxra_private.staging_sandbox_finish_live_customer_intent($1,$2)",
+        values: [id, "{}"],
+      });
+      return {
+        state: "RECORDED",
+        intent_id: id,
+        outcome: "UNCERTAIN",
+        entitlement_authority: false,
+      };
+    };
+    const r = await f.run();
+    assert.equal(r.state, "BUDGET_EXHAUSTED");
+    assert.equal(r.attempted, 1);
+    assert.equal(r.skipped, 1);
+    assert.equal(r.provider_requests, 1);
+    assert.equal(r.provider_posts, 0);
+    assert.equal(r.results[0].state, "RECORDED");
+    assert.equal(completions, 1);
+    assert.equal(cancelled, true);
+  },
+);
+
 for (const value of [0, 21, 1.5, null])
   test(`batch invalid limit ${value}`, async () => {
     await assert.rejects(

@@ -1,3 +1,4 @@
+import { billingBodyBuffer } from "./billing-body-buffer";
 import { z } from "zod";
 import {
   assertModernProviderMode,
@@ -75,7 +76,7 @@ export async function readPaidRefreshPreflight(
     });
     if (!r.ok || !r.body) throw Error("PAID_PREFLIGHT_PROVIDER_UNVERIFIED");
     const reader = r.body.getReader(),
-      chunks: Uint8Array[] = [];
+      chunks = billingBodyBuffer(100_000);
     let size = 0;
     try {
       while (true) {
@@ -83,15 +84,20 @@ export async function readPaidRefreshPreflight(
         if (done) break;
         size += value.byteLength;
         if (size > 100_000 || Date.now() >= deadline) {
-          await reader.cancel();
+          void reader.cancel().catch(() => {});
           throw Error("PAID_PREFLIGHT_BUDGET");
         }
-        chunks.push(value);
+        try {
+          chunks.append(value);
+        } catch (error) {
+          void reader.cancel().catch(() => {});
+          throw error;
+        }
       }
     } finally {
       reader.releaseLock();
     }
-    const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const value: unknown = JSON.parse(chunks.finish().toString("utf8"));
     assertModernProviderMode(value, scope);
     return value;
   }

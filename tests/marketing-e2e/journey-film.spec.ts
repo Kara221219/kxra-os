@@ -12,13 +12,11 @@ test("static homepage never mounts or requests the retired cinematic journey", a
   });
   await page.goto("/");
   await expect(
-    page.getByRole("img", {
-      name: /Original illustration of people collaborating/,
-    }),
+    page.getByRole("img", { name: /team meeting at a stone table/ }),
   ).toBeVisible();
   await expect(page.locator("video, canvas, .cinema")).toHaveCount(0);
   await page.locator("#request-access").scrollIntoViewIfNeeded();
-  await page.locator(".ref-artwork").scrollIntoViewIfNeeded();
+  await page.locator(".studio-scene").scrollIntoViewIfNeeded();
   expect(retired).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -45,7 +43,7 @@ test("reduced motion preserves the static illustration, sample and enquiry", asy
 test("unavailable illustration retains meaningful text and a usable enquiry route", async ({
   page,
 }) => {
-  await page.route(/kxra-collaborative-cutaway-v1/, (route) =>
+  await page.route(/kxra-team-table/, (route) =>
     route.fulfill({ status: 404, body: "Unavailable" }),
   );
   await page.goto("/");
@@ -54,9 +52,7 @@ test("unavailable illustration retains meaningful text and a usable enquiry rout
   );
   expect(
     await page
-      .getByRole("img", {
-        name: /Original illustration of people collaborating/,
-      })
+      .getByRole("img", { name: /team meeting at a stone table/ })
       .evaluate((element) => (element as HTMLImageElement).naturalWidth),
   ).toBe(0);
   const access = page.getByRole("link", { name: "Request workspace access" });

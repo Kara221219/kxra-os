@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
+import { readPublicationFile } from "./publication-file.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const publicationCandidates = execFileSync(
@@ -43,10 +43,8 @@ const patterns = [
 ];
 const findings = [];
 for (const file of publicationCandidates) {
-  const target = path.join(root, file);
-  if (!fs.existsSync(target)) continue;
-  if (!fs.statSync(target).isFile()) continue;
-  const bytes = fs.readFileSync(target);
+  const bytes = readPublicationFile(root, file);
+  if (!bytes) continue;
   if (bytes.includes(0)) continue;
   const content = bytes.toString("utf8");
   for (const [label, pattern] of patterns)

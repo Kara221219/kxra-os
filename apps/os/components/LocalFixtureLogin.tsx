@@ -20,6 +20,9 @@ export default function LocalFixtureLogin({ enabled }: { enabled: boolean }) {
         </p>
         <button>Use fixture</button>
       </form>
+      <p>
+        <a href="/os/connections">Open local connections preview</a>
+      </p>
     </details>
   );
 }

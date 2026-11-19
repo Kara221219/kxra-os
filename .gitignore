@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 .next/
 .env
 .env.*
@@ -41,3 +41,6 @@ supabase/.temp/
 
 # Validated CI evidence is never source or a deployment input.
 safe-ci-diagnostics-export/
+
+# Isolated paired-agent development output (never source or a release input).
+.next-paired-*/

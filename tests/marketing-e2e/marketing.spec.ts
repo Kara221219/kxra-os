@@ -1,10 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-  "/video-studio",
   "/",
   "/platform",
-  "/brand-studio",
   "/pricing",
   "/custom-projects",
   "/business-sprints",
@@ -54,6 +52,32 @@ test("AT-17 required public routes render from the reviewed snapshot", async ({
   ).toBe(true);
 });
 
+for (const { route, label } of [
+  { route: "/pricing", label: "Request this plan" },
+]) {
+  test(`${route} enquiry reaches the existing access form and preserves history`, async ({
+    page,
+  }) => {
+    await page.goto(route);
+    const enquiry = page
+      .getByRole("link", { name: label, exact: true })
+      .first();
+    await expect(enquiry).toHaveAttribute("href", "/#request-access");
+    await enquiry.click();
+    await expect(page).toHaveURL(/\/#request-access$/);
+    const destination = page.locator("#request-access");
+    await expect(destination).toBeInViewport();
+    await expect(destination.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(destination.getByLabel("Work email")).toBeVisible();
+    await expect(destination.locator('input[name="kind"]')).toHaveValue(
+      "ENQUIRY",
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${route}$`));
+    await expect(enquiry).toBeVisible();
+  });
+}
+
 test("customer-document pack is complete and records exact owner approval", async ({
   page,
 }) => {
@@ -79,11 +103,15 @@ test("customer-document pack is complete and records exact owner approval", asyn
     }
   }
   await page.goto("/pricing");
-  await expect(page.locator("main")).toContainText(
-    "Platform subscription under review",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Workspace plans", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText("£29");
+  await expect(page.locator("main")).toContainText("£79");
+  await expect(page.locator("main")).toContainText("£199");
+  await expect(page.locator("main")).toContainText("£250");
   await expect(page.locator("main")).not.toContainText(
-    /£29|120 generated creative variants|120 reviewed exports/,
+    /120 generated creative variants|120 reviewed exports/,
   );
   await page.goto("/legal/terms");
   await expect(page.locator("main")).toContainText(

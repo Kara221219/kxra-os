@@ -9,9 +9,13 @@ type Kind = "ENQUIRY" | "CUSTOM_PROJECT" | "CONTACT";
 export function PublicForm({
   kind,
   sprintIntake = false,
+  sourcePath: sourceOverride,
+  pagePath = "",
 }: {
   kind: Kind;
   sprintIntake?: boolean;
+  sourcePath?: "/partner" | "/submit-opportunity" | "/contact";
+  pagePath?: string;
 }) {
   const [packageKey, setPackageKey] = useState("improvement-sprint");
   const messageField = useRef<HTMLTextAreaElement>(null);
@@ -34,11 +38,13 @@ export function PublicForm({
       messageField.current.value = `I would like to discuss the ${appExamples[workflow as AppKey].name} workflow.\n\nThe outcome I need is: `;
     }
   }, [kind]);
-  const sourcePath = {
-    ENQUIRY: "/partner",
-    CUSTOM_PROJECT: "/submit-opportunity",
-    CONTACT: "/contact",
-  }[kind];
+  const sourcePath =
+    sourceOverride ??
+    {
+      ENQUIRY: "/partner",
+      CUSTOM_PROJECT: "/submit-opportunity",
+      CONTACT: "/contact",
+    }[kind];
   const [state, setState] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -55,11 +61,9 @@ export function PublicForm({
       ...payload,
       kind,
       sourcePath:
-        window.location.pathname === "/"
-          ? sourcePath
-          : window.location.pathname === "/business-sprints"
-            ? "/submit-opportunity"
-            : window.location.pathname,
+        window.location.pathname === "/business-sprints"
+          ? "/submit-opportunity"
+          : sourcePath,
     });
     if (!pending.current || pending.current.body !== body)
       pending.current = { body, key: crypto.randomUUID() };
@@ -98,6 +102,7 @@ export function PublicForm({
     >
       <input name="kind" type="hidden" value={kind} />
       <input name="sourcePath" type="hidden" value={sourcePath} />
+      <input name="page" type="hidden" value={pagePath} />
       {sprintIntake && (
         <div className="field">
           <label htmlFor="sprint-package">Starting package</label>

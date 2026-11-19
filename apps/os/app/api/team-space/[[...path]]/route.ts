@@ -1,3 +1,4 @@
+import { AiConnectionSetupRequired } from "../../../../lib/ai-connection-status";
 import {
   bridgeCatalog,
   bridgeView,
@@ -56,6 +57,7 @@ import {
   collaborationMutation,
 } from "../../../../lib/team-collaboration";
 import { workspaceStart } from "../../../../lib/workspace-start";
+import { pairedControl } from "../../../../lib/paired-agent";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 async function handle(
@@ -67,6 +69,34 @@ async function handle(
       method = req.method;
     if (method !== "GET") sameOrigin(req);
     const a = await actor();
+    if (p.length === 1 && p[0] === "paired-agents") {
+      if (method === "GET")
+        return privateJson(
+          await pairedControl(
+            a,
+            "LIST",
+            Object.fromEntries(new URL(req.url).searchParams),
+          ),
+        );
+      const input = z
+        .object({
+          operation: z.enum([
+            "CREATE",
+            "INVITE",
+            "REVOKE",
+            "PROPOSE",
+            "APPROVE",
+            "CANCEL",
+            "VIEW",
+          ]),
+          payload: z.unknown(),
+        })
+        .strict()
+        .parse(await readJson(req));
+      return privateJson(
+        await pairedControl(a, input.operation, input.payload),
+      );
+    }
     if (p.length >= 2 && p[1] === "bridge") {
       if (p.length === 2 && method === "GET")
         return privateJson(
@@ -357,6 +387,16 @@ async function handle(
       );
     throw new HttpError(404, "Not found");
   } catch (e) {
+    if (e instanceof AiConnectionSetupRequired)
+      return privateJson(
+        {
+          error:
+            "AI connection review is required. Follow the recorded next step.",
+          code: "AI_CONNECTION_REVIEW_REQUIRED",
+          admission: e.admission,
+        },
+        409,
+      );
     return safeHttpError(e);
   }
 }

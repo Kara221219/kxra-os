@@ -1,0 +1,124 @@
+{
+  "status": "PASS_LOCAL_ONLY",
+  "baseCommit": "835b7578b20b295994ba5ca016edd87342d41631",
+  "nativeReceipt": {
+    "classification": "LOCAL_SYNTHETIC_SERVER_IDENTITY_BOUNDARY_NOT_HOSTED_ACCEPTANCE",
+    "payloadSha256": "e9160f0899785e89cd73ffef27232ebf8bf3db53c7ae64f08335308d6b337e4e",
+    "phases": [
+      "Deterministic held-fence reviewer-room revocation versus save; stale signed claim rejected even when Actor carries fresh database version; malformed schema and cross-app receipt denied",
+      "Direct authenticated SQL: disabled verified capability hides all apps and denies register; table writes and immutable artifact edits deny; expired approval and reviewer-session revocation deny new record saves",
+      "HTTP:create-independent-review-publish-save-reload-revise-v2-rollback-cross-tenant-fake-identity-CSRF-default-off-expired-paid-withdrawal-and-transaction-rollback",
+      "Restart and fresh-empty-target restore: exact complete catalog, ACLs, policies, constraints, definitions, sequences, all app/record/review/release/receipt data"
+    ],
+    "target": "kxra_app_restore_4957977c9b58",
+    "dumpSha256": "f2f68f4f6dcf8690674e2ef2ef97dba52d528beae707b0410356319314db6fdc",
+    "app": {
+      "app": "493efb96-0568-47b7-a164-98191efedf86",
+      "record": "edc3d4bf-b4e4-461b-a6a9-01977d91b175",
+      "revision": 10,
+      "hash1": "656066e502e24bded223336bf77a5ffb434cfd08d1e85a3d85876ede4f3fb3b2",
+      "receipt": {
+        "version": 1,
+        "record_id": "edc3d4bf-b4e4-461b-a6a9-01977d91b175",
+        "operation_id": "b616775e-fa05-4d67-9125-bf77942c6296",
+        "schema_version": 1
+      },
+      "interrupted": {
+        "operation_id": "c4b9bcac-515b-460e-9461-cc2fbe1d0ef1",
+        "record_id": "edc3d4bf-b4e4-461b-a6a9-01977d91b175",
+        "expected_app_revision": 10,
+        "schema_version": 1,
+        "expected_record_revision": 2,
+        "data": {
+          "brief": "Synthetic saved value",
+          "priority": "Normal",
+          "reviewed": true
+        }
+      }
+    },
+    "knownLimitations": [
+      "Synthetic server-resolved identities injected only by test adapter; no real Supabase session acceptance",
+      "Same-cluster fresh database restore; no independent infrastructure or SIGKILL test",
+      "Verified hook-issued custom session-version claim is required; token hook installation remains a live gate"
+    ]
+  },
+  "nativeRuntime": "/private/tmp/kxra-capps-OjV2kk/.runtime/production-apps",
+  "nativeCleanup": {
+    "clean": true
+  },
+  "retainedArtifacts": [
+    {
+      "file": "source-catalog.json",
+      "sha256": "d9d94ad4ab695bb084d3e5a11d761b234f2ada790a6f000bc01b4d0c7f4e6a57"
+    },
+    {
+      "file": "source-data.json",
+      "sha256": "0dabf210f2821877d40ecc2190290ca91ce89024c2c79220e642bbd2fa40a29e"
+    },
+    {
+      "file": "source-after-continuation.json",
+      "sha256": "082dded271384ae5f28e188bc7c7c3844bf070568464abbeac520489c53dd0ba"
+    },
+    {
+      "file": "source.dump",
+      "sha256": "f2f68f4f6dcf8690674e2ef2ef97dba52d528beae707b0410356319314db6fdc"
+    }
+  ],
+  "canonicalServiceRegression": {
+    "status": "PASS",
+    "tests": 1400,
+    "passed": 1400,
+    "failed": 0,
+    "migrations": 119,
+    "protectedTables": 216,
+    "restoreRows": 7979,
+    "restoreObjects": 49,
+    "log": "/private/tmp/kxra-capps-ci-bo6IQV/services.log",
+    "cleanup": {
+      "postgresStopExitCode": 0,
+      "postgresStatusExitCode": 3,
+      "postgresAbsent": true,
+      "applicationExited": true,
+      "marketingExited": true,
+      "productionMarketingExited": true
+    },
+    "scope": "Canonical integration fixture; excludes production custom-app extension. Extension recovery is established only by nativeReceipt."
+  },
+  "focusedFinalTests": {
+    "tests": 9,
+    "passed": 9
+  },
+  "builds": [
+    "OS Next16.4.3:24pages",
+    "marketing Next15.5.28",
+    "email-worker Next15.5.28"
+  ],
+  "checks": [
+    "root typecheck and full Prettier lint",
+    "artifact fixture-boundary scan",
+    "secret/publication scan",
+    "git diff --check"
+  ],
+  "osBudget": {
+    "maximumPageBytes": 204203,
+    "limit": 204800
+  },
+  "review": {
+    "independent": true,
+    "remainingConcreteHighMedium": 0,
+    "findingsFixed": [
+      "Original provider session/version retained independently of current DB account version",
+      "Authority revocation serialized with mutations",
+      "Reviewer private-room access remains current",
+      "Hosted workspace navigation",
+      "Current/expired review visibility"
+    ]
+  },
+  "failuresReconciled": [
+    "First native invocation failed at TypeScript compilation before runtime creation; exact own lease reconciled after owner exit and absent runtime.",
+    "Long-path canonical fixture could not create a Unix socket (103-byte limit); confirmed pg_ctl status3 and retained failed fixture.",
+    "First short-path source snapshot lacked .git metadata for two provenance test files; fixed using a real isolated clone, final1400/1400 pass.",
+    "Initial restore probe refreshed source paid-proof timestamp; fixed target-only continuation, final exact source-after-probe invariance passes."
+  ],
+  "authorization": "No hosted installation/activation/deployment/provider calls/credentials/spending/push/merge; no current permission blocker."
+}
